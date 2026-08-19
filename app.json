@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Dr. Pranali Dental Clinic",
+    "slug": "dr-pranali-dental",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "android": {
+      "package": "com.drpranali.dental",
+      "adaptiveIcon": {
+        "backgroundColor": "#EAF5FF"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.drpranali.dental"
+    },
+    "plugins": [
+      "expo-status-bar"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7237b92a-a286-4f47-b519-caf145a88d7d"
+      }
+    }
+  }
+}
