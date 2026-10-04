@@ -60,3 +60,66 @@ export function buildReferralRequest({ reason, specialty, region = 'IN-MH' }) {
     autonomous_referral: false,
   };
 }
+
+
+export function buildDoctorIntelligenceRequest({
+  module,
+  question,
+  patientContext = null,
+  treatmentContext = null,
+  language = 'en',
+  region = 'IN-MH',
+}) {
+  const allowedModules = [
+    'patient-intelligence',
+    'clinical-research',
+    'treatment-research',
+    'product-intelligence',
+    'supplier-intelligence',
+    'practice-intelligence',
+    'referral-intelligence',
+  ];
+
+  if (!allowedModules.includes(module)) {
+    throw new Error('Unsupported dental intelligence module');
+  }
+
+  return {
+    engine: 'universal-intelligence-engine',
+    application: 'dr-pranali-dental',
+    domain: 'dental-care',
+    intent: module,
+    question: String(question || '').trim(),
+    language,
+    region,
+    patient_context: patientContext,
+    treatment_context: treatmentContext,
+    constraints: {
+      clinician_review_required: true,
+      patient_data_authorized_only: true,
+      autonomous_diagnosis: false,
+      autonomous_treatment_decision: false,
+      autonomous_product_purchase: false,
+      autonomous_referral: false,
+    },
+  };
+}
+
+export function buildSupplierResearchRequest({ product, region = 'IN-MH', language = 'en' }) {
+  return buildDoctorIntelligenceRequest({
+    module: 'supplier-intelligence',
+    question: `Find manufacturers, authorized distributors, regional sellers and availability for: ${product}`,
+    language,
+    region,
+  });
+}
+
+export function buildClinicalResearchRequest({ question, treatment, region = 'IN-MH', language = 'en' }) {
+  return buildDoctorIntelligenceRequest({
+    module: 'clinical-research',
+    question,
+    treatmentContext: treatment,
+    language,
+    region,
+  });
+}
