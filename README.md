@@ -23,3 +23,21 @@ The appointment form currently uses:
 `http://192.168.0.104:8080`
 
 The computer running the API and the phone should be on the same Wi-Fi. If the computer's LAN IP changes, edit `API_URL` at the top of `App.js`.
+
+
+## Intelligence architecture
+
+The application is being connected to the standalone [Universal Intelligence Engine](https://github.com/kawstubh/universal-intelligence-engine) through a Dental domain adapter.
+
+Planned doctor-only intelligence modules:
+- Patient intelligence
+- Clinical and treatment research
+- Evidence/source explorer
+- Dental product and material intelligence
+- Supplier/distributor intelligence
+- Inventory and practice intelligence
+- Referral/facility research
+
+Clinical AI is decision support only. Patient data must be authorized, and diagnosis, treatment, surgery, referral and hospital decisions remain under qualified clinician control.
+
+The dental kit/care-package concept is part of the patient-care fulfilment layer: the system can generate treatment-linked care requirements for doctor review rather than making the clinic dependent on selling products.
