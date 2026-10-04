@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { buildPatientCareRequest } from './src/intelligence/dentalIntelligence';
 
 // Your local API server. Keep the phone and computer on the same Wi-Fi.
 // If the API is deployed later, replace this URL with the live HTTPS URL.
@@ -186,7 +187,15 @@ function AppointmentScreen() {
       const response = await fetch(`${API_URL}/api/appointments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone, date, time, reason }),
+        body: JSON.stringify({
+          name, phone, date, time, reason,
+          intelligence_request: buildPatientCareRequest({
+            patient: { name, phone },
+            treatment: { requested_reason: reason, preferred_date: date, preferred_time: time },
+            language: 'en',
+            region: 'IN-MH',
+          }),
+        }),
       });
       if (!response.ok) throw new Error('API error');
       Alert.alert('Appointment Requested', 'Your appointment request has been sent to the clinic.');
