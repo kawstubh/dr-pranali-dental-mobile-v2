@@ -58,6 +58,7 @@ const services = [
 
 const tabs = [
   ['Home', '⌂'],
+  ['AI Dental', '✦'],
   ['Services', '♢'],
   ['Appointment', '▣'],
   ['Gallery', '▧'],
@@ -150,6 +151,35 @@ function HomeScreen({ go }) {
       </View>
       <Pressable onPress={() => go('Services')} style={styles.viewAll}><Text style={styles.viewAllText}>View All Dental Services →</Text></Pressable>
 
+      <View style={styles.bottomSpacer} />
+    </ScrollView>
+  );
+}
+
+
+function AIDentalScreen() {
+  const modules = [
+    ['✦', 'Clinician Copilot', 'Evidence-backed clinical research and treatment review.'],
+    ['◉', 'Scano Intelligence', 'Scan-ready architecture for future Scano API/SDK integration.'],
+    ['⌁', 'Patient Intelligence', 'Organize patient history, visits, treatment journey and follow-up.'],
+    ['◆', 'Product & Supplier Intelligence', 'Research dental products, manufacturers, distributors and availability.'],
+    ['✓', 'Safety & Provenance', 'Clinician approval, evidence and uncertainty remain mandatory.'],
+  ];
+  return (
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <View style={styles.aiHero}>
+        <Text style={styles.aiEyebrow}>DENTAL INTELLIGENCE PLATFORM</Text>
+        <Text style={styles.aiTitle}>AI Dental Care</Text>
+        <Text style={styles.aiSub}>A clinician-controlled intelligence layer designed to connect patient care, dental research and future scan data.</Text>
+        <View style={styles.scanoPill}><Text style={styles.scanoPillText}>SCANO-READY • LIVE INTEGRATION PENDING OFFICIAL API/SDK</Text></View>
+      </View>
+      {modules.map(([icon,title,desc]) => (
+        <View key={title} style={styles.aiCard}>
+          <View style={styles.aiIcon}><Text style={styles.aiIconText}>{icon}</Text></View>
+          <View style={{flex:1}}><Text style={styles.aiCardTitle}>{title}</Text><Text style={styles.aiCardSub}>{desc}</Text></View>
+        </View>
+      ))}
+      <View style={styles.safetyCard}><Text style={styles.safetyTitle}>Clinical Safety Boundary</Text><Text style={styles.safetyText}>AI assists with evidence, organization and research. It does not autonomously diagnose, prescribe, choose treatment, refer patients or purchase products. A qualified clinician remains responsible for clinical decisions.</Text></View>
       <View style={styles.bottomSpacer} />
     </ScrollView>
   );
@@ -313,6 +343,7 @@ function ContactScreen() {
 export default function App() {
   const [tab, setTab] = useState('Home');
   const screen = useMemo(() => {
+    if (tab === 'AI Dental') return <AIDentalScreen />;
     if (tab === 'Services') return <ServicesScreen />;
     if (tab === 'Appointment') return <AppointmentScreen />;
     if (tab === 'Gallery') return <GalleryScreen />;
@@ -430,5 +461,19 @@ const styles = StyleSheet.create({
   tabIcon: { color: '#718090', fontSize: 23, lineHeight: 27 },
   tabLabel: { color: '#718090', fontSize: 10.5, marginTop: 2, fontWeight: '700' },
   tabActive: { color: COLORS.blue },
+  aiHero: { backgroundColor: '#0B2E4F', borderRadius: 22, padding: 20, marginBottom: 14 },
+  aiEyebrow: { color: '#8FCBFF', fontSize: 10, fontWeight: '900', letterSpacing: 1.1 },
+  aiTitle: { color: '#FFFFFF', fontSize: 30, fontWeight: '900', marginTop: 5 },
+  aiSub: { color: '#D9EAF7', fontSize: 14, lineHeight: 21, marginTop: 8 },
+  scanoPill: { alignSelf: 'flex-start', backgroundColor: '#16476D', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 7, marginTop: 14 },
+  scanoPillText: { color: '#FFFFFF', fontSize: 9, fontWeight: '900' },
+  aiCard: { backgroundColor: COLORS.white, borderRadius: 17, padding: 15, flexDirection: 'row', alignItems: 'center', marginBottom: 10, borderWidth: 1, borderColor: '#E2EBF3' },
+  aiIcon: { width: 45, height: 45, borderRadius: 13, backgroundColor: '#EAF4FF', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  aiIconText: { color: COLORS.blue, fontSize: 23, fontWeight: '900' },
+  aiCardTitle: { color: COLORS.navy, fontSize: 15, fontWeight: '900' },
+  aiCardSub: { color: COLORS.muted, fontSize: 12.5, lineHeight: 18, marginTop: 3 },
+  safetyCard: { backgroundColor: '#FFF9E9', borderRadius: 17, padding: 16, marginTop: 4, borderWidth: 1, borderColor: '#F1E2AE' },
+  safetyTitle: { color: COLORS.navy, fontSize: 16, fontWeight: '900' },
+  safetyText: { color: COLORS.text, fontSize: 12.5, lineHeight: 19, marginTop: 6 },
   bottomSpacer: { height: 8 },
 });
