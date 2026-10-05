@@ -17,7 +17,7 @@ import { buildPatientCareRequest } from './src/intelligence/dentalIntelligence';
 
 // Your local API server. Keep the phone and computer on the same Wi-Fi.
 // If the API is deployed later, replace this URL with the live HTTPS URL.
-const API_URL = 'http://192.168.0.104:8080';
+const API_URL = 'https://dr-pranali-dental-api.onrender.com';
 const PHONE = '9137007432';
 const WHATSAPP = '919137007432';
 
@@ -175,6 +175,7 @@ function AppointmentScreen() {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [reason, setReason] = useState('');
+  const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
 
   const submit = async () => {
@@ -184,11 +185,11 @@ function AppointmentScreen() {
     }
     setSending(true);
     try {
-      const response = await fetch(`${API_URL}/api/appointments`, {
+      const response = await fetch(`${API_URL}/v1/dental/public/appointments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name, phone, date, time, reason,
+          name, phone, starts_at: `${date} ${time}`, treatment_type: reason || 'General dental consultation', note,
           intelligence_request: buildPatientCareRequest({
             patient: { name, phone },
             treatment: { requested_reason: reason, preferred_date: date, preferred_time: time },
@@ -199,7 +200,7 @@ function AppointmentScreen() {
       });
       if (!response.ok) throw new Error('API error');
       Alert.alert('Appointment Requested', 'Your appointment request has been sent to the clinic.');
-      setName(''); setPhone(''); setDate(''); setTime(''); setReason('');
+      setName(''); setPhone(''); setDate(''); setTime(''); setReason(''); setNote('');
     } catch {
       Alert.alert(
         'Connection problem',
@@ -227,7 +228,7 @@ function AppointmentScreen() {
             </Pressable>
           ))}
         </ScrollView>
-        <Field label="Additional Message" value={reason} onChangeText={setReason} placeholder="Tell us anything important" multiline />
+        <Field label="Additional Message" value={note} onChangeText={setNote} placeholder="Tell us anything important" multiline />
         <Pressable disabled={sending} onPress={submit} style={({ pressed }) => [styles.submitButton, pressed && { opacity: 0.8 }, sending && { opacity: 0.55 }]}>
           <Text style={styles.submitText}>{sending ? 'Sending…' : 'Submit Appointment Request'}</Text>
         </Pressable>
