@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { buildPatientCareRequest } from './src/intelligence/dentalIntelligence';
+import { requestPublicAppointment } from './src/api/dentalApi';
 
 // Production HTTPS API. The patient app does not require the phone and computer to share a Wi-Fi network.
 const API_URL = 'https://dr-pranali-dental-api.onrender.com';
@@ -252,19 +253,14 @@ function AppointmentScreen() {
         parts[2] + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0') +
         'T' + String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0') + ':00+05:30';
 
-      const response = await fetch(`${API_URL}/v1/dental/public/appointments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim(),
-          phone: phone.trim(),
-          starts_at: startsAt,
-          treatment_type: reason.trim() || 'Dental consultation',
-          note: note.trim() || null,
-          intelligence_request: false,
-        }),
+      await requestPublicAppointment({
+        name: name.trim(),
+        phone: phone.trim(),
+        starts_at: startsAt,
+        treatment_type: reason.trim() || 'Dental consultation',
+        note: note.trim() || null,
+        intelligence_request: false,
       });
-      if (!response.ok) throw new Error('API error');
       Alert.alert('Appointment Requested', 'Your appointment request has been sent to the clinic.');
       setName(''); setPhone(''); setDate(''); setTime(''); setReason(''); setNote('');
     } catch {
