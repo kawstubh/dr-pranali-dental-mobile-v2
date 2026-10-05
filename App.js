@@ -158,33 +158,57 @@ function HomeScreen({ go }) {
 
 
 function AIDentalScreen() {
+  const [module, setModule] = useState('Patient Intelligence');
   const modules = [
-    ['✦', 'Clinician Copilot', 'Evidence-backed clinical research and treatment review.'],
-    ['◉', 'Scano Intelligence', 'Scan-ready architecture for future Scano API/SDK integration.'],
-    ['⌁', 'Patient Intelligence', 'Organize patient history, visits, treatment journey and follow-up.'],
-    ['◆', 'Product & Supplier Intelligence', 'Research dental products, manufacturers, distributors and availability.'],
-    ['✓', 'Safety & Provenance', 'Clinician approval, evidence and uncertainty remain mandatory.'],
+    ['Patient Intelligence', 'Build an authorized patient timeline, identify missing follow-ups and prepare clinician review.'],
+    ['Scan Intelligence', 'Normalize future Scano scan data and connect it to the patient and treatment journey.'],
+    ['Clinical Research', 'Find evidence, compare sources and surface uncertainty for clinician review.'],
+    ['Treatment Research', 'Compare treatment considerations against the available patient and scan context.'],
+    ['Product & Supplier Intelligence', 'Research dental products, manufacturers, distributors and regional availability.'],
+    ['Practice Intelligence', 'Turn clinic activity into operational insights without replacing clinical judgment.'],
+    ['Referral Intelligence', 'Research appropriate specialists or facilities when referral is clinically considered.'],
   ];
+  const selected = modules.find(([name]) => name === module) || modules[0];
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
       <View style={styles.aiHero}>
-        <Text style={styles.aiEyebrow}>DENTAL INTELLIGENCE PLATFORM</Text>
-        <Text style={styles.aiTitle}>AI Dental Care</Text>
-        <Text style={styles.aiSub}>A clinician-controlled intelligence layer designed to connect patient care, dental research and future scan data.</Text>
-        <View style={styles.scanoPill}><Text style={styles.scanoPillText}>SCANO-READY • LIVE INTEGRATION PENDING OFFICIAL API/SDK</Text></View>
+        <Text style={styles.aiEyebrow}>DENTAL INTELLIGENCE PLATFORM • v0.2</Text>
+        <Text style={styles.aiTitle}>AI Dental Command Center</Text>
+        <Text style={styles.aiSub}>One clinician-controlled intelligence layer for patient journeys, research, treatment decisions and future scan data.</Text>
+        <View style={styles.scanoPill}><Text style={styles.scanoPillText}>SCANO ADAPTER READY • OFFICIAL API/SDK REQUIRED FOR LIVE DATA</Text></View>
       </View>
-      {modules.map(([icon,title,desc]) => (
-        <View key={title} style={styles.aiCard}>
-          <View style={styles.aiIcon}><Text style={styles.aiIconText}>{icon}</Text></View>
-          <View style={{flex:1}}><Text style={styles.aiCardTitle}>{title}</Text><Text style={styles.aiCardSub}>{desc}</Text></View>
+      <Text style={styles.commandLabel}>INTELLIGENCE MODULE</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap: 8, paddingBottom: 12}}>
+        {modules.map(([name]) => (
+          <Pressable key={name} onPress={() => setModule(name)} style={[styles.commandChip, module === name && styles.commandChipActive]}>
+            <Text style={[styles.commandChipText, module === name && styles.commandChipTextActive]}>{name}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+      <View style={styles.aiCardLarge}>
+        <View style={styles.aiIcon}><Text style={styles.aiIconText}>✦</Text></View>
+        <Text style={styles.aiCardTitle}>{selected[0]}</Text>
+        <Text style={styles.aiCardSub}>{selected[1]}</Text>
+        <View style={styles.pipelineRow}>
+          <Text style={styles.pipelineItem}>INPUT</Text><Text style={styles.pipelineArrow}>→</Text>
+          <Text style={styles.pipelineItem}>UIE</Text><Text style={styles.pipelineArrow}>→</Text>
+          <Text style={styles.pipelineItem}>EVIDENCE</Text><Text style={styles.pipelineArrow}>→</Text>
+          <Text style={styles.pipelineItem}>REVIEW</Text>
         </View>
-      ))}
-      <View style={styles.safetyCard}><Text style={styles.safetyTitle}>Clinical Safety Boundary</Text><Text style={styles.safetyText}>AI assists with evidence, organization and research. It does not autonomously diagnose, prescribe, choose treatment, refer patients or purchase products. A qualified clinician remains responsible for clinical decisions.</Text></View>
+        <View style={styles.statusRow}><Text style={styles.statusDot}>●</Text><Text style={styles.statusText}>Ready for authorized clinical data</Text></View>
+      </View>
+      <View style={styles.scanFlow}>
+        <Text style={styles.scanFlowTitle}>Scano → Dental AI workflow</Text>
+        <Text style={styles.scanFlowText}>Scan data → normalized dental model → UIE evidence/reasoning → clinician review → patient care workflow</Text>
+      </View>
+      <View style={styles.safetyCard}>
+        <Text style={styles.safetyTitle}>Clinical Safety Boundary</Text>
+        <Text style={styles.safetyText}>AI assists with evidence, organization and research. It does not autonomously diagnose, prescribe, choose treatment, refer patients or purchase products. A qualified clinician remains responsible for clinical decisions.</Text>
+      </View>
       <View style={styles.bottomSpacer} />
     </ScrollView>
   );
 }
-
 function ServicesScreen() {
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -475,5 +499,20 @@ const styles = StyleSheet.create({
   safetyCard: { backgroundColor: '#FFF9E9', borderRadius: 17, padding: 16, marginTop: 4, borderWidth: 1, borderColor: '#F1E2AE' },
   safetyTitle: { color: COLORS.navy, fontSize: 16, fontWeight: '900' },
   safetyText: { color: COLORS.text, fontSize: 12.5, lineHeight: 19, marginTop: 6 },
+  commandLabel: { color: COLORS.muted, fontSize: 10, fontWeight: '900', letterSpacing: 1.1, marginBottom: 7 },
+  commandChip: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 18, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: COLORS.white },
+  commandChipActive: { backgroundColor: COLORS.blue, borderColor: COLORS.blue },
+  commandChipText: { color: COLORS.navy, fontSize: 11, fontWeight: '800' },
+  commandChipTextActive: { color: COLORS.white },
+  aiCardLarge: { backgroundColor: COLORS.white, borderRadius: 19, padding: 17, marginBottom: 12, borderWidth: 1, borderColor: '#DCE8F4' },
+  pipelineRow: { flexDirection: 'row', alignItems: 'center', marginTop: 16, flexWrap: 'wrap', gap: 5 },
+  pipelineItem: { color: COLORS.blue, backgroundColor: '#EAF4FF', fontSize: 9, fontWeight: '900', paddingHorizontal: 7, paddingVertical: 5, borderRadius: 7 },
+  pipelineArrow: { color: COLORS.muted, fontSize: 12 },
+  statusRow: { flexDirection: 'row', alignItems: 'center', marginTop: 13 },
+  statusDot: { color: COLORS.green, fontSize: 10, marginRight: 6 },
+  statusText: { color: COLORS.muted, fontSize: 11.5, fontWeight: '700' },
+  scanFlow: { backgroundColor: '#EEF7FF', borderRadius: 17, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#D6E9F8' },
+  scanFlowTitle: { color: COLORS.navy, fontSize: 16, fontWeight: '900' },
+  scanFlowText: { color: COLORS.text, fontSize: 12.5, lineHeight: 19, marginTop: 6 },
   bottomSpacer: { height: 8 },
 });
