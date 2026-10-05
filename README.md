@@ -20,6 +20,6 @@ Expo React Native mobile app for Dr. Pranali Dental Clinic.
 
 ## API
 The appointment form currently uses:
-`http://192.168.0.104:8080`
+`https://dr-pranali-dental-api.onrender.com`
 
-The computer running the API and the phone should be on the same Wi-Fi. If the computer's LAN IP changes, edit `API_URL` at the top of `App.js`.
+The app uses the deployed HTTPS Dental API and does not require the phone and computer to be on the same Wi-Fi.

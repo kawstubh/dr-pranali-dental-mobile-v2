@@ -16,7 +16,7 @@ import { StatusBar } from 'expo-status-bar';
 
 // Your local API server. Keep the phone and computer on the same Wi-Fi.
 // If the API is deployed later, replace this URL with the live HTTPS URL.
-const API_URL = 'http://192.168.0.104:8080';
+const API_URL = 'https://dr-pranali-dental-api.onrender.com';
 const PHONE = '9137007432';
 const WHATSAPP = '919137007432';
 
@@ -183,19 +183,25 @@ function AppointmentScreen() {
     }
     setSending(true);
     try {
-      const response = await fetch(`${API_URL}/api/appointments`, {
+      const parts = date.split('/');
+      const t = time.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+      if (parts.length !== 3 || !t) throw new Error('Invalid date/time');
+      let hour = Number(t[1]);
+      const minute = Number(t[2] || '00');
+      const ampm = (t[3] || '').toUpperCase();
+      if (ampm === 'PM' && hour !== 12) hour += 12;
+      if (ampm === 'AM' && hour === 12) hour = 0;
+      const startsAt = parts[2] + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0') + 'T' + String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0') + ':00+05:30';
+      const response = await fetch(`${API_URL}/v1/dental/public/appointments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone, date, time, reason }),
+        body: JSON.stringify({ name: name.trim(), phone: phone.trim(), starts_at: startsAt, treatment_type: reason.trim() || 'Dental consultation', note: reason.trim() || null, intelligence_request: false }),
       });
       if (!response.ok) throw new Error('API error');
       Alert.alert('Appointment Requested', 'Your appointment request has been sent to the clinic.');
       setName(''); setPhone(''); setDate(''); setTime(''); setReason('');
     } catch {
-      Alert.alert(
-        'Connection problem',
-        `The appointment API could not be reached at ${API_URL}. Keep the computer and phone on the same Wi-Fi and make sure the API is running.`
-      );
+      Alert.alert('Could not submit appointment', 'The clinic appointment service could not be reached right now. Please call ' + PHONE + ' if you need immediate assistance.');
     } finally {
       setSending(false);
     }
