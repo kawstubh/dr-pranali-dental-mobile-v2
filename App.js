@@ -185,17 +185,30 @@ function AppointmentScreen() {
     }
     setSending(true);
     try {
+      const parts = date.split('/');
+      const t = time.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+      if (parts.length !== 3 || !t) throw new Error('Invalid date/time');
+
+      let hour = Number(t[1]);
+      const minute = Number(t[2] || '00');
+      const ampm = (t[3] || '').toUpperCase();
+      if (ampm === 'PM' && hour !== 12) hour += 12;
+      if (ampm === 'AM' && hour === 12) hour = 0;
+
+      const startsAt =
+        parts[2] + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0') +
+        'T' + String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0') + ':00+05:30';
+
       const response = await fetch(`${API_URL}/v1/dental/public/appointments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name, phone, starts_at: `${date} ${time}`, treatment_type: reason || 'General dental consultation', note,
-          intelligence_request: buildPatientCareRequest({
-            patient: { name, phone },
-            treatment: { requested_reason: reason, preferred_date: date, preferred_time: time },
-            language: 'en',
-            region: 'IN-MH',
-          }),
+          name: name.trim(),
+          phone: phone.trim(),
+          starts_at: startsAt,
+          treatment_type: reason.trim() || 'Dental consultation',
+          note: note.trim() || null,
+          intelligence_request: false,
         }),
       });
       if (!response.ok) throw new Error('API error');
@@ -204,7 +217,7 @@ function AppointmentScreen() {
     } catch {
       Alert.alert(
         'Connection problem',
-        `The appointment API could not be reached at ${API_URL}. Keep the computer and phone on the same Wi-Fi and make sure the API is running.`
+        `The clinic appointment service could not be reached right now. Please call ${PHONE} if you need immediate assistance.`
       );
     } finally {
       setSending(false);
