@@ -36,26 +36,26 @@ const COLORS = {
 };
 
 const services = [
-  ['Dental Check-up', 'Regular oral examination'],
-  ['Scaling & Polishing', 'Remove plaque & stains'],
-  ['Tooth Whitening', 'Brighter & whiter smile'],
-  ['Dental Fillings', 'Tooth-coloured restorations'],
-  ['Root Canal Treatment', 'Painless RCT care'],
-  ['Dental Crowns', 'Protect damaged teeth'],
-  ['Dental Bridges', 'Replace missing teeth'],
-  ['Dental Implants', 'Permanent tooth replacement'],
-  ['Tooth Extraction', 'Safe & gentle extractions'],
-  ['Wisdom Tooth Removal', 'Pain-free removal of wisdom teeth'],
-  ['Dentures', 'Complete & partial dentures'],
-  ['Kids Dental Care', 'Specialized care for children'],
-  ['Orthodontic Braces', 'Straighten your teeth'],
-  ['Clear Aligners (Invisalign)', 'Invisible teeth alignment'],
-  ['Gum Disease Treatment', 'Healthy gums, healthy smile'],
-  ['Cosmetic Dentistry', 'Smile makeover solutions'],
-  ['Veneers', 'Perfect smile makeover'],
-  ['Full Mouth Rehabilitation', 'Complete dental restoration'],
-  ['Dental Sealants', 'Protects from cavities'],
-  ['Emergency Dental Care', 'Immediate care when you need it'],
+  ['Dental Check-up', 'Regular oral examination', '🦷'],
+  ['Scaling & Polishing', 'Remove plaque & stains', '🪥'],
+  ['Tooth Whitening', 'Brighter & whiter smile', '✨'],
+  ['Dental Fillings', 'Tooth-coloured restorations', '🦷'],
+  ['Root Canal Treatment', 'Painless RCT care', '🩺'],
+  ['Dental Crowns', 'Protect damaged teeth', '👑'],
+  ['Dental Bridges', 'Replace missing teeth', '🌉'],
+  ['Dental Implants', 'Permanent tooth replacement', '🦷'],
+  ['Tooth Extraction', 'Safe & gentle extractions', '🩹'],
+  ['Wisdom Tooth Removal', 'Pain-free removal of wisdom teeth', '🦷'],
+  ['Dentures', 'Complete & partial dentures', '😁'],
+  ['Kids Dental Care', 'Specialized care for children', '👶'],
+  ['Orthodontic Braces', 'Straighten your teeth', '🔗'],
+  ['Clear Aligners (Invisalign)', 'Invisible teeth alignment', '😁'],
+  ['Gum Disease Treatment', 'Healthy gums, healthy smile', '🩺'],
+  ['Cosmetic Dentistry', 'Smile makeover solutions', '✨'],
+  ['Veneers', 'Perfect smile makeover', '😁'],
+  ['Full Mouth Rehabilitation', 'Complete dental restoration', '🦷'],
+  ['Dental Sealants', 'Protects from cavities', '🛡️'],
+  ['Emergency Dental Care', 'Immediate care when you need it', '🚑'],
 ];
 
 const tabs = [
@@ -93,10 +93,12 @@ function Feature({ icon, title, subtitle }) {
   );
 }
 
-function ServiceCard({ name, desc }) {
+function ServiceCard({ name, desc, icon }) {
   return (
     <View style={styles.serviceCard}>
-      <View style={styles.serviceIconWrap}><Text style={styles.serviceIcon}>♧</Text></View>
+      <View style={styles.serviceIconWrap}>
+        <Text style={styles.serviceIcon}>{icon}</Text>
+      </View>
       <Text style={styles.serviceName}>{name}</Text>
       <Text style={styles.serviceDesc}>{desc}</Text>
     </View>
@@ -149,7 +151,7 @@ function HomeScreen({ go }) {
         <Text style={styles.sectionTitle}>Our Dental Services</Text>
       </View>
       <View style={styles.servicesGrid}>
-        {services.slice(0, 8).map(([name, desc]) => <ServiceCard key={name} name={name} desc={desc} />)}
+        {services.slice(0, 8).map(([name, desc, icon]) => <ServiceCard key={name} name={name} desc={desc} icon={icon} />)}
       </View>
       <Pressable onPress={() => go('Services')} style={styles.viewAll}><Text style={styles.viewAllText}>View All Dental Services →</Text></Pressable>
 
@@ -271,7 +273,7 @@ function ServicesScreen() {
       <Text style={styles.pageTitle}>Dental Services</Text>
       <Text style={styles.pageSub}>Comprehensive dental care for children and adults.</Text>
       <View style={styles.servicesGrid}>
-        {services.map(([name, desc]) => <ServiceCard key={name} name={name} desc={desc} />)}
+        {services.map(([name, desc, icon]) => <ServiceCard key={name} name={name} desc={desc} icon={icon} />)}
       </View>
       <View style={styles.bottomSpacer} />
     </ScrollView>
