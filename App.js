@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { buildPatientCareRequest } from './src/intelligence/dentalIntelligence';
 import { requestPublicAppointment } from './src/api/dentalApi';
 
@@ -158,6 +159,59 @@ function HomeScreen({ go }) {
 }
 
 
+
+const PATIENT_UPPER = ['18','17','16','15','14','13','12','11','21','22','23','24','25','26','27','28'];
+const PATIENT_LOWER = ['48','47','46','45','44','43','42','41','31','32','33','34','35','36','37','38'];
+const PATIENT_CHILD_UPPER = ['55','54','53','52','51','61','62','63','64','65'];
+const PATIENT_CHILD_LOWER = ['85','84','83','82','81','71','72','73','74','75'];
+
+function PatientTooth({ number, selected, upper, index, total, onPress }) {
+  const curve = Math.abs((total - 1) / 2 - index);
+  return (
+    <Pressable onPress={onPress} style={[styles.pToothItem,{transform:[{translateY:curve*2.2*(upper?1:-1)}]}]}>
+      <View style={[styles.pToothShape, selected && styles.pToothSelected]}>
+        <View style={[styles.pToothCusp, selected && {backgroundColor:COLORS.blue}]} />
+        <View style={[styles.pToothRoot, selected && {borderColor:COLORS.blue}]} />
+      </View>
+      <Text style={[styles.pToothNumber, selected && {color:COLORS.blue,fontWeight:'900'}]}>{number}</Text>
+    </Pressable>
+  );
+}
+
+function PatientDentalChart() {
+  const [arch,setArch]=useState('adult');
+  const [selected,setSelected]=useState('46');
+  const upper=arch==='adult'?PATIENT_UPPER:PATIENT_CHILD_UPPER;
+  const lower=arch==='adult'?PATIENT_LOWER:PATIENT_CHILD_LOWER;
+  return (
+    <View style={styles.pChartCard}>
+      <View style={styles.pChartHeader}>
+        <View style={{flex:1}}>
+          <Text style={styles.pChartEyebrow}>MY ORAL HEALTH</Text>
+          <Text style={styles.pChartTitle}>Dental chart</Text>
+          <Text style={styles.pChartSub}>Tap a tooth to view its recorded status.</Text>
+        </View>
+        <View style={styles.pChartBadge}><Text style={styles.pChartBadgeText}>LIVE</Text></View>
+      </View>
+      <View style={styles.pArchSwitch}>
+        <Pressable onPress={()=>setArch('adult')} style={[styles.pArchOption,arch==='adult'&&styles.pArchActive]}><Text style={[styles.pArchText,arch==='adult'&&styles.pArchTextActive]}>Adult</Text></Pressable>
+        <Pressable onPress={()=>setArch('child')} style={[styles.pArchOption,arch==='child'&&styles.pArchActive]}><Text style={[styles.pArchText,arch==='child'&&styles.pArchTextActive]}>Children</Text></Pressable>
+      </View>
+      <View style={styles.pMouth}>
+        <Text style={styles.pSide}>RIGHT</Text>
+        <View style={styles.pTeethRow}>{upper.map((n,i)=><PatientTooth key={n} number={n} selected={selected===n} upper index={i} total={upper.length} onPress={()=>setSelected(n)}/>)}</View>
+        <View style={styles.pMouthCenter}><View style={styles.pMouthLine}/><Text style={styles.pMouthHint}>UPPER</Text></View>
+        <View style={styles.pTeethRow}>{lower.map((n,i)=><PatientTooth key={n} number={n} selected={selected===n} index={i} total={lower.length} onPress={()=>setSelected(n)}/>)}</View>
+        <Text style={styles.pSide}>LEFT</Text>
+      </View>
+      <View style={styles.pSelected}>
+        <View style={styles.pSelectedIcon}><Text style={styles.pSelectedIconText}>{selected}</Text></View>
+        <View style={{flex:1}}><Text style={styles.pSelectedTitle}>Tooth {selected}</Text><Text style={styles.pSelectedSub}>Tap to view treatment history when available.</Text></View>
+      </View>
+    </View>
+  );
+}
+
 function AIDentalScreen() {
   const [module, setModule] = useState('Patient Intelligence');
   const modules = [
@@ -178,6 +232,7 @@ function AIDentalScreen() {
         <Text style={styles.aiSub}>One clinician-controlled intelligence layer for patient journeys, research, treatment decisions and future scan data.</Text>
         <View style={styles.scanoPill}><Text style={styles.scanoPillText}>SCANO ADAPTER READY • OFFICIAL API/SDK REQUIRED FOR LIVE DATA</Text></View>
       </View>
+      <PatientDentalChart />
       <Text style={styles.commandLabel}>INTELLIGENCE MODULE</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap: 8, paddingBottom: 12}}>
         {modules.map(([name]) => (
@@ -228,6 +283,8 @@ function AppointmentScreen() {
   const [phone, setPhone] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
@@ -280,8 +337,57 @@ function AppointmentScreen() {
       <View style={styles.formCard}>
         <Field label="Full Name" value={name} onChangeText={setName} placeholder="Enter your full name" />
         <Field label="Phone Number" value={phone} onChangeText={setPhone} placeholder="10-digit mobile number" keyboardType="phone-pad" />
-        <Field label="Preferred Date" value={date} onChangeText={setDate} placeholder="DD/MM/YYYY" />
-        <Field label="Preferred Time" value={time} onChangeText={setTime} placeholder="e.g. 6:30 PM" />
+        <Text style={styles.fieldLabel}>Preferred Date</Text>
+        <Pressable onPress={() => setShowDatePicker(true)} style={styles.input}>
+          <Text style={{ color: date ? COLORS.text : '#91A1B0', fontSize: 15 }}>{date || 'Select date'}</Text>
+        </Pressable>
+        {showDatePicker && (
+          <DateTimePicker
+            value={date ? (() => { const [d, m, y] = date.split('/').map(Number); return new Date(y, m - 1, d); })() : new Date()}
+            mode="date"
+            minimumDate={new Date()}
+            onChange={(event, selectedDate) => {
+              setShowDatePicker(false);
+              if (selectedDate) {
+                const d = String(selectedDate.getDate()).padStart(2, '0');
+                const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                setDate(`${d}/${m}/${selectedDate.getFullYear()}`);
+              }
+            }}
+          />
+        )}
+        <Text style={styles.fieldLabel}>Preferred Time</Text>
+        <Pressable onPress={() => setShowTimePicker(true)} style={styles.input}>
+          <Text style={{ color: time ? COLORS.text : '#91A1B0', fontSize: 15 }}>{time || 'Select time'}</Text>
+        </Pressable>
+        {showTimePicker && (
+          <DateTimePicker
+            value={(() => {
+              const m = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+              if (!m) return new Date();
+              let h = Number(m[1]);
+              const min = Number(m[2]);
+              const ap = m[3].toUpperCase();
+              if (ap === 'PM' && h !== 12) h += 12;
+              if (ap === 'AM' && h === 12) h = 0;
+              const d = new Date();
+              d.setHours(h, min, 0, 0);
+              return d;
+            })()}
+            mode="time"
+            is24Hour={false}
+            onChange={(event, selectedTime) => {
+              setShowTimePicker(false);
+              if (selectedTime) {
+                let h = selectedTime.getHours();
+                const min = String(selectedTime.getMinutes()).padStart(2, '0');
+                const ap = h >= 12 ? 'PM' : 'AM';
+                h = h % 12 || 12;
+                setTime(`${h}:${min} ${ap}`);
+              }
+            }}
+          />
+        )}
         <Text style={styles.fieldLabel}>Reason for Visit</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 10 }}>
           {services.slice(0, 8).map(([service]) => (
@@ -481,6 +587,11 @@ const styles = StyleSheet.create({
   tabIcon: { color: '#718090', fontSize: 23, lineHeight: 27 },
   tabLabel: { color: '#718090', fontSize: 10.5, marginTop: 2, fontWeight: '700' },
   tabActive: { color: COLORS.blue },
+  pChartCard:{backgroundColor:COLORS.white,borderRadius:20,padding:15,borderWidth:1,borderColor:'#E1EAF2',marginBottom:15},
+  pChartHeader:{flexDirection:'row',alignItems:'center'},pChartEyebrow:{fontSize:9,fontWeight:'900',letterSpacing:1.1,color:COLORS.blue},pChartTitle:{fontSize:23,fontWeight:'900',color:COLORS.navy,marginTop:2},pChartSub:{fontSize:11,color:COLORS.muted,marginTop:3},pChartBadge:{backgroundColor:'#E7F8EF',paddingHorizontal:8,paddingVertical:5,borderRadius:9},pChartBadgeText:{fontSize:8,fontWeight:'900',color:'#16824D'},
+  pArchSwitch:{flexDirection:'row',borderWidth:1,borderColor:'#E4D3A0',borderRadius:10,overflow:'hidden',marginTop:13},pArchOption:{flex:1,paddingVertical:8,alignItems:'center'},pArchActive:{backgroundColor:'#F4C24A'},pArchText:{fontSize:12,fontWeight:'800',color:'#D5A63A'},pArchTextActive:{color:COLORS.white},
+  pMouth:{marginTop:14,paddingVertical:7,backgroundColor:'#FCFCFD',borderRadius:16,borderWidth:1,borderColor:'#EEF1F4',alignItems:'center'},pSide:{fontSize:7,fontWeight:'900',letterSpacing:1.2,color:'#B7C0C9',marginVertical:3},pTeethRow:{flexDirection:'row',alignItems:'center',justifyContent:'center'},pToothItem:{width:18,alignItems:'center',marginHorizontal:1},pToothShape:{width:17,height:28,borderWidth:1.2,borderColor:'#C8D0D8',backgroundColor:'#F4F6F8',borderRadius:10,alignItems:'center'},pToothSelected:{backgroundColor:'#EAF4FF',borderColor:COLORS.blue,borderWidth:1.7},pToothCusp:{width:5,height:5,borderRadius:3,backgroundColor:'#B9C3CC',marginTop:5},pToothRoot:{position:'absolute',width:5,height:7,top:21,borderLeftWidth:1,borderRightWidth:1,borderBottomWidth:1,borderColor:'#B9C3CC',borderBottomLeftRadius:4,borderBottomRightRadius:4},pToothNumber:{fontSize:7,color:'#A6AFB8',marginTop:3},pMouthCenter:{height:24,alignItems:'center',justifyContent:'center'},pMouthLine:{width:115,height:1,backgroundColor:'#EEF1F4'},pMouthHint:{fontSize:7,color:'#C2C9D0',letterSpacing:1,marginTop:2},
+  pSelected:{flexDirection:'row',alignItems:'center',backgroundColor:'#F7FAFD',borderRadius:12,padding:9,marginTop:10,borderWidth:1,borderColor:'#E4EDF5'},pSelectedIcon:{width:36,height:36,borderRadius:10,backgroundColor:'#EAF4FF',alignItems:'center',justifyContent:'center'},pSelectedIconText:{fontSize:11,fontWeight:'900',color:COLORS.blue},pSelectedTitle:{fontSize:13,fontWeight:'900',color:COLORS.navy},pSelectedSub:{fontSize:10,color:COLORS.muted,marginTop:2},
   aiHero: { backgroundColor: '#0B2E4F', borderRadius: 22, padding: 20, marginBottom: 14 },
   aiEyebrow: { color: '#8FCBFF', fontSize: 10, fontWeight: '900', letterSpacing: 1.1 },
   aiTitle: { color: '#FFFFFF', fontSize: 30, fontWeight: '900', marginTop: 5 },
