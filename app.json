@@ -2,19 +2,27 @@
   "expo": {
     "name": "Dr. Pranali Dental Clinic",
     "slug": "dr-pranali-dental",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "orientation": "portrait",
+    "icon": "./assets/dr-pranali-branded-logo.png",
+    "splash": {
+      "image": "./assets/dr-pranali-branded-logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFF7FB"
+    },
     "android": {
       "package": "com.drpranali.dental",
       "adaptiveIcon": {
-        "backgroundColor": "#EAF5FF"
+        "foregroundImage": "./assets/dr-pranali-branded-logo.png",
+        "backgroundColor": "#FFF7FB"
       }
     },
     "ios": {
       "bundleIdentifier": "com.drpranali.dental"
     },
     "plugins": [
-      "expo-status-bar"
+      "expo-status-bar",
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "eas": {

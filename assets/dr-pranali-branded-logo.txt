@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#19E1F2"/><stop offset=".42" stop-color="#168FEA"/><stop offset="1" stop-color="#0636B8"/></linearGradient><linearGradient id="tooth" x1="0" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".48" stop-color="#EAF8FF"/><stop offset="1" stop-color="#A9D8F5"/></linearGradient><linearGradient id="cyan" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#7CFFFF"/><stop offset="1" stop-color="#00AEEB"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+<rect x="18" y="18" width="988" height="988" rx="150" fill="url(#bg)"/>
+<ellipse cx="510" cy="520" rx="330" ry="350" fill="#001F8A" opacity=".22"/>
+<path d="M230 300 C255 190 390 165 500 245 C610 165 755 190 790 300 C820 395 785 475 730 535 C690 580 670 640 665 725 C660 820 610 875 555 815 L500 720 L445 815 C390 875 340 820 335 725 C330 640 310 580 270 535 C215 475 200 395 230 300Z" fill="url(#tooth)" stroke="#FFFFFF" stroke-width="12" filter="url(#glow)"/>
+<path d="M290 330 C315 255 395 245 475 300 C510 325 545 325 580 300 C660 245 740 255 765 330 C780 390 755 440 715 485" fill="none" stroke="url(#cyan)" stroke-width="28" stroke-linecap="round"/>
+<path d="M305 355 C325 305 365 290 405 305" fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" opacity=".9"/>
+<path d="M690 545 C775 555 790 585 700 600" fill="none" stroke="url(#cyan)" stroke-width="25" stroke-linecap="round" filter="url(#glow)"/>
+<path d="M680 605 C755 615 765 642 690 655" fill="none" stroke="url(#cyan)" stroke-width="25" stroke-linecap="round" filter="url(#glow)"/>
+<path d="M670 665 C730 674 735 698 680 708" fill="none" stroke="url(#cyan)" stroke-width="23" stroke-linecap="round" filter="url(#glow)"/>
+<path d="M665 720 L695 755 L635 755 Z" fill="url(#cyan)" filter="url(#glow)"/>
+<g fill="#FFFFFF"><path d="M790 230 l7 20 20 7-20 7-7 20-7-20-20-7 20-7z"/><circle cx="805" cy="205" r="5"/></g>
+<text x="512" y="900" text-anchor="middle" font-family="Georgia,serif" font-size="76" font-weight="700" fill="#FFFFFF">Dr. Pranali</text>
+<text x="512" y="952" text-anchor="middle" font-family="Arial,sans-serif" font-size="30" font-weight="700" letter-spacing="10" fill="#DDFBFF">DENTAL CLINIC</text></svg>
