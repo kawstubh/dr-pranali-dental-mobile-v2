@@ -15,7 +15,7 @@ import { StatusBar } from "expo-status-bar";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { signInWithGoogle } from "./src/auth/supabase";
+import { signInWithGoogle, signOutGoogle } from "./src/auth/supabase";
 import * as WebBrowser from "expo-web-browser";
 import {
   requestDoctorOtp,
@@ -205,7 +205,7 @@ function Login({ onLogin }) {
             />
           )}
           <Text style={styles.help}>
-            Secure & encrypted ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ only the registered clinic mobile
+            Secure & encrypted • only the registered clinic mobile
             can access this workspace.
           </Text>
         </Card>
@@ -385,7 +385,7 @@ function PatientProfile({ patient, token, onBack }) {
             <Text style={styles.profileName}>{patient.name}</Text>
             <Text style={styles.profileMeta}>
               {patient.phone || "No phone"}
-              {patient.age ? " ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ Age " + patient.age : ""}
+              {patient.age ? " • Age " + patient.age : ""}
             </Text>
           </View>
         </View>
@@ -505,7 +505,7 @@ function Legend({ color, text }) {
   );
 }
 
-function MembershipScreen({ token }) {
+function MembershipScreen({ token, onSessionExpired }) {
   const [plans, setPlans] = useState([]);
   const [membership, setMembership] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -519,11 +519,20 @@ function MembershipScreen({ token }) {
       setPlans(p?.plans || []);
       setMembership(m || null);
     } catch (e) {
+      if (e?.code === "SESSION_EXPIRED") {
+        Alert.alert(
+          "Session expired",
+          "Your doctor session is no longer valid. Please sign in again.",
+          [{ text: "Sign in", onPress: onSessionExpired }],
+          { cancelable: false },
+        );
+        return;
+      }
       Alert.alert("Membership", e.message || "Could not load membership.");
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, onSessionExpired]);
   useEffect(() => {
     load();
   }, [load]);
@@ -598,7 +607,7 @@ function MembershipScreen({ token }) {
           <View style={styles.masterBadge}>
             <Feather name="check-circle" size={20} color={colors.success} />
             <Text style={styles.masterBadgeText}>
-              MASTER ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ FREE FOREVER
+              MASTER • FREE FOREVER
             </Text>
           </View>
           <Text style={styles.membershipTitle}>Dr. Pranali Dental Clinic</Text>
@@ -614,7 +623,7 @@ function MembershipScreen({ token }) {
               "Early access to new platform features",
             ].map((x) => (
               <Text key={x} style={styles.featureText}>
-                ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ {x}
+                ✓ {x}
               </Text>
             ))}
           </View>
@@ -635,14 +644,14 @@ function MembershipScreen({ token }) {
               </View>
               <View style={styles.priceRow}>
                 <Text style={styles.price}>
-                  ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹{p.price_inr.toLocaleString("en-IN")}
+                  ₹{p.price_inr.toLocaleString("en-IN")}
                 </Text>
                 <Text style={styles.per}> / month</Text>
               </View>
               <View style={styles.featureList}>
                 {p.features.map((x) => (
                   <Text key={x} style={styles.featureText}>
-                    ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ {x}
+                    ✓ {x}
                   </Text>
                 ))}
               </View>
@@ -689,6 +698,15 @@ function Dashboard({ token, logout }) {
       setApiOk(h?.status === "ok");
     } catch (e) {
       setApiOk(false);
+      if (e?.code === "SESSION_EXPIRED") {
+        Alert.alert(
+          "Session expired",
+          "Your doctor session is no longer valid. Please sign in again.",
+          [{ text: "Sign in", onPress: logout }],
+          { cancelable: false },
+        );
+        return;
+      }
       Alert.alert(
         "Clinic connection",
         e.message || "Could not reach the dental backend.",
@@ -747,7 +765,7 @@ function Dashboard({ token, logout }) {
           <View>
             <Text style={styles.brandName}>Dr. Pranali</Text>
             <Text style={styles.brandClinic}>
-              DENTAL CLINIC ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ TALOJA
+              DENTAL CLINIC • TALOJA
             </Text>
           </View>
         </View>
@@ -877,7 +895,7 @@ function Dashboard({ token, logout }) {
                     <Text style={styles.patientName}>{p.name}</Text>
                     <Text style={styles.patientMeta}>
                       {p.phone || "No phone"}
-                      {p.age ? " ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ Age " + p.age : ""}
+                      {p.age ? " • Age " + p.age : ""}
                     </Text>
                   </View>
                   <Feather
@@ -890,7 +908,7 @@ function Dashboard({ token, logout }) {
             )}
           </>
         )}
-        {tab === "Membership" && <MembershipScreen token={token} />}\n{" "}
+        {tab === "Membership" && <MembershipScreen token={token} onSessionExpired={logout} />}\n{" "}
         {tab === "Clinical" && (
           <>
             <LinearGradient
@@ -944,8 +962,14 @@ function Dashboard({ token, logout }) {
 
 function AppContent() {
   const [token, setToken] = useState(null);
+  const logout = useCallback(async () => {
+    setToken(null);
+    try {
+      await signOutGoogle();
+    } catch {}
+  }, []);
   return token ? (
-    <Dashboard token={token} logout={() => setToken(null)} />
+    <Dashboard token={token} logout={logout} />
   ) : (
     <Login onLogin={setToken} />
   );
