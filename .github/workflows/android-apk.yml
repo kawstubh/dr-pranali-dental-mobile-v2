@@ -1,5 +1,8 @@
 name: Android APK
 
+permissions:
+  contents: write
+
 concurrency:
   group: patient-apk-ui-${{ github.ref }}
   cancel-in-progress: true
@@ -35,6 +38,54 @@ jobs:
       - name: Generate Android project
         run: npx expo prebuild --platform android --non-interactive
 
+      - name: Configure APK signing
+        env:
+          KEYSTORE_B64: ${{ secrets.DENTAL_RELEASE_KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.DENTAL_RELEASE_KEY_ALIAS }}
+          STORE_PASSWORD: ${{ secrets.DENTAL_RELEASE_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.DENTAL_RELEASE_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ] && [ -n "$KEY_ALIAS" ] && [ -n "$STORE_PASSWORD" ] && [ -n "$KEY_PASSWORD" ]; then
+            echo "$KEYSTORE_B64" | base64 --decode > android/release.keystore
+            cat > android/keystore.properties <<EOF
+          storeFile=release.keystore
+          storePassword=$STORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+            python3 - <<'PY'
+          from pathlib import Path
+          p = Path("android/app/build.gradle")
+          s = p.read_text()
+          signing = '''
+          def releaseKeystoreProperties = new Properties()
+          def releaseKeystorePropertiesFile = rootProject.file("keystore.properties")
+          if (releaseKeystorePropertiesFile.exists()) {
+              releaseKeystoreProperties.load(new FileInputStream(releaseKeystorePropertiesFile))
+          }
+          '''
+          s = s.replace("android {", signing + "\nandroid {", 1)
+          block = '''    signingConfigs {
+              release {
+                  if (releaseKeystorePropertiesFile.exists()) {
+                      storeFile rootProject.file(releaseKeystoreProperties["storeFile"])
+                      storePassword releaseKeystoreProperties["storePassword"]
+                      keyAlias releaseKeystoreProperties["keyAlias"]
+                      keyPassword releaseKeystoreProperties["keyPassword"]
+                  }
+              }
+          }
+
+          '''
+          s = s.replace("    buildTypes {", block + "    buildTypes {", 1)
+          s = s.replace("        release {", "        release {\n            signingConfig signingConfigs.release", 1)
+          p.write_text(s)
+          PY
+            echo "Release signing configured from the fixed GitHub keystore secrets."
+          else
+            echo "::warning::Release keystore secrets are incomplete or missing. Falling back to the Android debug keystore for this build."
+          fi
+
       - name: Verify production JavaScript bundle
         run: npx expo export --platform android
 
@@ -42,19 +93,47 @@ jobs:
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon
 
+      - name: Verify RELEASE APK
+        run: |
+          APK_DIR="android/app/build/outputs/apk/release"
+          echo "APK directory:"
+          ls -la "$APK_DIR"
+          APK="$(find "$APK_DIR" -maxdepth 1 -type f -name "*.apk" | head -n 1)"
+          test -n "$APK"
+          test -s "$APK"
+          unzip -t "$APK" >/dev/null
+          if [ "$APK" != "$APK_DIR/app-release.apk" ]; then
+            cp "$APK" "$APK_DIR/app-release.apk"
+          fi
+          test -s "$APK_DIR/app-release.apk"
+          unzip -t "$APK_DIR/app-release.apk" >/dev/null
+          echo "Release APK verified: $APK_DIR/app-release.apk"
+
       - name: Verify APK contains embedded React Native bundle
         run: |
           APK="android/app/build/outputs/apk/release/app-release.apk"
-          test -s "$APK"
           unzip -l "$APK" | grep -E 'assets/(index|.*\.bundle)|index.android.bundle' || {
             echo "ERROR: APK does not contain an embedded JavaScript bundle."
             exit 1
           }
 
+      - name: Rename release APK
+        run: cp android/app/build/outputs/apk/release/app-release.apk dr-pranali-patient.apk
+
       - name: Upload RELEASE APK
         uses: actions/upload-artifact@v4
         with:
           name: dr-pranali-dental-patient-release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+          path: dr-pranali-patient.apk
           if-no-files-found: error
           retention-days: 14
+
+      - name: Publish Patient APK latest
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: patient-latest
+          name: Patient APK latest
+          files: dr-pranali-patient.apk
+          overwrite_files: true
+          make_latest: false
+          generate_release_notes: false
