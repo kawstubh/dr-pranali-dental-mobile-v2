@@ -67,6 +67,50 @@ const tabs = [
   ['Contact', '☎'],
 ];
 
+function WelcomeScreen({ onStart }) {
+  return (
+    <SafeAreaView style={styles.welcomeSafe}>
+      <StatusBar style="dark" />
+      <ScrollView contentContainerStyle={styles.welcomeContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.welcomeTop}>
+          <View style={styles.brandBadge}>
+            <Image source={require('./assets/universal-dental-icon.png')} style={styles.brandBadgeLogo} resizeMode="contain" />
+            <View>
+              <Text style={styles.welcomeBrand}>Dr. Pranali</Text>
+              <Text style={styles.welcomeClinic}>DENTAL CLINIC</Text>
+            </View>
+          </View>
+          <Pressable onPress={onStart} style={styles.skipButton}><Text style={styles.skipText}>Skip</Text></Pressable>
+        </View>
+        <Text style={styles.welcomeTitle}>Beautiful Smile</Text>
+        <Text style={styles.welcomeTitleBlue}>Confident You</Text>
+        <Text style={styles.welcomeSub}>Expert dental care for a healthier, brighter smile</Text>
+        <View style={styles.logoStage}>
+          <View style={styles.logoGlow} />
+          <Image source={require('./assets/universal-dental-icon.png')} style={styles.hero3dLogo} resizeMode="contain" />
+          <View style={styles.logoPedestal}><View style={styles.logoPedestalGlow} /></View>
+        </View>
+        <Pressable onPress={onStart} style={styles.getStarted}>
+          <Text style={styles.getStartedText}>Get Started</Text>
+          <View style={styles.arrowCircle}><Text style={styles.arrowText}>→</Text></View>
+        </Pressable>
+        <Pressable onPress={() => onStart('Services')} style={styles.exploreButton}>
+          <Text style={styles.exploreText}>Explore Services</Text><Text style={styles.exploreArrow}>→</Text>
+        </Pressable>
+        <View style={styles.welcomeTrust}>
+          <View><Text style={styles.trustNumber}>20+</Text><Text style={styles.trustLabel}>Dental services</Text></View>
+          <View style={styles.trustDivider} />
+          <View><Text style={styles.trustNumber}>BDS</Text><Text style={styles.trustLabel}>Dental surgeon</Text></View>
+          <View style={styles.trustDivider} />
+          <View><Text style={styles.trustNumber}>AI</Text><Text style={styles.trustLabel}>Care support</Text></View>
+        </View>
+        <Text style={styles.terms}>By continuing, you agree to our</Text>
+        <Text style={styles.termsBlue}>Terms & Privacy Policy</Text>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
 function ActionButton({ label, icon, onPress, variant = 'primary' }) {
   return (
     <Pressable
@@ -469,7 +513,9 @@ function ContactScreen() {
 }
 
 export default function App() {
+  const [started, setStarted] = useState(false);
   const [tab, setTab] = useState('Home');
+  if (!started) return <WelcomeScreen onStart={(nextTab) => { setStarted(true); if (nextTab) setTab(nextTab); }} />;
   const screen = useMemo(() => {
     if (tab === 'AI Dental') return <AIDentalScreen />;
     if (tab === 'Services') return <ServicesScreen />;
@@ -506,6 +552,37 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
+  welcomeSafe:{flex:1,backgroundColor:'#F7FBFF'},
+  welcomeContent:{flexGrow:1,paddingHorizontal:22,paddingTop:18,paddingBottom:18,alignItems:'center'},
+  welcomeTop:{width:'100%',flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
+  brandBadge:{flexDirection:'row',alignItems:'center',gap:9},
+  brandBadgeLogo:{width:42,height:42},
+  welcomeBrand:{fontSize:17,fontWeight:'900',color:COLORS.navy},
+  welcomeClinic:{fontSize:8.5,fontWeight:'900',letterSpacing:2,color:COLORS.blue,marginTop:1},
+  skipButton:{paddingHorizontal:13,paddingVertical:8,borderRadius:18,backgroundColor:'#FFFFFF',borderWidth:1,borderColor:'#DDEAF5'},
+  skipText:{fontSize:12,fontWeight:'800',color:'#657789'},
+  welcomeTitle:{fontSize:34,lineHeight:38,fontWeight:'900',color:'#0B2E4F',marginTop:38,textAlign:'center',letterSpacing:-1},
+  welcomeTitleBlue:{fontSize:34,lineHeight:38,fontWeight:'900',color:'#1677D2',textAlign:'center',letterSpacing:-1},
+  welcomeSub:{fontSize:14,color:'#657789',lineHeight:20,textAlign:'center',marginTop:10,maxWidth:290},
+  logoStage:{width:'100%',height:300,alignItems:'center',justifyContent:'flex-end',marginTop:3,position:'relative'},
+  logoGlow:{position:'absolute',width:245,height:245,borderRadius:125,backgroundColor:'#E4F2FF',top:30,opacity:0.8},
+  hero3dLogo:{width:270,height:270,zIndex:2},
+  logoPedestal:{position:'absolute',bottom:18,width:220,height:22,borderRadius:14,backgroundColor:'#D8EBFB',borderWidth:1,borderColor:'#BBDCF6',shadowOpacity:0.12,shadowRadius:12,elevation:5},
+  logoPedestalGlow:{position:'absolute',left:18,right:18,top:5,height:5,borderRadius:4,backgroundColor:'#4EA5F5',opacity:0.75},
+  getStarted:{width:'100%',height:58,borderRadius:29,backgroundColor:'#1677D2',flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingLeft:25,paddingRight:7,shadowOpacity:0.18,shadowRadius:12,elevation:4},
+  getStartedText:{color:'#FFFFFF',fontSize:16,fontWeight:'900',marginLeft:70},
+  arrowCircle:{width:44,height:44,borderRadius:22,backgroundColor:'#FFFFFF',alignItems:'center',justifyContent:'center'},
+  arrowText:{fontSize:22,fontWeight:'900',color:'#1677D2'},
+  exploreButton:{flexDirection:'row',alignItems:'center',gap:7,paddingVertical:14},
+  exploreText:{fontSize:13,fontWeight:'800',color:'#18334D'},
+  exploreArrow:{fontSize:16,color:'#1677D2'},
+  welcomeTrust:{width:'100%',backgroundColor:'#FFFFFF',borderRadius:18,paddingVertical:13,paddingHorizontal:8,flexDirection:'row',alignItems:'center',justifyContent:'space-around',borderWidth:1,borderColor:'#E3EDF5',marginTop:5},
+  trustNumber:{fontSize:16,fontWeight:'900',color:'#1677D2',textAlign:'center'},
+  trustLabel:{fontSize:8.5,fontWeight:'700',color:'#657789',textAlign:'center',marginTop:2},
+  trustDivider:{width:1,height:28,backgroundColor:'#E5EDF4'},
+  terms:{fontSize:9.5,color:'#8A98A6',textAlign:'center',lineHeight:15,marginTop:14},
+  termsBlue:{fontSize:9.5,color:'#1677D2',fontWeight:'800',textAlign:'center',marginTop:2},
+
   safe: { flex: 1, backgroundColor: COLORS.bg },
   body: { flex: 1 },
   header: { backgroundColor: COLORS.white, paddingHorizontal: 20, paddingTop: 10, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#E7EEF5', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
