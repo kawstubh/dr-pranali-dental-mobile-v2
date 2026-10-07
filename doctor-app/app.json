@@ -26,6 +26,11 @@
       "eas": {
         "projectId": "67bbd408-3b22-4a4c-8063-a2425edb4ef1"
       }
-    }
+    },
+    "scheme": "drpranali-doctor",
+    "plugins": [
+      "expo-web-browser",
+      "expo-sqlite"
+    ]
   }
 }
