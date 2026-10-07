@@ -5,11 +5,6 @@
     "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/dr-pranali-branded-logo.png",
-    "splash": {
-      "image": "./assets/dr-pranali-branded-logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FFF7FB"
-    },
     "android": {
       "package": "com.drpranali.dental",
       "adaptiveIcon": {
@@ -24,7 +19,16 @@
       "expo-status-bar",
       "@react-native-community/datetimepicker",
       "expo-web-browser",
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F8FBFF",
+          "image": "./assets/dr-pranali-branded-logo.png",
+          "imageWidth": 180,
+          "resizeMode": "contain"
+        }
+      ]
     ],
     "extra": {
       "eas": {

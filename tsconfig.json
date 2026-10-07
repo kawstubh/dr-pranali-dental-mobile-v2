@@ -1,0 +1,11 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": ["App.js", "components/**/*.js", "src/**/*.js", "theme/**/*.ts", "theme/**/*.tsx"],
+  "exclude": ["doctor-app", "node_modules", "dist"]
+}

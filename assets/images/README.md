@@ -1,17 +1,14 @@
-# Reference UI image slots
+# 3D UI assets
 
-The presentation layer expects these approved clinic assets when they are supplied:
+The redesigned UI intentionally uses honest placeholders until the approved artwork is supplied.
 
-- hero-tooth-shield.png — transparent 3D tooth + shield + mirror/brush hero
-- tooth-mascot.png — friendly 3D tooth mascot for the login/welcome screen
-- home-hero.png — wide Healthy Teeth / Happier You banner artwork
-- service-checkup.png
-- service-cleaning.png
-- service-filling.png
-- service-rct.png
-- service-braces.png
-- service-implants.png
-- service-whitening.png
-- service-more.png
+Patient:
+- patient_hero_3d.png — welcome/home hero dental mascot or tooth render
+- patient_care_3d.png — AI Dental / care journey render
 
-Until those files are supplied, the app intentionally uses the existing assets/universal-dental-icon.png and clinic photography as safe fallbacks so release builds remain self-contained.
+Doctor:
+- doctor_login_3d.png — doctor login hero render
+- doctor_dashboard_3d.png — dashboard hero render
+- dental_jaw_3d.png — treatment-planning jaw/tooth render
+
+Drop the exact PNG filenames into this folder when ready. The app currently renders a labeled placeholder rather than fabricating artwork.
