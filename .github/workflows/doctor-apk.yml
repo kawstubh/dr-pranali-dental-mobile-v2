@@ -38,11 +38,20 @@ jobs:
       - name: Verify production JavaScript bundle
         run: npx expo export --platform android
 
-      - name: Build release APK with embedded bundle
+      - name: Build RELEASE APK with embedded bundle
         working-directory: doctor-app/android
         run: ./gradlew assembleRelease --no-daemon
 
-      - name: Upload release APK
+      - name: Verify APK contains embedded React Native bundle
+        run: |
+          APK="doctor-app/android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK"
+          unzip -l "$APK" | grep -E 'assets/(index|.*\.bundle)|index.android.bundle' || {
+            echo "ERROR: APK does not contain an embedded JavaScript bundle."
+            exit 1
+          }
+
+      - name: Upload RELEASE APK
         uses: actions/upload-artifact@v4
         with:
           name: dr-pranali-dental-doctor-release-apk
