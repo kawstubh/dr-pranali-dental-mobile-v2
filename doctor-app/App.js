@@ -250,7 +250,8 @@ function Periodontogram({ token, patientId, patientName='Patient' }) {
 }
 
 function Dashboard({ token, logout }) {
-  const isDemo = token === 'demo';
+  // The packaged app uses the shared production API even for the temporary demo bridge.
+  const isDemo = false;
   const [appointments,setAppointments]=useState([]);
   const [patients,setPatients]=useState([]);
   const [tab,setTab]=useState('Appointments');
