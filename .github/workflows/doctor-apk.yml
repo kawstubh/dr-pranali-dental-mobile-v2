@@ -1,5 +1,9 @@
 name: Doctor Android APK
 
+concurrency:
+  group: doctor-apk-ui-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   workflow_dispatch:
   push:
