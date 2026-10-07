@@ -20,20 +20,22 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   },
 });
 
+// Explicit native redirect: production Android builds must return to the
+// installed app rather than an environment-dependent Expo URL.
 export const googleRedirectUri = makeRedirectUri({
-  scheme: 'drpranali-doctor',
-  path: 'auth/callback',
+  native: 'drpranali-doctor://auth/callback',
 });
 
 function parseAuthParams(url) {
   const query = url.split('?')[1]?.split('#')[0] || '';
   const fragment = url.split('#')[1] || '';
-  const parse = (value) => Object.fromEntries(
-    value.split('&').filter(Boolean).map(pair => {
-      const [k, v = ''] = pair.split('=');
-      return [decodeURIComponent(k), decodeURIComponent(v.replace(/\+/g, ' '))];
-    })
-  );
+  const parse = (value) =>
+    Object.fromEntries(
+      value.split('&').filter(Boolean).map((pair) => {
+        const [k, v = ''] = pair.split('=');
+        return [decodeURIComponent(k), decodeURIComponent(v.replace(/\+/g, ' '))];
+      }),
+    );
   return { ...parse(query), ...parse(fragment) };
 }
 
@@ -45,22 +47,46 @@ export async function signInWithGoogle() {
       skipBrowserRedirect: true,
     },
   });
-  if (error) throw error;
-  if (!data?.url) throw new Error('Google sign-in URL was not returned.');
+  if (error) {
+    throw new Error(`Supabase OAuth setup failed: ${error.message}`);
+  }
+  if (!data?.url) {
+    throw new Error('Google sign-in URL was not returned by Supabase.');
+  }
 
   const result = await WebBrowser.openAuthSessionAsync(data.url, googleRedirectUri);
+
+  if (result.type === 'cancel') {
+    throw new Error(
+      'Google sign-in was cancelled before the app received the callback. If you did not press Back/Close, the Android redirect is not reaching the app.',
+    );
+  }
+  if (result.type === 'dismiss') {
+    throw new Error('Google sign-in window was dismissed before verification completed.');
+  }
+  if (result.type === 'error') {
+    throw new Error(
+      result.error?.message ||
+        result.errorCode ||
+        'Google authentication returned an error.',
+    );
+  }
   if (result.type !== 'success' || !result.url) {
-    throw new Error('Google sign-in was cancelled.');
+    throw new Error(`Google authentication ended with status: ${result.type}.`);
   }
 
   const params = parseAuthParams(result.url);
   if (params.error_description || params.error) {
-    throw new Error(params.error_description || params.error);
+    throw new Error(
+      `Google/Supabase authentication failed: ${params.error_description || params.error}`,
+    );
   }
 
   if (params.code) {
     const exchanged = await supabase.auth.exchangeCodeForSession(params.code);
-    if (exchanged.error) throw exchanged.error;
+    if (exchanged.error) {
+      throw new Error(`Supabase session exchange failed: ${exchanged.error.message}`);
+    }
     return exchanged.data.session;
   }
 
@@ -69,11 +95,15 @@ export async function signInWithGoogle() {
       access_token: params.access_token,
       refresh_token: params.refresh_token,
     });
-    if (session.error) throw session.error;
+    if (session.error) {
+      throw new Error(`Supabase session setup failed: ${session.error.message}`);
+    }
     return session.data.session;
   }
 
-  throw new Error('Google authentication completed without a Supabase session.');
+  throw new Error(
+    'Google returned to the app without an authorization code or session. Check the Supabase redirect allowlist.',
+  );
 }
 
 export async function getGoogleSession() {
