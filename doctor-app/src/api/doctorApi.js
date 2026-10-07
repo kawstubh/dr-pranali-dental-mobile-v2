@@ -74,3 +74,12 @@ export const savePeriodontogramEntry = (token, patientId, payload) =>
     method: 'POST',
     body: JSON.stringify({ ...payload, patient_id: patientId }),
   });
+
+
+export const getMembershipPlans = () => request('/v1/dental/billing/plans', null);
+export const getMembership = (token) => request('/v1/dental/billing/membership', token);
+export const createMembershipOrder = (token, plan_id) =>
+  request('/v1/dental/billing/order', token, {
+    method: 'POST',
+    body: JSON.stringify({ plan_id }),
+  });
