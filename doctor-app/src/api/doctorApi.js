@@ -22,17 +22,6 @@ export const loginDoctor = (email, password) =>
     body: JSON.stringify({ email, password }),
   });
 
-export const requestDoctorOtp = (phone) =>
-  request('/v1/dental/auth/otp/request', null, {
-    method: 'POST',
-    body: JSON.stringify({ phone }),
-  });
-
-export const verifyDoctorOtp = (phone, challenge_id, otp) =>
-  request('/v1/dental/auth/otp/verify', null, {
-    method: 'POST',
-    body: JSON.stringify({ phone, challenge_id, otp }),
-  });
 
 export const listAppointments = (token) => request('/v1/dental/appointments', token);
 export const listPatients = (token) => request('/v1/dental/patients', token);
