@@ -7,8 +7,8 @@ import { Feather, Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { requestDoctorOtp, verifyDoctorOtp, listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry } from './src/api/doctorApi';
-import { Button, Card, Chip, BottomTabBar, StatCard, AppointmentRow, Header, ToothChart, Periodontogram } from '../components/ui';
-import { colors, spacing, typography, shadows } from '../theme';
+import { Button, Card, Chip, BottomTabBar, StatCard, AppointmentRow, Header, ToothChart, Periodontogram } from './components/ui';
+import { colors, spacing, typography, shadows } from './theme';
 
 const clinicLogo=require('./assets/dr-pranali-branded-logo.png');
 const dentalLogo=require('./assets/universal-dental-icon.png');
