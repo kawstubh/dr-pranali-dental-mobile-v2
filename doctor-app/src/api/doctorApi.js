@@ -1,25 +1,38 @@
 const API_URL = 'https://dr-pranali-dental-api.onrender.com';
 
-async function request(path, token, options = {}) {
-  const response = await fetch(API_URL + path, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: 'Bearer ' + token } : {}),
-      ...(options.headers || {}),
-    },
-  });
-  const text = await response.text();
-  let data = null;
-  try { data = text ? JSON.parse(text) : null; } catch {}
-  if (!response.ok) {
-    const detail = data?.detail;
-    const message = typeof detail === 'string' ? detail : detail?.message;
-    const code = detail?.google_code || detail?.code || ('HTTP_' + response.status);
-    const status = detail?.google_status || detail?.status || response.status;
-    throw new Error((message || data?.message || 'API request failed') + ' (HTTP ' + status + ', code ' + code + ')');
+export async function request(path, token, options = {}) {
+  const { timeoutMs = 15000, ...fetchOptions } = options;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(API_URL + path, {
+      ...fetchOptions,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: 'Bearer ' + token } : {}),
+        ...(fetchOptions.headers || {}),
+      },
+    });
+    const text = await response.text();
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; } catch {}
+    if (!response.ok) {
+      const detail = data?.detail;
+      const message = typeof detail === 'string' ? detail : detail?.message;
+      const code = detail?.google_code || detail?.code || ('HTTP_' + response.status);
+      const status = detail?.google_status || detail?.status || response.status;
+      throw new Error((message || data?.message || 'API request failed') + ' (HTTP ' + status + ', code ' + code + ')');
+    }
+    return data;
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error('The clinic service took too long to respond. Please try again.');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
   }
-  return data;
 }
 
 export const listAppointments = (token) => request('/v1/dental/appointments', token);
