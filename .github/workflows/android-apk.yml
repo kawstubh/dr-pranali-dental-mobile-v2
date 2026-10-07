@@ -1,5 +1,9 @@
 name: Android APK
 
+concurrency:
+  group: patient-apk-ui-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   workflow_dispatch:
   push:
