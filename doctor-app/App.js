@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { requestDoctorOtp, verifyDoctorOtp, listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry } from './src/api/doctorApi';
+import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry } from './src/api/doctorApi';
 
 const clinicLogo = require('./assets/dr-pranali-branded-logo.png');
 
@@ -18,58 +18,6 @@ const C = {
 const STATUSES = ['requested','confirmed','scheduled','completed','cancelled','rescheduled','no_show'];
 
 function statusLabel(s){ return (s || '').replace('_',' ').replace(/^./, x => x.toUpperCase()); }
-
-function Login({ onLogin }) {
-  const [phone,setPhone]=useState('');
-  const [otp,setOtp]=useState('');
-  const [challenge,setChallenge]=useState(null);
-  const [busy,setBusy]=useState(false);
-  const sendOtp=async()=>{
-    if(phone.replace(/\D/g,'').length!==10){Alert.alert('Doctor login','Enter the registered 10-digit mobile number.');return;}
-    setBusy(true);
-    try { const result=await requestDoctorOtp(phone); setChallenge(result.challenge_id); Alert.alert('OTP sent','Check the registered mobile for your 6-digit OTP.'); }
-    catch(e){ Alert.alert('OTP unavailable', e.message || 'Could not send OTP.'); }
-    finally { setBusy(false); }
-  };
-  const verify=async()=>{
-    if(!challenge || otp.trim().length!==6){Alert.alert('Verify OTP','Enter the 6-digit OTP.');return;}
-    setBusy(true);
-    try { const result=await verifyDoctorOtp(phone,challenge,otp); onLogin(result.access_token); }
-    catch(e){ Alert.alert('Verification failed', e.message || 'The OTP could not be verified.'); }
-    finally { setBusy(false); }
-  };
-  return <SafeAreaView style={styles.safe}>
-    <StatusBar style="dark"/>
-    <ScrollView contentContainerStyle={styles.loginWrap}>
-      <View style={styles.loginBrand}><Image source={clinicLogo} style={styles.loginBrandLogo} resizeMode="contain" /><View><Text style={styles.loginBrandName}>Dr. Pranali</Text><Text style={styles.loginBrandClinic}>DENTAL CLINIC</Text></View></View>
-      <Text style={styles.loginTitle}>Beautiful Smile</Text>
-      <Text style={styles.loginTitleBlue}>Confident Care</Text>
-      <Text style={styles.loginSub}>Your secure clinical workspace for appointments, patients and dental intelligence.</Text>
-      <View style={styles.loginHero}><View style={styles.loginGlow}/><Image source={require('./assets/universal-dental-icon.png')} style={styles.login3dLogo} resizeMode="contain" /></View>
-      <View style={styles.card}>
-        <Text style={styles.label}>Registered mobile number</Text>
-        <TextInput value={phone} onChangeText={setPhone} placeholder="10-digit mobile number" placeholderTextColor="#93A3B2" keyboardType="phone-pad" maxLength={10} style={styles.input}/>
-        {!challenge ? (
-          <Pressable disabled={busy} onPress={sendOtp} style={styles.primary}><Text style={styles.primaryText}>{busy?'Sending OTP...':'Send OTP'}</Text></Pressable>
-        ) : (
-          <>
-            <Text style={[styles.label,{marginTop:12}]}>6-digit OTP</Text>
-            <TextInput value={otp} onChangeText={setOtp} placeholder="Enter OTP" placeholderTextColor="#93A3B2" keyboardType="number-pad" maxLength={6} style={styles.input}/>
-            <Pressable disabled={busy} onPress={verify} style={styles.primary}><Text style={styles.primaryText}>{busy?'Verifying...':'Verify & Open Dashboard'}</Text></Pressable>
-            <Pressable disabled={busy} onPress={sendOtp} style={[styles.action,{marginTop:8}]}><Text style={styles.actionText}>Resend OTP</Text></Pressable>
-          </>
-        )}
-        <Text style={styles.help}>Only the registered clinic mobile number can access this doctor workspace.</Text>
-      </View>
-    </ScrollView>
-    <View style={styles.bottomNav}>
-      {[['Home','⌂'],['Appointments','▣'],['Patients','♙'],['Clinical','✦']].map(([x,icon])=><Pressable key={x} onPress={()=>setTab(x)} style={styles.navItem}>
-        <View style={[styles.navIcon,tab===x&&styles.navIconActive]}><Text style={[styles.navIconText,tab===x&&styles.navIconTextActive]}>{icon}</Text></View>
-        <Text style={[styles.navLabel,tab===x&&styles.navLabelActive]}>{x}</Text>
-      </Pressable>)}
-    </View>
-  </SafeAreaView>;
-}
 
 function AppointmentCard({ item, token, onChanged }) {
   const [busy,setBusy]=useState(false);
