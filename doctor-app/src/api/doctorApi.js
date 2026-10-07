@@ -22,6 +22,12 @@ export const loginDoctor = (email, password) =>
     body: JSON.stringify({ email, password }),
   });
 
+export const loginDoctorGoogle = (supabaseAccessToken) =>
+  request('/v1/dental/auth/google', null, {
+    method: 'POST',
+    body: JSON.stringify({ access_token: supabaseAccessToken }),
+  });
+
 export const requestDoctorOtp = (phone) =>
   request('/v1/dental/auth/otp/request', null, {
     method: 'POST',
