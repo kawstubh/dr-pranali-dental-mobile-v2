@@ -6,11 +6,6 @@
     "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/dr-pranali-branded-logo.png",
-    "splash": {
-      "image": "./assets/dr-pranali-branded-logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FFF7FB"
-    },
     "android": {
       "package": "com.drpranali.dental.doctor",
       "adaptiveIcon": {
@@ -30,7 +25,16 @@
     "scheme": "drpranali-doctor",
     "plugins": [
       "expo-web-browser",
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F8FBFF",
+          "image": "./assets/dr-pranali-branded-logo.png",
+          "imageWidth": 180,
+          "resizeMode": "contain"
+        }
+      ]
     ]
   }
 }
