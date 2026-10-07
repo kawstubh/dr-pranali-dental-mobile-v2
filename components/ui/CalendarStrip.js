@@ -1,0 +1,5 @@
+import React from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { colors, spacing, typography } from '../../theme';
+export function CalendarStrip({days,selected,onSelect}){return <View style={styles.row}>{days.map(d=>{const active=d.key===selected;return <Pressable key={d.key} onPress={()=>onSelect(d.key)} style={[styles.day,active&&styles.active]}><Text style={[styles.week,active&&styles.activeText]}>{d.week}</Text><Text style={[styles.num,active&&styles.activeText]}>{d.num}</Text></Pressable>})}</View>}
+const styles=StyleSheet.create({row:{flexDirection:'row',gap:6},day:{flex:1,minHeight:62,borderRadius:spacing.radiusMd,backgroundColor:colors.white,borderWidth:1,borderColor:colors.border,alignItems:'center',justifyContent:'center'},active:{backgroundColor:colors.primary,borderColor:colors.primary},week:{fontFamily:typography.family.medium,fontSize:10,color:colors.muted},num:{fontFamily:typography.family.bold,fontSize:17,fontWeight:'800',color:colors.text,marginTop:3},activeText:{color:colors.white}});
