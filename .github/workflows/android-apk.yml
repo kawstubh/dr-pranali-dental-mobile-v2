@@ -84,6 +84,8 @@ jobs:
             echo "Release signing configured from the fixed GitHub keystore secrets."
           else
             echo "::warning::Release keystore secrets are incomplete or missing. Falling back to the Android debug keystore for this build."
+            sed -i "s/signingConfig signingConfigs.release/signingConfig signingConfigs.debug/" android/app/build.gradle
+            echo "DEBUG SIGNING FALLBACK ACTIVE: release APK will use signingConfigs.debug."
           fi
 
       - name: Verify production JavaScript bundle
