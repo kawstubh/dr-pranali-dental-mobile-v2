@@ -1,0 +1,1 @@
+Build trigger for Patient and Doctor release APK verification.
