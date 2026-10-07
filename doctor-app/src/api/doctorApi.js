@@ -2,6 +2,15 @@ const API_URL = "https://dr-pranali-dental-api.onrender.com";
 const REQUEST_TIMEOUT_MS = 75_000;
 const RETRY_DELAY_MS = 3_000;
 
+export class DoctorSessionError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "DoctorSessionError";
+    this.code = "SESSION_EXPIRED";
+    this.status = 401;
+  }
+}
+
 function isRetryable(error) {
   return (
     error?.name === "AbortError" ||
@@ -29,6 +38,7 @@ async function request(path, token, options = {}) {
       ...(options.headers || {}),
     },
   };
+
   let response;
   try {
     response = await fetchWithTimeout(API_URL + path, requestOptions);
@@ -53,11 +63,19 @@ async function request(path, token, options = {}) {
   } catch {}
 
   if (!response.ok) {
-    throw new Error(
+    const detail =
       (data && (data.detail || data.message)) ||
-        "The clinic service returned an error. Please try again.",
-    );
+      "The clinic service returned an error. Please try again.";
+
+    if (response.status === 401 && token) {
+      throw new DoctorSessionError(
+        "Your doctor session has expired or could not be restored. Please sign in again.",
+      );
+    }
+
+    throw new Error(detail);
   }
+
   return data;
 }
 
