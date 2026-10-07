@@ -1,366 +1,70 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  ActivityIndicator, Alert, Image, Linking, Pressable, RefreshControl,
-  ScrollView, StyleSheet, Text, TextInput, View
-} from 'react-native';
+
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { Feather, Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { requestDoctorOtp, verifyDoctorOtp, listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry } from './src/api/doctorApi';
+import { Button, Card, Chip, BottomTabBar, StatCard, AppointmentRow, Header, ToothChart, Periodontogram } from '../components/ui';
+import { colors, spacing, typography, shadows } from '../theme';
 
-const clinicLogo = require('./assets/dr-pranali-branded-logo.png');
+const clinicLogo=require('./assets/dr-pranali-branded-logo.png');
+const dentalLogo=require('./assets/universal-dental-icon.png');
+const STATUSES=['requested','confirmed','scheduled','completed','cancelled','rescheduled','no_show'];
+const statusLabel=s=>(s||'').replace('_',' ').replace(/^./,x=>x.toUpperCase());
 
-const C = {
-  navy:'#082B49', blue:'#1677D2', bg:'#F5F9FC', white:'#FFF',
-  text:'#18334D', muted:'#6B7D8F', border:'#DCE8F4',
-  green:'#1DAA68', amber:'#D98900', red:'#D64B4B'
-};
+function Login({onLogin}) {
+ const [phone,setPhone]=useState('');const [otp,setOtp]=useState('');const [challenge,setChallenge]=useState(null);const [busy,setBusy]=useState(false);
+ const send=async()=>{if(phone.replace(/\D/g,'').length!==10){Alert.alert('Doctor login','Enter the registered 10-digit mobile number.');return;}setBusy(true);try{const r=await requestDoctorOtp(phone);setChallenge(r.challenge_id);Alert.alert('OTP sent','Check the registered mobile.');}catch(e){Alert.alert('OTP unavailable',e.message||'Could not send OTP.');}finally{setBusy(false);}};
+ const verify=async()=>{if(!challenge||otp.trim().length!==6){Alert.alert('Verify OTP','Enter the 6-digit OTP.');return;}setBusy(true);try{const r=await verifyDoctorOtp(phone,challenge,otp);onLogin(r.access_token);}catch(e){Alert.alert('Verification failed',e.message||'The OTP could not be verified.');}finally{setBusy(false);}};
+ return <SafeAreaView style={styles.safe}><StatusBar style="dark"/><ScrollView contentContainerStyle={styles.loginWrap}><View style={styles.loginBrand}><Image source={clinicLogo} style={styles.loginLogo} contentFit="contain"/><View><Text style={styles.brandName}>Dr. Pranali</Text><Text style={styles.brandClinic}>DENTAL CLINIC</Text></View></View><Text style={styles.loginTitle}>Beautiful Smile</Text><Text style={styles.loginBlue}>Confident Care</Text><Text style={styles.loginSub}>Secure clinical workspace for appointments, patients and dental intelligence.</Text><View style={styles.loginHero}><View style={styles.loginHalo}/><Image source={dentalLogo} style={styles.loginDentalLogo} contentFit="contain"/></View><Card><Text style={styles.label}>Registered mobile number</Text><View style={styles.input}><Feather name="phone" size={17} color={colors.muted}/><TextInputPlaceholder value={phone} onChangeText={setPhone} placeholder="10-digit mobile number" keyboardType="phone-pad" maxLength={10}/></View>{challenge?<><Text style={[styles.label,{marginTop:12}]}>6-digit OTP</Text><View style={styles.input}><Feather name="lock" size={17} color={colors.muted}/><TextInputPlaceholder value={otp} onChangeText={setOtp} placeholder="Enter OTP" keyboardType="number-pad" maxLength={6}/></View><Button title={busy?'Verifying...':'Verify & Open Dashboard'} onPress={verify} disabled={busy} icon="unlock"/></>:<Button title={busy?'Sending OTP...':'Login with Mobile'} onPress={send} disabled={busy} icon="arrow-right"/>}<Text style={styles.help}>Secure & encrypted • only the registered clinic mobile can access this workspace.</Text></Card></ScrollView></SafeAreaView>;
+}
+function TextInputPlaceholder(props){const {TextInput}=require('react-native');return <TextInput {...props} style={styles.inputText} placeholderTextColor={colors.muted}/>}
 
-const STATUSES = ['requested','confirmed','scheduled','completed','cancelled','rescheduled','no_show'];
-
-function statusLabel(s){ return (s || '').replace('_',' ').replace(/^./, x => x.toUpperCase()); }
-
-function Login({ onLogin }) {
-  const [phone,setPhone]=useState('');
-  const [otp,setOtp]=useState('');
-  const [challenge,setChallenge]=useState(null);
-  const [busy,setBusy]=useState(false);
-  const sendOtp=async()=>{
-    if(phone.replace(/\D/g,'').length!==10){Alert.alert('Doctor login','Enter the registered 10-digit mobile number.');return;}
-    setBusy(true);
-    try { const result=await requestDoctorOtp(phone); setChallenge(result.challenge_id); Alert.alert('OTP sent','Check the registered mobile for your 6-digit OTP.'); }
-    catch(e){ Alert.alert('OTP unavailable', e.message || 'Could not send OTP.'); }
-    finally { setBusy(false); }
-  };
-  const verify=async()=>{
-    if(!challenge || otp.trim().length!==6){Alert.alert('Verify OTP','Enter the 6-digit OTP.');return;}
-    setBusy(true);
-    try { const result=await verifyDoctorOtp(phone,challenge,otp); onLogin(result.access_token); }
-    catch(e){ Alert.alert('Verification failed', e.message || 'The OTP could not be verified.'); }
-    finally { setBusy(false); }
-  };
-  return <SafeAreaView style={styles.safe}>
-    <StatusBar style="dark"/>
-    <ScrollView contentContainerStyle={styles.loginWrap}>
-      <View style={styles.loginBrand}><Image source={clinicLogo} style={styles.loginBrandLogo} resizeMode="contain" /><View><Text style={styles.loginBrandName}>Dr. Pranali</Text><Text style={styles.loginBrandClinic}>DENTAL CLINIC</Text></View></View>
-      <Text style={styles.loginTitle}>Beautiful Smile</Text>
-      <Text style={styles.loginTitleBlue}>Confident Care</Text>
-      <Text style={styles.loginSub}>Your secure clinical workspace for appointments, patients and dental intelligence.</Text>
-      <View style={styles.loginHero}><View style={styles.loginGlow}/><Image source={require('./assets/universal-dental-icon.png')} style={styles.login3dLogo} resizeMode="contain" /></View>
-      <View style={styles.card}>
-        <Text style={styles.label}>Registered mobile number</Text>
-        <TextInput value={phone} onChangeText={setPhone} placeholder="10-digit mobile number" placeholderTextColor="#93A3B2" keyboardType="phone-pad" maxLength={10} style={styles.input}/>
-        {!challenge ? (
-          <Pressable disabled={busy} onPress={sendOtp} style={styles.primary}><Text style={styles.primaryText}>{busy?'Sending OTP...':'Send OTP'}</Text></Pressable>
-        ) : (
-          <>
-            <Text style={[styles.label,{marginTop:12}]}>6-digit OTP</Text>
-            <TextInput value={otp} onChangeText={setOtp} placeholder="Enter OTP" placeholderTextColor="#93A3B2" keyboardType="number-pad" maxLength={6} style={styles.input}/>
-            <Pressable disabled={busy} onPress={verify} style={styles.primary}><Text style={styles.primaryText}>{busy?'Verifying...':'Verify & Open Dashboard'}</Text></Pressable>
-            <Pressable disabled={busy} onPress={sendOtp} style={[styles.action,{marginTop:8}]}><Text style={styles.actionText}>Resend OTP</Text></Pressable>
-          </>
-        )}
-        <Text style={styles.help}>Only the registered clinic mobile number can access this doctor workspace.</Text>
-      </View>
-    </ScrollView>
-    <View style={styles.bottomNav}>
-      {[['Home','⌂'],['Appointments','▣'],['Patients','♙'],['Clinical','✦']].map(([x,icon])=><Pressable key={x} onPress={()=>setTab(x)} style={styles.navItem}>
-        <View style={[styles.navIcon,tab===x&&styles.navIconActive]}><Text style={[styles.navIconText,tab===x&&styles.navIconTextActive]}>{icon}</Text></View>
-        <Text style={[styles.navLabel,tab===x&&styles.navLabelActive]}>{x}</Text>
-      </Pressable>)}
-    </View>
-  </SafeAreaView>;
+function AppointmentCard({item,token,onChanged}) {
+ const [busy,setBusy]=useState(false);
+ const change=async(status)=>{setBusy(true);try{await updateAppointment(token,item.id,{status});onChanged();}catch(e){Alert.alert('Update failed',e.message||'Could not update appointment.');}finally{setBusy(false);}};
+ const call=()=>item.patient_phone&&Linking.openURL('tel:'+item.patient_phone);
+ const whatsapp=()=>item.patient_phone&&Linking.openURL('https://wa.me/'+String(item.patient_phone).replace(/\D/g,''));
+ return <View style={styles.appointmentCard}><AppointmentRow name={item.patient_name||'Patient'} subtitle={item.treatment_type||'Dental visit'} time={item.starts_at||'Scheduled time'} status={item.status==='requested'?'Upcoming':item.status==='completed'?'Completed':'Arrived'}/><View style={styles.actions}><Pressable onPress={call} style={styles.outlineAction}><Feather name="phone" size={15} color={colors.primary}/><Text style={styles.actionText}>Call</Text></Pressable><Pressable onPress={whatsapp} style={styles.outlineAction}><Ionicons name="logo-whatsapp" size={16} color={colors.success}/><Text style={styles.actionText}>WhatsApp</Text></Pressable>{item.status==='requested'&&<Pressable disabled={busy} onPress={()=>change('confirmed')} style={styles.confirmAction}><Text style={styles.confirmText}>{busy?'...':'Confirm'}</Text></Pressable>}<Pressable disabled={busy} onPress={()=>change('completed')} style={styles.outlineAction}><Text style={styles.actionText}>Complete</Text></Pressable></View><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statusChips}>{STATUSES.filter(s=>s!==item.status).map(s=><Chip key={s} label={statusLabel(s)} onPress={()=>change(s)}/>)}</ScrollView></View>;
 }
 
-function AppointmentCard({ item, token, onChanged }) {
-  const [busy,setBusy]=useState(false);
-  const change=async(status)=>{
-    setBusy(true);
-    try { await updateAppointment(token,item.id,{status}); onChanged(); }
-    catch(e){Alert.alert('Update failed',e.message||'Could not update appointment.');}
-    finally{setBusy(false);}
-  };
-  const call=()=>item.patient_phone && Linking.openURL('tel:'+item.patient_phone);
-  const whatsapp=()=>item.patient_phone && Linking.openURL('https://wa.me/'+String(item.patient_phone).replace(/\D/g,''));
-  return <View style={styles.apptCard}>
-    <View style={styles.rowBetween}>
-      <View style={{flex:1}}><Text style={styles.patient}>{item.patient_name || 'Patient'}</Text><Text style={styles.phone}>{item.patient_phone || 'No phone'}</Text></View>
-      <View style={[styles.badge, item.status==='requested'&&{backgroundColor:'#FFF3D9'}, item.status==='confirmed'&&{backgroundColor:'#E5F8EE'}, item.status==='cancelled'&&{backgroundColor:'#FCEAEA'}]}>
-        <Text style={styles.badgeText}>{statusLabel(item.status)}</Text>
-      </View>
-    </View>
-    <Text style={styles.apptDate}>{item.starts_at}</Text>
-    <Text style={styles.reason}>{item.treatment_type}</Text>
-    {!!item.note && <Text style={styles.note}>{item.note}</Text>}
-    <View style={styles.actions}>
-      <Pressable onPress={call} style={styles.action}><Text style={styles.actionText}>Call</Text></Pressable>
-      <Pressable onPress={whatsapp} style={styles.action}><Text style={styles.actionText}>WhatsApp</Text></Pressable>
-      {item.status==='requested' && <Pressable disabled={busy} onPress={()=>change('confirmed')} style={[styles.action,styles.confirm]}><Text style={styles.confirmText}>{busy?'…':'Confirm'}</Text></Pressable>}
-      {item.status!=='completed' && item.status!=='cancelled' && item.status!=='no_show' && <Pressable disabled={busy} onPress={()=>change('completed')} style={styles.action}><Text style={styles.actionText}>Complete</Text></Pressable>}
-    </View>
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap:6,paddingTop:8}}>
-      {STATUSES.filter(s=>s!==item.status).map(s=><Pressable key={s} onPress={()=>change(s)} style={styles.statusChip}><Text style={styles.statusChipText}>{statusLabel(s)}</Text></Pressable>)}
-    </ScrollView>
-  </View>;
+function PatientProfile({patient,token,onBack}) {
+ const [chart,setChart]=useState([]);const [periodo,setPeriodo]=useState([]);const [selected,setSelected]=useState(null);const [saving,setSaving]=useState(false);
+ useEffect(()=>{if(!patient)return;getDentalChart(token,patient.id).then(setChart).catch(()=>setChart([]));getPeriodontogram(token,patient.id).then(setPeriodo).catch(()=>setPeriodo([]));},[patient,token]);
+ const updateTooth=async tooth=>{setSelected(tooth);if(!patient||saving)return;const current=chart.find(x=>x.tooth_fdi===tooth);const next=current?.status==='treated'?'missing':current?.status==='missing'?'healthy':current?.status==='healthy'?'attention':'treated';setSaving(true);try{await saveDentalChartEntry(token,patient.id,{tooth_fdi:tooth,status:next,note:''});setChart(prev=>[...prev.filter(x=>x.tooth_fdi!==tooth),{tooth_fdi:tooth,status:next}]);}catch(e){Alert.alert('Dental chart',e.message||'Could not save tooth status.');}finally{setSaving(false);}};
+ const savePerio=async(tooth,measurements)=>{if(!patient)return;try{await savePeriodontogramEntry(token,patient.id,{tooth_fdi:tooth,measurements,note:''});setPeriodo(prev=>[...prev.filter(x=>x.tooth_fdi!==tooth),{tooth_fdi:tooth,measurements}]);Alert.alert('Periodontogram','Measurements saved.');}catch(e){Alert.alert('Periodontogram',e.message||'Could not save measurements.');}};
+ const states={};chart.forEach(x=>{states[x.tooth_fdi]=x.status;});
+ return <View><Header title="Patient Profile" onBack={onBack} rightIcon="more-horizontal"/><Card><View style={styles.profileHead}><View style={styles.patientAvatar}><Text style={styles.patientAvatarText}>{(patient.name||'P').slice(0,1).toUpperCase()}</Text></View><View style={{flex:1}}><Text style={styles.profileName}>{patient.name}</Text><Text style={styles.profileMeta}>{patient.phone||'No phone'}{patient.age?' • Age '+patient.age:''}</Text></View></View><View style={styles.tags}><Chip label="Overview" selected/><Chip label="Dental Chart"/><Chip label="Records"/><Chip label="Images"/></View><Info label="Medical History" value="Review patient record"/><Info label="Allergies" value="No known allergies"/><Info label="Last Visit" value="Available in clinical history"/><Info label="Next Appointment" value="See appointment queue"/></Card><View style={styles.clinicalHeader}><Text style={styles.sectionTitle}>Dental Chart</Text><Text style={styles.mutedText}>{saving?'Saving...':'Synced clinical record'}</Text></View><Card><ToothChart onSelect={updateTooth}/><View style={styles.legendRow}><Legend color={colors.success} text="Healthy"/><Legend color={colors.danger} text="Cavity"/><Legend color={colors.primary} text="Filled"/><Legend color={colors.warning} text="RCT"/><Legend color={colors.muted} text="Missing"/></View></Card><View style={styles.clinicalHeader}><Text style={styles.sectionTitle}>Treatment Planning</Text><Text style={styles.mutedText}>Clinical review</Text></View><Card><Image source={dentalLogo} style={styles.treatmentHero} contentFit="contain"/>{['Crown / Bridge','Bridge + Implant','Single Tooth Implant','Full Mouth Rehab'].map((x,i)=><View key={x} style={styles.planRow}><View style={styles.planNumber}><Text style={styles.planNumberText}>{i+1}</Text></View><View style={{flex:1}}><Text style={styles.planTitle}>{x}</Text><Text style={styles.planSub}>Treatment option ready for clinician review</Text></View><Feather name="chevron-right" size={17} color={colors.muted}/></View>)}<Button title="Add to Treatment Plan" onPress={()=>Alert.alert('Treatment Plan','Selected treatment options are ready for clinician review.')} icon="plus"/></Card><View style={styles.clinicalHeader}><Text style={styles.sectionTitle}>Periodontogram</Text><Text style={styles.mutedText}>6-point probing</Text></View><Periodontogram patientName={patient.name} onSave={savePerio}/><View style={styles.quickActions}><Pressable onPress={()=>Linking.openURL('tel:'+patient.phone)} style={styles.quickAction}><Feather name="phone" size={17} color={colors.primary}/><Text>Call</Text></Pressable><Pressable onPress={()=>Linking.openURL('https://wa.me/'+String(patient.phone||'').replace(/\D/g,''))} style={styles.quickAction}><Ionicons name="logo-whatsapp" size={18} color={colors.success}/><Text>WhatsApp</Text></Pressable><Pressable onPress={onBack} style={styles.quickAction}><Feather name="more-horizontal" size={18} color={colors.primary}/><Text>More</Text></Pressable></View></View>;
+}
+function Info({label,value}){return <View style={styles.info}><Text style={styles.infoLabel}>{label}</Text><Text style={styles.infoValue}>{value}</Text></View>}
+function Legend({color,text}){return <View style={styles.legend}><View style={[styles.legendDot,{backgroundColor:color}]}/><Text style={styles.legendText}>{text}</Text></View>}
+
+function Dashboard({token,logout}) {
+ const [appointments,setAppointments]=useState([]);const [patients,setPatients]=useState([]);const [tab,setTab]=useState('Home');const [selectedPatient,setSelectedPatient]=useState(null);const [loading,setLoading]=useState(true);const [refreshing,setRefreshing]=useState(false);const [apiOk,setApiOk]=useState(false);
+ const load=useCallback(async()=>{try{const [a,p,h]=await Promise.all([listAppointments(token),listPatients(token),getHealth()]);setAppointments(a||[]);setPatients(p||[]);setApiOk(h?.status==='ok');}catch(e){setApiOk(false);Alert.alert('Clinic connection',e.message||'Could not reach the dental backend.');}finally{setLoading(false);setRefreshing(false);}},[token]);
+ useEffect(()=>{load();},[load]);
+ if(loading)return <SafeAreaView style={styles.safe}><ActivityIndicator size="large" color={colors.primary} style={{marginTop:100}}/></SafeAreaView>;
+ if(selectedPatient)return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.content}><PatientProfile patient={selectedPatient} token={token} onBack={()=>setSelectedPatient(null)}/></ScrollView></SafeAreaView>;
+ const requested=appointments.filter(a=>a.status==='requested').length;const confirmed=appointments.filter(a=>['confirmed','scheduled'].includes(a.status)).length;
+ const items=[{key:'Home',label:'Home',icon:'home'},{key:'Patients',label:'Patients',icon:'users'},{key:'Appointments',label:'Appointments',icon:'calendar'},{key:'Clinical',label:'Clinical',icon:'activity'}];
+ return <SafeAreaView style={styles.safe}><StatusBar style="dark"/><View style={styles.topbar}><View style={styles.brandRow}><Image source={clinicLogo} style={styles.clinicLogo} contentFit="contain"/><View><Text style={styles.brandName}>Dr. Pranali</Text><Text style={styles.brandClinic}>DENTAL CLINIC • TALOJA</Text></View></View><Pressable onPress={logout} style={styles.signout}><Feather name="log-out" size={15} color={colors.primary}/></Pressable></View><ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={()=>{setRefreshing(true);load()}}/>} contentContainerStyle={styles.content}>
+  {tab==='Home'&&<><LinearGradient colors={[colors.ctaStart,colors.ctaEnd]} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.dashboardHero}><View style={{flex:1}}><Text style={styles.heroKicker}>DOCTOR PORTAL</Text><Text style={styles.heroTitle}>Good morning, Doctor</Text><Text style={styles.heroSub}>Your clinic at a glance.</Text></View><Image source={dentalLogo} style={styles.heroDental} contentFit="contain"/></LinearGradient><View style={styles.stats}><StatCard value={appointments.length} label="Today" icon={<Feather name="calendar" size={18} color={colors.primary}/>}/><StatCard value={confirmed} label="This Week" icon={<Feather name="check-circle" size={18} color={colors.success}/>}/><StatCard value={patients.length} label="Total Patients" icon={<Feather name="users" size={18} color={colors.primary}/>}/></View><View style={styles.sectionRow}><Text style={styles.sectionTitle}>Today's Appointments</Text><Text style={styles.live}>{apiOk?'LIVE':'OFFLINE'}</Text></View>{appointments.slice(0,5).map(a=><AppointmentRow key={a.id} name={a.patient_name||'Patient'} subtitle={a.treatment_type||'Dental visit'} time={a.starts_at||'Scheduled'} status={a.status==='requested'?'Upcoming':'Arrived'}/>)}</>}
+  {tab==='Appointments'&&<><Header title="Appointments" rightIcon="refresh-cw" onRight={load}/>{appointments.length===0?<Card><Text style={styles.empty}>No appointments yet. Patient bookings will appear here.</Text></Card>:appointments.map(a=><AppointmentCard key={a.id} item={a} token={token} onChanged={load}/>)}</>}
+  {tab==='Patients'&&<><View style={styles.sectionRow}><Text style={styles.sectionTitle}>Patients</Text><Text style={styles.mutedText}>{patients.length} records</Text></View>{patients.length===0?<Card><Text style={styles.empty}>No patients yet.</Text></Card>:patients.map(p=><Pressable key={p.id} onPress={()=>setSelectedPatient(p)} style={styles.patientRow}><View style={styles.patientAvatar}><Text style={styles.patientAvatarText}>{(p.name||'P').slice(0,1).toUpperCase()}</Text></View><View style={{flex:1}}><Text style={styles.patientName}>{p.name}</Text><Text style={styles.patientMeta}>{p.phone||'No phone'}{p.age?' • Age '+p.age:''}</Text></View><Feather name="chevron-right" size={18} color={colors.muted}/></Pressable>)}</>}
+  {tab==='Clinical'&&<><LinearGradient colors={[colors.primaryDark,colors.primary]} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.clinicalHero}><Text style={styles.heroKicker}>CLINICAL INTELLIGENCE</Text><Text style={styles.heroTitle}>Evidence-led care workspace</Text><Text style={styles.heroSub}>Odontogram, periodontics, treatment planning and AI support in one place.</Text></LinearGradient><Card><Text style={styles.sectionTitle}>Clinical Modules</Text>{['Patient Intelligence','Dental Chart','Periodontogram','Treatment Planning','Clinical Research','Product & Supplier Intelligence'].map((x,i)=><View key={x} style={styles.moduleRow}><View style={styles.moduleIcon}><Text style={styles.moduleNumber}>0{i+1}</Text></View><View style={{flex:1}}><Text style={styles.moduleTitle}>{x}</Text><Text style={styles.moduleSub}>Ready for authorized clinical data and clinician review.</Text></View><Feather name="chevron-right" size={17} color={colors.muted}/></View>)}</Card></>}
+ </ScrollView><BottomTabBar items={items} active={tab} onChange={setTab}/></SafeAreaView>;
 }
 
-
-const ADULT_UPPER = ['18','17','16','15','14','13','12','11','21','22','23','24','25','26','27','28'];
-const ADULT_LOWER = ['48','47','46','45','44','43','42','41','31','32','33','34','35','36','37','38'];
-const CHILD_UPPER = ['55','54','53','52','51','61','62','63','64','65'];
-const CHILD_LOWER = ['85','84','83','82','81','71','72','73','74','75'];
-
-function Tooth({ number, state, onPress, upper, index, total }) {
-  const curve = Math.abs((total - 1) / 2 - index);
-  const palette = state === 'healthy'
-    ? { fill:'#DFF6E9', edge:'#59C989', mark:'#35B878' }
-    : state === 'attention'
-      ? { fill:'#FFF3D8', edge:'#E7B54A', mark:'#D99118' }
-      : state === 'treated'
-        ? { fill:'#E8F1FF', edge:'#76A8E8', mark:'#3978C7' }
-        : { fill:'#F2F4F7', edge:'#C9D1DA', mark:'#A8B2BD' };
-
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[
-        styles.toothItem,
-        { transform:[{ translateY: curve * 2.4 * (upper ? 1 : -1) }] }
-      ]}
-    >
-      <View style={[
-        styles.toothShape,
-        {
-          backgroundColor:palette.fill,
-          borderColor:palette.edge,
-          borderRadius:number.endsWith('1') || number.endsWith('2') ? 14 : 11,
-          transform:[{ scaleY: upper ? 1 : 0.96 }]
-        }
-      ]}>
-        <View style={[styles.toothCusp, { backgroundColor:palette.mark }]} />
-        <View style={[styles.toothRoot, { borderColor:palette.edge, top: upper ? 23 : 25 }]} />
-      </View>
-      <Text style={[styles.toothNumber, state === 'attention' && {color:'#B87908'}]}>{number}</Text>
-    </Pressable>
-  );
-}
-
-function DentalChart({ token, patientId, patientName='Patient' }) {
-  const [arch, setArch] = useState('adult');
-  const [selected, setSelected] = useState('46');
-  const [states, setStates] = useState({46:'attention', 21:'treated', 11:'healthy', 36:'treated'});
-  const [saving, setSaving] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    if (!patientId) return undefined;
-    setLoaded(false);
-    getDentalChart(token, patientId).then(entries => {
-      if (!active) return;
-      const next = {};
-      (entries || []).forEach(entry => { next[entry.tooth_fdi] = entry.status; });
-      setStates(prev => ({ ...prev, ...next }));
-    }).catch(() => {}).finally(() => { if (active) setLoaded(true); });
-    return () => { active = false; };
-  }, [patientId, token]);
-  const upper = arch === 'adult' ? ADULT_UPPER : CHILD_UPPER;
-  const lower = arch === 'adult' ? ADULT_LOWER : CHILD_LOWER;
-  const currentState = states[selected] || 'healthy';
-
-  const cycleState = async () => {
-    if (!patientId || saving) return;
-    const order=['healthy','attention','treated','missing'];
-    const next=order[(order.indexOf(currentState)+1)%order.length];
-    setStates(prev=>({...prev,[selected]:next}));
-    setSaving(true);
-    try {
-      await saveDentalChartEntry(token, patientId, { tooth_fdi:selected, status:next, note:'' });
-    } catch (e) {
-      setStates(prev=>({...prev,[selected]:currentState}));
-      Alert.alert('Dental chart', e.message || 'Could not save tooth status.');
-    } finally { setSaving(false); }
-  };
-
-  return (
-    <View style={styles.chartCard}>
-      <View style={styles.chartHeader}>
-        <View style={{flex:1}}>
-          <Text style={styles.chartEyebrow}>CLINICAL ODONTOGRAM</Text>
-          <Text style={styles.chartTitle}>Dental chart</Text>
-          <Text style={styles.chartPatient}>{patientName} • {loaded ? 'Synced clinical record' : 'Loading clinical record'}</Text>
-        </View>
-        <View style={styles.chartLegendDot}/>
-      </View>
-
-      <View style={styles.archSwitch}>
-        <Pressable onPress={()=>setArch('adult')} style={[styles.archOption, arch==='adult'&&styles.archOptionActive]}>
-          <Text style={[styles.archText, arch==='adult'&&styles.archTextActive]}>Adult</Text>
-        </Pressable>
-        <Pressable onPress={()=>setArch('child')} style={[styles.archOption, arch==='child'&&styles.archOptionActive]}>
-          <Text style={[styles.archText, arch==='child'&&styles.archTextActive]}>Children</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.mouthFrame}>
-        <Text style={styles.sideLabel}>RIGHT</Text>
-        <View style={styles.teethArc}>
-          {upper.map((n,i)=><Tooth key={n} number={n} state={states[n]||'healthy'} upper index={i} total={upper.length} onPress={()=>setSelected(n)}/>)}
-        </View>
-        <View style={styles.mouthCenter}><View style={styles.mouthLine}/><Text style={styles.mouthHint}>UPPER</Text></View>
-        <View style={styles.teethArc}>
-          {lower.map((n,i)=><Tooth key={n} number={n} state={states[n]||'healthy'} index={i} total={lower.length} onPress={()=>setSelected(n)}/>)}
-        </View>
-        <Text style={styles.sideLabel}>LEFT</Text>
-      </View>
-
-      <View style={styles.selectedTooth}>
-        <View style={styles.selectedToothIcon}><Text style={styles.selectedToothIconText}>{selected}</Text></View>
-        <View style={{flex:1}}>
-          <Text style={styles.selectedLabel}>Tooth {selected}</Text>
-          <Text style={styles.selectedStatus}>Status: {currentState === 'attention' ? 'Needs attention' : currentState === 'treated' ? 'Treatment completed' : currentState === 'missing' ? 'Missing / extracted' : 'Healthy'}</Text>
-        </View>
-        <Pressable disabled={!patientId || saving} onPress={cycleState} style={[styles.changeStatus, saving && {opacity:0.5}]}><Text style={styles.changeStatusText}>{saving ? 'Saving…' : 'Update'}</Text></Pressable>
-      </View>
-
-      <View style={styles.chartLegend}>
-        <View style={styles.legendItem}><View style={[styles.legendDot,{backgroundColor:'#59C989'}]}/><Text>Healthy</Text></View>
-        <View style={styles.legendItem}><View style={[styles.legendDot,{backgroundColor:'#E7B54A'}]}/><Text>Attention</Text></View>
-        <View style={styles.legendItem}><View style={[styles.legendDot,{backgroundColor:'#76A8E8'}]}/><Text>Treated</Text></View>
-        <View style={styles.legendItem}><View style={[styles.legendDot,{backgroundColor:'#C9D1DA'}]}/><Text>Missing</Text></View>
-      </View>
-    </View>
-  );
-}
-
-
-function Periodontogram({ token, patientId, patientName='Patient' }) {
-  const teeth = ADULT_UPPER.concat(ADULT_LOWER);
-  const points = ['MB','B','DB','ML','L','DL'];
-  const [selected,setSelected]=useState('46');
-  const [records,setRecords]=useState({});
-  const [saving,setSaving]=useState(false);
-  useEffect(()=>{ let active=true; if(!patientId)return; getPeriodontogram(token,patientId).then(rows=>{ if(!active)return; const next={}; (rows||[]).forEach(r=>next[r.tooth_fdi]=r.measurements||{}); setRecords(next); }).catch(()=>{}); return()=>{active=false}; },[patientId,token]);
-  const current=records[selected]||{};
-  const update=(key,value)=>setRecords(prev=>({...prev,[selected]:{...(prev[selected]||{}),[key]:value}}));
-  const save=async()=>{ if(!patientId||saving)return; setSaving(true); try{await savePeriodontogramEntry(token,patientId,{tooth_fdi:selected,measurements:current,note:''}); Alert.alert('Periodontogram','Measurements saved for tooth '+selected+'.');}catch(e){Alert.alert('Periodontogram',e.message||'Could not save measurements.')}finally{setSaving(false)} };
-  return <View style={styles.chartCard}>
-    <View style={styles.chartHeader}><View style={{flex:1}}><Text style={styles.chartEyebrow}>CLINICAL PERIODONTICS</Text><Text style={styles.chartTitle}>Periodontogram</Text><Text style={styles.chartPatient}>{patientName} • 6-point periodontal probing</Text></View><View style={[styles.chartLegendDot,{backgroundColor:'#D98900'}]}/></View>
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap:6,paddingVertical:12}}>{teeth.map(n=><Pressable key={n} onPress={()=>setSelected(n)} style={[styles.perioTooth,selected===n&&styles.perioToothActive]}><Text style={[styles.perioToothText,selected===n&&styles.perioToothTextActive]}>{n}</Text></Pressable>)}</ScrollView>
-    <View style={styles.perioSelected}><Text style={styles.selectedLabel}>Tooth {selected}</Text><Text style={styles.selectedStatus}>Probing depths (mm) — MB · B · DB · ML · L · DL</Text></View>
-    <View style={styles.perioGrid}>{points.map(p=><View key={p} style={styles.perioCell}><Text style={styles.perioPoint}>{p}</Text><TextInput value={String(current[p]??'')} onChangeText={v=>update(p,v.replace(/[^0-9]/g,''))} keyboardType="number-pad" maxLength={2} placeholder="0" placeholderTextColor="#AAB5BF" style={styles.perioInput}/></View>)}</View>
-    <View style={styles.perioMeta}>
-      {['recession','CAL'].map(k=><View key={k} style={styles.metaField}><Text style={styles.metaLabel}>{k==='recession'?'Recession':'CAL'} (mm)</Text><TextInput value={String(current[k]??'')} onChangeText={v=>update(k,v.replace(/[^0-9]/g,''))} keyboardType="number-pad" style={styles.metaInput}/></View>)}
-      {['BOP','Mobility','Furcation','Plaque','Calculus'].map(k=><Pressable key={k} onPress={()=>update(k,current[k]?'':'Yes')} style={[styles.perioFlag,current[k]&&styles.perioFlagActive]}><Text style={[styles.perioFlagText,current[k]&&styles.perioFlagTextActive]}>{k}{current[k]?' ✓':''}</Text></Pressable>)}
-    </View>
-    <Pressable disabled={saving||!patientId} onPress={save} style={[styles.primary,{marginTop:12,opacity:saving?0.6:1}]}><Text style={styles.primaryText}>{saving?'Saving…':'Save Periodontogram'}</Text></Pressable>
-  </View>;
-}
-
-function Dashboard({ token, logout }) {
-  // The packaged app uses the shared production API even for the temporary demo bridge.
-  const isDemo = false;
-  const [appointments,setAppointments]=useState([]);
-  const [patients,setPatients]=useState([]);
-  const [tab,setTab]=useState('Home');
-  const [selectedPatient,setSelectedPatient]=useState(null);
-  const [loading,setLoading]=useState(true);
-  const [refreshing,setRefreshing]=useState(false);
-  const [apiOk,setApiOk]=useState(false);
-
-  const load=useCallback(async()=>{
-    if (isDemo) {
-      setAppointments([{id:'demo-1',status:'requested',patient_name:'Demo Patient',patient_phone:'9876543210',starts_at:'2026-10-07T10:30:00+05:30',treatment_type:'Dental consultation',note:'Demo appointment'}]);
-      setPatients([{id:'demo-patient',name:'Demo Patient',phone:'9876543210',age:32}]);
-      setApiOk(true);
-      setLoading(false); setRefreshing(false); return;
-    }
-    try {
-      const [a,p,h]=await Promise.all([listAppointments(token),listPatients(token),getHealth()]);
-      setAppointments(a||[]); setPatients(p||[]); setApiOk(h?.status==='ok');
-    } catch(e) {
-      setApiOk(false);
-      Alert.alert('Clinic connection', e.message || 'Could not reach the dental backend.');
-    } finally {setLoading(false);setRefreshing(false);}
-  },[token,isDemo]);
-
-  useEffect(()=>{load();},[load]);
-
-  const requested=appointments.filter(a=>a.status==='requested').length;
-  const confirmed=appointments.filter(a=>['confirmed','scheduled'].includes(a.status)).length;
-
-  if(loading) return <SafeAreaView style={styles.safe}><ActivityIndicator size="large" color={C.blue} style={{marginTop:80}}/></SafeAreaView>;
-
-  return <SafeAreaView style={styles.safe}>
-    <StatusBar style="dark"/>
-    <View style={styles.header}>
-      <View style={styles.headerBrand}>
-        <Image source={clinicLogo} style={styles.headerLogo} resizeMode="contain" />
-        <View><Text style={styles.headerTitle}>Dr. Pranali</Text><Text style={styles.headerSub}>Dental Clinic • Taloja</Text></View>
-      </View>
-      <Pressable onPress={()=>{logout();}} style={styles.headerAction}><Text style={styles.headerActionText}>Sign out</Text></Pressable>
-    </View>
-    <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={()=>{setRefreshing(true);load();}}/>} contentContainerStyle={styles.content}>
-      <View style={styles.hero}><View><Text style={styles.heroKicker}>CLINIC CONTROL CENTER</Text><Text style={styles.heroTitle}>Good day, Doctor</Text><Text style={styles.heroSub}>Manage today's patient flow from one place.</Text></View><View style={[styles.dot,{backgroundColor:apiOk?C.green:C.red}]}/></View>
-      <View style={styles.stats}>
-        <Stat n={appointments.length} t="Appointments"/><Stat n={requested} t="New Requests"/><Stat n={confirmed} t="Confirmed"/><Stat n={patients.length} t="Patients"/>
-      </View>
-      {tab==='Home' && <View>
-        <View style={styles.sectionRow}><Text style={styles.sectionTitle}>Today's workspace</Text><Text style={styles.patientCount}>Live clinic data</Text></View>
-        <View style={styles.quickGrid}>
-          <Pressable onPress={()=>setTab('Appointments')} style={styles.quickCard}><View style={styles.quickIcon}><Text>📅</Text></View><Text style={styles.quickTitle}>Appointments</Text><Text style={styles.quickSub}>{requested} new request{requested===1?'':'s'}</Text></Pressable>
-          <Pressable onPress={()=>setTab('Patients')} style={styles.quickCard}><View style={styles.quickIcon}><Text>👥</Text></View><Text style={styles.quickTitle}>Patients</Text><Text style={styles.quickSub}>{patients.length} clinical record{patients.length===1?'':'s'}</Text></Pressable>
-          <Pressable onPress={()=>setTab('Clinical')} style={styles.quickCard}><View style={styles.quickIcon}><Text>🦷</Text></View><Text style={styles.quickTitle}>Dental Chart</Text><Text style={styles.quickSub}>Odontogram & perio</Text></Pressable>
-          <Pressable onPress={()=>setTab('Clinical')} style={styles.quickCard}><View style={styles.quickIcon}><Text>✦</Text></View><Text style={styles.quickTitle}>AI Intelligence</Text><Text style={styles.quickSub}>Clinical decision support</Text></Pressable>
-        </View>
-        <View style={styles.todayCard}>
-          <View><Text style={styles.todayKicker}>CLINIC STATUS</Text><Text style={styles.todayTitle}>{apiOk ? 'Everything is connected' : 'Connection needs attention'}</Text><Text style={styles.todaySub}>Patient bookings and doctor records use the same secure backend.</Text></View>
-          <View style={[styles.statusPill,{backgroundColor:apiOk?'#DDF7EA':'#FCEAEA'}]}><Text style={[styles.statusPillText,{color:apiOk?C.green:C.red}]}>{apiOk?'ONLINE':'OFFLINE'}</Text></View>
-        </View>
-      </View>}
-      {tab==='Appointments' && <View>
-        <View style={styles.sectionRow}><Text style={styles.sectionTitle}>Appointment Queue</Text><Pressable onPress={load}><Text style={styles.refresh}>Refresh</Text></Pressable></View>
-        {appointments.length===0?<Empty text="No appointments yet."/>:appointments.map(a=><AppointmentCard key={a.id} item={a} token={token} onChanged={load}/>)}
-      </View>}
-      {tab==='Patients' && <View>
-        <View style={styles.sectionRow}><Text style={styles.sectionTitle}>Patients</Text><Text style={styles.patientCount}>{patients.length} records</Text></View>
-        {patients.length===0?<Empty text="No patients yet. Patient bookings will appear here."/>:patients.map((p,i)=><Pressable key={p.id} onPress={()=>setSelectedPatient(p)} style={[styles.patientCard,selectedPatient?.id===p.id&&styles.patientCardActive]}><View style={styles.patientTop}><View style={styles.avatar}><Text style={styles.avatarText}>{(p.name||'P').slice(0,1).toUpperCase()}</Text></View><View style={{flex:1}}><Text style={styles.patient}>{p.name}</Text><Text style={styles.phone}>{p.phone||'No phone'}{p.age?' • Age '+p.age:''}</Text></View><Text style={styles.chevron}>›</Text></View></Pressable>)}
-        {selectedPatient ? <><View style={styles.selectedPatientBanner}><Text style={styles.selectedPatientLabel}>SELECTED PATIENT</Text><Text style={styles.selectedPatientName}>{selectedPatient.name}</Text><Text style={styles.selectedPatientMeta}>{selectedPatient.phone||'No phone'}{selectedPatient.age?' • Age '+selectedPatient.age:''}</Text></View><DentalChart token={token} patientId={selectedPatient.id} patientName={selectedPatient.name} /><Periodontogram token={token} patientId={selectedPatient.id} patientName={selectedPatient.name} /></> : <Empty text="Select a patient to open the dental chart and periodontogram." />}
-      </View>}
-      {tab==='Clinical' && <View>
-        <View style={styles.intelHero}><Text style={styles.intelKicker}>AI DENTAL COMMAND CENTER</Text><Text style={styles.intelTitle}>Clinical intelligence</Text><Text style={styles.intelText}>Patient context, clinical research, treatment research, products, suppliers, practice and referrals — with human approval required.</Text></View>
-        {['Patient Intelligence','Clinical Research','Treatment Research','Product & Supplier Intelligence','Practice Intelligence','Referral Intelligence'].map((x,i)=><View key={x} style={styles.intelCard}><Text style={styles.intelNum}>0{i+1}</Text><View style={{flex:1}}><Text style={styles.intelName}>{x}</Text><Text style={styles.intelSub}>Ready for authorized clinical data and evidence review.</Text></View></View>)}
-      </View>}
-    </ScrollView>
-  </SafeAreaView>;
-}
-
-function Stat({n,t}){return <View style={styles.stat}><Text style={styles.statN}>{n}</Text><Text style={styles.statT}>{t}</Text></View>}
-function Empty({text}){return <View style={styles.empty}><Text style={styles.emptyText}>{text}</Text></View>}
-
-export default function App(){
-  const [token,setToken]=useState('demo');
-  return <Dashboard token={token} logout={()=>setToken('demo')}/>;
-}
+export default function App(){const [token,setToken]=useState('demo');return <Dashboard token={token} logout={()=>setToken('demo')}/>;}
 
 const styles=StyleSheet.create({
- safe:{flex:1,backgroundColor:C.bg}, loginWrap:{padding:24,paddingTop:70,flexGrow:1,justifyContent:'center'},
- loginLogo:{width:150,height:150,borderRadius:34,alignSelf:'center',marginBottom:14},
- logo:{width:82,height:82,borderRadius:24,backgroundColor:'#0B2E4F',alignItems:'center',justifyContent:'center',alignSelf:'center',marginBottom:18},
- logoTooth:{fontSize:42,color:'#FFF'}, kicker:{fontSize:10,fontWeight:'900',letterSpacing:1.2,color:C.blue,textAlign:'center'},
- loginTitle:{fontSize:34,fontWeight:'900',color:C.navy,textAlign:'center',marginTop:4},loginSub:{fontSize:14,color:C.muted,lineHeight:21,textAlign:'center',marginTop:9,marginBottom:20},
- card:{backgroundColor:C.white,borderRadius:20,borderWidth:1,borderColor:C.border,padding:18},label:{fontSize:13,fontWeight:'800',color:C.navy,marginBottom:7},input:{borderWidth:1,borderColor:C.border,borderRadius:12,padding:13,fontSize:15,color:C.text,backgroundColor:'#F9FBFD'},primary:{backgroundColor:C.blue,borderRadius:13,padding:15,alignItems:'center',marginTop:13},primaryText:{color:C.white,fontWeight:'900',fontSize:15},help:{fontSize:11,color:C.muted,lineHeight:17,marginTop:10},
- header:{backgroundColor:C.white,borderBottomWidth:1,borderBottomColor:C.border,paddingHorizontal:16,paddingVertical:12,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},headerBrand:{flexDirection:'row',alignItems:'center',gap:10},headerLogo:{width:38,height:38,borderRadius:12},headerTitle:{fontSize:19,fontWeight:'900',color:C.navy},headerSub:{fontSize:11,color:C.muted,marginTop:1},headerAction:{paddingHorizontal:10,paddingVertical:7,borderRadius:10,backgroundColor:'#F2F7FC'},headerActionText:{color:C.blue,fontWeight:'800',fontSize:10},
- content:{padding:16,paddingBottom:95},hero:{backgroundColor:C.navy,borderRadius:20,padding:18,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},heroKicker:{fontSize:9,color:'#8FCBFF',fontWeight:'900',letterSpacing:1},heroTitle:{fontSize:25,color:C.white,fontWeight:'900',marginTop:4},heroSub:{fontSize:12,color:'#D9EAF7',marginTop:5},dot:{width:13,height:13,borderRadius:7,borderWidth:2,borderColor:C.white},
- stats:{flexDirection:'row',gap:8,marginVertical:12},quickGrid:{flexDirection:'row',flexWrap:'wrap',gap:9},quickCard:{width:'48.2%',backgroundColor:C.white,borderRadius:17,padding:14,borderWidth:1,borderColor:C.border,minHeight:128},quickIcon:{width:38,height:38,borderRadius:12,backgroundColor:'#EAF4FF',alignItems:'center',justifyContent:'center',marginBottom:10},quickTitle:{fontSize:14,fontWeight:'900',color:C.navy},quickSub:{fontSize:10.5,color:C.muted,lineHeight:15,marginTop:4},todayCard:{backgroundColor:'#EEF7FF',borderRadius:17,padding:15,marginTop:12,borderWidth:1,borderColor:'#D4E9FA',flexDirection:'row',alignItems:'center',justifyContent:'space-between'},todayKicker:{fontSize:8,fontWeight:'900',letterSpacing:1,color:C.blue},todayTitle:{fontSize:16,fontWeight:'900',color:C.navy,marginTop:3},todaySub:{fontSize:10.5,color:C.muted,lineHeight:15,marginTop:3,maxWidth:'82%'},statusPill:{paddingHorizontal:9,paddingVertical:6,borderRadius:10},statusPillText:{fontSize:9,fontWeight:'900'},stat:{flex:1,backgroundColor:C.white,borderRadius:14,padding:11,borderWidth:1,borderColor:C.border},statN:{fontSize:22,fontWeight:'900',color:C.navy},statT:{fontSize:9,color:C.muted,marginTop:2,fontWeight:'700'},
- tabs:{backgroundColor:C.white,borderRadius:13,padding:4,flexDirection:'row',marginBottom:14,borderWidth:1,borderColor:C.border},tab:{flex:1,padding:10,alignItems:'center',borderRadius:10},tabActive:{backgroundColor:'#EAF4FF'},tabText:{fontSize:12,fontWeight:'800',color:C.muted},tabTextActive:{color:C.blue},
- sectionRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:10},sectionTitle:{fontSize:19,fontWeight:'900',color:C.navy},refresh:{color:C.blue,fontWeight:'800'},
- apptCard:{backgroundColor:C.white,borderRadius:17,borderWidth:1,borderColor:C.border,padding:15,marginBottom:10},rowBetween:{flexDirection:'row',justifyContent:'space-between'},patient:{fontSize:16,fontWeight:'900',color:C.navy},phone:{fontSize:12,color:C.muted,marginTop:3},badge:{paddingHorizontal:9,paddingVertical:6,borderRadius:10,backgroundColor:'#EAF4FF',alignSelf:'flex-start'},badgeText:{fontSize:10,fontWeight:'900',color:C.navy},apptDate:{fontSize:13,fontWeight:'800',color:C.blue,marginTop:12},reason:{fontSize:14,fontWeight:'800',color:C.text,marginTop:5},note:{fontSize:12,color:C.muted,lineHeight:18,marginTop:5},actions:{flexDirection:'row',gap:7,marginTop:12,flexWrap:'wrap'},action:{paddingHorizontal:11,paddingVertical:9,borderRadius:10,borderWidth:1,borderColor:C.border,backgroundColor:'#F9FBFD'},actionText:{fontSize:11,fontWeight:'800',color:C.navy},confirm:{backgroundColor:'#E5F8EE',borderColor:'#BDE8D0'},confirmText:{fontSize:11,fontWeight:'900',color:'#147A4B'},statusChip:{paddingHorizontal:9,paddingVertical:7,borderRadius:14,backgroundColor:'#F2F5F8'},statusChipText:{fontSize:9,fontWeight:'800',color:C.muted},
- patientCard:{backgroundColor:C.white,borderRadius:15,padding:14,borderWidth:1,borderColor:C.border,marginTop:8},patientCardActive:{borderColor:'#86BDF0',backgroundColor:'#F3F9FF'},patientTop:{flexDirection:'row',alignItems:'center',gap:11},avatar:{width:42,height:42,borderRadius:21,backgroundColor:'#EAF4FF',alignItems:'center',justifyContent:'center'},avatarText:{fontSize:17,fontWeight:'900',color:C.blue},chevron:{fontSize:26,color:'#9AA9B7',fontWeight:'300'},selectedPatientBanner:{backgroundColor:C.navy,borderRadius:16,padding:14,marginTop:12},selectedPatientLabel:{fontSize:8,fontWeight:'900',letterSpacing:1,color:'#8FCBFF'},selectedPatientName:{fontSize:19,fontWeight:'900',color:C.white,marginTop:3},selectedPatientMeta:{fontSize:11,color:'#D9EAF7',marginTop:2},patientCount:{fontSize:11,color:C.muted,fontWeight:'800'},empty:{backgroundColor:C.white,borderRadius:16,padding:24,borderWidth:1,borderColor:C.border,marginTop:8},emptyText:{textAlign:'center',color:C.muted,fontSize:13},
- chartCard:{backgroundColor:C.white,borderRadius:20,padding:15,borderWidth:1,borderColor:C.border,marginTop:14},
- chartHeader:{flexDirection:'row',alignItems:'center'},chartEyebrow:{fontSize:9,fontWeight:'900',letterSpacing:1.1,color:C.blue},chartTitle:{fontSize:24,fontWeight:'900',color:C.navy,marginTop:2},chartPatient:{fontSize:11,color:C.muted,marginTop:3},chartLegendDot:{width:10,height:10,borderRadius:5,backgroundColor:'#59C989',marginRight:3},
- archSwitch:{flexDirection:'row',borderWidth:1,borderColor:'#E4D3A0',borderRadius:10,overflow:'hidden',marginTop:14},archOption:{flex:1,paddingVertical:9,alignItems:'center',backgroundColor:C.white},archOptionActive:{backgroundColor:'#F4C24A'},archText:{fontSize:13,fontWeight:'800',color:'#D5A63A'},archTextActive:{color:C.white},
- mouthFrame:{marginTop:16,paddingVertical:8,backgroundColor:'#FCFCFD',borderRadius:18,borderWidth:1,borderColor:'#EEF1F4',alignItems:'center'},sideLabel:{fontSize:8,fontWeight:'900',letterSpacing:1.2,color:'#B7C0C9',marginVertical:4},teethArc:{flexDirection:'row',alignItems:'center',justifyContent:'center',paddingHorizontal:3},toothItem:{width:20,alignItems:'center',marginHorizontal:1},toothShape:{width:18,height:30,borderWidth:1.4,alignItems:'center',justifyContent:'flex-start',shadowOpacity:0.08,shadowRadius:2,elevation:1},toothCusp:{width:5,height:5,borderRadius:3,marginTop:5,opacity:0.8},toothRoot:{position:'absolute',width:5,height:7,borderLeftWidth:1,borderRightWidth:1,borderBottomWidth:1,borderBottomLeftRadius:4,borderBottomRightRadius:4,opacity:0.75},toothNumber:{fontSize:7.5,color:'#A6AFB8',fontWeight:'700',marginTop:3},mouthCenter:{height:26,alignItems:'center',justifyContent:'center'},mouthLine:{width:120,height:1,backgroundColor:'#EEF1F4'},mouthHint:{fontSize:7,color:'#C2C9D0',letterSpacing:1,marginTop:2},
- selectedTooth:{flexDirection:'row',alignItems:'center',backgroundColor:'#F7FAFD',borderRadius:13,padding:10,marginTop:12,borderWidth:1,borderColor:'#E4EDF5'},selectedToothIcon:{width:38,height:38,borderRadius:11,backgroundColor:'#FFF3D8',alignItems:'center',justifyContent:'center'},selectedToothIconText:{fontSize:12,fontWeight:'900',color:'#B87908'},selectedLabel:{fontSize:13,fontWeight:'900',color:C.navy},selectedStatus:{fontSize:10.5,color:C.muted,marginTop:2},changeStatus:{paddingHorizontal:10,paddingVertical:8,borderRadius:9,backgroundColor:'#EAF4FF'},changeStatusText:{fontSize:10,fontWeight:'900',color:C.blue},
- chartLegend:{flexDirection:'row',flexWrap:'wrap',gap:9,marginTop:11},legendItem:{flexDirection:'row',alignItems:'center',gap:4},legendItemText:{fontSize:9,color:C.muted},legendDot:{width:8,height:8,borderRadius:4},perioTooth:{paddingHorizontal:10,paddingVertical:7,borderRadius:9,backgroundColor:'#F2F5F8',borderWidth:1,borderColor:C.border},perioToothActive:{backgroundColor:'#FFF3D8',borderColor:'#E7B54A'},perioToothText:{fontSize:10,fontWeight:'900',color:C.muted},perioToothTextActive:{color:'#B87908'},perioSelected:{backgroundColor:'#F7FAFD',padding:11,borderRadius:12,borderWidth:1,borderColor:'#E4EDF5'},perioGrid:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:10},perioCell:{width:'15.4%',minWidth:42,alignItems:'center'},perioPoint:{fontSize:9,fontWeight:'900',color:C.blue,marginBottom:4},perioInput:{width:42,height:38,borderWidth:1,borderColor:C.border,borderRadius:9,textAlign:'center',fontSize:14,fontWeight:'900',color:C.navy,backgroundColor:'#FFF'},perioMeta:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:10},metaField:{width:'31%'},metaLabel:{fontSize:8,fontWeight:'800',color:C.muted,marginBottom:3},metaInput:{height:36,borderWidth:1,borderColor:C.border,borderRadius:8,textAlign:'center',backgroundColor:'#FFF',color:C.navy,fontWeight:'800'},perioFlag:{paddingHorizontal:8,paddingVertical:8,borderRadius:9,backgroundColor:'#F2F5F8',borderWidth:1,borderColor:C.border},perioFlagActive:{backgroundColor:'#E5F8EE',borderColor:'#BDE8D0'},perioFlagText:{fontSize:9,fontWeight:'800',color:C.muted},perioFlagTextActive:{color:'#147A4B'},
- bottomNav:{position:'absolute',left:0,right:0,bottom:0,backgroundColor:C.white,borderTopWidth:1,borderTopColor:C.border,height:76,flexDirection:'row',paddingTop:7,paddingBottom:5},navItem:{flex:1,alignItems:'center',justifyContent:'center'},navIcon:{width:36,height:30,borderRadius:10,alignItems:'center',justifyContent:'center'},navIconActive:{backgroundColor:'#EAF4FF'},navIconText:{fontSize:18,color:'#9AA9B7'},navIconTextActive:{color:C.blue},navLabel:{fontSize:9,fontWeight:'800',color:'#9AA9B7',marginTop:2},navLabelActive:{color:C.blue},intelHero:{backgroundColor:'#0B2E4F',borderRadius:18,padding:18,marginBottom:10},intelKicker:{fontSize:9,color:'#8FCBFF',fontWeight:'900',letterSpacing:1},intelTitle:{fontSize:21,color:C.white,fontWeight:'900',marginTop:4},intelText:{fontSize:12,color:'#D9EAF7',lineHeight:18,marginTop:6},intelCard:{backgroundColor:C.white,borderRadius:15,padding:14,borderWidth:1,borderColor:C.border,marginBottom:8,flexDirection:'row',gap:12},intelNum:{fontSize:12,fontWeight:'900',color:C.blue},intelName:{fontSize:14,fontWeight:'900',color:C.navy},intelSub:{fontSize:11,color:C.muted,marginTop:3}
+ safe:{flex:1,backgroundColor:colors.background},content:{padding:spacing.screen,paddingBottom:100},loginWrap:{flexGrow:1,padding:24,justifyContent:'center',backgroundColor:colors.background},loginBrand:{flexDirection:'row',alignItems:'center',justifyContent:'center',gap:9},loginLogo:{width:48,height:48},brandName:{fontFamily:typography.family.bold,fontSize:17,fontWeight:'800',color:colors.text},brandClinic:{fontFamily:typography.family.bold,fontSize:8,letterSpacing:1.7,color:colors.primary},loginTitle:{fontFamily:typography.family.bold,fontSize:32,fontWeight:'800',color:colors.text,textAlign:'center',marginTop:24},loginBlue:{fontFamily:typography.family.bold,fontSize:32,fontWeight:'800',color:colors.primary,textAlign:'center'},loginSub:{fontFamily:typography.family.regular,fontSize:13,color:colors.body,lineHeight:19,textAlign:'center',marginTop:8,marginBottom:12},loginHero:{height:220,alignItems:'center',justifyContent:'center',position:'relative'},loginHalo:{position:'absolute',width:190,height:190,borderRadius:95,backgroundColor:colors.softBlue},loginDentalLogo:{width:210,height:210},label:{fontFamily:typography.family.bold,fontSize:12,color:colors.text,fontWeight:'800',marginBottom:7},input:{height:50,borderWidth:1,borderColor:colors.border,borderRadius:spacing.radiusMd,backgroundColor:colors.white,flexDirection:'row',alignItems:'center',paddingHorizontal:13},inputText:{flex:1,marginLeft:9,fontFamily:typography.family.regular,fontSize:14,color:colors.text},help:{fontFamily:typography.family.regular,fontSize:10,color:colors.muted,textAlign:'center',lineHeight:15,marginTop:10},
+topbar:{height:64,backgroundColor:colors.white,borderBottomWidth:1,borderBottomColor:colors.border,paddingHorizontal:16,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},brandRow:{flexDirection:'row',alignItems:'center',gap:9},clinicLogo:{width:42,height:42,borderRadius:12},signout:{width:38,height:38,borderRadius:19,backgroundColor:colors.softBlue,alignItems:'center',justifyContent:'center'},dashboardHero:{minHeight:160,borderRadius:spacing.radiusXl,padding:18,flexDirection:'row',overflow:'hidden',...shadows.button},heroKicker:{fontFamily:typography.family.bold,fontSize:9,letterSpacing:1,color:colors.blue100,fontWeight:'800'},heroTitle:{fontFamily:typography.family.bold,fontSize:24,fontWeight:'800',color:colors.white,marginTop:4},heroSub:{fontFamily:typography.family.regular,fontSize:12,color:colors.white,opacity:.9,marginTop:4},heroDental:{width:125,height:125,alignSelf:'center',marginRight:-8},stats:{flexDirection:'row',gap:8,marginVertical:12},sectionRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:10,marginTop:8},sectionTitle:{fontFamily:typography.family.bold,fontSize:18,fontWeight:'800',color:colors.text},live:{fontFamily:typography.family.bold,fontSize:9,color:colors.success,fontWeight:'800'},mutedText:{fontFamily:typography.family.medium,fontSize:10,color:colors.muted},empty:{fontFamily:typography.family.regular,fontSize:13,color:colors.body,textAlign:'center',paddingVertical:18},
+appointmentCard:{marginBottom:10},actions:{flexDirection:'row',gap:7,flexWrap:'wrap',marginTop:4},outlineAction:{paddingHorizontal:10,paddingVertical:8,borderRadius:9,borderWidth:1,borderColor:colors.border,backgroundColor:colors.white,flexDirection:'row',alignItems:'center',gap:5},actionText:{fontFamily:typography.family.bold,fontSize:10,color:colors.text,fontWeight:'800'},confirmAction:{paddingHorizontal:12,paddingVertical:8,borderRadius:9,backgroundColor:colors.success},confirmText:{fontFamily:typography.family.bold,fontSize:10,color:colors.white,fontWeight:'800'},statusChips:{gap:6,paddingTop:8},
+patientRow:{backgroundColor:colors.white,borderWidth:1,borderColor:colors.border,borderRadius:spacing.radiusMd,padding:12,flexDirection:'row',alignItems:'center',marginBottom:8,...shadows.card},patientAvatar:{width:44,height:44,borderRadius:22,backgroundColor:colors.softBlue,alignItems:'center',justifyContent:'center',marginRight:11},patientAvatarText:{fontFamily:typography.family.bold,fontSize:17,fontWeight:'800',color:colors.primary},patientName:{fontFamily:typography.family.bold,fontSize:14,fontWeight:'800',color:colors.text},patientMeta:{fontFamily:typography.family.regular,fontSize:11,color:colors.body,marginTop:2},
+profileHead:{flexDirection:'row',alignItems:'center'},profileName:{fontFamily:typography.family.bold,fontSize:20,fontWeight:'800',color:colors.text},profileMeta:{fontFamily:typography.family.regular,fontSize:11,color:colors.body,marginTop:3},tags:{flexDirection:'row',gap:6,marginVertical:14},info:{paddingVertical:10,borderTopWidth:1,borderTopColor:colors.border},infoLabel:{fontFamily:typography.family.medium,fontSize:10,color:colors.muted},infoValue:{fontFamily:typography.family.bold,fontSize:12,color:colors.text,marginTop:2},clinicalHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginTop:18,marginBottom:9},legendRow:{flexDirection:'row',flexWrap:'wrap',gap:10,marginTop:8},legend:{flexDirection:'row',alignItems:'center',gap:4},legendDot:{width:8,height:8,borderRadius:4},legendText:{fontFamily:typography.family.medium,fontSize:9,color:colors.body},treatmentHero:{height:150,width:'100%'},planRow:{flexDirection:'row',alignItems:'center',paddingVertical:10,borderTopWidth:1,borderTopColor:colors.border},planNumber:{width:28,height:28,borderRadius:14,backgroundColor:colors.softBlue,alignItems:'center',justifyContent:'center',marginRight:9},planNumberText:{fontFamily:typography.family.bold,fontSize:11,color:colors.primary,fontWeight:'800'},planTitle:{fontFamily:typography.family.bold,fontSize:12,color:colors.text,fontWeight:'800'},planSub:{fontFamily:typography.family.regular,fontSize:9,color:colors.body,marginTop:2},quickActions:{flexDirection:'row',gap:8,marginTop:14},quickAction:{flex:1,height:48,borderRadius:spacing.radiusMd,borderWidth:1,borderColor:colors.border,backgroundColor:colors.white,alignItems:'center',justifyContent:'center',gap:3},quickActionText:{fontFamily:typography.family.medium,fontSize:10,color:colors.text},
+clinicalHero:{borderRadius:spacing.radiusXl,padding:18,marginBottom:12},moduleRow:{flexDirection:'row',alignItems:'center',paddingVertical:12,borderTopWidth:1,borderTopColor:colors.border},moduleIcon:{width:36,height:36,borderRadius:11,backgroundColor:colors.softBlue,alignItems:'center',justifyContent:'center',marginRight:10},moduleNumber:{fontFamily:typography.family.bold,fontSize:10,color:colors.primary,fontWeight:'800'},moduleTitle:{fontFamily:typography.family.bold,fontSize:13,color:colors.text,fontWeight:'800'},moduleSub:{fontFamily:typography.family.regular,fontSize:10,color:colors.body,lineHeight:14,marginTop:2}
 });
