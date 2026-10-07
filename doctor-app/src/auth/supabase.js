@@ -21,7 +21,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
 });
 
 export const googleRedirectUri = makeRedirectUri({
-  scheme: 'drpranali',
+  scheme: 'drpranali-doctor',
   path: 'auth/callback',
 });
 
