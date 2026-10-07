@@ -41,10 +41,11 @@ function Login({ onLogin }) {
   return <SafeAreaView style={styles.safe}>
     <StatusBar style="dark"/>
     <ScrollView contentContainerStyle={styles.loginWrap}>
-      <Image source={clinicLogo} style={styles.loginLogo} resizeMode="contain" />
-      <Text style={styles.kicker}>DR. PRANALI DENTAL CLINIC</Text>
-      <Text style={styles.loginTitle}>Doctor Console</Text>
-      <Text style={styles.loginSub}>Secure OTP access for appointments, patients and the dental intelligence layer.</Text>
+      <View style={styles.loginBrand}><Image source={clinicLogo} style={styles.loginBrandLogo} resizeMode="contain" /><View><Text style={styles.loginBrandName}>Dr. Pranali</Text><Text style={styles.loginBrandClinic}>DENTAL CLINIC</Text></View></View>
+      <Text style={styles.loginTitle}>Beautiful Smile</Text>
+      <Text style={styles.loginTitleBlue}>Confident Care</Text>
+      <Text style={styles.loginSub}>Your secure clinical workspace for appointments, patients and dental intelligence.</Text>
+      <View style={styles.loginHero}><View style={styles.loginGlow}/><Image source={require('./assets/universal-dental-icon.png')} style={styles.login3dLogo} resizeMode="contain" /></View>
       <View style={styles.card}>
         <Text style={styles.label}>Registered mobile number</Text>
         <TextInput value={phone} onChangeText={setPhone} placeholder="10-digit mobile number" placeholderTextColor="#93A3B2" keyboardType="phone-pad" maxLength={10} style={styles.input}/>
