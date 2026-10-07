@@ -101,7 +101,7 @@ jobs:
 
       - name: Verify RELEASE APK
         run: |
-          APK_DIR="doctor-app/android/app/build/outputs/apk/release"
+          APK_DIR="$GITHUB_WORKSPACE/doctor-app/android/app/build/outputs/apk/release"
           echo "APK directory:"
           ls -la "$APK_DIR"
           APK="$(find "$APK_DIR" -maxdepth 1 -type f -name "*.apk" | head -n 1)"
@@ -116,13 +116,13 @@ jobs:
           echo "Release APK verified: $APK_DIR/app-release.apk"
 
       - name: Rename release APK
-        run: cp doctor-app/android/app/build/outputs/apk/release/app-release.apk dr-pranali-doctor.apk
+        run: cp "$GITHUB_WORKSPACE/doctor-app/android/app/build/outputs/apk/release/app-release.apk" "$GITHUB_WORKSPACE/dr-pranali-doctor.apk"
 
       - name: Upload RELEASE APK
         uses: actions/upload-artifact@v4
         with:
           name: dr-pranali-dental-doctor-release-apk
-          path: dr-pranali-doctor.apk
+          path: ${{ github.workspace }}/dr-pranali-doctor.apk
           if-no-files-found: error
           retention-days: 14
 
