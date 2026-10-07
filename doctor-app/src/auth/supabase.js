@@ -39,7 +39,27 @@ function parseAuthParams(url) {
   return { ...parse(query), ...parse(fragment) };
 }
 
+async function ensureGoogleProviderEnabled() {
+  try {
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/settings`, {
+      headers: { apikey: SUPABASE_PUBLISHABLE_KEY },
+    });
+    if (response.ok) {
+      const settings = await response.json();
+      if (settings?.external?.google === false) {
+        throw new Error(
+          "Google sign-in is disabled on the authentication server. Enable Google in Supabase Authentication > Sign In / Providers.",
+        );
+      }
+    }
+  } catch (error) {
+    if (error?.message?.includes("Google sign-in is disabled")) throw error;
+    // Do not block login if the settings endpoint itself is temporarily unavailable.
+  }
+}
+
 export async function signInWithGoogle() {
+  await ensureGoogleProviderEnabled();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
