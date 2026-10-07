@@ -3,6 +3,7 @@ import 'expo-sqlite/localStorage/install';
 import { createClient } from '@supabase/supabase-js';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
+import { Linking } from 'react-native';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -74,28 +75,58 @@ export async function signInWithGoogle() {
     throw new Error('Google sign-in URL was not returned by Supabase.');
   }
 
-  const result = await WebBrowser.openAuthSessionAsync(data.url, googleRedirectUri);
+  let resolveDeepLink;
+  const deepLinkPromise = new Promise((resolve) => {
+    resolveDeepLink = resolve;
+  });
+  let deepLinkHandled = false;
+  const deepLinkSubscription = Linking.addEventListener('url', ({ url }) => {
+    if (url?.startsWith('drprani-doctor://auth/callback')) {
+      deepLinkHandled = true;
+      resolveDeepLink(url);
+    }
+  });
+  Linking.getInitialURL().then((url) => {
+    if (url?.startsWith('drprani-doctor://auth/callback')) {
+      deepLinkHandled = true;
+      resolveDeepLink(url);
+    }
+  }).catch(() => {});
 
-  if (result.type === 'cancel') {
+  const result = await WebBrowser.openAuthSessionAsync(data.url, googleRedirectUri);
+  let callbackUrl = result.type === 'success' ? result.url : null;
+
+  if (!callbackUrl && (result.type === 'cancel' || result.type === 'dismiss')) {
+    callbackUrl = deepLinkHandled ? await deepLinkPromise : await Promise.race([
+      deepLinkPromise,
+      new Promise((resolve) => setTimeout(() => resolve(null), 4000)),
+    ]);
+  }
+
+  deepLinkSubscription.remove();
+
+  if (!callbackUrl && result.type === 'cancel') {
     throw new Error(
       'Google sign-in was cancelled before the app received the callback. If you did not press Back/Close, the Android redirect is not reaching the app.',
     );
   }
-  if (result.type === 'dismiss') {
-    throw new Error('Google sign-in window was dismissed before verification completed.');
+  if (!callbackUrl && result.type === 'dismiss') {
+    throw new Error(
+      'Google sign-in window closed before the Android callback was received. The app will now check its native deep link.',
+    );
   }
-  if (result.type === 'error') {
+  if (!callbackUrl && result.type === 'error') {
     throw new Error(
       result.error?.message ||
         result.errorCode ||
         'Google authentication returned an error.',
     );
   }
-  if (result.type !== 'success' || !result.url) {
+  if (!callbackUrl) {
     throw new Error(`Google authentication ended with status: ${result.type}.`);
   }
 
-  const params = parseAuthParams(result.url);
+  const params = parseAuthParams(callbackUrl);
   if (params.error_description || params.error) {
     throw new Error(
       `Google/Supabase authentication failed: ${params.error_description || params.error}`,
