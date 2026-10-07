@@ -22,9 +22,9 @@ export function Button({ title, onPress, variant='primary', icon='arrow-right', 
   );
 }
 const styles=StyleSheet.create({
-  pressable:{minHeight:50,borderRadius:spacing.radiusMd,overflow:'hidden',...shadows.button},
+  pressable:{minHeight:50,borderRadius:spacing.radiusMd,overflow:'hidden',flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:spacing.xl},
   fill:{flex:1,minHeight:50,paddingHorizontal:spacing.xl,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
   text:{fontFamily:typography.family.bold,fontSize:14,color:colors.white,fontWeight:'800'},
-  outlineText:{color:colors.primary},
+  outlineText:{color:colors.primary},outlineIcon:{color:colors.primary},
   disabled:{opacity:.5},
 });
