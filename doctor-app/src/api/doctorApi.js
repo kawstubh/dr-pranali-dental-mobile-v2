@@ -12,16 +12,15 @@ async function request(path, token, options = {}) {
   const text = await response.text();
   let data = null;
   try { data = text ? JSON.parse(text) : null; } catch {}
-  if (!response.ok) throw new Error((data && (data.detail || data.message)) || 'API request failed');
+  if (!response.ok) {
+    const detail = data?.detail;
+    const message = typeof detail === 'string' ? detail : detail?.message;
+    const code = detail?.google_code || detail?.code || ('HTTP_' + response.status);
+    const status = detail?.google_status || detail?.status || response.status;
+    throw new Error((message || data?.message || 'API request failed') + ' (HTTP ' + status + ', code ' + code + ')');
+  }
   return data;
 }
-
-export const loginDoctor = (email, password) =>
-  request('/v1/dental/auth/login', null, {
-    method: 'POST',
-    body: JSON.stringify({ email, password }),
-  });
-
 
 export const listAppointments = (token) => request('/v1/dental/appointments', token);
 export const listPatients = (token) => request('/v1/dental/patients', token);

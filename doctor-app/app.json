@@ -21,6 +21,9 @@
     "ios": {
       "bundleIdentifier": "com.drpranali.dental.doctor"
     },
+    "plugins": [
+      "@react-native-google-signin/google-signin"
+    ],
     "extra": {
       "apiUrl": "https://dr-pranali-dental-api.onrender.com",
       "eas": {

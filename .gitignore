@@ -12,3 +12,6 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+signing/*.keystore
+signing/*.b64
+signing/*-password.txt

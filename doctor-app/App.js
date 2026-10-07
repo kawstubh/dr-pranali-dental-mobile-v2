@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry } from './src/api/doctorApi';
+import { getStoredDoctorSession, signInWithGoogle, signOutGoogle } from './src/auth/googleAuth';
 
 const clinicLogo = require('./assets/dr-pranali-branded-logo.png');
 
@@ -285,9 +286,60 @@ function Dashboard({ token, logout }) {
 function Stat({n,t}){return <View style={styles.stat}><Text style={styles.statN}>{n}</Text><Text style={styles.statT}>{t}</Text></View>}
 function Empty({text}){return <View style={styles.empty}><Text style={styles.emptyText}>{text}</Text></View>}
 
+function GoogleLoginScreen({ onSignedIn }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const login = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      const session = await signInWithGoogle('https://dr-pranali-dental-api.onrender.com');
+      onSignedIn(session.access_token);
+    } catch (e) {
+      setError(e?.message || 'Google sign-in failed.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <StatusBar style="dark" />
+      <ScrollView contentContainerStyle={styles.loginWrap}>
+        <Image source={clinicLogo} style={styles.loginLogo} resizeMode="contain" />
+        <Text style={styles.kicker}>DOCTOR PORTAL</Text>
+        <Text style={styles.loginTitle}>Dr. Pranali Dental Clinic</Text>
+        <Text style={styles.loginSub}>Sign in with the Google account authorized for this clinic.</Text>
+        <View style={styles.card}>
+          <Text style={styles.label}>Secure doctor authentication</Text>
+          <Text style={styles.help}>This uses native Android Google Sign-In. No Expo OAuth proxy and no OTP are used.</Text>
+          <Pressable disabled={busy} onPress={login} style={[styles.primary, busy && {opacity:0.6}]}>
+            {busy ? <ActivityIndicator color={C.white} /> : <Text style={styles.primaryText}>Continue with Google</Text>}
+          </Pressable>
+          {!!error && <View style={styles.loginError}><Text style={styles.loginErrorTitle}>Sign-in error</Text><Text style={styles.loginErrorText}>{error}</Text></View>}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
 export default function App(){
-  const [token,setToken]=useState('demo');
-  return <Dashboard token={token} logout={()=>setToken('demo')}/>;
+  const [token,setToken]=useState(null);
+  const [checking,setChecking]=useState(true);
+
+  useEffect(() => {
+    getStoredDoctorSession().then(value => setToken(value || null)).finally(() => setChecking(false));
+  }, []);
+
+  const logout = async () => {
+    await signOutGoogle();
+    setToken(null);
+  };
+
+  if (checking) return <SafeAreaView style={styles.safe}><ActivityIndicator size="large" color={C.blue} style={{marginTop:80}}/></SafeAreaView>;
+  if (!token) return <GoogleLoginScreen onSignedIn={setToken}/>;
+  return <Dashboard token={token} logout={logout}/>;
 }
 
 const styles=StyleSheet.create({
@@ -296,7 +348,7 @@ const styles=StyleSheet.create({
  logo:{width:82,height:82,borderRadius:24,backgroundColor:'#0B2E4F',alignItems:'center',justifyContent:'center',alignSelf:'center',marginBottom:18},
  logoTooth:{fontSize:42,color:'#FFF'}, kicker:{fontSize:10,fontWeight:'900',letterSpacing:1.2,color:C.blue,textAlign:'center'},
  loginTitle:{fontSize:34,fontWeight:'900',color:C.navy,textAlign:'center',marginTop:4},loginSub:{fontSize:14,color:C.muted,lineHeight:21,textAlign:'center',marginTop:9,marginBottom:20},
- card:{backgroundColor:C.white,borderRadius:20,borderWidth:1,borderColor:C.border,padding:18},label:{fontSize:13,fontWeight:'800',color:C.navy,marginBottom:7},input:{borderWidth:1,borderColor:C.border,borderRadius:12,padding:13,fontSize:15,color:C.text,backgroundColor:'#F9FBFD'},primary:{backgroundColor:C.blue,borderRadius:13,padding:15,alignItems:'center',marginTop:13},primaryText:{color:C.white,fontWeight:'900',fontSize:15},help:{fontSize:11,color:C.muted,lineHeight:17,marginTop:10},
+ card:{backgroundColor:C.white,borderRadius:20,borderWidth:1,borderColor:C.border,padding:18},label:{fontSize:13,fontWeight:'800',color:C.navy,marginBottom:7},input:{borderWidth:1,borderColor:C.border,borderRadius:12,padding:13,fontSize:15,color:C.text,backgroundColor:'#F9FBFD'},primary:{backgroundColor:C.blue,borderRadius:13,padding:15,alignItems:'center',marginTop:13},primaryText:{color:C.white,fontWeight:'900',fontSize:15},help:{fontSize:11,color:C.muted,lineHeight:17,marginTop:10},loginError:{marginTop:12,padding:12,borderRadius:12,backgroundColor:'#FCEAEA',borderWidth:1,borderColor:'#F2C3C3'},loginErrorTitle:{fontSize:12,fontWeight:'900',color:C.red},loginErrorText:{fontSize:11,color:'#7A2E2E',lineHeight:16,marginTop:4},
  header:{backgroundColor:C.white,borderBottomWidth:1,borderBottomColor:C.border,paddingHorizontal:16,paddingVertical:12,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},headerBrand:{flexDirection:'row',alignItems:'center',gap:10},headerLogo:{width:38,height:38,borderRadius:12},headerTitle:{fontSize:19,fontWeight:'900',color:C.navy},headerSub:{fontSize:11,color:C.muted,marginTop:1},headerAction:{paddingHorizontal:10,paddingVertical:7,borderRadius:10,backgroundColor:'#F2F7FC'},headerActionText:{color:C.blue,fontWeight:'800',fontSize:10},
  content:{padding:16,paddingBottom:95},hero:{backgroundColor:C.navy,borderRadius:20,padding:18,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},heroKicker:{fontSize:9,color:'#8FCBFF',fontWeight:'900',letterSpacing:1},heroTitle:{fontSize:25,color:C.white,fontWeight:'900',marginTop:4},heroSub:{fontSize:12,color:'#D9EAF7',marginTop:5},dot:{width:13,height:13,borderRadius:7,borderWidth:2,borderColor:C.white},
  stats:{flexDirection:'row',gap:8,marginVertical:12},quickGrid:{flexDirection:'row',flexWrap:'wrap',gap:9},quickCard:{width:'48.2%',backgroundColor:C.white,borderRadius:17,padding:14,borderWidth:1,borderColor:C.border,minHeight:128},quickIcon:{width:38,height:38,borderRadius:12,backgroundColor:'#EAF4FF',alignItems:'center',justifyContent:'center',marginBottom:10},quickTitle:{fontSize:14,fontWeight:'900',color:C.navy},quickSub:{fontSize:10.5,color:C.muted,lineHeight:15,marginTop:4},todayCard:{backgroundColor:'#EEF7FF',borderRadius:17,padding:15,marginTop:12,borderWidth:1,borderColor:'#D4E9FA',flexDirection:'row',alignItems:'center',justifyContent:'space-between'},todayKicker:{fontSize:8,fontWeight:'900',letterSpacing:1,color:C.blue},todayTitle:{fontSize:16,fontWeight:'900',color:C.navy,marginTop:3},todaySub:{fontSize:10.5,color:C.muted,lineHeight:15,marginTop:3,maxWidth:'82%'},statusPill:{paddingHorizontal:9,paddingVertical:6,borderRadius:10},statusPillText:{fontSize:9,fontWeight:'900'},stat:{flex:1,backgroundColor:C.white,borderRadius:14,padding:11,borderWidth:1,borderColor:C.border},statN:{fontSize:22,fontWeight:'900',color:C.navy},statT:{fontSize:9,color:C.muted,marginTop:2,fontWeight:'700'},

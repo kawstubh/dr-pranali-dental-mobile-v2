@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { signInWithGoogle } from './src/auth/googleAuth';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { buildPatientCareRequest } from './src/intelligence/dentalIntelligence';
 import { requestPublicAppointment } from './src/api/dentalApi';
@@ -68,6 +69,22 @@ const tabs = [
 ];
 
 function WelcomeScreen({ onStart }) {
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const [googleMessage, setGoogleMessage] = useState('');
+
+  const googleLogin = async () => {
+    setGoogleBusy(true);
+    setGoogleMessage('');
+    try {
+      await signInWithGoogle();
+      setGoogleMessage('Google account connected successfully.');
+    } catch (error) {
+      setGoogleMessage(error?.message || 'Google sign-in failed.');
+    } finally {
+      setGoogleBusy(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.welcomeSafe}>
       <StatusBar style="dark" />
@@ -90,6 +107,10 @@ function WelcomeScreen({ onStart }) {
           <Image source={require('./assets/universal-dental-icon.png')} style={styles.hero3dLogo} resizeMode="contain" />
           <View style={styles.logoPedestal}><View style={styles.logoPedestalGlow} /></View>
         </View>
+        <Pressable disabled={googleBusy} onPress={googleLogin} style={[styles.googleButton, googleBusy && { opacity: 0.6 }]}>
+          <Text style={styles.googleButtonText}>{googleBusy ? 'Connecting to Google…' : 'Continue with Google'}</Text>
+        </Pressable>
+        {!!googleMessage && <Text style={styles.googleMessage}>{googleMessage}</Text>}
         <Pressable onPress={onStart} style={styles.getStarted}>
           <Text style={styles.getStartedText}>Get Started</Text>
           <View style={styles.arrowCircle}><Text style={styles.arrowText}>→</Text></View>
@@ -569,6 +590,9 @@ const styles = StyleSheet.create({
   hero3dLogo:{width:270,height:270,zIndex:2},
   logoPedestal:{position:'absolute',bottom:18,width:220,height:22,borderRadius:14,backgroundColor:'#D8EBFB',borderWidth:1,borderColor:'#BBDCF6',shadowOpacity:0.12,shadowRadius:12,elevation:5},
   logoPedestalGlow:{position:'absolute',left:18,right:18,top:5,height:5,borderRadius:4,backgroundColor:'#4EA5F5',opacity:0.75},
+  googleButton:{width:'100%',height:50,borderRadius:25,backgroundColor:'#FFFFFF',borderWidth:1,borderColor:'#D6E2EE',alignItems:'center',justifyContent:'center',marginBottom:8},
+  googleButtonText:{color:'#18334D',fontSize:14,fontWeight:'900'},
+  googleMessage:{fontSize:11,color:'#6B7D8F',textAlign:'center',marginBottom:8},
   getStarted:{width:'100%',height:58,borderRadius:29,backgroundColor:'#1677D2',flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingLeft:25,paddingRight:7,shadowOpacity:0.18,shadowRadius:12,elevation:4},
   getStartedText:{color:'#FFFFFF',fontSize:16,fontWeight:'900',marginLeft:70},
   arrowCircle:{width:44,height:44,borderRadius:22,backgroundColor:'#FFFFFF',alignItems:'center',justifyContent:'center'},
