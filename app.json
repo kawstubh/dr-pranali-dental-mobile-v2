@@ -22,12 +22,15 @@
     },
     "plugins": [
       "expo-status-bar",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-web-browser",
+      "expo-sqlite"
     ],
     "extra": {
       "eas": {
         "projectId": "7237b92a-a286-4f47-b519-caf145a88d7d"
       }
-    }
+    },
+    "scheme": "drpranali"
   }
 }
