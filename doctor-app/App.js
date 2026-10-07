@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry } from './src/api/doctorApi';
 import { getStoredDoctorSession, signInWithGoogle, signOutGoogle } from './src/auth/googleAuth';
-import { runDentalIntelligence, extractEvidence } from './src/api/intelligenceApi';
+import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
 
 const clinicLogo = require('./assets/dr-pranali-branded-logo.png');
 
@@ -238,9 +238,35 @@ function IntelligenceCard({ token, patient, title, description, goal, requiresPa
   </View>;
 }
 
+function DoctorAIActionCard({ token, patient, title, description, capability, run }) {
+  const [state,setState]=useState('idle');
+  const [result,setResult]=useState(null);
+  const [editing,setEditing]=useState(false);
+  const [draft,setDraft]=useState('');
+  const execute=async()=>{ if(!patient?.id)return; setState('loading'); try{const r=await run(token,patient.id);setResult(r);setDraft(typeof r?.result==='string'?r.result:JSON.stringify(r?.result||r,null,2));setState('result');}catch(e){setResult({error:e.message||'AI unavailable'});setState('error');} };
+  const approve=async(action)=>{ try{await approveDoctorAI(token,{patient_id:patient.id,capability,action,content:{result:draft}});Alert.alert(action==='accepted'?'Accepted':'Saved',action==='accepted'?'Doctor approval recorded. No clinical record was changed.':'Doctor action recorded.');if(action==='dismissed')setState('idle');}catch(e){Alert.alert('AI approval',e.message||'Could not record doctor action.');} };
+  return <View style={styles.intelCardLarge}>
+    <View style={styles.intelCardHead}><View style={{flex:1}}><Text style={styles.intelName}>{title}</Text><Text style={styles.intelSub}>{description}</Text></View><Text style={styles.aiBadge}>AI</Text></View>
+    {state==='idle'&&<Pressable onPress={execute} disabled={!patient?.id} style={[styles.intelRunButton,!patient?.id&&{opacity:0.45}]}><Text style={styles.intelRunText}>{patient?.id?'Run AI insight':'Select a patient'}</Text></Pressable>}
+    {state==='loading'&&<View style={styles.intelSkeleton}><ActivityIndicator color={C.blue}/><Text style={styles.intelLoading}>Analyzing authorized clinical data…</Text></View>}
+    {state==='error'&&<View style={styles.intelError}><Text style={styles.intelErrorTitle}>Could not complete</Text><Text style={styles.intelErrorText}>{result?.error}</Text><Pressable onPress={execute} style={styles.intelRetry}><Text style={styles.intelRetryText}>Retry</Text></Pressable></View>}
+    {state==='result'&&<View style={styles.intelResult}><View style={styles.aiVerify}><Text style={styles.aiVerifyText}>AI suggestion — doctor to verify</Text></View>{editing?<TextInput multiline value={draft} onChangeText={setDraft} style={styles.intelEditInput}/>:<Text style={styles.intelAnswer}>{draft}</Text>}<Text style={styles.intelSafety}>AI never writes the chart, periodontogram, treatment plan or appointment automatically.</Text><View style={styles.intelActions}><Pressable onPress={()=>approve('accepted')} style={styles.acceptButton}><Text style={styles.acceptText}>Accept</Text></Pressable><Pressable onPress={()=>setEditing(v=>!v)} style={styles.editButton}><Text style={styles.editText}>{editing?'Preview':'Edit'}</Text></Pressable><Pressable onPress={()=>approve('dismissed')} style={styles.dismissButton}><Text style={styles.dismissText}>Dismiss</Text></Pressable></View></View>}
+  </View>;
+}
+
+function DoctorScanCard({token,patient}) {
+  const [ref,setRef]=useState(''); const [result,setResult]=useState(null); const [loading,setLoading]=useState(false);
+  const run=async()=>{if(!patient?.id||!ref.trim())return;setLoading(true);try{setResult(await doctorScanAnalysis(token,{patient_id:patient.id,scan_reference:ref.trim(),scan_type:'oral_screening',metadata:{}}));}catch(e){setResult({error:e.message||'AI unavailable'});}finally{setLoading(false);}};
+  return <View style={styles.intelCardLarge}><Text style={styles.intelName}>Images • ScanO AI Analysis</Text><Text style={styles.intelSub}>Official ScanO adapter status is reported; AI does not diagnose from an unavailable adapter.</Text><TextInput value={ref} onChangeText={setRef} placeholder="Scan reference / approved image identifier" placeholderTextColor="#91A0AE" style={styles.intelQuestionInput}/><Pressable onPress={run} disabled={!patient?.id||!ref.trim()||loading} style={[styles.intelRunButton,(!patient?.id||!ref.trim())&&{opacity:0.45}]}><Text style={styles.intelRunText}>{loading?'Analyzing…':'Analyze scan'}</Text></Pressable>{result&&<Text style={styles.intelAnswer}>{result.error||JSON.stringify(result,null,2)}</Text>}</View>;
+}
+
+function DoctorDailyAISummary({token}) {
+  const [result,setResult]=useState(null); const [loading,setLoading]=useState(false);
+  const run=async()=>{setLoading(true);try{setResult(await doctorDailySummary(token));}catch(e){setResult({error:e.message||'AI unavailable'});}finally{setLoading(false);}};
+  return <View style={styles.todayCard}><View style={{flex:1}}><Text style={styles.todayKicker}>AI DAILY SUMMARY</Text><Text style={styles.todayTitle}>Clinic workload insight</Text>{loading?<ActivityIndicator color={C.blue}/>:<Text style={styles.todaySub}>{result?.error|| (result?.result ? (typeof result.result==='string'?result.result:JSON.stringify(result.result)) : 'Run a secure AI summary using appointment status only.')}</Text>}</View><Pressable onPress={run} style={styles.refresh}><Text>Run</Text></Pressable></View>;
+}
+
 function Dashboard({ token, logout }) {
-  // The packaged app uses the shared production API even for the temporary demo bridge.
-  const isDemo = false;
   const [appointments,setAppointments]=useState([]);
   const [patients,setPatients]=useState([]);
   const [tab,setTab]=useState('Home');
@@ -250,12 +276,6 @@ function Dashboard({ token, logout }) {
   const [apiOk,setApiOk]=useState(false);
 
   const load=useCallback(async()=>{
-    if (isDemo) {
-      setAppointments([{id:'demo-1',status:'requested',patient_name:'Demo Patient',patient_phone:'9876543210',starts_at:'2026-10-07T10:30:00+05:30',treatment_type:'Dental consultation',note:'Demo appointment'}]);
-      setPatients([{id:'demo-patient',name:'Demo Patient',phone:'9876543210',age:32}]);
-      setApiOk(true);
-      setLoading(false); setRefreshing(false); return;
-    }
     try {
       const [a,p,h]=await Promise.all([listAppointments(token),listPatients(token),getHealth()]);
       setAppointments(a||[]); setPatients(p||[]); setApiOk(h?.status==='ok');
@@ -263,7 +283,7 @@ function Dashboard({ token, logout }) {
       setApiOk(false);
       Alert.alert('Clinic connection', e.message || 'Could not reach the dental backend.');
     } finally {setLoading(false);setRefreshing(false);}
-  },[token,isDemo]);
+  },[token]);
 
   useEffect(()=>{load();},[load]);
 
@@ -298,6 +318,7 @@ function Dashboard({ token, logout }) {
           <View><Text style={styles.todayKicker}>CLINIC STATUS</Text><Text style={styles.todayTitle}>{apiOk ? 'Everything is connected' : 'Connection needs attention'}</Text><Text style={styles.todaySub}>Patient bookings and doctor records use the same secure backend.</Text></View>
           <View style={[styles.statusPill,{backgroundColor:apiOk?'#DDF7EA':'#FCEAEA'}]}><Text style={[styles.statusPillText,{color:apiOk?C.green:C.red}]}>{apiOk?'ONLINE':'OFFLINE'}</Text></View>
         </View>
+        <DoctorDailyAISummary token={token}/>
       </View>}
       {tab==='Appointments' && <View>
         <View style={styles.sectionRow}><Text style={styles.sectionTitle}>Appointment Queue</Text><Pressable onPress={load}><Text style={styles.refresh}>Refresh</Text></Pressable></View>
@@ -306,7 +327,7 @@ function Dashboard({ token, logout }) {
       {tab==='Patients' && <View>
         <View style={styles.sectionRow}><Text style={styles.sectionTitle}>Patients</Text><Text style={styles.patientCount}>{patients.length} records</Text></View>
         {patients.length===0?<Empty text="No patients yet. Patient bookings will appear here."/>:patients.map((p,i)=><Pressable key={p.id} onPress={()=>setSelectedPatient(p)} style={[styles.patientCard,selectedPatient?.id===p.id&&styles.patientCardActive]}><View style={styles.patientTop}><View style={styles.avatar}><Text style={styles.avatarText}>{(p.name||'P').slice(0,1).toUpperCase()}</Text></View><View style={{flex:1}}><Text style={styles.patient}>{p.name}</Text><Text style={styles.phone}>{p.phone||'No phone'}{p.age?' â€¢ Age '+p.age:''}</Text></View><Text style={styles.chevron}>â€º</Text></View></Pressable>)}
-        {selectedPatient ? <><View style={styles.selectedPatientBanner}><Text style={styles.selectedPatientLabel}>SELECTED PATIENT</Text><Text style={styles.selectedPatientName}>{selectedPatient.name}</Text><Text style={styles.selectedPatientMeta}>{selectedPatient.phone||'No phone'}{selectedPatient.age?' â€¢ Age '+selectedPatient.age:''}</Text></View><DentalChart token={token} patientId={selectedPatient.id} patientName={selectedPatient.name} /><Periodontogram token={token} patientId={selectedPatient.id} patientName={selectedPatient.name} /></> : <Empty text="Select a patient to open the dental chart and periodontogram." />}
+        {selectedPatient ? <><View style={styles.selectedPatientBanner}><Text style={styles.selectedPatientLabel}>SELECTED PATIENT</Text><Text style={styles.selectedPatientName}>{selectedPatient.name}</Text><Text style={styles.selectedPatientMeta}>{selectedPatient.phone||'No phone'}{selectedPatient.age?' â€¢ Age '+selectedPatient.age:''}</Text></View><DoctorAIActionCard token={token} patient={selectedPatient} title="Patient Profile • AI Insights" description="Summary and risk flags from the authorized record." capability="patient_summary" run={doctorPatientSummary}/><DentalChart token={token} patientId={selectedPatient.id} patientName={selectedPatient.name} /><DoctorAIActionCard token={token} patient={selectedPatient} title="Dental Chart & Periodontogram • AI Insights" description="Patterns and findings that merit clinician review." capability="chart_insights" run={doctorChartInsights}/><Periodontogram token={token} patientId={selectedPatient.id} patientName={selectedPatient.name} /></> : <Empty text="Select a patient to open the dental chart and periodontogram." />}
       </View>}
       {tab==='Clinical' && <View>
         <View style={styles.intelHero}><Text style={styles.intelKicker}>AI DENTAL COMMAND CENTER</Text><Text style={styles.intelTitle}>Clinical intelligence</Text><Text style={styles.intelText}>Evidence-backed decision support. AI suggestions never write to the dental chart or treatment plan without doctor confirmation.</Text></View>
@@ -315,9 +336,10 @@ function Dashboard({ token, logout }) {
           {selectedPatient?<View style={styles.intelSelectedPatient}><Text style={styles.intelSelectedName}>{selectedPatient.name}</Text><Text style={styles.intelSelectedMeta}>{selectedPatient.age?'Age '+selectedPatient.age:'Clinical record selected'}</Text></View>:<Text style={styles.intelPickerHint}>Choose a patient below for Patient Intelligence and Treatment Research.</Text>}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap:7,paddingTop:9}}>{patients.map(p=><Pressable key={p.id} onPress={()=>setSelectedPatient(p)} style={[styles.patientChip,selectedPatient?.id===p.id&&styles.patientChipActive]}><Text style={[styles.patientChipText,selectedPatient?.id===p.id&&styles.patientChipTextActive]}>{p.name}</Text></Pressable>)}</ScrollView>
         </View>
-        <IntelligenceCard token={token} patient={selectedPatient} title="Patient Intelligence" description="Patient summary and risk flags from the authorized clinical record." goal="Provide a concise patient summary and data-supported clinical risk flags for this patient. Distinguish known findings from uncertainty and do not invent diagnoses." />
-        <IntelligenceCard token={token} patient={selectedPatient} title="Treatment Research" description="Evidence-backed suggestions for possible treatment-plan options." goal="Suggest evidence-based treatment-plan options for this patient's current dental findings. Explain rationale, alternatives, uncertainties, and what the doctor should verify. Do not write or prescribe a treatment plan." />
-        <ClinicalResearchCard token={token} patient={selectedPatient} />
+        <DoctorAIActionCard token={token} patient={selectedPatient} title="Treatment Planning • AI Suggestion" description="Treatment-plan options with rationale, alternatives and verification points." capability="treatment_plan" run={doctorTreatmentPlan}/>
+        <DoctorAIActionCard token={token} patient={selectedPatient} title="Follow-up & Recall Recommendations" description="Recall timing and follow-up considerations; no appointment is created automatically." capability="follow_up" run={doctorFollowUp}/>
+        <DoctorScanCard token={token} patient={selectedPatient}/>
+        <IntelligenceCard token={token} patient={selectedPatient} title="Clinical Research" description="Evidence-backed research with sources." goal="Answer an evidence-based clinical question and show sources and uncertainty." />
         {['Product & Supplier Intelligence','Practice Intelligence','Referral Intelligence'].map((x,i)=><View key={x} style={styles.intelCard}><Text style={styles.intelNum}>0{i+4}</Text><View style={{flex:1}}><Text style={styles.intelName}>{x}</Text><Text style={styles.comingSoon}>Coming soon</Text></View></View>)}
       </View>}
     </ScrollView>

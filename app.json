@@ -23,7 +23,8 @@
     "plugins": [
       "expo-status-bar",
       "@react-native-community/datetimepicker",
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      "expo-notifications"
     ],
     "extra": {
       "eas": {

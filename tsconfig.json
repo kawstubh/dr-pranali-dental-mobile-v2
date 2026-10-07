@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "jsx": "react",
+    "module": "node16",
+    "moduleResolution": "node16",
+    "skipLibCheck": true,
+    "target": "es2020"
+  },
+  "include": ["App.js", "src/**/*.js"]
+}

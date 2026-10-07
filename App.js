@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Image,
   Linking,
@@ -17,6 +18,7 @@ import { signInWithGoogle } from './src/auth/googleAuth';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { buildPatientCareRequest } from './src/intelligence/dentalIntelligence';
 import { requestPublicAppointment } from './src/api/dentalApi';
+import { getAIConsent, giveAIConsent, linkPatient, patientAIChat, explainTreatment, deleteAIHistory, registerExpoPushToken } from './src/api/aiApi';
 
 // Production HTTPS API. The patient app does not require the phone and computer to share a Wi-Fi network.
 const API_URL = 'https://dr-pranali-dental-api.onrender.com';
@@ -203,6 +205,12 @@ function HomeScreen({ go }) {
         <Feature icon="☆" title="Modern" subtitle="Technology" />
       </View>
 
+      <Pressable onPress={() => go('AI Dental')} style={styles.homeAICard}>
+        <View style={styles.homeAIIcon}><Text style={styles.homeAIIconText}>✦</Text></View>
+        <View style={{flex:1}}><Text style={styles.homeAITitle}>Dr. Pranali Dental AI Assistant</Text><Text style={styles.homeAISub}>Ask questions, understand treatment information and get urgent-symptom guidance.</Text></View>
+        <Text style={styles.homeAIArrow}>›</Text>
+      </Pressable>
+
       <View style={styles.aboutCard}>
         <View style={{ flex: 1 }}>
           <Text style={styles.sectionTitle}>About Dr. Pranali</Text>
@@ -279,58 +287,118 @@ function PatientDentalChart() {
   );
 }
 
-function AIDentalScreen() {
-  const [module, setModule] = useState('Patient Intelligence');
-  const modules = [
-    ['Patient Intelligence', 'Build an authorized patient timeline, identify missing follow-ups and prepare clinician review.'],
-    ['Scan Intelligence', 'Normalize future Scano scan data and connect it to the patient and treatment journey.'],
-    ['Clinical Research', 'Find evidence, compare sources and surface uncertainty for clinician review.'],
-    ['Treatment Research', 'Compare treatment considerations against the available patient and scan context.'],
-    ['Product & Supplier Intelligence', 'Research dental products, manufacturers, distributors and regional availability.'],
-    ['Practice Intelligence', 'Turn clinic activity into operational insights without replacing clinical judgment.'],
-    ['Referral Intelligence', 'Research appropriate specialists or facilities when referral is clinically considered.'],
-  ];
-  const selected = modules.find(([name]) => name === module) || modules[0];
+function PatientAIConsent({ onDone }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const continueAI = async () => {
+    setBusy(true); setError('');
+    try {
+      await signInWithGoogle();
+      await giveAIConsent();
+      await registerExpoPushToken();
+      onDone();
+    } catch (e) {
+      setError(e?.message || 'Could not enable Dental AI.');
+    } finally { setBusy(false); }
+  };
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+    <View style={styles.aiConsentCard}>
+      <Text style={styles.aiEyebrow}>BEFORE FIRST USE</Text>
+      <Text style={styles.aiConsentTitle}>Your Dental AI Assistant</Text>
+      <Text style={styles.aiConsentText}>AI can explain dental information in simple language, help you prepare questions and flag symptoms that may need urgent attention.</Text>
+      <View style={styles.aiSafetyList}>
+        <Text style={styles.aiSafetyItem}>• Not a diagnosis</Text>
+        <Text style={styles.aiSafetyItem}>• Never prescribes medicines or dosage</Text>
+        <Text style={styles.aiSafetyItem}>• Emergency symptoms are flagged conservatively</Text>
+        <Text style={styles.aiSafetyItem}>• You can delete your AI chat history</Text>
+      </View>
+      <Pressable disabled={busy} onPress={continueAI} style={[styles.submitButton,busy&&{opacity:0.55}]}>
+        <Text style={styles.submitText}>{busy ? 'Connecting…' : 'Continue with Google & Consent'}</Text>
+      </Pressable>
+      {!!error && <Text style={styles.aiError}>{error}</Text>}
+    </View>
+  );
+}
+
+function PatientAssistantScreen() {
+  const [ready, setReady] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [emergency, setEmergency] = useState(null);
+  const [planText, setPlanText] = useState('');
+  const [planBusy, setPlanBusy] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [linked, setLinked] = useState(true);
+  const [linking, setLinking] = useState(false);
+
+  useEffect(() => {
+    getAIConsent().then(value => setReady(value)).finally(() => setChecking(false));
+  }, []);
+
+  const send = async (text = message) => {
+    const value = text.trim();
+    if (!value || busy) return;
+    setBusy(true); setMessage('');
+    setMessages(prev => [...prev, { role:'user', text:value }]);
+    try {
+      const result = await patientAIChat(value);
+      setEmergency(result?.emergency ? result : null);
+      const answer = typeof result?.result === 'string' ? result.result : result?.result?.message || JSON.stringify(result?.result || result);
+      setMessages(prev => [...prev, { role:'assistant', text:answer }]);
+    } catch (e) {
+      setMessages(prev => [...prev, { role:'assistant', text:e?.message || 'The assistant is unavailable right now.' }]);
+    } finally { setBusy(false); }
+  };
+
+  const link = async () => {
+    if (!phone.trim()) return;
+    setLinking(true);
+    try { await linkPatient(phone.trim()); setLinked(true); Alert.alert('Patient account','Your clinic record is linked to this Google account.'); }
+    catch(e){ Alert.alert('Link patient record', e?.message || 'Could not link this account.'); }
+    finally { setLinking(false); }
+  };
+
+  const clearHistory = () => Alert.alert('Delete AI chat history?', 'This permanently deletes your saved AI conversation from the clinic AI store.', [
+    {text:'Cancel',style:'cancel'},
+    {text:'Delete',style:'destructive',onPress:async()=>{try{await deleteAIHistory();setMessages([]);Alert.alert('Deleted','Your AI chat history was deleted.');}catch(e){Alert.alert('Delete failed',e.message||'Could not delete history.');}}}
+  ]);
+
+  if (checking) return <View style={styles.aiLoading}><ActivityIndicator size="large" color={COLORS.blue}/></View>;
+  if (!ready) return <ScrollView contentContainerStyle={styles.scrollContent}><PatientAIConsent onDone={()=>setReady(true)}/></ScrollView>;
+
+  return (
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
       <View style={styles.aiHero}>
-        <Text style={styles.aiEyebrow}>DENTAL INTELLIGENCE PLATFORM • v0.2</Text>
-        <Text style={styles.aiTitle}>AI Dental Command Center</Text>
-        <Text style={styles.aiSub}>One clinician-controlled intelligence layer for patient journeys, research, treatment decisions and future scan data.</Text>
-        <View style={styles.scanoPill}><Text style={styles.scanoPillText}>SCANO ADAPTER READY • OFFICIAL API/SDK REQUIRED FOR LIVE DATA</Text></View>
+        <Text style={styles.aiEyebrow}>DR. PRANALI • DENTAL AI</Text>
+        <Text style={styles.aiTitle}>Your AI Assistant</Text>
+        <Text style={styles.aiSub}>Ask dental questions, understand your treatment plan and get safer next-step guidance.</Text>
+        <View style={styles.patientNotDiagnosis}><Text style={styles.patientNotDiagnosisText}>Not a diagnosis • No prescriptions or dosage advice</Text></View>
       </View>
-      <PatientDentalChart />
-      <Text style={styles.commandLabel}>INTELLIGENCE MODULE</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap: 8, paddingBottom: 12}}>
-        {modules.map(([name]) => (
-          <Pressable key={name} onPress={() => setModule(name)} style={[styles.commandChip, module === name && styles.commandChipActive]}>
-            <Text style={[styles.commandChipText, module === name && styles.commandChipTextActive]}>{name}</Text>
-          </Pressable>
-        ))}
-      </ScrollView>
-      <View style={styles.aiCardLarge}>
-        <View style={styles.aiIcon}><Text style={styles.aiIconText}>✦</Text></View>
-        <Text style={styles.aiCardTitle}>{selected[0]}</Text>
-        <Text style={styles.aiCardSub}>{selected[1]}</Text>
-        <View style={styles.pipelineRow}>
-          <Text style={styles.pipelineItem}>INPUT</Text><Text style={styles.pipelineArrow}>→</Text>
-          <Text style={styles.pipelineItem}>UIE</Text><Text style={styles.pipelineArrow}>→</Text>
-          <Text style={styles.pipelineItem}>EVIDENCE</Text><Text style={styles.pipelineArrow}>→</Text>
-          <Text style={styles.pipelineItem}>REVIEW</Text>
-        </View>
-        <View style={styles.statusRow}><Text style={styles.statusDot}>●</Text><Text style={styles.statusText}>Ready for authorized clinical data</Text></View>
+      {!!emergency && <View style={styles.emergencyBanner}><Text style={styles.emergencyTitle}>URGENT DENTAL WARNING</Text><Text style={styles.emergencyText}>{emergency?.result?.message || 'Seek urgent care now.'}</Text></View>}
+      {!linked && <View style={styles.linkCard}><Text style={styles.aiCardTitle}>Link your clinic record</Text><Text style={styles.aiCardSub}>Enter the mobile number used at the clinic.</Text><TextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="10-digit mobile" style={styles.input}/><Pressable onPress={link} disabled={linking} style={styles.submitButton}><Text style={styles.submitText}>{linking?'Linking…':'Link patient record'}</Text></Pressable></View>}
+      <View style={styles.quickReplyRow}>
+        {['Explain my treatment','I have tooth pain','What should I ask my dentist?','Is this urgent?'].map(chip=><Pressable key={chip} onPress={()=>send(chip)} style={styles.aiQuickChip}><Text style={styles.aiQuickChipText}>{chip}</Text></Pressable>)}
       </View>
-      <View style={styles.scanFlow}>
-        <Text style={styles.scanFlowTitle}>Scano → Dental AI workflow</Text>
-        <Text style={styles.scanFlowText}>Scan data → normalized dental model → UIE evidence/reasoning → clinician review → patient care workflow</Text>
+      <View style={styles.chatCard}>
+        {messages.length===0 && <Text style={styles.chatEmpty}>Start with a question. The assistant will clearly say when something needs a dentist or urgent care.</Text>}
+        {messages.map((m,i)=><View key={i} style={[styles.chatBubble,m.role==='user'?styles.chatUser:styles.chatAssistant]}><Text style={styles.chatText}>{m.text}</Text></View>)}
+        {busy && <View style={styles.chatBubble}><ActivityIndicator color={COLORS.blue}/></View>}
+        <View style={styles.chatComposer}><TextInput value={message} onChangeText={setMessage} placeholder="Ask your dental question…" style={[styles.input,{flex:1,marginRight:8}]} multiline/><Pressable onPress={()=>send()} style={styles.chatSend}><Text style={styles.chatSendText}>Send</Text></Pressable></View>
       </View>
-      <View style={styles.safetyCard}>
-        <Text style={styles.safetyTitle}>Clinical Safety Boundary</Text>
-        <Text style={styles.safetyText}>AI assists with evidence, organization and research. It does not autonomously diagnose, prescribe, choose treatment, refer patients or purchase products. A qualified clinician remains responsible for clinical decisions.</Text>
+      <View style={styles.aiUtilityCard}>
+        <Text style={styles.aiCardTitle}>Plain-language treatment plan</Text>
+        <TextInput value={planText} onChangeText={setPlanText} placeholder="Paste your dentist's treatment plan here…" multiline style={[styles.input,{minHeight:70,marginTop:8}]} />
+        <Pressable disabled={!planText.trim()||planBusy} onPress={async()=>{setPlanBusy(true);try{const r=await explainTreatment(planText.trim());const answer=typeof r?.result==='string'?r.result:r?.result?.message||JSON.stringify(r?.result);setMessages(prev=>[...prev,{role:'assistant',text:answer}]);setPlanText('');}catch(e){Alert.alert('AI',e.message||'Unavailable');}finally{setPlanBusy(false);}}} style={[styles.submitButton,(!planText.trim()||planBusy)&&{opacity:0.5}]}><Text style={styles.submitText}>{planBusy?'Explaining…':'Explain my treatment plan'}</Text></Pressable>
+        <Pressable onPress={clearHistory}><Text style={styles.aiDeleteLink}>Delete my AI chat history</Text></Pressable>
       </View>
-      <View style={styles.bottomSpacer} />
     </ScrollView>
   );
+}
+
+function AIDentalScreen() {
+  return <PatientAssistantScreen />;
 }
 function ServicesScreen() {
   return (
@@ -724,5 +792,10 @@ const styles = StyleSheet.create({
   scanFlow: { backgroundColor: '#EEF7FF', borderRadius: 17, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#D6E9F8' },
   scanFlowTitle: { color: COLORS.navy, fontSize: 16, fontWeight: '900' },
   scanFlowText: { color: COLORS.text, fontSize: 12.5, lineHeight: 19, marginTop: 6 },
+  homeAICard:{backgroundColor:COLORS.white,borderRadius:18,padding:14,flexDirection:'row',alignItems:'center',borderWidth:1,borderColor:'#D7E8F6',marginBottom:14},
+  homeAIIcon:{width:44,height:44,borderRadius:14,backgroundColor:'#EAF4FF',alignItems:'center',justifyContent:'center',marginRight:12},
+  homeAIIconText:{fontSize:23,color:COLORS.blue,fontWeight:'900'},homeAITitle:{fontSize:14,fontWeight:'900',color:COLORS.navy},homeAISub:{fontSize:11.5,color:COLORS.muted,lineHeight:17,marginTop:3},homeAIArrow:{fontSize:28,color:COLORS.blue,marginLeft:8},
+  aiConsentCard:{backgroundColor:COLORS.white,borderRadius:22,padding:20,borderWidth:1,borderColor:'#DCE8F4',marginTop:8},aiConsentTitle:{fontSize:27,fontWeight:'900',color:COLORS.navy,marginTop:5},aiConsentText:{fontSize:13.5,color:COLORS.text,lineHeight:20,marginTop:8},aiSafetyList:{backgroundColor:'#F7FAFD',borderRadius:14,padding:14,marginTop:14},aiSafetyItem:{fontSize:12.5,color:COLORS.text,lineHeight:22},aiError:{color:'#C53E3E',fontSize:12,marginTop:10},
+  aiLoading:{paddingTop:60,alignItems:'center'},patientNotDiagnosis:{alignSelf:'flex-start',backgroundColor:'#16476D',borderRadius:12,paddingHorizontal:10,paddingVertical:7,marginTop:13},patientNotDiagnosisText:{color:'#FFF',fontSize:10,fontWeight:'900'},emergencyBanner:{backgroundColor:'#FFF0F0',borderWidth:1,borderColor:'#E6A0A0',borderRadius:18,padding:15,marginBottom:12},emergencyTitle:{color:'#A52828',fontSize:11,fontWeight:'900',letterSpacing:1},emergencyText:{color:'#6D2525',fontSize:13,lineHeight:19,marginTop:5},quickReplyRow:{gap:8,paddingBottom:12},aiQuickChip:{borderWidth:1,borderColor:'#D5E3EF',borderRadius:18,paddingHorizontal:12,paddingVertical:9,backgroundColor:COLORS.white},aiQuickChipText:{color:COLORS.navy,fontSize:11,fontWeight:'800'},chatCard:{backgroundColor:COLORS.white,borderRadius:19,padding:14,borderWidth:1,borderColor:'#DCE8F4'},chatEmpty:{color:COLORS.muted,fontSize:12.5,lineHeight:19,padding:8},chatBubble:{padding:11,borderRadius:15,marginBottom:8,maxWidth:'92%'},chatUser:{backgroundColor:'#EAF4FF',alignSelf:'flex-end'},chatAssistant:{backgroundColor:'#F5F7F9',alignSelf:'flex-start'},chatText:{color:COLORS.text,fontSize:13,lineHeight:19},chatComposer:{flexDirection:'row',alignItems:'flex-end',marginTop:6},chatSend:{backgroundColor:COLORS.blue,borderRadius:12,paddingHorizontal:14,paddingVertical:12},chatSendText:{color:'#FFF',fontWeight:'900'},aiUtilityCard:{backgroundColor:COLORS.white,borderRadius:18,padding:15,borderWidth:1,borderColor:'#E2EBF3',marginTop:12},aiUtilityLink:{color:COLORS.blue,fontSize:13,fontWeight:'900',paddingVertical:10},aiDeleteLink:{color:'#B33434',fontSize:12,fontWeight:'800',paddingVertical:10},linkCard:{backgroundColor:COLORS.white,borderRadius:18,padding:15,borderWidth:1,borderColor:'#E2EBF3',marginBottom:12},
   bottomSpacer: { height: 8 },
 });
