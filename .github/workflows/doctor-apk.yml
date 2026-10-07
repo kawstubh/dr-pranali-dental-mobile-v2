@@ -3,7 +3,7 @@ name: Doctor Android APK
 on:
   workflow_dispatch:
   push:
-    branches: [master]
+    branches: [master, ui/premium-reference-restyle]
 
 jobs:
   build-doctor-apk:
@@ -30,7 +30,7 @@ jobs:
           java-version: '17'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Generate Android project
         run: npx expo prebuild --platform android --non-interactive
