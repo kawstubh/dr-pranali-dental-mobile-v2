@@ -1,6 +1,5 @@
 import React from "react";
-import { Image } from "expo-image";
-import { StyleSheet, View } from "react-native";
+import { Image, StyleSheet, View } from "react-native";
 import { colors, spacing } from "../../theme";
 
 const ASSETS = {
@@ -15,8 +14,7 @@ export function VisualPlaceholder({ filename, style }) {
       <Image
         source={ASSETS[filename]}
         style={styles.image}
-        contentFit="contain"
-        transition={150}
+        resizeMode="contain"
       />
     </View>
   );
