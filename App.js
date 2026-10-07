@@ -28,6 +28,7 @@ import {
   VisualPlaceholder,
 } from "./components/ui";
 import { colors, spacing, typography, shadows } from "./theme";
+import { AppErrorBoundary } from "./components/AppErrorBoundary";
 
 const PHONE = "9137007432";
 const WHATSAPP = "919137007432";
@@ -701,7 +702,7 @@ function ContactScreen() {
   );
 }
 
-export default function App() {
+function AppContent() {
   const [started, setStarted] = useState(false);
   const [tab, setTab] = useState("Home");
   const [booking, setBooking] = useState(null);
@@ -773,6 +774,14 @@ export default function App() {
       <View style={styles.body}>{screen}</View>
       <BottomTabBar items={tabs} active={tab} onChange={setTab} />
     </SafeAreaView>
+  );
+}
+
+export default function App() {
+  return (
+    <AppErrorBoundary>
+      <AppContent />
+    </AppErrorBoundary>
   );
 }
 

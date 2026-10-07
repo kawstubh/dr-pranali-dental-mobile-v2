@@ -12,3 +12,12 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Local export logs / temporary build reports
+patient-export.txt
+doctor-export.txt
+patient-export-final.txt
+doctor-export-final.txt
+*.export.txt
+
+dist/

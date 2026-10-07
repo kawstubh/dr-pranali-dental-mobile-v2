@@ -46,6 +46,7 @@ import {
   VisualPlaceholder,
 } from "./components/ui";
 import { colors, spacing, typography, shadows } from "./theme";
+import { AppErrorBoundary } from "./components/AppErrorBoundary";
 
 const clinicLogo = require("./assets/dr-pranali-branded-logo.png");
 const dentalLogo = require("./assets/universal-dental-icon.png");
@@ -941,12 +942,20 @@ function Dashboard({ token, logout }) {
   );
 }
 
-export default function App() {
+function AppContent() {
   const [token, setToken] = useState(null);
   return token ? (
     <Dashboard token={token} logout={() => setToken(null)} />
   ) : (
     <Login onLogin={setToken} />
+  );
+}
+
+export default function App() {
+  return (
+    <AppErrorBoundary>
+      <AppContent />
+    </AppErrorBoundary>
   );
 }
 
