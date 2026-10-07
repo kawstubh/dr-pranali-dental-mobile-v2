@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Feather, Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
+import { Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { requestPublicAppointment } from "./src/api/dentalApi";
 import { getGoogleSession, signInWithGoogle } from "./src/auth/supabase";
@@ -86,7 +86,6 @@ function Brand({ compact = false }) {
       <Image
         source={HERO_IMAGE}
         style={styles.brandLogo}
-        contentFit="contain"
       />
       <View>
         <Text style={styles.brandName}>Dr. Pranali</Text>
@@ -290,8 +289,7 @@ function HomeScreen({ go }) {
         <Image
           source={HERO_IMAGE}
           style={styles.offerImage}
-          contentFit="contain"
-        />
+          />
       </Card>
       <SectionHeader title="Your Care Journey" />
       <View style={styles.journey}>
