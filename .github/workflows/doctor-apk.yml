@@ -35,14 +35,17 @@ jobs:
       - name: Generate Android project
         run: npx expo prebuild --platform android --non-interactive
 
-      - name: Build APK
-        working-directory: doctor-app/android
-        run: ./gradlew assembleDebug --no-daemon
+      - name: Verify production JavaScript bundle
+        run: npx expo export --platform android
 
-      - name: Upload APK
+      - name: Build release APK with embedded bundle
+        working-directory: doctor-app/android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Upload release APK
         uses: actions/upload-artifact@v4
         with:
-          name: dr-pranali-dental-doctor-apk
-          path: doctor-app/android/app/build/outputs/apk/debug/app-debug.apk
+          name: dr-pranali-dental-doctor-release-apk
+          path: doctor-app/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
