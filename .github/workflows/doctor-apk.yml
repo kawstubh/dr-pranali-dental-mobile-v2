@@ -73,16 +73,16 @@ jobs:
           android {
             signingConfigs {
               release {
-                def alias = System.getenv("DENTAL_DOCTOR_KEY_ALIAS")
-                def storePassword = System.getenv("DENTAL_DOCTOR_STORE_PASSWORD")
-                def keyPassword = System.getenv("DENTAL_DOCTOR_KEY_PASSWORD")
-                if (!alias || !storePassword || !keyPassword) {
+                def aliasValue = System.getenv("DENTAL_DOCTOR_KEY_ALIAS")
+                def storePasswordValue = System.getenv("DENTAL_DOCTOR_STORE_PASSWORD")
+                def keyPasswordValue = System.getenv("DENTAL_DOCTOR_KEY_PASSWORD")
+                if (!aliasValue || !storePasswordValue || !keyPasswordValue) {
                   throw new GradleException("Fixed release signing secrets are missing; refusing debug signing.")
                 }
                 storeFile file("release.keystore")
-                storePassword storePassword
-                keyAlias alias
-                keyPassword keyPassword
+                storePassword storePasswordValue
+                keyAlias aliasValue
+                keyPassword keyPasswordValue
               }
             }
             buildTypes {
