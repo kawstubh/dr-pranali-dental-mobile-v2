@@ -33,7 +33,7 @@ jobs:
         run: npm ci
 
       - name: TypeScript compiler check
-        run: npx tsc --noEmit --allowJs --checkJs false --skipLibCheck --moduleResolution bundler --module esnext --target es2022 --jsx react-native App.js
+        run: npx tsc --noEmit
 
       - name: Generate Android project
         run: npx expo prebuild --platform android --non-interactive
