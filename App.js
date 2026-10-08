@@ -329,7 +329,7 @@ function PatientAssistantScreen() {
   const [emergency, setEmergency] = useState(null);
   const [planText, setPlanText] = useState('');
   const [planBusy, setPlanBusy] = useState(false);
-  const [phone, setPhone] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
   const [linked, setLinked] = useState(true);
   const [linking, setLinking] = useState(false);
 
@@ -353,10 +353,10 @@ function PatientAssistantScreen() {
   };
 
   const link = async () => {
-    if (!phone.trim()) return;
+    if (!inviteCode.trim()) return;
     setLinking(true);
-    try { await linkPatient(phone.trim()); setLinked(true); Alert.alert('Patient account','Your clinic record is linked to this Google account.'); }
-    catch(e){ Alert.alert('Link patient record', e?.message || 'Could not link this account.'); }
+    try { await linkPatient(inviteCode.trim().toUpperCase()); setLinked(true); Alert.alert('Patient account','Your clinic-issued invite has linked your record to this Google account.'); }
+    catch(e){ Alert.alert('Link patient record', e?.message || 'Invalid or expired clinic invite code.'); }
     finally { setLinking(false); }
   };
 
@@ -377,7 +377,7 @@ function PatientAssistantScreen() {
         <View style={styles.patientNotDiagnosis}><Text style={styles.patientNotDiagnosisText}>Not a diagnosis • No prescriptions or dosage advice</Text></View>
       </View>
       {!!emergency && <View style={styles.emergencyBanner}><Text style={styles.emergencyTitle}>URGENT DENTAL WARNING</Text><Text style={styles.emergencyText}>{emergency?.result?.message || 'Seek urgent care now.'}</Text></View>}
-      {!linked && <View style={styles.linkCard}><Text style={styles.aiCardTitle}>Link your clinic record</Text><Text style={styles.aiCardSub}>Enter the mobile number used at the clinic.</Text><TextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="10-digit mobile" style={styles.input}/><Pressable onPress={link} disabled={linking} style={styles.submitButton}><Text style={styles.submitText}>{linking?'Linking…':'Link patient record'}</Text></Pressable></View>}
+      {!linked && <View style={styles.linkCard}><Text style={styles.aiCardTitle}>Link your clinic record</Text><Text style={styles.aiCardSub}>Enter the one-time invite code issued by the clinic. Your phone number alone cannot claim a patient record.</Text><TextInput value={inviteCode} onChangeText={setInviteCode} autoCapitalize="characters" placeholder="Clinic invite code" style={styles.input}/><Pressable onPress={link} disabled={linking} style={styles.submitButton}><Text style={styles.submitText}>{linking?'Linking…':'Link patient record'}</Text></Pressable></View>}
       <View style={styles.quickReplyRow}>
         {['Explain my treatment','I have tooth pain','What should I ask my dentist?','Is this urgent?'].map(chip=><Pressable key={chip} onPress={()=>send(chip)} style={styles.aiQuickChip}><Text style={styles.aiQuickChipText}>{chip}</Text></Pressable>)}
       </View>

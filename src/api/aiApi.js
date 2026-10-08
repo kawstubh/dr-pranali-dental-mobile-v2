@@ -47,10 +47,10 @@ export async function giveAIConsent() {
   return result;
 }
 
-export async function linkPatient(phone) {
+export async function linkPatient(inviteCode) {
   return request('/v1/dental/ai/patient/link', {
     method: 'POST',
-    body: JSON.stringify({ phone }),
+    body: JSON.stringify({ invite_code: inviteCode }),
   });
 }
 
