@@ -94,7 +94,7 @@ jobs:
           EOF
 
       - name: Build RELEASE APK with fixed signing
-        working-directory: android
+        working-directory: doctor-app/android
         env:
           DENTAL_DOCTOR_KEY_ALIAS: ${{ secrets.DENTAL_DOCTOR_KEY_ALIAS }}
           DENTAL_DOCTOR_STORE_PASSWORD: ${{ secrets.DENTAL_DOCTOR_STORE_PASSWORD }}
