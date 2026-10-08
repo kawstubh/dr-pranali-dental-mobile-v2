@@ -1,5 +1,8 @@
 name: Doctor Android APK
 
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
   push:
@@ -119,3 +122,14 @@ jobs:
           path: doctor-app/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
+
+      - name: Publish doctor-latest GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK="android/app/build/outputs/apk/release/app-release.apk"
+          if gh release view doctor-latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload doctor-latest "$APK#dr-pranali-doctor.apk" --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create doctor-latest "$APK#dr-pranali-doctor.apk" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Doctor APK latest" --notes "Latest signed doctor Android APK." --latest=false
+          fi
