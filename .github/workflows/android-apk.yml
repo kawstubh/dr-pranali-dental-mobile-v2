@@ -64,6 +64,18 @@ jobs:
           printf '%s' "$DENTAL_PATIENT_KEYSTORE_BASE64" | base64 --decode > android/app/release.keystore
           test -s android/app/release.keystore
 
+      - name: Determine actual release key alias
+        env:
+          DENTAL_PATIENT_STORE_PASSWORD: ${{ secrets.DENTAL_PATIENT_STORE_PASSWORD }}
+        run: |
+          alias="$(keytool -list -keystore android/app/release.keystore -storepass "$DENTAL_PATIENT_STORE_PASSWORD" | awk -F, '/PrivateKeyEntry/ {print $1; exit}')"
+          if [ -z "$alias" ]; then
+            echo "::error::No PrivateKeyEntry found in the patient release keystore."
+            exit 1
+          fi
+          echo "Derived patient release key alias: $alias"
+          echo "DENTAL_PATIENT_KEY_ALIAS=$alias" >> "$GITHUB_ENV"
+
       - name: Configure fixed release signing
         run: |
           cat > android/app/release-signing.gradle <<'EOF'
@@ -94,7 +106,6 @@ jobs:
       - name: Build RELEASE APK with fixed signing
         working-directory: android
         env:
-          DENTAL_PATIENT_KEY_ALIAS: ${{ secrets.DENTAL_PATIENT_KEY_ALIAS }}
           DENTAL_PATIENT_STORE_PASSWORD: ${{ secrets.DENTAL_PATIENT_STORE_PASSWORD }}
           DENTAL_PATIENT_KEY_PASSWORD: ${{ secrets.DENTAL_PATIENT_KEY_PASSWORD }}
         run: |
