@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Linking,
   Platform,
   Pressable,
@@ -14,11 +13,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { Image as ExpoImage } from 'expo-image';
+import { BRAND } from './src/brandConstants';
+import { DENTAL_SERVICES, DENTAL_SERVICE_CATEGORIES } from './shared/dentalServices';
 import { signInWithGoogle } from './src/auth/googleAuth';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { buildPatientCareRequest } from './src/intelligence/dentalIntelligence';
 import { requestPublicAppointment } from './src/api/dentalApi';
-import { getAIConsent, giveAIConsent, linkPatient, patientAIChat, explainTreatment, deleteAIHistory, registerExpoPushToken } from './src/api/aiApi';
 
 // Production HTTPS API. The patient app does not require the phone and computer to share a Wi-Fi network.
 const API_URL = 'https://dr-pranali-dental-api.onrender.com';
@@ -26,49 +26,29 @@ const PHONE = '9137007432';
 const WHATSAPP = '919137007432';
 
 const COLORS = {
-  navy: '#0B2E4F',
-  blue: '#1677D2',
+  ...BRAND.colors,
   blue2: '#2B7DE9',
-  pale: '#EAF5FF',
-  bg: '#F5F9FC',
-  text: '#18334D',
-  muted: '#657789',
-  border: '#DCE8F4',
-  white: '#FFFFFF',
+  bg: BRAND.colors.background,
   green: '#20B96B',
 };
 
-const services = [
-  ['Dental Check-up', 'Regular oral examination', '🦷'],
-  ['Scaling & Polishing', 'Remove plaque & stains', '🪥'],
-  ['Tooth Whitening', 'Brighter & whiter smile', '✨'],
-  ['Dental Fillings', 'Tooth-coloured restorations', '🦷'],
-  ['Root Canal Treatment', 'Painless RCT care', '🩺'],
-  ['Dental Crowns', 'Protect damaged teeth', '👑'],
-  ['Dental Bridges', 'Replace missing teeth', '🌉'],
-  ['Dental Implants', 'Permanent tooth replacement', '🦷'],
-  ['Tooth Extraction', 'Safe & gentle extractions', '🩹'],
-  ['Wisdom Tooth Removal', 'Pain-free removal of wisdom teeth', '🦷'],
-  ['Dentures', 'Complete & partial dentures', '😁'],
-  ['Kids Dental Care', 'Specialized care for children', '👶'],
-  ['Orthodontic Braces', 'Straighten your teeth', '🔗'],
-  ['Clear Aligners (Invisalign)', 'Invisible teeth alignment', '😁'],
-  ['Gum Disease Treatment', 'Healthy gums, healthy smile', '🩺'],
-  ['Cosmetic Dentistry', 'Smile makeover solutions', '✨'],
-  ['Veneers', 'Perfect smile makeover', '😁'],
-  ['Full Mouth Rehabilitation', 'Complete dental restoration', '🦷'],
-  ['Dental Sealants', 'Protects from cavities', '🛡️'],
-  ['Emergency Dental Care', 'Immediate care when you need it', '🚑'],
-];
+const services = DENTAL_SERVICES.map(({ name, description, icon }) => [name, description, icon]);
 
 const tabs = [
   ['Home', '⌂'],
-  ['AI Dental', '✦'],
   ['Services', '♢'],
   ['Appointment', '▣'],
   ['Gallery', '▧'],
   ['Contact', '☎'],
 ];
+
+function SafeImage({ source, style, resizeMode = 'cover', placeholder = '🦷' }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return <View style={[style, styles.imageFallback]}><Text style={styles.imageFallbackText}>{placeholder}</Text></View>;
+  }
+  return <ExpoImage source={source} placeholder={require('./assets/patient-icon.png')} style={style} contentFit={resizeMode} transition={150} onError={() => setFailed(true)} />;
+}
 
 function WelcomeScreen({ onStart }) {
   const [googleBusy, setGoogleBusy] = useState(false);
@@ -76,12 +56,15 @@ function WelcomeScreen({ onStart }) {
 
   const googleLogin = async () => {
     setGoogleBusy(true);
-    setGoogleMessage('');
+    setGoogleMessage('Connecting securely to your Google account…');
+    fetch(`${API_URL}/health`).catch(() => null);
     try {
       await signInWithGoogle();
-      setGoogleMessage('Google account connected successfully.');
+      setGoogleMessage('Signed in successfully. Opening your dental care home…');
+      onStart();
     } catch (error) {
-      setGoogleMessage(error?.message || 'Google sign-in failed.');
+      const code = error?.code || error?.errorCode || error?.name;
+      setGoogleMessage((code ? '[' + code + '] ' : '') + (error?.message || 'Google sign-in failed.'));
     } finally {
       setGoogleBusy(false);
     }
@@ -90,45 +73,41 @@ function WelcomeScreen({ onStart }) {
   return (
     <SafeAreaView style={styles.welcomeSafe}>
       <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={styles.welcomeContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.welcomeTop}>
-          <View style={styles.brandBadge}>
-            <Image source={require('./assets/universal-dental-icon.png')} style={styles.brandBadgeLogo} resizeMode="contain" />
-            <View>
-              <Text style={styles.welcomeBrand}>Dr. Pranali</Text>
-              <Text style={styles.welcomeClinic}>DENTAL CLINIC</Text>
-            </View>
-          </View>
-          <Pressable onPress={onStart} style={styles.skipButton}><Text style={styles.skipText}>Skip</Text></Pressable>
+      <ScrollView contentContainerStyle={styles.welcomeContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <View style={styles.loginBrand}>
+          <SafeImage source={require('./assets/dr-pranali-branded-logo.png')} style={styles.loginBrandLogo} resizeMode="contain" />
+          <Text style={styles.loginBrandName}>Dr Pranali</Text>
+          <Text style={styles.loginBrandClinic}>D E N T A L   C L I N I C</Text>
         </View>
-        <Text style={styles.welcomeTitle}>Beautiful Smile</Text>
-        <Text style={styles.welcomeTitleBlue}>Confident You</Text>
-        <Text style={styles.welcomeSub}>Expert dental care for a healthier, brighter smile</Text>
-        <View style={styles.logoStage}>
-          <View style={styles.logoGlow} />
-          <Image source={require('./assets/universal-dental-icon.png')} style={styles.hero3dLogo} resizeMode="contain" />
-          <View style={styles.logoPedestal}><View style={styles.logoPedestalGlow} /></View>
+
+        <Text style={styles.welcomeTitle}>Healthy Smiles</Text>
+        <Text style={styles.welcomeTitleBlue}>Happier Lives</Text>
+        <Text style={styles.welcomeSub}>Book appointments, follow your care and stay connected with your clinic.</Text>
+
+        <View style={styles.patientLoginCard}>
+          <Text style={styles.patientLoginHeading}>Welcome</Text>
+          <Text style={styles.patientLoginCopy}>Your family's dental care, all in one place.</Text>
+          <Pressable disabled={googleBusy} onPress={googleLogin} style={[styles.googleButton, googleBusy && { opacity: 0.6 }]}>
+            {googleBusy ? <ActivityIndicator color={COLORS.blue} /> : <><Text style={styles.googleMark}>G</Text><Text style={styles.googleButtonText}>Continue with Google</Text></>}
+          </Pressable>
+          {!!googleMessage && <Text accessibilityRole="alert" style={styles.googleMessage}>{googleMessage}</Text>}
+          <View style={styles.loginDivider}><View style={styles.loginDividerLine}/><Text style={styles.loginDividerText}>OR</Text><View style={styles.loginDividerLine}/></View>
+          <Pressable onPress={() => onStart()} style={styles.getStarted}>
+            <Text style={styles.getStartedText}>Explore as a guest</Text>
+            <View style={styles.arrowCircle}><Text style={styles.arrowText}>→</Text></View>
+          </Pressable>
+          <Text style={styles.guestHint}>You can browse services and request an appointment without signing in.</Text>
         </View>
-        <Pressable disabled={googleBusy} onPress={googleLogin} style={[styles.googleButton, googleBusy && { opacity: 0.6 }]}>
-          <Text style={styles.googleButtonText}>{googleBusy ? 'Connecting to Google…' : 'Continue with Google'}</Text>
-        </Pressable>
-        {!!googleMessage && <Text style={styles.googleMessage}>{googleMessage}</Text>}
-        <Pressable onPress={onStart} style={styles.getStarted}>
-          <Text style={styles.getStartedText}>Get Started</Text>
-          <View style={styles.arrowCircle}><Text style={styles.arrowText}>→</Text></View>
-        </Pressable>
+
+        <View style={styles.patientTrustRow}>
+          <View style={styles.patientTrustItem}><Text style={styles.patientTrustIcon}>▣</Text><Text style={styles.patientTrustLabel}>Appointments</Text></View>
+          <View style={styles.patientTrustItem}><Text style={styles.patientTrustIcon}>♡</Text><Text style={styles.patientTrustLabel}>Care history</Text></View>
+          <View style={styles.patientTrustItem}><Text style={styles.patientTrustIcon}>✦</Text><Text style={styles.patientTrustLabel}>Dental guidance</Text></View>
+        </View>
         <Pressable onPress={() => onStart('Services')} style={styles.exploreButton}>
-          <Text style={styles.exploreText}>Explore Services</Text><Text style={styles.exploreArrow}>→</Text>
+          <Text style={styles.exploreText}>Browse dental services</Text><Text style={styles.exploreArrow}>→</Text>
         </Pressable>
-        <View style={styles.welcomeTrust}>
-          <View><Text style={styles.trustNumber}>20+</Text><Text style={styles.trustLabel}>Dental services</Text></View>
-          <View style={styles.trustDivider} />
-          <View><Text style={styles.trustNumber}>BDS</Text><Text style={styles.trustLabel}>Dental surgeon</Text></View>
-          <View style={styles.trustDivider} />
-          <View><Text style={styles.trustNumber}>AI</Text><Text style={styles.trustLabel}>Care support</Text></View>
-        </View>
-        <Text style={styles.terms}>By continuing, you agree to our</Text>
-        <Text style={styles.termsBlue}>Terms & Privacy Policy</Text>
+        <Text style={styles.terms}>Secure sign-in • Your dental care journey, connected</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -160,15 +139,15 @@ function Feature({ icon, title, subtitle }) {
   );
 }
 
-function ServiceCard({ name, desc, icon }) {
+function ServiceCard({ name, desc, icon, onPress }) {
   return (
-    <View style={styles.serviceCard}>
+    <Pressable onPress={onPress} disabled={!onPress} style={styles.serviceCard}>
       <View style={styles.serviceIconWrap}>
         <Text style={styles.serviceIcon}>{icon}</Text>
       </View>
       <Text style={styles.serviceName}>{name}</Text>
       <Text style={styles.serviceDesc}>{desc}</Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -177,7 +156,7 @@ function HomeScreen({ go }) {
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
       <View style={styles.hero}>
         <View style={styles.profileColumn}>
-          <Image source={require('./assets/dr-pranali.jpg')} style={styles.profileImage} />
+          <SafeImage source={require('./assets/dr-pranali.jpg')} style={styles.profileImage} placeholder="👩‍⚕️" />
           <View style={styles.bdsBadge}><Text style={styles.bdsText}>BDS</Text></View>
           <Text style={styles.doctorName}>Dr. Pranali</Text>
           <Text style={styles.degree}>BDS – Dental Surgeon</Text>
@@ -188,7 +167,7 @@ function HomeScreen({ go }) {
         </View>
 
         <View style={styles.heroCopy}>
-          <View style={styles.brandLine}><Text style={styles.tooth}>♧</Text><Text style={styles.brand}>Dr. Pranali's</Text></View>
+          <View style={styles.brandLine}><SafeImage source={require('./assets/dr-pranali-branded-logo.png')} style={styles.brandLineLogo} resizeMode="contain" /><Text style={styles.brand}>Dr. Pranali Dental Clinic</Text></View>
           <Text style={styles.heroTitle}>Healthy Smile,</Text>
           <Text style={[styles.heroTitle, styles.heroBlue]}>Happy You!</Text>
           <Text style={styles.heroSub}>Expert dental care for you and your family, with gentle treatment and modern technology.</Text>
@@ -204,12 +183,6 @@ function HomeScreen({ go }) {
         <Feature icon="♙" title="Patient First" subtitle="Approach" />
         <Feature icon="☆" title="Modern" subtitle="Technology" />
       </View>
-
-      <Pressable onPress={() => go('AI Dental')} style={styles.homeAICard}>
-        <View style={styles.homeAIIcon}><Text style={styles.homeAIIconText}>✦</Text></View>
-        <View style={{flex:1}}><Text style={styles.homeAITitle}>Dr. Pranali Dental AI Assistant</Text><Text style={styles.homeAISub}>Ask questions, understand treatment information and get urgent-symptom guidance.</Text></View>
-        <Text style={styles.homeAIArrow}>›</Text>
-      </Pressable>
 
       <View style={styles.aboutCard}>
         <View style={{ flex: 1 }}>
@@ -287,140 +260,55 @@ function PatientDentalChart() {
   );
 }
 
-function PatientAIConsent({ onDone }) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const continueAI = async () => {
-    setBusy(true); setError('');
-    try {
-      await signInWithGoogle();
-      await giveAIConsent();
-      await registerExpoPushToken();
-      onDone();
-    } catch (e) {
-      setError(e?.message || 'Could not enable Dental AI.');
-    } finally { setBusy(false); }
-  };
-  return (
-    <View style={styles.aiConsentCard}>
-      <Text style={styles.aiEyebrow}>BEFORE FIRST USE</Text>
-      <Text style={styles.aiConsentTitle}>Your Dental AI Assistant</Text>
-      <Text style={styles.aiConsentText}>AI can explain dental information in simple language, help you prepare questions and flag symptoms that may need urgent attention.</Text>
-      <View style={styles.aiSafetyList}>
-        <Text style={styles.aiSafetyItem}>• Not a diagnosis</Text>
-        <Text style={styles.aiSafetyItem}>• Never prescribes medicines or dosage</Text>
-        <Text style={styles.aiSafetyItem}>• Emergency symptoms are flagged conservatively</Text>
-        <Text style={styles.aiSafetyItem}>• You can delete your AI chat history</Text>
-      </View>
-      <Pressable disabled={busy} onPress={continueAI} style={[styles.submitButton,busy&&{opacity:0.55}]}>
-        <Text style={styles.submitText}>{busy ? 'Connecting…' : 'Continue with Google & Consent'}</Text>
-      </Pressable>
-      {!!error && <Text style={styles.aiError}>{error}</Text>}
-    </View>
+function ServicesScreen({ onBook }) {
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState('All');
+  const [selectedService, setSelectedService] = useState(null);
+  const visibleServices = DENTAL_SERVICES.filter(service =>
+    (category === 'All' || service.category === category) &&
+    (service.name + ' ' + service.description + ' ' + service.category).toLowerCase().includes(query.trim().toLowerCase())
   );
-}
-
-function PatientAssistantScreen() {
-  const [ready, setReady] = useState(false);
-  const [checking, setChecking] = useState(true);
-  const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [busy, setBusy] = useState(false);
-  const [emergency, setEmergency] = useState(null);
-  const [planText, setPlanText] = useState('');
-  const [planBusy, setPlanBusy] = useState(false);
-  const [inviteCode, setInviteCode] = useState('');
-  const [linked, setLinked] = useState(true);
-  const [linking, setLinking] = useState(false);
-
-  useEffect(() => {
-    getAIConsent().then(value => setReady(value)).finally(() => setChecking(false));
-  }, []);
-
-  const send = async (text = message) => {
-    const value = text.trim();
-    if (!value || busy) return;
-    setBusy(true); setMessage('');
-    setMessages(prev => [...prev, { role:'user', text:value }]);
-    try {
-      const result = await patientAIChat(value);
-      setEmergency(result?.emergency ? result : null);
-      const answer = typeof result?.result === 'string' ? result.result : result?.result?.message || JSON.stringify(result?.result || result);
-      setMessages(prev => [...prev, { role:'assistant', text:answer }]);
-    } catch (e) {
-      setMessages(prev => [...prev, { role:'assistant', text:e?.message || 'The assistant is unavailable right now.' }]);
-    } finally { setBusy(false); }
-  };
-
-  const link = async () => {
-    if (!inviteCode.trim()) return;
-    setLinking(true);
-    try { await linkPatient(inviteCode.trim().toUpperCase()); setLinked(true); Alert.alert('Patient account','Your clinic-issued invite has linked your record to this Google account.'); }
-    catch(e){ Alert.alert('Link patient record', e?.message || 'Invalid or expired clinic invite code.'); }
-    finally { setLinking(false); }
-  };
-
-  const clearHistory = () => Alert.alert('Delete AI chat history?', 'This permanently deletes your saved AI conversation from the clinic AI store.', [
-    {text:'Cancel',style:'cancel'},
-    {text:'Delete',style:'destructive',onPress:async()=>{try{await deleteAIHistory();setMessages([]);Alert.alert('Deleted','Your AI chat history was deleted.');}catch(e){Alert.alert('Delete failed',e.message||'Could not delete history.');}}}
-  ]);
-
-  if (checking) return <View style={styles.aiLoading}><ActivityIndicator size="large" color={COLORS.blue}/></View>;
-  if (!ready) return <ScrollView contentContainerStyle={styles.scrollContent}><PatientAIConsent onDone={()=>setReady(true)}/></ScrollView>;
-
+  if (selectedService) {
+    return (
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Pressable onPress={() => setSelectedService(null)} style={styles.viewAll}><Text style={styles.viewAllText}>‹ All services</Text></Pressable>
+        <View style={styles.serviceDetailCard}>
+          <View style={styles.serviceDetailIcon}><Text style={styles.serviceDetailIconText}>{selectedService.icon}</Text></View>
+          <Text style={styles.pageTitle}>{selectedService.name}</Text>
+          <Text style={styles.pageSub}>{selectedService.description}</Text>
+          <Text style={styles.serviceCategoryLabel}>{selectedService.category}</Text>
+          <Text style={styles.serviceDetailNote}>Your dentist will confirm the appropriate treatment after an examination.</Text>
+          <Pressable onPress={() => onBook(selectedService.name)} style={styles.submitButton}><Text style={styles.submitText}>Book this service</Text></Pressable>
+        </View>
+      </ScrollView>
+    );
+  }
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-      <View style={styles.aiHero}>
-        <Text style={styles.aiEyebrow}>DR. PRANALI • DENTAL AI</Text>
-        <Text style={styles.aiTitle}>Your AI Assistant</Text>
-        <Text style={styles.aiSub}>Ask dental questions, understand your treatment plan and get safer next-step guidance.</Text>
-        <View style={styles.patientNotDiagnosis}><Text style={styles.patientNotDiagnosisText}>Not a diagnosis • No prescriptions or dosage advice</Text></View>
-      </View>
-      {!!emergency && <View style={styles.emergencyBanner}><Text style={styles.emergencyTitle}>URGENT DENTAL WARNING</Text><Text style={styles.emergencyText}>{emergency?.result?.message || 'Seek urgent care now.'}</Text></View>}
-      {!linked && <View style={styles.linkCard}><Text style={styles.aiCardTitle}>Link your clinic record</Text><Text style={styles.aiCardSub}>Enter the one-time invite code issued by the clinic. Your phone number alone cannot claim a patient record.</Text><TextInput value={inviteCode} onChangeText={setInviteCode} autoCapitalize="characters" placeholder="Clinic invite code" style={styles.input}/><Pressable onPress={link} disabled={linking} style={styles.submitButton}><Text style={styles.submitText}>{linking?'Linking…':'Link patient record'}</Text></Pressable></View>}
-      <View style={styles.quickReplyRow}>
-        {['Explain my treatment','I have tooth pain','What should I ask my dentist?','Is this urgent?'].map(chip=><Pressable key={chip} onPress={()=>send(chip)} style={styles.aiQuickChip}><Text style={styles.aiQuickChipText}>{chip}</Text></Pressable>)}
-      </View>
-      <View style={styles.chatCard}>
-        {messages.length===0 && <Text style={styles.chatEmpty}>Start with a question. The assistant will clearly say when something needs a dentist or urgent care.</Text>}
-        {messages.map((m,i)=><View key={i} style={[styles.chatBubble,m.role==='user'?styles.chatUser:styles.chatAssistant]}><Text style={styles.chatText}>{m.text}</Text></View>)}
-        {busy && <View style={styles.chatBubble}><ActivityIndicator color={COLORS.blue}/></View>}
-        <View style={styles.chatComposer}><TextInput value={message} onChangeText={setMessage} placeholder="Ask your dental question…" style={[styles.input,{flex:1,marginRight:8}]} multiline/><Pressable onPress={()=>send()} style={styles.chatSend}><Text style={styles.chatSendText}>Send</Text></Pressable></View>
-      </View>
-      <View style={styles.aiUtilityCard}>
-        <Text style={styles.aiCardTitle}>Plain-language treatment plan</Text>
-        <TextInput value={planText} onChangeText={setPlanText} placeholder="Paste your dentist's treatment plan here…" multiline style={[styles.input,{minHeight:70,marginTop:8}]} />
-        <Pressable disabled={!planText.trim()||planBusy} onPress={async()=>{setPlanBusy(true);try{const r=await explainTreatment(planText.trim());const answer=typeof r?.result==='string'?r.result:r?.result?.message||JSON.stringify(r?.result);setMessages(prev=>[...prev,{role:'assistant',text:answer}]);setPlanText('');}catch(e){Alert.alert('AI',e.message||'Unavailable');}finally{setPlanBusy(false);}}} style={[styles.submitButton,(!planText.trim()||planBusy)&&{opacity:0.5}]}><Text style={styles.submitText}>{planBusy?'Explaining…':'Explain my treatment plan'}</Text></Pressable>
-        <Pressable onPress={clearHistory}><Text style={styles.aiDeleteLink}>Delete my AI chat history</Text></Pressable>
-      </View>
-    </ScrollView>
-  );
-}
-
-function AIDentalScreen() {
-  return <PatientAssistantScreen />;
-}
-function ServicesScreen() {
-  return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
       <Text style={styles.pageTitle}>Dental Services</Text>
-      <Text style={styles.pageSub}>Comprehensive dental care for children and adults.</Text>
+      <Text style={styles.pageSub}>Explore care options and choose a reason for your visit.</Text>
+      <TextInput value={query} onChangeText={setQuery} placeholder="Search dental services…" placeholderTextColor="#91A1B0" style={styles.input} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap:8,paddingVertical:12}}>
+        {DENTAL_SERVICE_CATEGORIES.map(item => <Pressable key={item} onPress={() => setCategory(item)} style={[styles.chip,category===item&&styles.chipActive]}><Text style={[styles.chipText,category===item&&styles.chipTextActive]}>{item}</Text></Pressable>)}
+      </ScrollView>
       <View style={styles.servicesGrid}>
-        {services.map(([name, desc, icon]) => <ServiceCard key={name} name={name} desc={desc} icon={icon} />)}
+        {visibleServices.map(service => <ServiceCard key={service.id} name={service.name} desc={service.description} icon={service.icon} onPress={() => setSelectedService(service)} />)}
       </View>
+      {visibleServices.length===0 && <Text style={styles.pageSub}>No services match that search.</Text>}
       <View style={styles.bottomSpacer} />
     </ScrollView>
   );
 }
 
-function AppointmentScreen() {
+function AppointmentScreen({ initialReason }) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [reason, setReason] = useState('');
+  const [reason, setReason] = useState(initialReason || '');
+  useEffect(() => { if (initialReason) setReason(initialReason); }, [initialReason]);
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
 
@@ -525,7 +413,7 @@ function AppointmentScreen() {
         )}
         <Text style={styles.fieldLabel}>Reason for Visit</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 10 }}>
-          {services.slice(0, 8).map(([service]) => (
+          {services.map(([service]) => (
             <Pressable key={service} onPress={() => setReason(service)} style={[styles.chip, reason === service && styles.chipActive]}>
               <Text style={[styles.chipText, reason === service && styles.chipTextActive]}>{service}</Text>
             </Pressable>
@@ -565,7 +453,7 @@ function GalleryScreen() {
       <Text style={styles.pageTitle}>Gallery</Text>
       <Text style={styles.pageSub}>A glimpse of Dr. Pranali and the clinic experience.</Text>
       <View style={styles.galleryCard}>
-        <Image source={require('./assets/dr-pranali.jpg')} style={styles.galleryImage} />
+        <SafeImage source={require('./assets/dr-pranali.jpg')} style={styles.galleryImage} placeholder="🏥" />
         <Text style={styles.galleryTitle}>Dr. Pranali – BDS Dental Surgeon</Text>
         <Text style={styles.gallerySub}>Patient-focused dental care with a gentle approach.</Text>
       </View>
@@ -604,23 +492,25 @@ function ContactScreen() {
 export default function App() {
   const [started, setStarted] = useState(false);
   const [tab, setTab] = useState('Home');
-  if (!started) return <WelcomeScreen onStart={(nextTab) => { setStarted(true); if (nextTab) setTab(nextTab); }} />;
+  const [selectedServiceReason, setSelectedServiceReason] = useState('');
+  // Hooks must run in the same order on every render, including the Welcome screen.
   const screen = useMemo(() => {
-    if (tab === 'AI Dental') return <AIDentalScreen />;
-    if (tab === 'Services') return <ServicesScreen />;
-    if (tab === 'Appointment') return <AppointmentScreen />;
+    if (tab === 'Services') return <ServicesScreen onBook={(name) => { setSelectedServiceReason(name); setTab('Appointment'); }} />;
+    if (tab === 'Appointment') return <AppointmentScreen initialReason={selectedServiceReason} />;
     if (tab === 'Gallery') return <GalleryScreen />;
     if (tab === 'Contact') return <ContactScreen />;
     return <HomeScreen go={setTab} />;
-  }, [tab]);
+  }, [tab, selectedServiceReason]);
+
+  if (!started) return <WelcomeScreen onStart={(nextTab) => { setStarted(true); if (nextTab) setTab(nextTab); }} />;
 
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>Dr. Pranali Dental</Text>
-          <Text style={styles.headerSub}>Healthy Smile, Happy You!</Text>
+          <Text style={styles.headerTitle}>{BRAND.name}</Text>
+          <Text style={styles.headerSub}>{BRAND.tagline}</Text>
         </View>
         <Pressable onPress={() => Alert.alert('Dr. Pranali Dental', `BDS – Dental Surgeon\n\nTaloja, Navi Mumbai\n${PHONE}`)} style={styles.settings}><Text style={styles.settingsText}>⚙</Text></Pressable>
       </View>
@@ -641,8 +531,27 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  welcomeSafe:{flex:1,backgroundColor:'#F7FBFF'},
-  welcomeContent:{flexGrow:1,paddingHorizontal:22,paddingTop:18,paddingBottom:18,alignItems:'center'},
+  imageFallback:{backgroundColor:'#EAF5FF',alignItems:'center',justifyContent:'center',overflow:'hidden'},
+  imageFallbackText:{fontSize:30,color:'#0A84E8'},
+  loginBrand:{alignItems:'center',marginTop:10,marginBottom:8},
+  loginBrandLogo:{width:136,height:118},
+  loginBrandName:{fontSize:28,fontWeight:'900',letterSpacing:-0.8,color:'#0C3B82',marginTop:-2},
+  loginBrandClinic:{fontSize:9,fontWeight:'900',letterSpacing:2.4,color:'#0A84E8',marginTop:2},
+  patientLoginCard:{width:'100%',backgroundColor:'#FFFFFF',borderRadius:26,borderWidth:1,borderColor:'#DDEEF7',padding:20,marginTop:22,shadowColor:'#0C3B82',shadowOpacity:0.07,shadowRadius:16,elevation:3},
+  patientLoginHeading:{fontSize:23,fontWeight:'900',color:'#0C3B82',textAlign:'center'},
+  patientLoginCopy:{fontSize:12.5,color:'#657789',textAlign:'center',lineHeight:18,marginTop:5,marginBottom:16},
+  googleMark:{fontSize:22,fontWeight:'900',color:'#4285F4',marginRight:10},
+  loginDivider:{flexDirection:'row',alignItems:'center',gap:10,marginVertical:12},
+  loginDividerLine:{height:1,backgroundColor:'#E2EDF5',flex:1},
+  loginDividerText:{fontSize:10,fontWeight:'800',color:'#9AA9B7'},
+  guestHint:{fontSize:10.5,lineHeight:16,color:'#7C8B99',textAlign:'center',marginTop:10},
+  patientTrustRow:{width:'100%',flexDirection:'row',justifyContent:'space-between',marginTop:20,paddingVertical:14,paddingHorizontal:6,backgroundColor:'#EAF8FC',borderRadius:18,borderWidth:1,borderColor:'#D4F1F1'},
+  patientTrustItem:{flex:1,alignItems:'center',gap:5},
+  patientTrustIcon:{fontSize:22,color:'#0A84E8'},
+  patientTrustLabel:{fontSize:9.5,fontWeight:'800',color:'#0C3B82',textAlign:'center'},
+
+  welcomeSafe:{flex:1,backgroundColor:'#F4FBFF'},
+  welcomeContent:{flexGrow:1,paddingHorizontal:22,paddingTop:12,paddingBottom:24,alignItems:'center',justifyContent:'center'},
   welcomeTop:{width:'100%',flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
   brandBadge:{flexDirection:'row',alignItems:'center',gap:9},
   brandBadgeLogo:{width:42,height:42},
@@ -650,21 +559,21 @@ const styles = StyleSheet.create({
   welcomeClinic:{fontSize:8.5,fontWeight:'900',letterSpacing:2,color:COLORS.blue,marginTop:1},
   skipButton:{paddingHorizontal:13,paddingVertical:8,borderRadius:18,backgroundColor:'#FFFFFF',borderWidth:1,borderColor:'#DDEAF5'},
   skipText:{fontSize:12,fontWeight:'800',color:'#657789'},
-  welcomeTitle:{fontSize:34,lineHeight:38,fontWeight:'900',color:'#0B2E4F',marginTop:38,textAlign:'center',letterSpacing:-1},
-  welcomeTitleBlue:{fontSize:34,lineHeight:38,fontWeight:'900',color:'#1677D2',textAlign:'center',letterSpacing:-1},
+  welcomeTitle:{fontSize:31,lineHeight:36,fontWeight:'900',color:'#0C3B82',marginTop:18,textAlign:'center',letterSpacing:-0.8},
+  welcomeTitleBlue:{fontSize:31,lineHeight:36,fontWeight:'900',color:'#0A84E8',textAlign:'center',letterSpacing:-0.8},
   welcomeSub:{fontSize:14,color:'#657789',lineHeight:20,textAlign:'center',marginTop:10,maxWidth:290},
   logoStage:{width:'100%',height:300,alignItems:'center',justifyContent:'flex-end',marginTop:3,position:'relative'},
   logoGlow:{position:'absolute',width:245,height:245,borderRadius:125,backgroundColor:'#E4F2FF',top:30,opacity:0.8},
   hero3dLogo:{width:270,height:270,zIndex:2},
   logoPedestal:{position:'absolute',bottom:18,width:220,height:22,borderRadius:14,backgroundColor:'#D8EBFB',borderWidth:1,borderColor:'#BBDCF6',shadowOpacity:0.12,shadowRadius:12,elevation:5},
   logoPedestalGlow:{position:'absolute',left:18,right:18,top:5,height:5,borderRadius:4,backgroundColor:'#4EA5F5',opacity:0.75},
-  googleButton:{width:'100%',height:50,borderRadius:25,backgroundColor:'#FFFFFF',borderWidth:1,borderColor:'#D6E2EE',alignItems:'center',justifyContent:'center',marginBottom:8},
+  googleButton:{width:'100%',minHeight:52,borderRadius:15,backgroundColor:'#FFFFFF',borderWidth:1,borderColor:'#D6E2EE',alignItems:'center',justifyContent:'center',flexDirection:'row',marginBottom:8},
   googleButtonText:{color:'#18334D',fontSize:14,fontWeight:'900'},
-  googleMessage:{fontSize:11,color:'#6B7D8F',textAlign:'center',marginBottom:8},
-  getStarted:{width:'100%',height:58,borderRadius:29,backgroundColor:'#1677D2',flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingLeft:25,paddingRight:7,shadowOpacity:0.18,shadowRadius:12,elevation:4},
-  getStartedText:{color:'#FFFFFF',fontSize:16,fontWeight:'900',marginLeft:70},
-  arrowCircle:{width:44,height:44,borderRadius:22,backgroundColor:'#FFFFFF',alignItems:'center',justifyContent:'center'},
-  arrowText:{fontSize:22,fontWeight:'900',color:'#1677D2'},
+  googleMessage:{fontSize:11,color:'#6B7D8F',textAlign:'center',marginBottom:8,lineHeight:16},
+  getStarted:{width:'100%',height:54,borderRadius:15,backgroundColor:'#0A84E8',flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingLeft:18,paddingRight:6,shadowOpacity:0.12,shadowRadius:10,elevation:3},
+  getStartedText:{color:'#FFFFFF',fontSize:15,fontWeight:'900',marginLeft:0},
+  arrowCircle:{width:42,height:42,borderRadius:13,backgroundColor:'#00C6C8',alignItems:'center',justifyContent:'center'},
+  arrowText:{fontSize:22,fontWeight:'900',color:'#FFFFFF'},
   exploreButton:{flexDirection:'row',alignItems:'center',gap:7,paddingVertical:14},
   exploreText:{fontSize:13,fontWeight:'800',color:'#18334D'},
   exploreArrow:{fontSize:16,color:'#1677D2'},
@@ -726,6 +635,11 @@ const styles = StyleSheet.create({
   viewAll: { backgroundColor: '#E8F4FF', borderRadius: 14, padding: 14, alignItems: 'center', marginTop: 2, borderWidth: 1, borderColor: '#D6E9F8' },
   viewAllText: { color: COLORS.blue, fontWeight: '800' },
   pageTitle: { color: COLORS.navy, fontSize: 28, fontWeight: '900', marginTop: 4, letterSpacing: -0.3 },
+  serviceDetailCard:{backgroundColor:COLORS.white,borderRadius:22,padding:20,borderWidth:1,borderColor:COLORS.border,marginTop:14},
+  serviceDetailIcon:{width:76,height:76,borderRadius:22,backgroundColor:COLORS.pale,alignItems:'center',justifyContent:'center',marginBottom:12},
+  serviceDetailIconText:{fontSize:42},
+  serviceCategoryLabel:{alignSelf:'flex-start',backgroundColor:COLORS.pale,color:COLORS.navy,borderRadius:12,paddingHorizontal:12,paddingVertical:6,fontWeight:'800',overflow:'hidden'},
+  serviceDetailNote:{color:COLORS.muted,fontSize:13,lineHeight:19,marginTop:12},
   pageSub: { color: COLORS.muted, fontSize: 15, lineHeight: 22, marginTop: 5, marginBottom: 15 },
   formCard: { backgroundColor: COLORS.white, borderRadius: 20, padding: 17, borderWidth: 1, borderColor: '#E2EBF3', shadowOpacity: 0.03, shadowRadius: 8, elevation: 1 },
   fieldLabel: { color: COLORS.navy, fontSize: 13, fontWeight: '800', marginBottom: 6, marginTop: 10 },
