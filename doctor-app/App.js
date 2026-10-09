@@ -15,8 +15,8 @@ import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTre
 const clinicLogo = require('./assets/dr-pranali-branded-logo.png');
 
 const C = {
-  navy:'#082B49', blue:'#1677D2', bg:'#F5F9FC', white:'#FFF',
-  text:'#18334D', muted:'#6B7D8F', border:'#DCE8F4',
+  ...BRAND.colors,
+  bg: BRAND.colors.background,
   green:'#1DAA68', amber:'#D98900', red:'#D64B4B'
 };
 
