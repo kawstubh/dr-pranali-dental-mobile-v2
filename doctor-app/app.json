@@ -5,18 +5,18 @@
     "slug": "dr-pranali-dental-doctor",
     "version": "1.0.2",
     "orientation": "portrait",
-    "icon": "./assets/dr-pranali-branded-logo.png",
+    "icon": "./assets/doctor-shield.svg",
     "splash": {
-      "image": "./assets/dr-pranali-branded-logo.png",
+      "image": "./assets/doctor-shield.svg",
       "resizeMode": "contain",
-      "backgroundColor": "#FFF7FB"
+      "backgroundColor": "#073B4C"
     },
     "android": {
       "package": "com.drpranali.dental.doctor",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/dr-pranali-branded-logo.png",
-        "backgroundColor": "#FFF7FB",
-        "monochromeImage": "./assets/dr-pranali-branded-logo.png"
+        "foregroundImage": "./assets/doctor-shield.svg",
+        "backgroundColor": "#073B4C",
+        "monochromeImage": "./assets/monochrome-shield.svg"
       }
     },
     "ios": {
@@ -29,7 +29,14 @@
           "icon": "./assets/dr-pranali-branded-logo.png",
           "color": "#0D9488"
         }
-      }
+      },
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-mark.svg",
+          "color": "#0D9488"
+        }
+      ]
     ],
     "extra": {
       "apiUrl": "https://dr-pranali-dental-api.onrender.com",
@@ -38,7 +45,7 @@
       }
     },
     "web": {
-      "favicon": "./assets/dr-pranali-branded-logo.png"
+      "favicon": "./assets/doctor-shield.svg"
     }
   }
 }
