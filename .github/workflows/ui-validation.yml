@@ -23,7 +23,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m pip install --upgrade pip pillow
+      - run: python -m pip install --upgrade pip pillow cairosvg
+      - run: python scripts/generate_brand_assets.py
       - run: python scripts/audit_images.py
       - run: npm ci
       - run: npx tsc --noEmit
