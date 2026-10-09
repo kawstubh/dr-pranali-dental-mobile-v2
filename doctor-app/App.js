@@ -6,6 +6,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { BRAND } from '../src/brandConstants';
+import { DENTAL_SERVICES } from '../shared/dentalServices';
 import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry } from './src/api/doctorApi';
 import { getStoredDoctorSession, signInWithGoogle, signOutGoogle } from './src/auth/googleAuth';
 import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
@@ -297,7 +299,7 @@ function Dashboard({ token, logout }) {
     <View style={styles.header}>
       <View style={styles.headerBrand}>
         <Image source={clinicLogo} style={styles.headerLogo} resizeMode="contain" />
-        <View><Text style={styles.headerTitle}>Dr. Pranali</Text><Text style={styles.headerSub}>Dental Clinic â€¢ Taloja</Text></View>
+        <View><Text style={styles.headerTitle}>{BRAND.name}</Text><Text style={styles.headerSub}>Dental Clinic â€¢ Taloja</Text></View>
       </View>
       <Pressable onPress={()=>{logout();}} style={styles.headerAction}><Text style={styles.headerActionText}>Sign out</Text></Pressable>
     </View>
@@ -336,7 +338,12 @@ function Dashboard({ token, logout }) {
           {selectedPatient?<View style={styles.intelSelectedPatient}><Text style={styles.intelSelectedName}>{selectedPatient.name}</Text><Text style={styles.intelSelectedMeta}>{selectedPatient.age?'Age '+selectedPatient.age:'Clinical record selected'}</Text></View>:<Text style={styles.intelPickerHint}>Choose a patient below for Patient Intelligence and Treatment Research.</Text>}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap:7,paddingTop:9}}>{patients.map(p=><Pressable key={p.id} onPress={()=>setSelectedPatient(p)} style={[styles.patientChip,selectedPatient?.id===p.id&&styles.patientChipActive]}><Text style={[styles.patientChipText,selectedPatient?.id===p.id&&styles.patientChipTextActive]}>{p.name}</Text></Pressable>)}</ScrollView>
         </View>
-        <DoctorAIActionCard token={token} patient={selectedPatient} title="Treatment Planning • AI Suggestion" description="Treatment-plan options with rationale, alternatives and verification points." capability="treatment_plan" run={doctorTreatmentPlan}/>
+        <View style={styles.treatmentCatalogue}>
+          <Text style={styles.sectionTitle}>Treatment service catalogue</Text>
+          <Text style={styles.treatmentCatalogueSub}>Select a service to discuss in the clinical plan. The catalogue does not write to a patient record.</Text>
+          {DENTAL_SERVICES.map(service => <View key={service.id} style={styles.treatmentServiceRow}><Text style={styles.treatmentServiceIcon}>{service.icon}</Text><View style={{flex:1}}><Text style={styles.treatmentServiceName}>{service.name}</Text><Text style={styles.treatmentServiceMeta}>{service.category}</Text></View></View>)}
+        </View>
+                <DoctorAIActionCard token={token} patient={selectedPatient} title="Treatment Planning • AI Suggestion" description="Treatment-plan options with rationale, alternatives and verification points." capability="treatment_plan" run={doctorTreatmentPlan}/>
         <DoctorAIActionCard token={token} patient={selectedPatient} title="Follow-up & Recall Recommendations" description="Recall timing and follow-up considerations; no appointment is created automatically." capability="follow_up" run={doctorFollowUp}/>
         <DoctorScanCard token={token} patient={selectedPatient}/>
         <IntelligenceCard token={token} patient={selectedPatient} title="Clinical Research" description="Evidence-backed research with sources." goal="Answer an evidence-based clinical question and show sources and uncertainty." />
@@ -395,7 +402,7 @@ function GoogleLoginScreen({ onSignedIn }) {
       <ScrollView contentContainerStyle={styles.loginWrap}>
         <Image source={clinicLogo} style={styles.loginLogo} resizeMode="contain" />
         <Text style={styles.kicker}>DOCTOR PORTAL</Text>
-        <Text style={styles.loginTitle}>Dr. Pranali Dental Clinic</Text>
+        <Text style={styles.loginTitle}>{BRAND.name} Doctor</Text>
         <Text style={styles.loginSub}>Sign in with the Google account authorized for this clinic.</Text>
         <View style={styles.card}>
           <Text style={styles.label}>Secure doctor authentication</Text>
