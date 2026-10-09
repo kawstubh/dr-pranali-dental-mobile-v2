@@ -45,6 +45,14 @@ const tabs = [
   ['Contact', '☎'],
 ];
 
+function SafeImage({ source, style, resizeMode = 'cover', placeholder = '🦷' }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return <View style={[style, styles.imageFallback]}><Text style={styles.imageFallbackText}>{placeholder}</Text></View>;
+  }
+  return <Image source={source} style={style} resizeMode={resizeMode} onError={() => setFailed(true)} />;
+}
+
 function WelcomeScreen({ onStart }) {
   const [googleBusy, setGoogleBusy] = useState(false);
   const [googleMessage, setGoogleMessage] = useState('');
@@ -70,7 +78,7 @@ function WelcomeScreen({ onStart }) {
       <ScrollView contentContainerStyle={styles.welcomeContent} showsVerticalScrollIndicator={false}>
         <View style={styles.welcomeTop}>
           <View style={styles.brandBadge}>
-            <Image source={require('./assets/universal-dental-icon.png')} style={styles.brandBadgeLogo} resizeMode="contain" />
+            <SafeImage source={require('./assets/universal-dental-icon.png')} style={styles.brandBadgeLogo} resizeMode="contain" />
             <View>
               <Text style={styles.welcomeBrand}>{BRAND.name}</Text>
               <Text style={styles.welcomeClinic}>DENTAL CLINIC</Text>
@@ -83,7 +91,7 @@ function WelcomeScreen({ onStart }) {
         <Text style={styles.welcomeSub}>Expert dental care for a healthier, brighter smile</Text>
         <View style={styles.logoStage}>
           <View style={styles.logoGlow} />
-          <Image source={require('./assets/universal-dental-icon.png')} style={styles.hero3dLogo} resizeMode="contain" />
+          <SafeImage source={require('./assets/universal-dental-icon.png')} style={styles.hero3dLogo} resizeMode="contain" />
           <View style={styles.logoPedestal}><View style={styles.logoPedestalGlow} /></View>
         </View>
         <Pressable disabled={googleBusy} onPress={googleLogin} style={[styles.googleButton, googleBusy && { opacity: 0.6 }]}>
@@ -154,7 +162,7 @@ function HomeScreen({ go }) {
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
       <View style={styles.hero}>
         <View style={styles.profileColumn}>
-          <Image source={require('./assets/dr-pranali.jpg')} style={styles.profileImage} />
+          <SafeImage source={require('./assets/dr-pranali.jpg')} style={styles.profileImage} placeholder="👩‍⚕️" />
           <View style={styles.bdsBadge}><Text style={styles.bdsText}>BDS</Text></View>
           <Text style={styles.doctorName}>Dr. Pranali</Text>
           <Text style={styles.degree}>BDS – Dental Surgeon</Text>
@@ -570,7 +578,7 @@ function GalleryScreen() {
       <Text style={styles.pageTitle}>Gallery</Text>
       <Text style={styles.pageSub}>A glimpse of Dr. Pranali and the clinic experience.</Text>
       <View style={styles.galleryCard}>
-        <Image source={require('./assets/dr-pranali.jpg')} style={styles.galleryImage} />
+        <SafeImage source={require('./assets/dr-pranali.jpg')} style={styles.galleryImage} placeholder="🏥" />
         <Text style={styles.galleryTitle}>Dr. Pranali – BDS Dental Surgeon</Text>
         <Text style={styles.gallerySub}>Patient-focused dental care with a gentle approach.</Text>
       </View>
@@ -647,6 +655,8 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
+  imageFallback:{backgroundColor:'#EAF5FF',alignItems:'center',justifyContent:'center',overflow:'hidden'},
+  imageFallbackText:{fontSize:30,color:'#1677D2'},
   welcomeSafe:{flex:1,backgroundColor:'#F7FBFF'},
   welcomeContent:{flexGrow:1,paddingHorizontal:22,paddingTop:18,paddingBottom:18,alignItems:'center'},
   welcomeTop:{width:'100%',flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
