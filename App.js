@@ -618,7 +618,7 @@ export default function App() {
   const [started, setStarted] = useState(false);
   const [tab, setTab] = useState('Home');
   const [selectedServiceReason, setSelectedServiceReason] = useState('');
-  if (!started) return <WelcomeScreen onStart={(nextTab) => { setStarted(true); if (nextTab) setTab(nextTab); }} />;
+  // Hooks must run in the same order on every render, including the Welcome screen.
   const screen = useMemo(() => {
     if (tab === 'AI Dental') return <AIDentalScreen />;
     if (tab === 'Services') return <ServicesScreen onBook={(name) => { setSelectedServiceReason(name); setTab('Appointment'); }} />;
@@ -627,6 +627,8 @@ export default function App() {
     if (tab === 'Contact') return <ContactScreen />;
     return <HomeScreen go={setTab} />;
   }, [tab, selectedServiceReason]);
+
+  if (!started) return <WelcomeScreen onStart={(nextTab) => { setStarted(true); if (nextTab) setTab(nextTab); }} />;
 
   return (
     <SafeAreaView style={styles.safe}>
