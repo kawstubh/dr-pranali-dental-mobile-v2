@@ -1,7 +1,7 @@
 ﻿
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Alert, Image, Linking, Pressable, RefreshControl,
+  ActivityIndicator, Alert, Animated, Image, Linking, Pressable, RefreshControl,
   ScrollView, StyleSheet, Text, TextInput, View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -382,24 +382,32 @@ function Empty({text}){return <View style={styles.empty}><Text style={styles.emp
 function GoogleLoginScreen({ onSignedIn }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [serverWaking, setServerWaking] = useState(false);
+  const entrance = useRef(new Animated.Value(0)).current;
+  useEffect(() => { Animated.timing(entrance, { toValue: 1, duration: 520, useNativeDriver: true }).start(); }, [entrance]);
 
   const login = async () => {
     setBusy(true);
     setError('');
+    setServerWaking(true);
+    fetch('https://dr-pranali-dental-api.onrender.com/health').catch(() => null);
     try {
       const session = await signInWithGoogle('https://dr-pranali-dental-api.onrender.com');
       onSignedIn(session.access_token);
     } catch (e) {
-      setError(e?.message || 'Google sign-in failed.');
+      const code = e?.code || e?.errorCode || e?.name;
+      setError((code ? '[' + code + '] ' : '') + (e?.message || 'Google sign-in failed.'));
     } finally {
       setBusy(false);
+      setServerWaking(false);
     }
   };
 
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={styles.loginWrap}>
+      <ScrollView contentContainerStyle={styles.loginWrap} keyboardShouldPersistTaps="handled">
+        <Animated.View style={{opacity:entrance,transform:[{translateY:entrance.interpolate({inputRange:[0,1],outputRange:[18,0]})}]}}>
         <Image source={clinicLogo} style={styles.loginLogo} resizeMode="contain" />
         <Text style={styles.kicker}>DOCTOR PORTAL</Text>
         <Text style={styles.loginTitle}>{BRAND.name} Doctor</Text>
@@ -407,11 +415,13 @@ function GoogleLoginScreen({ onSignedIn }) {
         <View style={styles.card}>
           <Text style={styles.label}>Secure doctor authentication</Text>
           <Text style={styles.help}>This uses native Android Google Sign-In. No Expo OAuth proxy and no OTP are used.</Text>
-          <Pressable disabled={busy} onPress={login} style={[styles.primary, busy && {opacity:0.6}]}>
-            {busy ? <ActivityIndicator color={C.white} /> : <Text style={styles.primaryText}>Continue with Google</Text>}
+          <Pressable disabled={busy} onPress={login} style={[styles.googleBrandButton, busy && {opacity:0.6}]}>
+            {busy ? <ActivityIndicator color={C.blue} /> : <><Text style={styles.googleG}>G</Text><Text style={styles.googleBrandText}>Continue with Google</Text></>}
           </Pressable>
+          {serverWaking && <Text style={styles.serverWake}>Waking up the clinic server…</Text>}
           {!!error && <View style={styles.loginError}><Text style={styles.loginErrorTitle}>Sign-in error</Text><Text style={styles.loginErrorText}>{error}</Text></View>}
         </View>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -436,6 +446,16 @@ export default function App(){
 }
 
 const styles=StyleSheet.create({
+ treatmentCatalogue:{backgroundColor:'#FFFFFF',borderRadius:18,padding:14,marginBottom:14,borderWidth:1,borderColor:C.border},
+ treatmentCatalogueSub:{color:C.muted,fontSize:12,lineHeight:18,marginTop:5,marginBottom:8},
+ treatmentServiceRow:{flexDirection:'row',alignItems:'center',paddingVertical:8,borderBottomWidth:1,borderBottomColor:'#EDF2F7',gap:10},
+ treatmentServiceIcon:{fontSize:20,width:28,textAlign:'center'},
+ treatmentServiceName:{color:C.text,fontWeight:'700',fontSize:13},
+ treatmentServiceMeta:{color:C.muted,fontSize:11,marginTop:2},
+ googleBrandButton:{minHeight:52,borderRadius:14,backgroundColor:'#FFFFFF',borderWidth:1,borderColor:'#D6E2EE',flexDirection:'row',alignItems:'center',justifyContent:'center',gap:12},
+ googleG:{fontSize:22,fontWeight:'900',color:'#4285F4'},
+ googleBrandText:{fontSize:14,fontWeight:'800',color:C.text},
+ serverWake:{fontSize:12,color:C.muted,textAlign:'center',marginTop:10},
  safe:{flex:1,backgroundColor:C.bg}, loginWrap:{padding:24,paddingTop:70,flexGrow:1,justifyContent:'center'},
  loginLogo:{width:150,height:150,borderRadius:34,alignSelf:'center',marginBottom:14},
  logo:{width:82,height:82,borderRadius:24,backgroundColor:'#0B2E4F',alignItems:'center',justifyContent:'center',alignSelf:'center',marginBottom:18},
