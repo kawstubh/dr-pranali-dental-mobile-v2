@@ -1,8 +1,7 @@
 name: Install Expo Image dependency
 on:
-  pull_request:
-    branches: [master]
-    types: [opened, synchronize, reopened]
+  push:
+    branches: [ui/brand-and-services]
 permissions:
   contents: write
 jobs:
@@ -28,7 +27,7 @@ jobs:
           npx expo install expo-image
       - name: Commit dependency manifests and lockfiles
         env:
-          TARGET_BRANCH: ${{ github.event.pull_request.head.ref }}
+          TARGET_BRANCH: ui/brand-and-services
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
