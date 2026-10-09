@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { BRAND } from '../src/brandTheme';
 import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry } from './src/api/doctorApi';
 import { getStoredDoctorSession, signInWithGoogle, signOutGoogle } from './src/auth/googleAuth';
 import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
@@ -13,7 +14,8 @@ import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTre
 const clinicLogo = require('./assets/dr-pranali-branded-logo.png');
 
 const C = {
-  navy:'#082B49', blue:'#1677D2', bg:'#F5F9FC', white:'#FFF',
+  navy: BRAND.colors.deepBlue, blue: BRAND.colors.skyBlue, teal: BRAND.colors.teal,
+  bg: BRAND.colors.lightBlue, white: BRAND.colors.white,
   text:'#18334D', muted:'#6B7D8F', border:'#DCE8F4',
   green:'#1DAA68', amber:'#D98900', red:'#D64B4B'
 };
@@ -372,38 +374,52 @@ function ClinicalResearchCard({ token, patient }) {
 function Stat({n,t}){return <View style={styles.stat}><Text style={styles.statN}>{n}</Text><Text style={styles.statT}>{t}</Text></View>}
 function Empty({text}){return <View style={styles.empty}><Text style={styles.emptyText}>{text}</Text></View>}
 
-function GoogleLoginScreen({ onSignedIn }) {
+function GoogleLoginScreen({ onSignedIn, serverMessage }) {
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
+  const [stage, setStage] = useState('');
+  const [mobile, setMobile] = useState('');
+  const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(true);
+  const [localMessage, setLocalMessage] = useState('');
 
   const login = async () => {
-    setBusy(true);
-    setError('');
+    setBusy(true); setError(null); setLocalMessage(''); setStage('Opening Google...');
     try {
-      const session = await signInWithGoogle('https://dr-pranali-dental-api.onrender.com');
+      const session = await signInWithGoogle('https://dr-pranali-dental-api.onrender.com', setStage);
       onSignedIn(session.access_token);
     } catch (e) {
-      setError(e?.message || 'Google sign-in failed.');
-    } finally {
-      setBusy(false);
-    }
+      setError({ message: e?.message || 'Google sign-in failed.', code: e?.code || e?.name || 'AUTH_ERROR', stage: e?.stage || stage || 'Unknown stage' });
+    } finally { setBusy(false); }
   };
+  const unavailable = method => setLocalMessage(method + ' sign-in is displayed for the approved design but is not connected to an authentication provider yet.');
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={styles.loginWrap}>
-        <Image source={clinicLogo} style={styles.loginLogo} resizeMode="contain" />
-        <Text style={styles.kicker}>DOCTOR PORTAL</Text>
-        <Text style={styles.loginTitle}>Dr. Pranali Dental Clinic</Text>
-        <Text style={styles.loginSub}>Sign in with the Google account authorized for this clinic.</Text>
-        <View style={styles.card}>
-          <Text style={styles.label}>Secure doctor authentication</Text>
-          <Text style={styles.help}>This uses native Android Google Sign-In. No Expo OAuth proxy and no OTP are used.</Text>
-          <Pressable disabled={busy} onPress={login} style={[styles.primary, busy && {opacity:0.6}]}>
-            {busy ? <ActivityIndicator color={C.white} /> : <Text style={styles.primaryText}>Continue with Google</Text>}
+      <StatusBar style="light" />
+      <ScrollView contentContainerStyle={styles.doctorLoginWrap} keyboardShouldPersistTaps="handled">
+        <View style={styles.doctorPhotoPlaceholder}><Text style={styles.doctorPhotoPlaceholderTitle}>DOCTOR HEADER PHOTO PLACEHOLDER</Text><Text style={styles.doctorPhotoPlaceholderSub}>Original doctor-at-work photo pending</Text></View>
+        <View style={styles.doctorLogoPlaceholder}><Text style={styles.doctorLogoPlaceholderText}>LOGO PLACEHOLDER</Text><Text style={styles.doctorLogoPlaceholderSub}>Original white orbit-tooth logo pending</Text></View>
+        <Text style={styles.doctorBrandName}>Dr Pranali</Text>
+        <Text style={styles.doctorBrandClinic}>D E N T A L   C L I N I C</Text>
+        <Text style={styles.doctorLoginTitle}>Doctor Login</Text>
+        <Text style={styles.doctorLoginSub}>Access Your Schedule, Patients & Records</Text>
+        <View style={styles.doctorLoginCard}>
+          <Pressable disabled={busy} onPress={login} style={[styles.doctorProviderButton,busy&&{opacity:0.7}]}>
+            <Text style={styles.doctorGoogleMark}>G</Text><Text style={styles.doctorProviderText}>{busy ? stage || 'Opening Google...' : 'Continue with Google'}</Text>
           </Pressable>
-          {!!error && <View style={styles.loginError}><Text style={styles.loginErrorTitle}>Sign-in error</Text><Text style={styles.loginErrorText}>{error}</Text></View>}
+          <Pressable onPress={() => unavailable('Apple')} style={styles.doctorProviderButton}><Text style={styles.doctorAppleMark}>●</Text><Text style={styles.doctorProviderText}>Continue with Apple</Text></Pressable>
+          <View style={styles.doctorLoginOrRow}><View style={styles.doctorLoginOrLine}/><Text style={styles.doctorLoginOrText}>or</Text><View style={styles.doctorLoginOrLine}/></View>
+          <View style={styles.doctorLoginInputRow}><Text style={styles.doctorLoginInputIcon}>☎</Text><Text style={styles.doctorCountryCode}>+91</Text><TextInput value={mobile} onChangeText={setMobile} keyboardType="phone-pad" placeholder="Mobile Number" placeholderTextColor="#6D8CB0" style={styles.doctorLoginInput}/></View>
+          <View style={styles.doctorLoginInputRow}><Text style={styles.doctorLoginInputIcon}>♙</Text><TextInput value={password} onChangeText={setPassword} secureTextEntry placeholder="Password" placeholderTextColor="#6D8CB0" style={styles.doctorLoginInput}/></View>
+          <View style={styles.doctorRememberRow}><Pressable onPress={() => setRemember(!remember)} style={styles.doctorRememberToggle}><Text style={styles.doctorRememberCheck}>{remember ? '✓' : ''}</Text></Pressable><Text style={styles.doctorRememberLabel}>Remember me</Text><Pressable onPress={() => unavailable('Password recovery')}><Text style={styles.doctorForgotText}>Forgot Password?</Text></Pressable></View>
+          <Pressable onPress={() => unavailable('Mobile/password')} style={styles.doctorLoginButton}><Text style={styles.doctorLoginButtonText}>Login  →</Text></Pressable>
+          {!!serverMessage && <Text style={styles.doctorWakeMessage}>{serverMessage}</Text>}
+          {!!localMessage && <Text style={styles.doctorLoginErrorText}>{localMessage}</Text>}
+          {!!error && <View style={styles.loginError}><Text style={styles.loginErrorTitle}>Sign-in error</Text><Text style={styles.loginErrorText}>{error.message}</Text><Text style={styles.loginErrorText}>Stage: {error.stage} • Code: {error.code}</Text><Pressable onPress={login} style={styles.doctorRetry}><Text style={styles.doctorRetryText}>Retry</Text></Pressable></View>}
+        </View>
+        <View style={styles.doctorLoginQuickActions}>
+          { [['▣',"Today's Appointments"],['♟','Patients'],['▤','Reports'],['♧','Treatment Plans']].map(([icon,label]) => <View key={label} style={styles.doctorQuickAction}><Text style={styles.doctorQuickIcon}>{icon}</Text><Text style={styles.doctorQuickLabel}>{label}</Text></View>)}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -413,9 +429,17 @@ function GoogleLoginScreen({ onSignedIn }) {
 export default function App(){
   const [token,setToken]=useState(null);
   const [checking,setChecking]=useState(true);
+  const [serverMessage,setServerMessage]=useState('');
 
   useEffect(() => {
+    let active = true;
+    const slowNotice = setTimeout(() => { if (active) setServerMessage('Waking up the server, this can take up to a minute.'); }, 1800);
+    fetch('https://dr-pranali-dental-api.onrender.com/health', { method:'GET' })
+      .then(() => { if (active) setServerMessage(''); })
+      .catch(() => { if (active) setServerMessage('Waking up the server, this can take up to a minute.'); })
+      .finally(() => clearTimeout(slowNotice));
     getStoredDoctorSession().then(value => setToken(value || null)).finally(() => setChecking(false));
+    return () => { active = false; clearTimeout(slowNotice); };
   }, []);
 
   const logout = async () => {
@@ -424,11 +448,18 @@ export default function App(){
   };
 
   if (checking) return <SafeAreaView style={styles.safe}><ActivityIndicator size="large" color={C.blue} style={{marginTop:80}}/></SafeAreaView>;
-  if (!token) return <GoogleLoginScreen onSignedIn={setToken}/>;
+  if (!token) return <GoogleLoginScreen serverMessage={serverMessage} onSignedIn={setToken}/>;
   return <Dashboard token={token} logout={logout}/>;
 }
 
 const styles=StyleSheet.create({
+ doctorLoginWrap:{flexGrow:1,backgroundColor:'#0C3B82',padding:18,paddingTop:18,paddingBottom:18,alignItems:'center'},
+ doctorPhotoPlaceholder:{width:'100%',height:160,borderRadius:22,backgroundColor:'#124B8E',borderWidth:1,borderColor:'#4A91D1',alignItems:'center',justifyContent:'center'},doctorPhotoPlaceholderTitle:{fontSize:11,fontWeight:'900',color:'#FFFFFF',letterSpacing:1,textAlign:'center'},doctorPhotoPlaceholderSub:{fontSize:11,color:'#E0F4FF',marginTop:6},
+ doctorLogoPlaceholder:{width:84,height:58,borderRadius:14,borderWidth:1,borderStyle:'dashed',borderColor:'#FFFFFF',alignItems:'center',justifyContent:'center',marginTop:12},doctorLogoPlaceholderText:{fontSize:9,fontWeight:'900',color:'#FFFFFF'},doctorLogoPlaceholderSub:{fontSize:6,color:'#FFFFFF',textAlign:'center',paddingHorizontal:4,marginTop:2},
+ doctorBrandName:{fontSize:27,fontWeight:'900',color:'#FFFFFF',marginTop:5},doctorBrandClinic:{fontSize:9,fontWeight:'800',letterSpacing:3,color:'#FFFFFF'},doctorLoginTitle:{fontSize:24,fontWeight:'900',color:'#FFFFFF',marginTop:14},doctorLoginSub:{fontSize:12,color:'#E4F2FF',marginTop:3,marginBottom:12,textAlign:'center'},
+ doctorLoginCard:{width:'100%',backgroundColor:'#F4FBFF',borderRadius:22,padding:14},doctorProviderButton:{width:'100%',minHeight:44,borderRadius:12,backgroundColor:'#FFFFFF',borderWidth:1,borderColor:'#D6E7F5',flexDirection:'row',alignItems:'center',justifyContent:'center',marginTop:6},doctorGoogleMark:{fontSize:20,fontWeight:'900',color:'#0A84E8',marginRight:12},doctorAppleMark:{fontSize:18,color:'#111111',marginRight:12},doctorProviderText:{fontSize:13,fontWeight:'800',color:'#18334D'},
+ doctorLoginOrRow:{width:'100%',flexDirection:'row',alignItems:'center',gap:10,marginVertical:10},doctorLoginOrLine:{height:1,flex:1,backgroundColor:'#D6E7F5'},doctorLoginOrText:{fontSize:11,color:'#4F6D90'},doctorLoginInputRow:{width:'100%',minHeight:44,borderRadius:12,borderWidth:1,borderColor:'#D6E7F5',backgroundColor:'#FFFFFF',flexDirection:'row',alignItems:'center',paddingHorizontal:11,marginTop:7},doctorLoginInputIcon:{fontSize:17,color:'#0C3B82',marginRight:8},doctorCountryCode:{fontSize:12,color:'#0C3B82',fontWeight:'800',paddingRight:7},doctorLoginInput:{flex:1,minHeight:40,color:'#18334D',fontSize:13},
+ doctorRememberRow:{width:'100%',flexDirection:'row',alignItems:'center',marginTop:9},doctorRememberToggle:{width:19,height:19,borderRadius:4,borderWidth:1,borderColor:'#0A84E8',backgroundColor:'#0A84E8',alignItems:'center',justifyContent:'center'},doctorRememberCheck:{color:'#FFFFFF',fontWeight:'900'},doctorRememberLabel:{fontSize:11,color:'#18334D',marginLeft:7},doctorForgotText:{fontSize:11,color:'#0A84E8',marginLeft:'auto'},doctorLoginButton:{width:'100%',minHeight:44,borderRadius:13,backgroundColor:'#0A84E8',alignItems:'center',justifyContent:'center',marginTop:11,borderBottomWidth:3,borderBottomColor:'#00C6C8'},doctorLoginButtonText:{fontSize:15,color:'#FFFFFF',fontWeight:'900'},doctorWakeMessage:{fontSize:10,color:'#0C3B82',textAlign:'center',marginTop:7},doctorLoginErrorText:{fontSize:11,color:'#7A2E2E',marginTop:8},doctorRetry:{marginTop:8,padding:9,backgroundColor:'#0A84E8',borderRadius:10,alignItems:'center'},doctorRetryText:{color:'#FFFFFF',fontWeight:'800'},doctorLoginQuickActions:{width:'100%',flexDirection:'row',justifyContent:'space-between',gap:5,backgroundColor:'#08336A',borderRadius:16,padding:8,marginTop:12,borderWidth:1,borderColor:'#1C5B96'},doctorQuickAction:{flex:1,alignItems:'center',justifyContent:'center',minHeight:58},doctorQuickIcon:{fontSize:20,color:'#FFFFFF'},doctorQuickLabel:{fontSize:9,color:'#FFFFFF',textAlign:'center',marginTop:5},
  safe:{flex:1,backgroundColor:C.bg}, loginWrap:{padding:24,paddingTop:70,flexGrow:1,justifyContent:'center'},
  loginLogo:{width:150,height:150,borderRadius:34,alignSelf:'center',marginBottom:14},
  logo:{width:82,height:82,borderRadius:24,backgroundColor:'#0B2E4F',alignItems:'center',justifyContent:'center',alignSelf:'center',marginBottom:18},
