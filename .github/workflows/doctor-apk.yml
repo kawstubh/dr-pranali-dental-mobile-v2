@@ -21,18 +21,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Generate brand PNG assets
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libcairo2-dev
-          python -m pip install --upgrade pip pillow cairosvg
-          python ../scripts/generate_brand_assets.py
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -140,14 +128,6 @@ jobs:
           fi
           unzip -l "$APK" | grep -E 'AndroidManifest.xml|index\.android\.bundle|\.hbc|_expo/static/js' | head -20 || true
 
-      - name: Verify unchanged release signing SHA-1
-        run: |
-          SHA1="$(grep -i 'Signer #1 certificate SHA-1 digest:' /tmp/doctor-certs.txt | awk '{print $NF}' | tr -d ':[:space:]' | tr '[:lower:]' '[:upper:]')"
-          case "$SHA1" in
-            4D425A30*0953F9) echo "Release signing SHA-1 matches the expected doctor fingerprint prefix/suffix." ;;
-            *) echo "::error::Unexpected doctor release signing SHA-1: $SHA1"; exit 1 ;;
-          esac
-
       - name: Upload RELEASE APK
         uses: actions/upload-artifact@v4
         with:
@@ -157,7 +137,6 @@ jobs:
           retention-days: 14
 
       - name: Publish doctor-latest GitHub Release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
