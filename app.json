@@ -4,18 +4,18 @@
     "slug": "dr-pranali-dental",
     "version": "1.0.3",
     "orientation": "portrait",
-    "icon": "./assets/patient-shield.svg",
+    "icon": "./assets/patient-icon.png",
     "splash": {
-      "image": "./assets/patient-shield.svg",
+      "image": "./assets/patient-splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#F5F9FC"
     },
     "android": {
       "package": "com.drpranali.dental",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/patient-shield.svg",
+        "foregroundImage": "./assets/patient-adaptive-foreground.png",
         "backgroundColor": "#F5F9FC",
-        "monochromeImage": "./assets/monochrome-shield.svg"
+        "monochromeImage": "./assets/patient-monochrome.png"
       }
     },
     "ios": {
@@ -28,7 +28,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/notification-mark.svg",
+          "icon": "./assets/patient-notification.png",
           "color": "#1677D2"
         }
       ]
@@ -39,7 +39,7 @@
       }
     },
     "web": {
-      "favicon": "./assets/patient-shield.svg"
+      "favicon": "./assets/patient-favicon.png"
     }
   }
 }
