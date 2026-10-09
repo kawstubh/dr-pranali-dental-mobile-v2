@@ -28,15 +28,9 @@ const PHONE = '9137007432';
 const WHATSAPP = '919137007432';
 
 const COLORS = {
-  navy: '#0B2E4F',
-  blue: '#1677D2',
+  ...BRAND.colors,
   blue2: '#2B7DE9',
-  pale: '#EAF5FF',
-  bg: '#F5F9FC',
-  text: '#18334D',
-  muted: '#657789',
-  border: '#DCE8F4',
-  white: '#FFFFFF',
+  bg: BRAND.colors.background,
   green: '#20B96B',
 };
 
