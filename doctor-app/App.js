@@ -6,13 +6,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { Image as ExpoImage } from 'expo-image';
 import { BRAND } from '../src/brandConstants';
 import { DENTAL_SERVICES } from '../shared/dentalServices';
 import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry } from './src/api/doctorApi';
 import { getStoredDoctorSession, signInWithGoogle, signOutGoogle } from './src/auth/googleAuth';
 import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
 
-const clinicLogo = require('./assets/dr-pranali-branded-logo.png');
+const clinicLogo = require('./assets/doctor-icon.png');
 
 const C = {
   ...BRAND.colors,
@@ -29,7 +30,7 @@ function SafeImage({ source, style, resizeMode = 'cover', placeholder = '✚' })
   if (failed) {
     return <View style={[style, styles.imageFallback]}><Text style={styles.imageFallbackText}>{placeholder}</Text></View>;
   }
-  return <Image source={source} style={style} resizeMode={resizeMode} onError={() => setFailed(true)} />;
+  return <ExpoImage source={source} style={style} contentFit={resizeMode} transition={150} onError={() => setFailed(true)} />;
 }
 
 function AppointmentCard({ item, token, onChanged }) {
