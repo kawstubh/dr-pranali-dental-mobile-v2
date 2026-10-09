@@ -167,7 +167,7 @@ function HomeScreen({ go }) {
         </View>
 
         <View style={styles.heroCopy}>
-          <View style={styles.brandLine}><Text style={styles.tooth}>♧</Text><Text style={styles.brand}>Dr. Pranali's</Text></View>
+          <View style={styles.brandLine}><SafeImage source={require('./assets/dr-pranali-branded-logo.png')} style={styles.brandLineLogo} resizeMode="contain" /><Text style={styles.brand}>Dr. Pranali Dental Clinic</Text></View>
           <Text style={styles.heroTitle}>Healthy Smile,</Text>
           <Text style={[styles.heroTitle, styles.heroBlue]}>Happy You!</Text>
           <Text style={styles.heroSub}>Expert dental care for you and your family, with gentle treatment and modern technology.</Text>
