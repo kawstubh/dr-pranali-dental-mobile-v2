@@ -32,7 +32,30 @@ const COLORS = {
   green: '#20B96B',
 };
 
-const services = DENTAL_SERVICES.map(({ name, description, icon, image }) => [name, description, icon, image]);
+const SERVICE_IMAGES = {
+  'checkup': require('./assets/services/checkup.png'),
+  'scaling': require('./assets/services/scaling.png'),
+  'whitening': require('./assets/services/whitening.png'),
+  'filling': require('./assets/services/filling.png'),
+  'rct': require('./assets/services/rct.png'),
+  'crowns': require('./assets/services/crowns.png'),
+  'implants': require('./assets/services/implants.png'),
+  'extraction': require('./assets/services/extraction.png'),
+  'braces': require('./assets/services/braces.png'),
+  'aligners': require('./assets/services/aligners.png'),
+  'dentures': require('./assets/services/dentures.png'),
+  'veneers': require('./assets/services/veneers.png'),
+  'gum-care': require('./assets/services/gum-care.png'),
+  'kids': require('./assets/services/kids.png'),
+  'emergency': require('./assets/services/emergency.png'),
+  'sensitivity': require('./assets/services/sensitivity.png'),
+  'sealants': require('./assets/services/sealants.png'),
+  'hygiene': require('./assets/services/hygiene.png'),
+  'smile-makeover': require('./assets/services/smile-makeover.png'),
+  'tmj': require('./assets/services/tmj.png')
+};
+
+const services = DENTAL_SERVICES.map(({ name, description, icon, image }) => [name, description, icon, SERVICE_IMAGES[image]]);
 
 const tabs = [
   ['Home', '⌂'],
@@ -262,7 +285,7 @@ function ServicesScreen({ onBook }) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All');
   const [selectedService, setSelectedService] = useState(null);
-  const visibleServices = DENTAL_SERVICES.filter(service =>
+  const visibleServices = DENTAL_SERVICES.map(service => ({ ...service, image: SERVICE_IMAGES[service.image] })).filter(service =>
     (category === 'All' || service.category === category) &&
     (service.name + ' ' + service.description + ' ' + service.category).toLowerCase().includes(query.trim().toLowerCase())
   );
