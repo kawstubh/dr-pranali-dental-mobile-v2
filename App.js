@@ -59,11 +59,12 @@ function WelcomeScreen({ onStart }) {
 
   const googleLogin = async () => {
     setGoogleBusy(true);
-    setGoogleMessage('Waking up the clinic server…');
+    setGoogleMessage('Connecting securely to your Google account…');
     fetch(`${API_URL}/health`).catch(() => null);
     try {
       await signInWithGoogle();
-      setGoogleMessage('Google account connected successfully.');
+      setGoogleMessage('Signed in successfully. Opening your dental care home…');
+      onStart();
     } catch (error) {
       const code = error?.code || error?.errorCode || error?.name;
       setGoogleMessage((code ? '[' + code + '] ' : '') + (error?.message || 'Google sign-in failed.'));
@@ -75,45 +76,41 @@ function WelcomeScreen({ onStart }) {
   return (
     <SafeAreaView style={styles.welcomeSafe}>
       <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={styles.welcomeContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.welcomeTop}>
-          <View style={styles.brandBadge}>
-            <SafeImage source={require('./assets/universal-dental-icon.png')} style={styles.brandBadgeLogo} resizeMode="contain" />
-            <View>
-              <Text style={styles.welcomeBrand}>{BRAND.name}</Text>
-              <Text style={styles.welcomeClinic}>DENTAL CLINIC</Text>
-            </View>
-          </View>
-          <Pressable onPress={onStart} style={styles.skipButton}><Text style={styles.skipText}>Skip</Text></Pressable>
+      <ScrollView contentContainerStyle={styles.welcomeContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <View style={styles.loginBrand}>
+          <SafeImage source={require('./assets/universal-dental-icon.png')} style={styles.loginBrandLogo} resizeMode="contain" />
+          <Text style={styles.loginBrandName}>Dr Pranali</Text>
+          <Text style={styles.loginBrandClinic}>D E N T A L   C L I N I C</Text>
         </View>
-        <Text style={styles.welcomeTitle}>Beautiful Smile</Text>
-        <Text style={styles.welcomeTitleBlue}>Confident You</Text>
-        <Text style={styles.welcomeSub}>Expert dental care for a healthier, brighter smile</Text>
-        <View style={styles.logoStage}>
-          <View style={styles.logoGlow} />
-          <SafeImage source={require('./assets/universal-dental-icon.png')} style={styles.hero3dLogo} resizeMode="contain" />
-          <View style={styles.logoPedestal}><View style={styles.logoPedestalGlow} /></View>
+
+        <Text style={styles.welcomeTitle}>Healthy Smiles</Text>
+        <Text style={styles.welcomeTitleBlue}>Happier Lives</Text>
+        <Text style={styles.welcomeSub}>Book appointments, follow your care and stay connected with your clinic.</Text>
+
+        <View style={styles.patientLoginCard}>
+          <Text style={styles.patientLoginHeading}>Welcome</Text>
+          <Text style={styles.patientLoginCopy}>Your family's dental care, all in one place.</Text>
+          <Pressable disabled={googleBusy} onPress={googleLogin} style={[styles.googleButton, googleBusy && { opacity: 0.6 }]}>
+            {googleBusy ? <ActivityIndicator color={COLORS.blue} /> : <><Text style={styles.googleMark}>G</Text><Text style={styles.googleButtonText}>Continue with Google</Text></>}
+          </Pressable>
+          {!!googleMessage && <Text accessibilityRole="alert" style={styles.googleMessage}>{googleMessage}</Text>}
+          <View style={styles.loginDivider}><View style={styles.loginDividerLine}/><Text style={styles.loginDividerText}>OR</Text><View style={styles.loginDividerLine}/></View>
+          <Pressable onPress={() => onStart()} style={styles.getStarted}>
+            <Text style={styles.getStartedText}>Explore as a guest</Text>
+            <View style={styles.arrowCircle}><Text style={styles.arrowText}>→</Text></View>
+          </Pressable>
+          <Text style={styles.guestHint}>You can browse services and request an appointment without signing in.</Text>
         </View>
-        <Pressable disabled={googleBusy} onPress={googleLogin} style={[styles.googleButton, googleBusy && { opacity: 0.6 }]}>
-          <Text style={styles.googleButtonText}>{googleBusy ? 'Connecting to Google…' : 'Continue with Google'}</Text>
-        </Pressable>
-        {!!googleMessage && <Text style={styles.googleMessage}>{googleMessage}</Text>}
-        <Pressable onPress={onStart} style={styles.getStarted}>
-          <Text style={styles.getStartedText}>Get Started</Text>
-          <View style={styles.arrowCircle}><Text style={styles.arrowText}>→</Text></View>
-        </Pressable>
+
+        <View style={styles.patientTrustRow}>
+          <View style={styles.patientTrustItem}><Text style={styles.patientTrustIcon}>▣</Text><Text style={styles.patientTrustLabel}>Appointments</Text></View>
+          <View style={styles.patientTrustItem}><Text style={styles.patientTrustIcon}>♡</Text><Text style={styles.patientTrustLabel}>Care history</Text></View>
+          <View style={styles.patientTrustItem}><Text style={styles.patientTrustIcon}>✦</Text><Text style={styles.patientTrustLabel}>Dental guidance</Text></View>
+        </View>
         <Pressable onPress={() => onStart('Services')} style={styles.exploreButton}>
-          <Text style={styles.exploreText}>Explore Services</Text><Text style={styles.exploreArrow}>→</Text>
+          <Text style={styles.exploreText}>Browse dental services</Text><Text style={styles.exploreArrow}>→</Text>
         </Pressable>
-        <View style={styles.welcomeTrust}>
-          <View><Text style={styles.trustNumber}>20+</Text><Text style={styles.trustLabel}>Dental services</Text></View>
-          <View style={styles.trustDivider} />
-          <View><Text style={styles.trustNumber}>BDS</Text><Text style={styles.trustLabel}>Dental surgeon</Text></View>
-          <View style={styles.trustDivider} />
-          <View><Text style={styles.trustNumber}>AI</Text><Text style={styles.trustLabel}>Care support</Text></View>
-        </View>
-        <Text style={styles.terms}>By continuing, you agree to our</Text>
-        <Text style={styles.termsBlue}>Terms & Privacy Policy</Text>
+        <Text style={styles.terms}>Secure sign-in • Your dental care journey, connected</Text>
       </ScrollView>
     </SafeAreaView>
   );
