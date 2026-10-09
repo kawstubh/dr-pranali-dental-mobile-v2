@@ -31,7 +31,8 @@
           "icon": "./assets/patient-notification.png",
           "color": "#1677D2"
         }
-      ]
+      ],
+      "expo-image"
     ],
     "extra": {
       "eas": {
