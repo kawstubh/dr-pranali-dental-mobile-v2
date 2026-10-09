@@ -23,14 +23,14 @@ jobs:
       - name: Install Patient dependencies and web renderer
         run: |
           npm ci
-          npx expo install --yes react-dom react-native-web
+          npx expo install react-dom react-native-web
       - name: Export Patient app for web
         run: npx expo export --platform web --output-dir dist-patient
       - name: Install Doctor dependencies and web renderer
         working-directory: doctor-app
         run: |
           npm ci
-          npx expo install --yes react-dom react-native-web
+          npx expo install react-dom react-native-web
       - name: Export Doctor app for web
         working-directory: doctor-app
         run: npx expo export --platform web --output-dir dist-doctor
