@@ -36,4 +36,5 @@ jobs:
             exit 0
           fi
           git commit -m "Add Expo Image with SDK-compatible versions"
+          git pull --rebase origin "$TARGET_BRANCH"
           git push origin "HEAD:$TARGET_BRANCH"
