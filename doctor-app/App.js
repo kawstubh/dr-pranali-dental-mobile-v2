@@ -10,7 +10,7 @@ import { Image as ExpoImage } from 'expo-image';
 import { BRAND } from '../src/brandConstants';
 import { DENTAL_SERVICES } from '../shared/dentalServices';
 import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry } from './src/api/doctorApi';
-import { getStoredDoctorSession, signInWithGoogle, signOutGoogle } from './src/auth/googleAuth';
+import { getStoredDoctorSession, signInWithPassword, signOutGoogle } from './src/auth/googleAuth';
 import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
 
 const clinicLogo = require('./assets/approved-clinic-logo-white.png');
@@ -392,20 +392,23 @@ function GoogleLoginScreen({ onSignedIn }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [serverWaking, setServerWaking] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const entrance = useRef(new Animated.Value(0)).current;
   useEffect(() => { Animated.timing(entrance, { toValue: 1, duration: 520, useNativeDriver: true }).start(); }, [entrance]);
 
   const login = async () => {
+    if (!email.trim() || !password) { setError('Enter your registered clinic email and password.'); return; }
     setBusy(true);
     setError('');
     setServerWaking(true);
     fetch('https://dr-pranali-dental-api.onrender.com/health').catch(() => null);
     try {
-      const session = await signInWithGoogle('https://dr-pranali-dental-api.onrender.com');
+      const session = await signInWithPassword(email, password);
       onSignedIn(session.access_token);
     } catch (e) {
       const code = e?.code || e?.errorCode || e?.name;
-      setError((code ? '[' + code + '] ' : '') + (e?.message || 'Google sign-in failed.'));
+      setError((code ? '[' + code + '] ' : '') + (e?.message || 'Doctor login failed.'));
     } finally {
       setBusy(false);
       setServerWaking(false);
@@ -430,8 +433,12 @@ function GoogleLoginScreen({ onSignedIn }) {
           <View style={styles.card}>
             <Text style={styles.label}>Doctor Login</Text>
             <Text style={styles.doctorLoginIntro}>Access your schedule, patients and clinical records securely.</Text>
-            <Pressable disabled={busy} onPress={login} style={[styles.googleBrandButton, busy && {opacity:0.6}]}>
-              {busy ? <ActivityIndicator color={C.blue} /> : <><Text style={styles.googleG}>G</Text><Text style={styles.googleBrandText}>Continue with Google</Text></>}
+            <Text style={styles.label}>Clinic email</Text>
+            <TextInput value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" textContentType="username" accessibilityLabel="Clinic email" placeholder="doctor@clinic.com" placeholderTextColor="#8A9AAF" style={styles.input} editable={!busy} returnKeyType="next" />
+            <Text style={[styles.label,{marginTop:14}]}>Password</Text>
+            <TextInput value={password} onChangeText={setPassword} secureTextEntry textContentType="password" accessibilityLabel="Password" placeholder="Enter your password" placeholderTextColor="#8A9AAF" style={styles.input} editable={!busy} onSubmitEditing={login} returnKeyType="go" />
+            <Pressable disabled={busy} onPress={login} style={[styles.passwordLoginButton, busy && {opacity:0.6}]}>
+              {busy ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.passwordLoginText}>Secure doctor login</Text>}
             </Pressable>
             {serverWaking && <Text style={styles.serverWake}>Connecting securely to the clinic service…</Text>}
             {!!error && <View accessibilityRole="alert" style={styles.loginError}><Text style={styles.loginErrorTitle}>Sign-in error</Text><Text style={styles.loginErrorText}>{error}</Text></View>}
@@ -471,9 +478,7 @@ const styles=StyleSheet.create({
  treatmentServiceIcon:{fontSize:20,width:28,textAlign:'center'},
  treatmentServiceName:{color:C.text,fontWeight:'700',fontSize:13},
  treatmentServiceMeta:{color:C.muted,fontSize:11,marginTop:2},
- googleBrandButton:{minHeight:52,borderRadius:14,backgroundColor:'#FFFFFF',borderWidth:1,borderColor:'#D6E2EE',flexDirection:'row',alignItems:'center',justifyContent:'center',gap:12},
- googleG:{fontSize:22,fontWeight:'900',color:'#4285F4'},
- googleBrandText:{fontSize:14,fontWeight:'800',color:C.text},
+ passwordLoginButton:{minHeight:52,borderRadius:14,backgroundColor:'#0A84E8',alignItems:'center',justifyContent:'center',marginTop:18},passwordLoginText:{fontSize:14,fontWeight:'900',color:'#FFFFFF'},
  serverWake:{fontSize:12,color:C.muted,textAlign:'center',marginTop:10},
  safe:{flex:1,backgroundColor:C.bg}, loginSafe:{flex:1,backgroundColor:'#061A32',overflow:'hidden'}, loginWrap:{paddingHorizontal:24,paddingTop:24,paddingBottom:28,flexGrow:1,justifyContent:'center'},
  loginGlowTop:{position:'absolute',top:-140,right:-100,width:360,height:360,borderRadius:180,backgroundColor:'#0C3B82',opacity:0.78},
