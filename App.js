@@ -32,7 +32,7 @@ const COLORS = {
   green: '#20B96B',
 };
 
-const services = DENTAL_SERVICES.map(({ name, description, icon }) => [name, description, icon]);
+const services = DENTAL_SERVICES.map(({ name, description, icon, image }) => [name, description, icon, image]);
 
 const tabs = [
   ['Home', '⌂'],
@@ -139,12 +139,10 @@ function Feature({ icon, title, subtitle }) {
   );
 }
 
-function ServiceCard({ name, desc, icon, onPress }) {
+function ServiceCard({ name, desc, icon, image, onPress }) {
   return (
     <Pressable onPress={onPress} disabled={!onPress} style={styles.serviceCard}>
-      <View style={styles.serviceIconWrap}>
-        <Text style={styles.serviceIcon}>{icon}</Text>
-      </View>
+      <SafeImage source={image} style={styles.servicePhoto} resizeMode="cover" placeholder="Dental care" />
       <Text style={styles.serviceName}>{name}</Text>
       <Text style={styles.serviceDesc}>{desc}</Text>
     </Pressable>
@@ -197,7 +195,7 @@ function HomeScreen({ go }) {
         <Text style={styles.sectionTitle}>Our Dental Services</Text>
       </View>
       <View style={styles.servicesGrid}>
-        {services.slice(0, 8).map(([name, desc, icon]) => <ServiceCard key={name} name={name} desc={desc} icon={icon} />)}
+        {services.slice(0, 8).map(([name, desc, icon, image]) => <ServiceCard key={name} name={name} desc={desc} icon={icon} image={image} />)}
       </View>
       <Pressable onPress={() => go('Services')} style={styles.viewAll}><Text style={styles.viewAllText}>View All Dental Services →</Text></Pressable>
 
@@ -273,7 +271,7 @@ function ServicesScreen({ onBook }) {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Pressable onPress={() => setSelectedService(null)} style={styles.viewAll}><Text style={styles.viewAllText}>‹ All services</Text></Pressable>
         <View style={styles.serviceDetailCard}>
-          <View style={styles.serviceDetailIcon}><Text style={styles.serviceDetailIconText}>{selectedService.icon}</Text></View>
+          <SafeImage source={selectedService.image} style={styles.serviceDetailPhoto} resizeMode="cover" placeholder="Dental service" />
           <Text style={styles.pageTitle}>{selectedService.name}</Text>
           <Text style={styles.pageSub}>{selectedService.description}</Text>
           <Text style={styles.serviceCategoryLabel}>{selectedService.category}</Text>
@@ -292,7 +290,7 @@ function ServicesScreen({ onBook }) {
         {DENTAL_SERVICE_CATEGORIES.map(item => <Pressable key={item} onPress={() => setCategory(item)} style={[styles.chip,category===item&&styles.chipActive]}><Text style={[styles.chipText,category===item&&styles.chipTextActive]}>{item}</Text></Pressable>)}
       </ScrollView>
       <View style={styles.servicesGrid}>
-        {visibleServices.map(service => <ServiceCard key={service.id} name={service.name} desc={service.description} icon={service.icon} onPress={() => setSelectedService(service)} />)}
+        {visibleServices.map(service => <ServiceCard key={service.id} name={service.name} desc={service.description} icon={service.icon} image={service.image} onPress={() => setSelectedService(service)} />)}
       </View>
       {visibleServices.length===0 && <Text style={styles.pageSub}>No services match that search.</Text>}
       <View style={styles.bottomSpacer} />
@@ -629,6 +627,7 @@ const styles = StyleSheet.create({
   servicesGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   serviceCard: { width: '48.3%', backgroundColor: COLORS.white, borderRadius: 16, padding: 13, minHeight: 132, marginBottom: 10, borderWidth: 1, borderColor: '#E2EBF3', shadowOpacity: 0.025, shadowRadius: 7, elevation: 1 },
   serviceIconWrap: { width: 33, height: 33, borderRadius: 10, backgroundColor: '#F0F7FF', alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+  servicePhoto: { width: '100%', height: 112, borderRadius: 12, marginBottom: 10, backgroundColor: '#E8F6FF' },
   serviceIcon: { color: COLORS.blue, fontSize: 20 },
   serviceName: { color: COLORS.navy, fontSize: 13.5, fontWeight: '800', lineHeight: 18 },
   serviceDesc: { color: COLORS.muted, fontSize: 11.5, lineHeight: 16, marginTop: 5 },
@@ -637,6 +636,7 @@ const styles = StyleSheet.create({
   pageTitle: { color: COLORS.navy, fontSize: 28, fontWeight: '900', marginTop: 4, letterSpacing: -0.3 },
   serviceDetailCard:{backgroundColor:COLORS.white,borderRadius:22,padding:20,borderWidth:1,borderColor:COLORS.border,marginTop:14},
   serviceDetailIcon:{width:76,height:76,borderRadius:22,backgroundColor:COLORS.pale,alignItems:'center',justifyContent:'center',marginBottom:12},
+  serviceDetailPhoto:{width:'100%',height:190,borderRadius:17,marginBottom:14,backgroundColor:'#E8F6FF'},
   serviceDetailIconText:{fontSize:42},
   serviceCategoryLabel:{alignSelf:'flex-start',backgroundColor:COLORS.pale,color:COLORS.navy,borderRadius:12,paddingHorizontal:12,paddingVertical:6,fontWeight:'800',overflow:'hidden'},
   serviceDetailNote:{color:COLORS.muted,fontSize:13,lineHeight:19,marginTop:12},

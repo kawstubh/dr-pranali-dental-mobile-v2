@@ -13,7 +13,7 @@ import { listAppointments, listPatients, updateAppointment, getHealth, getDental
 import { getStoredDoctorSession, signInWithGoogle, signOutGoogle } from './src/auth/googleAuth';
 import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
 
-const clinicLogo = require('./assets/doctor-icon.png');
+const clinicLogo = require('./assets/approved-clinic-logo-white.png');
 
 const C = {
   ...BRAND.colors,
@@ -30,7 +30,7 @@ function SafeImage({ source, style, resizeMode = 'cover', placeholder = '✚' })
   if (failed) {
     return <View style={[style, styles.imageFallback]}><Text style={styles.imageFallbackText}>{placeholder}</Text></View>;
   }
-  return <ExpoImage source={source} placeholder={require('./assets/doctor-icon.png')} style={style} contentFit={resizeMode} transition={150} onError={() => setFailed(true)} />;
+  return <ExpoImage source={source} placeholder={require('./assets/approved-clinic-icon.png')} style={style} contentFit={resizeMode} transition={150} onError={() => setFailed(true)} />;
 }
 
 function AppointmentCard({ item, token, onChanged }) {
