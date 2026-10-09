@@ -413,7 +413,7 @@ function ServicesScreen({ onBook }) {
         {DENTAL_SERVICE_CATEGORIES.map(item => <Pressable key={item} onPress={() => setCategory(item)} style={[styles.chip,category===item&&styles.chipActive]}><Text style={[styles.chipText,category===item&&styles.chipTextActive]}>{item}</Text></Pressable>)}
       </ScrollView>
       <View style={styles.servicesGrid}>
-        {visibleServices.map(service => <ServiceCard key={service.id} name={service.name} desc={service.description} icon={service.icon} onPress={() => setSelectedService(service} />)}
+        {visibleServices.map(service => <ServiceCard key={service.id} name={service.name} desc={service.description} icon={service.icon} onPress={() => setSelectedService(service)} />)}
       </View>
       {visibleServices.length===0 && <Text style={styles.pageSub}>No services match that search.</Text>}
       <View style={styles.bottomSpacer} />
