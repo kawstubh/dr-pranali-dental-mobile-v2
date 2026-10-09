@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { signInWithGoogle } from './src/auth/googleAuth';
+import { BRAND } from './src/brandTheme';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { buildPatientCareRequest } from './src/intelligence/dentalIntelligence';
 import { requestPublicAppointment } from './src/api/dentalApi';
@@ -26,15 +27,16 @@ const PHONE = '9137007432';
 const WHATSAPP = '919137007432';
 
 const COLORS = {
-  navy: '#0B2E4F',
-  blue: '#1677D2',
-  blue2: '#2B7DE9',
-  pale: '#EAF5FF',
-  bg: '#F5F9FC',
+  navy: BRAND.colors.deepBlue,
+  blue: BRAND.colors.skyBlue,
+  blue2: BRAND.colors.skyBlue,
+  teal: BRAND.colors.teal,
+  pale: BRAND.colors.lightBlue,
+  bg: BRAND.colors.lightBlue,
   text: '#18334D',
   muted: '#657789',
   border: '#DCE8F4',
-  white: '#FFFFFF',
+  white: BRAND.colors.white,
   green: '#20B96B',
 };
 
@@ -70,21 +72,20 @@ const tabs = [
   ['Contact', '☎'],
 ];
 
-function WelcomeScreen({ onStart }) {
+function WelcomeScreen({ onStart, serverMessage }) {
   const [googleBusy, setGoogleBusy] = useState(false);
   const [googleMessage, setGoogleMessage] = useState('');
+  const [googleStage, setGoogleStage] = useState('');
+  const [googleError, setGoogleError] = useState(null);
 
   const googleLogin = async () => {
-    setGoogleBusy(true);
-    setGoogleMessage('');
+    setGoogleBusy(true); setGoogleError(null); setGoogleMessage(''); setGoogleStage('Opening Google...');
     try {
-      await signInWithGoogle();
+      await signInWithGoogle(setGoogleStage);
       setGoogleMessage('Google account connected successfully.');
     } catch (error) {
-      setGoogleMessage(error?.message || 'Google sign-in failed.');
-    } finally {
-      setGoogleBusy(false);
-    }
+      setGoogleError({ message: error?.message || 'Google sign-in failed.', code: error?.code || error?.name || 'AUTH_ERROR', stage: error?.stage || googleStage || 'Unknown stage' });
+    } finally { setGoogleBusy(false); }
   };
 
   return (
@@ -110,9 +111,11 @@ function WelcomeScreen({ onStart }) {
           <View style={styles.logoPedestal}><View style={styles.logoPedestalGlow} /></View>
         </View>
         <Pressable disabled={googleBusy} onPress={googleLogin} style={[styles.googleButton, googleBusy && { opacity: 0.6 }]}>
-          <Text style={styles.googleButtonText}>{googleBusy ? 'Connecting to Google…' : 'Continue with Google'}</Text>
+          <Text style={styles.googleButtonText}>{googleBusy ? googleStage || 'Opening Google...' : 'Continue with Google'}</Text>
         </Pressable>
         {!!googleMessage && <Text style={styles.googleMessage}>{googleMessage}</Text>}
+        {!!serverMessage && <Text accessibilityRole="alert" style={styles.serverWakeMessage}>{serverMessage}</Text>}
+        {!!googleError && <View style={styles.authErrorBox}><Text style={styles.authErrorTitle}>Sign-in failed</Text><Text style={styles.authErrorText}>{googleError.message}</Text><Text style={styles.authErrorDetail}>Stage: {googleError.stage} • Code: {googleError.code}</Text><Pressable onPress={googleLogin} style={styles.authRetry}><Text style={styles.authRetryText}>Retry</Text></Pressable></View>}
         <Pressable onPress={onStart} style={styles.getStarted}>
           <Text style={styles.getStartedText}>Get Started</Text>
           <View style={styles.arrowCircle}><Text style={styles.arrowText}>→</Text></View>
@@ -603,8 +606,18 @@ function ContactScreen() {
 
 export default function App() {
   const [started, setStarted] = useState(false);
+  const [serverMessage, setServerMessage] = useState('');
+  useEffect(() => {
+    let active = true;
+    const slowNotice = setTimeout(() => { if (active) setServerMessage('Waking up the server, this can take up to a minute.'); }, 1800);
+    fetch(API_URL + '/health', { method: 'GET' })
+      .then(() => { if (active) setServerMessage(''); })
+      .catch(() => { if (active) setServerMessage('Waking up the server, this can take up to a minute.'); })
+      .finally(() => clearTimeout(slowNotice));
+    return () => { active = false; clearTimeout(slowNotice); };
+  }, []);
   const [tab, setTab] = useState('Home');
-  if (!started) return <WelcomeScreen onStart={(nextTab) => { setStarted(true); if (nextTab) setTab(nextTab); }} />;
+  if (!started) return <WelcomeScreen serverMessage={serverMessage} onStart={(nextTab) => { setStarted(true); if (nextTab) setTab(nextTab); }} />;
   const screen = useMemo(() => {
     if (tab === 'AI Dental') return <AIDentalScreen />;
     if (tab === 'Services') return <ServicesScreen />;
@@ -641,6 +654,9 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
+  serverWakeMessage:{width:'100%',textAlign:'center',fontSize:11,color:'#0C3B82',marginTop:8},
+  authErrorBox:{width:'100%',marginTop:12,padding:12,borderRadius:12,backgroundColor:'#FFF1F1',borderWidth:1,borderColor:'#F2C3C3'},
+  authErrorTitle:{fontSize:13,fontWeight:'900',color:'#8B1E1E'},authErrorText:{fontSize:12,color:'#6F2424',marginTop:4},authErrorDetail:{fontSize:10,color:'#6F2424',marginTop:5},authRetry:{marginTop:8,padding:10,backgroundColor:'#0A84E8',borderRadius:10,alignItems:'center'},authRetryText:{color:'#FFFFFF',fontWeight:'800'},
   welcomeSafe:{flex:1,backgroundColor:'#F7FBFF'},
   welcomeContent:{flexGrow:1,paddingHorizontal:22,paddingTop:18,paddingBottom:18,alignItems:'center'},
   welcomeTop:{width:'100%',flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
