@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { BRAND } from './src/brandConstants';
+import { DENTAL_SERVICES, DENTAL_SERVICE_CATEGORIES } from './shared/dentalServices';
 import { signInWithGoogle } from './src/auth/googleAuth';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { buildPatientCareRequest } from './src/intelligence/dentalIntelligence';
@@ -38,28 +40,7 @@ const COLORS = {
   green: '#20B96B',
 };
 
-const services = [
-  ['Dental Check-up', 'Regular oral examination', '🦷'],
-  ['Scaling & Polishing', 'Remove plaque & stains', '🪥'],
-  ['Tooth Whitening', 'Brighter & whiter smile', '✨'],
-  ['Dental Fillings', 'Tooth-coloured restorations', '🦷'],
-  ['Root Canal Treatment', 'Painless RCT care', '🩺'],
-  ['Dental Crowns', 'Protect damaged teeth', '👑'],
-  ['Dental Bridges', 'Replace missing teeth', '🌉'],
-  ['Dental Implants', 'Permanent tooth replacement', '🦷'],
-  ['Tooth Extraction', 'Safe & gentle extractions', '🩹'],
-  ['Wisdom Tooth Removal', 'Pain-free removal of wisdom teeth', '🦷'],
-  ['Dentures', 'Complete & partial dentures', '😁'],
-  ['Kids Dental Care', 'Specialized care for children', '👶'],
-  ['Orthodontic Braces', 'Straighten your teeth', '🔗'],
-  ['Clear Aligners (Invisalign)', 'Invisible teeth alignment', '😁'],
-  ['Gum Disease Treatment', 'Healthy gums, healthy smile', '🩺'],
-  ['Cosmetic Dentistry', 'Smile makeover solutions', '✨'],
-  ['Veneers', 'Perfect smile makeover', '😁'],
-  ['Full Mouth Rehabilitation', 'Complete dental restoration', '🦷'],
-  ['Dental Sealants', 'Protects from cavities', '🛡️'],
-  ['Emergency Dental Care', 'Immediate care when you need it', '🚑'],
-];
+const services = DENTAL_SERVICES.map(({ name, description, icon }) => [name, description, icon]);
 
 const tabs = [
   ['Home', '⌂'],
@@ -160,15 +141,15 @@ function Feature({ icon, title, subtitle }) {
   );
 }
 
-function ServiceCard({ name, desc, icon }) {
+function ServiceCard({ name, desc, icon, onPress }) {
   return (
-    <View style={styles.serviceCard}>
+    <Pressable onPress={onPress} disabled={!onPress} style={styles.serviceCard}>
       <View style={styles.serviceIconWrap}>
         <Text style={styles.serviceIcon}>{icon}</Text>
       </View>
       <Text style={styles.serviceName}>{name}</Text>
       <Text style={styles.serviceDesc}>{desc}</Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -400,27 +381,55 @@ function PatientAssistantScreen() {
 function AIDentalScreen() {
   return <PatientAssistantScreen />;
 }
-function ServicesScreen() {
+function ServicesScreen({ onBook }) {
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState('All');
+  const [selectedService, setSelectedService] = useState(null);
+  const visibleServices = DENTAL_SERVICES.filter(service =>
+    (category === 'All' || service.category === category) &&
+    (service.name + ' ' + service.description + ' ' + service.category).toLowerCase().includes(query.trim().toLowerCase())
+  );
+  if (selectedService) {
+    return (
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Pressable onPress={() => setSelectedService(null)} style={styles.viewAll}><Text style={styles.viewAllText}>‹ All services</Text></Pressable>
+        <View style={styles.serviceDetailCard}>
+          <View style={styles.serviceDetailIcon}><Text style={styles.serviceDetailIconText}>{selectedService.icon}</Text></View>
+          <Text style={styles.pageTitle}>{selectedService.name}</Text>
+          <Text style={styles.pageSub}>{selectedService.description}</Text>
+          <Text style={styles.serviceCategoryLabel}>{selectedService.category}</Text>
+          <Text style={styles.serviceDetailNote}>Your dentist will confirm the appropriate treatment after an examination.</Text>
+          <Pressable onPress={() => onBook(selectedService.name)} style={styles.submitButton}><Text style={styles.submitText}>Book this service</Text></Pressable>
+        </View>
+      </ScrollView>
+    );
+  }
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
       <Text style={styles.pageTitle}>Dental Services</Text>
-      <Text style={styles.pageSub}>Comprehensive dental care for children and adults.</Text>
+      <Text style={styles.pageSub}>Explore care options and choose a reason for your visit.</Text>
+      <TextInput value={query} onChangeText={setQuery} placeholder="Search dental services…" placeholderTextColor="#91A1B0" style={styles.input} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap:8,paddingVertical:12}}>
+        {DENTAL_SERVICE_CATEGORIES.map(item => <Pressable key={item} onPress={() => setCategory(item)} style={[styles.chip,category===item&&styles.chipActive]}><Text style={[styles.chipText,category===item&&styles.chipTextActive]}>{item}</Text></Pressable>)}
+      </ScrollView>
       <View style={styles.servicesGrid}>
-        {services.map(([name, desc, icon]) => <ServiceCard key={name} name={name} desc={desc} icon={icon} />)}
+        {visibleServices.map(service => <ServiceCard key={service.id} name={service.name} desc={service.description} icon={service.icon} onPress={() => setSelectedService(service} />)}
       </View>
+      {visibleServices.length===0 && <Text style={styles.pageSub}>No services match that search.</Text>}
       <View style={styles.bottomSpacer} />
     </ScrollView>
   );
 }
 
-function AppointmentScreen() {
+function AppointmentScreen({ initialReason }) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [reason, setReason] = useState('');
+  const [reason, setReason] = useState(initialReason || '');
+  useEffect(() => { if (initialReason) setReason(initialReason); }, [initialReason]);
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
 
@@ -525,7 +534,7 @@ function AppointmentScreen() {
         )}
         <Text style={styles.fieldLabel}>Reason for Visit</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 10 }}>
-          {services.slice(0, 8).map(([service]) => (
+          {services.map(([service]) => (
             <Pressable key={service} onPress={() => setReason(service)} style={[styles.chip, reason === service && styles.chipActive]}>
               <Text style={[styles.chipText, reason === service && styles.chipTextActive]}>{service}</Text>
             </Pressable>
@@ -604,23 +613,24 @@ function ContactScreen() {
 export default function App() {
   const [started, setStarted] = useState(false);
   const [tab, setTab] = useState('Home');
+  const [selectedServiceReason, setSelectedServiceReason] = useState('');
   if (!started) return <WelcomeScreen onStart={(nextTab) => { setStarted(true); if (nextTab) setTab(nextTab); }} />;
   const screen = useMemo(() => {
     if (tab === 'AI Dental') return <AIDentalScreen />;
-    if (tab === 'Services') return <ServicesScreen />;
-    if (tab === 'Appointment') return <AppointmentScreen />;
+    if (tab === 'Services') return <ServicesScreen onBook={(name) => { setSelectedServiceReason(name); setTab('Appointment'); }} />;
+    if (tab === 'Appointment') return <AppointmentScreen initialReason={selectedServiceReason} />;
     if (tab === 'Gallery') return <GalleryScreen />;
     if (tab === 'Contact') return <ContactScreen />;
     return <HomeScreen go={setTab} />;
-  }, [tab]);
+  }, [tab, selectedServiceReason]);
 
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>Dr. Pranali Dental</Text>
-          <Text style={styles.headerSub}>Healthy Smile, Happy You!</Text>
+          <Text style={styles.headerTitle}>{BRAND.name}</Text>
+          <Text style={styles.headerSub}>{BRAND.tagline}</Text>
         </View>
         <Pressable onPress={() => Alert.alert('Dr. Pranali Dental', `BDS – Dental Surgeon\n\nTaloja, Navi Mumbai\n${PHONE}`)} style={styles.settings}><Text style={styles.settingsText}>⚙</Text></Pressable>
       </View>
@@ -726,6 +736,11 @@ const styles = StyleSheet.create({
   viewAll: { backgroundColor: '#E8F4FF', borderRadius: 14, padding: 14, alignItems: 'center', marginTop: 2, borderWidth: 1, borderColor: '#D6E9F8' },
   viewAllText: { color: COLORS.blue, fontWeight: '800' },
   pageTitle: { color: COLORS.navy, fontSize: 28, fontWeight: '900', marginTop: 4, letterSpacing: -0.3 },
+  serviceDetailCard:{backgroundColor:COLORS.white,borderRadius:22,padding:20,borderWidth:1,borderColor:COLORS.border,marginTop:14},
+  serviceDetailIcon:{width:76,height:76,borderRadius:22,backgroundColor:COLORS.pale,alignItems:'center',justifyContent:'center',marginBottom:12},
+  serviceDetailIconText:{fontSize:42},
+  serviceCategoryLabel:{alignSelf:'flex-start',backgroundColor:COLORS.pale,color:COLORS.navy,borderRadius:12,paddingHorizontal:12,paddingVertical:6,fontWeight:'800',overflow:'hidden'},
+  serviceDetailNote:{color:COLORS.muted,fontSize:13,lineHeight:19,marginTop:12},
   pageSub: { color: COLORS.muted, fontSize: 15, lineHeight: 22, marginTop: 5, marginBottom: 15 },
   formCard: { backgroundColor: COLORS.white, borderRadius: 20, padding: 17, borderWidth: 1, borderColor: '#E2EBF3', shadowOpacity: 0.03, shadowRadius: 8, elevation: 1 },
   fieldLabel: { color: COLORS.navy, fontSize: 13, fontWeight: '800', marginBottom: 6, marginTop: 10 },
