@@ -1,0 +1,56 @@
+name: Login UI screenshot proof
+
+on:
+  push:
+    branches: [ui/full-redesign]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots-logins:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout redesign branch
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install Patient dependencies and web renderer
+        run: |
+          npm ci
+          npx expo install --yes react-dom react-native-web
+      - name: Export Patient app for web
+        run: npx expo export --platform web --output-dir dist-patient
+      - name: Install Doctor dependencies and web renderer
+        working-directory: doctor-app
+        run: |
+          npm ci
+          npx expo install --yes react-dom react-native-web
+      - name: Export Doctor app for web
+        working-directory: doctor-app
+        run: npx expo export --platform web --output-dir dist-doctor
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright http-server
+          npx playwright install --with-deps chromium
+      - name: Capture Patient and Doctor login screens at 390x844
+        run: |
+          mkdir -p screenshots-logins
+          npx http-server dist-patient -p 4173 -s > /tmp/patient-server.log 2>&1 &
+          PATIENT_PID=$!
+          npx http-server doctor-app/dist-doctor -p 4174 -s > /tmp/doctor-server.log 2>&1 &
+          DOCTOR_PID=$!
+          trap 'kill $PATIENT_PID $DOCTOR_PID 2>/dev/null || true' EXIT
+          node -e "const { chromium } = require('playwright'); (async()=>{const b=await chromium.launch({headless:true}); const ctx=await b.newContext({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true}); for (const [name,url] of [['patient-login','http://127.0.0.1:4173'],['doctor-login','http://127.0.0.1:4174']]) { const p=await ctx.newPage(); await p.goto(url,{waitUntil:'networkidle',timeout:90000}); await p.screenshot({path:'screenshots-logins/'+name+'.png',fullPage:true}); await p.close(); } await b.close();})().catch(e=>{console.error(e);process.exit(1)});"
+      - name: Upload screenshot proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-logins
+          path: screenshots-logins/*.png
+          if-no-files-found: error
+          retention-days: 14
