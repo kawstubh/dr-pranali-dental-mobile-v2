@@ -10,7 +10,7 @@ import { Image as ExpoImage } from 'expo-image';
 import { BRAND } from '../src/brandConstants';
 import { DENTAL_SERVICES } from '../shared/dentalServices';
 import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry } from './src/api/doctorApi';
-import { getStoredDoctorSession, signInWithGoogle, signOutGoogle } from './src/auth/googleAuth';
+import { getStoredDoctorSession, signInWithPassword, setupFirstDoctor, signOutDoctor } from './src/auth/googleAuth';
 import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
 
 const clinicLogo = require('./assets/doctor-icon.png');
@@ -391,24 +391,27 @@ function Empty({text}){return <View style={styles.empty}><Text style={styles.emp
 function GoogleLoginScreen({ onSignedIn }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [serverWaking, setServerWaking] = useState(false);
+  const [setupMode, setSetupMode] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [setupKey, setSetupKey] = useState('');
   const entrance = useRef(new Animated.Value(0)).current;
   useEffect(() => { Animated.timing(entrance, { toValue: 1, duration: 520, useNativeDriver: true }).start(); }, [entrance]);
 
-  const login = async () => {
+  const submit = async () => {
     setBusy(true);
     setError('');
-    setServerWaking(true);
     fetch('https://dr-pranali-dental-api.onrender.com/health').catch(() => null);
     try {
-      const session = await signInWithGoogle('https://dr-pranali-dental-api.onrender.com');
+      const session = setupMode
+        ? await setupFirstDoctor({ email, password, displayName, setupKey })
+        : await signInWithPassword(email, password);
       onSignedIn(session.access_token);
     } catch (e) {
-      const code = e?.code || e?.errorCode || e?.name;
-      setError((code ? '[' + code + '] ' : '') + (e?.message || 'Google sign-in failed.'));
+      setError(e?.message || 'Could not sign in. Please try again.');
     } finally {
       setBusy(false);
-      setServerWaking(false);
     }
   };
 
@@ -417,19 +420,33 @@ function GoogleLoginScreen({ onSignedIn }) {
       <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.loginWrap} keyboardShouldPersistTaps="handled">
         <Animated.View style={{opacity:entrance,transform:[{translateY:entrance.interpolate({inputRange:[0,1],outputRange:[18,0]})}]}}>
-        <SafeImage source={clinicLogo} style={styles.loginLogo} resizeMode="contain" placeholder="✚" />
-        <Text style={styles.kicker}>DOCTOR PORTAL</Text>
-        <Text style={styles.loginTitle}>{BRAND.name} Doctor</Text>
-        <Text style={styles.loginSub}>Sign in with the Google account authorized for this clinic.</Text>
-        <View style={styles.card}>
-          <Text style={styles.label}>Secure doctor authentication</Text>
-          <Text style={styles.help}>This uses native Android Google Sign-In. No Expo OAuth proxy and no OTP are used.</Text>
-          <Pressable disabled={busy} onPress={login} style={[styles.googleBrandButton, busy && {opacity:0.6}]}>
-            {busy ? <ActivityIndicator color={C.blue} /> : <><Text style={styles.googleG}>G</Text><Text style={styles.googleBrandText}>Continue with Google</Text></>}
-          </Pressable>
-          {serverWaking && <Text style={styles.serverWake}>Waking up the clinic server…</Text>}
-          {!!error && <View style={styles.loginError}><Text style={styles.loginErrorTitle}>Sign-in error</Text><Text style={styles.loginErrorText}>{error}</Text></View>}
-        </View>
+          <SafeImage source={clinicLogo} style={styles.loginLogo} resizeMode="contain" placeholder="✚" />
+          <Text style={styles.kicker}>DOCTOR PORTAL</Text>
+          <Text style={styles.loginTitle}>{BRAND.name} Doctor</Text>
+          <Text style={styles.loginSub}>{setupMode ? 'Set up the first authorized clinic doctor account.' : 'Sign in with your clinic-issued email and password.'}</Text>
+          <View style={styles.card}>
+            <Text style={styles.label}>{setupMode ? 'First-time clinic setup' : 'Secure doctor sign-in'}</Text>
+            {setupMode && <>
+              <Text style={styles.label}>Doctor name</Text>
+              <TextInput value={displayName} onChangeText={setDisplayName} placeholder="Doctor name" style={styles.input} autoCapitalize="words" editable={!busy} />
+            </>}
+            <Text style={[styles.label,{marginTop:10}]}>Email address</Text>
+            <TextInput value={email} onChangeText={setEmail} placeholder="doctor@clinic.com" style={styles.input} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} textContentType="emailAddress" editable={!busy} />
+            <Text style={[styles.label,{marginTop:10}]}>Password</Text>
+            <TextInput value={password} onChangeText={setPassword} placeholder={setupMode ? 'At least 12 characters' : 'Enter your password'} style={styles.input} secureTextEntry textContentType={setupMode ? 'newPassword' : 'password'} autoCapitalize="none" editable={!busy} />
+            {setupMode && <>
+              <Text style={[styles.label,{marginTop:10}]}>One-time setup key</Text>
+              <TextInput value={setupKey} onChangeText={setSetupKey} placeholder="Clinic setup key" style={styles.input} secureTextEntry autoCapitalize="none" editable={!busy} />
+            </>}
+            <Pressable disabled={busy || !email.trim() || !password} onPress={submit} style={[styles.primary,(busy || !email.trim() || !password) && {opacity:0.6}]}>
+              {busy ? <ActivityIndicator color={C.white} /> : <Text style={styles.primaryText}>{setupMode ? 'Create Doctor Account' : 'Sign In Securely'}</Text>}
+            </Pressable>
+            {!!error && <View style={styles.loginError}><Text style={styles.loginErrorTitle}>Sign-in error</Text><Text style={styles.loginErrorText}>{error}</Text></View>}
+            <Pressable disabled={busy} onPress={() => {setSetupMode(!setupMode);setError('');}} style={{paddingVertical:14,alignItems:'center'}}>
+              <Text style={{color:C.blue,fontWeight:'800',fontSize:12}}>{setupMode ? 'Back to sign in' : 'First-time clinic setup'}</Text>
+            </Pressable>
+            <Text style={styles.help}>Google login and SMS OTP are not used. Patient records remain behind authenticated doctor access.</Text>
+          </View>
         </Animated.View>
       </ScrollView>
     </SafeAreaView>
@@ -445,7 +462,7 @@ export default function App(){
   }, []);
 
   const logout = async () => {
-    await signOutGoogle();
+    await signOutDoctor();
     setToken(null);
   };
 
