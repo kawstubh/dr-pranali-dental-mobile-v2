@@ -9,13 +9,13 @@
     "splash": {
       "image": "./assets/doctor-splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#073B4C"
+      "backgroundColor": "#0C3B82"
     },
     "android": {
       "package": "com.drpranali.dental.doctor",
       "adaptiveIcon": {
         "foregroundImage": "./assets/doctor-adaptive-foreground.png",
-        "backgroundColor": "#073B4C",
+        "backgroundColor": "#0C3B82",
         "monochromeImage": "./assets/doctor-monochrome.png"
       }
     },
