@@ -8,13 +8,13 @@
     "splash": {
       "image": "./assets/patient-splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#F5F9FC"
+      "backgroundColor": "#F4FBFF"
     },
     "android": {
       "package": "com.drpranali.dental",
       "adaptiveIcon": {
         "foregroundImage": "./assets/patient-adaptive-foreground.png",
-        "backgroundColor": "#F5F9FC",
+        "backgroundColor": "#F4FBFF",
         "monochromeImage": "./assets/patient-monochrome.png"
       }
     },
