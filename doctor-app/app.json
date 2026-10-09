@@ -24,7 +24,14 @@
     },
     "plugins": [
       "@react-native-google-signin/google-signin",
-      "expo-image"
+      "expo-image",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/doctor-notification.png",
+          "color": "#0D9488"
+        }
+      ]
     ],
     "extra": {
       "apiUrl": "https://dr-pranali-dental-api.onrender.com",
@@ -34,10 +41,6 @@
     },
     "web": {
       "favicon": "./assets/doctor-favicon.png"
-    },
-    "notification": {
-      "icon": "./assets/doctor-notification.png",
-      "color": "#0D9488"
     }
   }
 }
