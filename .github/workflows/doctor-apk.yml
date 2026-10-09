@@ -121,7 +121,9 @@ jobs:
           APK="android/app/build/outputs/apk/release/app-release.apk"
           test -s "$APK"
           unzip -t "$APK" >/dev/null
-          apksigner verify --print-certs "$APK" | tee /tmp/doctor-certs.txt
+          APKSIGNER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -type f -name apksigner 2>/dev/null | sort -V | tail -n 1)"
+          test -n "$APKSIGNER" || { echo "::error::Android SDK apksigner not found"; exit 1; }
+          "$APKSIGNER" verify --print-certs "$APK" | tee /tmp/doctor-certs.txt
           if grep -qi "Android Debug" /tmp/doctor-certs.txt; then
             echo "::error::Release APK is debug-signed. Fixed release signing was not applied."
             exit 1
