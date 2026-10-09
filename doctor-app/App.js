@@ -304,7 +304,7 @@ function Dashboard({ token, logout }) {
   if(loading) return <SafeAreaView style={styles.safe}><ActivityIndicator size="large" color={C.blue} style={{marginTop:80}}/></SafeAreaView>;
 
   return <SafeAreaView style={styles.safe}>
-    <StatusBar style="dark"/>
+    <StatusBar style="light"/>
     <View style={styles.header}>
       <View style={styles.headerBrand}>
         <SafeImage source={clinicLogo} style={styles.headerLogo} resizeMode="contain" placeholder="✚" />
@@ -415,23 +415,27 @@ function GoogleLoginScreen({ onSignedIn }) {
   return (
     <SafeAreaView style={styles.loginSafe}>
       <StatusBar style="light" />
-      <ScrollView contentContainerStyle={styles.loginWrap} keyboardShouldPersistTaps="handled">
+      <View pointerEvents="none" style={styles.loginGlowTop} />
+      <View pointerEvents="none" style={styles.loginGlowBottom} />
+      <ScrollView contentContainerStyle={styles.loginWrap} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Animated.View style={{opacity:entrance,transform:[{translateY:entrance.interpolate({inputRange:[0,1],outputRange:[18,0]})}]}}>
           <View style={styles.doctorBrandMark}>
-            <SafeImage source={clinicLogo} style={styles.loginLogo} resizeMode="contain" placeholder="✚" />
+            <View style={styles.loginLogoHalo}>
+              <SafeImage source={clinicLogo} style={styles.loginLogo} resizeMode="contain" placeholder="+" />
+            </View>
           </View>
-          <Text style={styles.kicker}>SECURE CLINIC PORTAL</Text>
-          <Text style={styles.loginTitle}>{BRAND.name}</Text>
-          <Text style={styles.loginSub}>Care • Precision • Progress</Text>
+          <Text style={styles.kicker}>CARE  •  PRECISION  •  PROGRESS</Text>
+          <Text style={styles.loginTitle}>Dr Pranali</Text>
+          <Text style={styles.loginSub}>D E N T A L   C L I N I C</Text>
           <View style={styles.card}>
             <Text style={styles.label}>Doctor Login</Text>
-            <Text style={styles.doctorLoginIntro}>Access your appointments, patient records and clinical workspace.</Text>
+            <Text style={styles.doctorLoginIntro}>Access your schedule, patients and clinical records securely.</Text>
             <Pressable disabled={busy} onPress={login} style={[styles.googleBrandButton, busy && {opacity:0.6}]}>
               {busy ? <ActivityIndicator color={C.blue} /> : <><Text style={styles.googleG}>G</Text><Text style={styles.googleBrandText}>Continue with Google</Text></>}
             </Pressable>
-            {serverWaking && <Text style={styles.serverWake}>Connecting to the clinic service…</Text>}
+            {serverWaking && <Text style={styles.serverWake}>Connecting securely to the clinic service…</Text>}
             {!!error && <View accessibilityRole="alert" style={styles.loginError}><Text style={styles.loginErrorTitle}>Sign-in error</Text><Text style={styles.loginErrorText}>{error}</Text></View>}
-            <Text style={styles.help}>Only the clinic's authorised Google account can access clinical records. No OTP or unsupported login method is shown.</Text>
+            <View style={styles.loginSecureRow}><Text style={styles.loginSecureIcon}>✓</Text><Text style={styles.loginSecureText}>Authorised clinic account only</Text></View>
           </View>
           <Text style={styles.doctorLoginFooter}>Protected access for clinical information</Text>
         </Animated.View>
@@ -471,13 +475,16 @@ const styles=StyleSheet.create({
  googleG:{fontSize:22,fontWeight:'900',color:'#4285F4'},
  googleBrandText:{fontSize:14,fontWeight:'800',color:C.text},
  serverWake:{fontSize:12,color:C.muted,textAlign:'center',marginTop:10},
- safe:{flex:1,backgroundColor:C.bg}, loginSafe:{flex:1,backgroundColor:'#071E35'}, loginWrap:{padding:24,paddingTop:38,paddingBottom:30,flexGrow:1,justifyContent:'center'},
- loginLogo:{width:168,height:168,borderRadius:34,alignSelf:'center',marginBottom:8}, doctorBrandMark:{alignItems:'center',justifyContent:'center',marginBottom:8},
+ safe:{flex:1,backgroundColor:C.bg}, loginSafe:{flex:1,backgroundColor:'#061A32',overflow:'hidden'}, loginWrap:{paddingHorizontal:24,paddingTop:24,paddingBottom:28,flexGrow:1,justifyContent:'center'},
+ loginGlowTop:{position:'absolute',top:-140,right:-100,width:360,height:360,borderRadius:180,backgroundColor:'#0C3B82',opacity:0.78},
+ loginGlowBottom:{position:'absolute',bottom:-180,left:-110,width:360,height:360,borderRadius:180,backgroundColor:'#00C6C8',opacity:0.16},
+ loginLogo:{width:164,height:128,alignSelf:'center'}, loginLogoHalo:{width:188,height:150,borderRadius:30,alignItems:'center',justifyContent:'center',backgroundColor:'rgba(255,255,255,0.035)',borderWidth:1,borderColor:'rgba(255,255,255,0.13)'}, doctorBrandMark:{alignItems:'center',justifyContent:'center',marginBottom:16},
  logo:{width:82,height:82,borderRadius:24,backgroundColor:'#0B2E4F',alignItems:'center',justifyContent:'center',alignSelf:'center',marginBottom:18},
  logoTooth:{fontSize:42,color:'#FFF'}, kicker:{fontSize:10,fontWeight:'900',letterSpacing:1.6,color:'#00C6C8',textAlign:'center'},
- loginTitle:{fontSize:29,fontWeight:'900',color:'#FFFFFF',textAlign:'center',marginTop:7},loginSub:{fontSize:14,color:'#BFD5E8',lineHeight:21,textAlign:'center',marginTop:9,marginBottom:22}, doctorLoginIntro:{fontSize:12,color:C.muted,lineHeight:18,marginBottom:14}, doctorLoginFooter:{fontSize:10,color:'#9CB8D0',textAlign:'center',marginTop:18},
+ loginTitle:{fontSize:31,fontWeight:'900',color:'#FFFFFF',textAlign:'center',marginTop:10,letterSpacing:0.2},loginSub:{fontSize:11,fontWeight:'800',letterSpacing:3,color:'#BFD5E8',lineHeight:21,textAlign:'center',marginTop:2,marginBottom:24}, doctorLoginIntro:{fontSize:12,color:C.muted,lineHeight:19,marginBottom:18}, doctorLoginFooter:{fontSize:10,color:'#9CB8D0',textAlign:'center',marginTop:18,letterSpacing:0.4},
+ loginSecureRow:{flexDirection:'row',alignItems:'center',justifyContent:'center',gap:8,marginTop:18,paddingTop:14,borderTopWidth:1,borderTopColor:'#E0EDF6'},loginSecureIcon:{width:19,height:19,borderRadius:10,overflow:'hidden',textAlign:'center',textAlignVertical:'center',backgroundColor:'#D7F7F2',color:'#087F77',fontSize:12,fontWeight:'900'},loginSecureText:{fontSize:11,color:C.muted,fontWeight:'700'},
  card:{backgroundColor:'#F4FBFF',borderRadius:24,borderWidth:1,borderColor:'#D4EAF7',padding:20,shadowColor:'#000000',shadowOpacity:0.18,shadowRadius:18,elevation:6},label:{fontSize:13,fontWeight:'800',color:C.navy,marginBottom:7},input:{borderWidth:1,borderColor:C.border,borderRadius:12,padding:13,fontSize:15,color:C.text,backgroundColor:'#F9FBFD'},primary:{backgroundColor:C.blue,borderRadius:13,padding:15,alignItems:'center',marginTop:13},primaryText:{color:C.white,fontWeight:'900',fontSize:15},help:{fontSize:11,color:C.muted,lineHeight:17,marginTop:10},loginError:{marginTop:12,padding:12,borderRadius:12,backgroundColor:'#FCEAEA',borderWidth:1,borderColor:'#F2C3C3'},loginErrorTitle:{fontSize:12,fontWeight:'900',color:C.red},loginErrorText:{fontSize:11,color:'#7A2E2E',lineHeight:16,marginTop:4},
- header:{backgroundColor:C.white,borderBottomWidth:1,borderBottomColor:C.border,paddingHorizontal:16,paddingVertical:12,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},headerBrand:{flexDirection:'row',alignItems:'center',gap:10},headerLogo:{width:38,height:38,borderRadius:12},headerTitle:{fontSize:19,fontWeight:'900',color:C.navy},headerSub:{fontSize:11,color:C.muted,marginTop:1},headerAction:{paddingHorizontal:10,paddingVertical:7,borderRadius:10,backgroundColor:'#F2F7FC'},headerActionText:{color:C.blue,fontWeight:'800',fontSize:10},
+ header:{backgroundColor:'#0C3B82',borderBottomWidth:1,borderBottomColor:'#164C8F',paddingHorizontal:16,paddingVertical:12,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},headerBrand:{flexDirection:'row',alignItems:'center',gap:10},headerLogo:{width:42,height:42,borderRadius:12},headerTitle:{fontSize:17,fontWeight:'900',color:'#FFFFFF'},headerSub:{fontSize:11,color:'#BFD5E8',marginTop:1},headerAction:{paddingHorizontal:10,paddingVertical:8,borderRadius:10,backgroundColor:'rgba(255,255,255,0.12)'},headerActionText:{color:'#FFFFFF',fontWeight:'800',fontSize:10},
  content:{padding:16,paddingBottom:95},hero:{backgroundColor:C.navy,borderRadius:20,padding:18,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},heroKicker:{fontSize:9,color:'#8FCBFF',fontWeight:'900',letterSpacing:1},heroTitle:{fontSize:25,color:C.white,fontWeight:'900',marginTop:4},heroSub:{fontSize:12,color:'#D9EAF7',marginTop:5},dot:{width:13,height:13,borderRadius:7,borderWidth:2,borderColor:C.white},
  stats:{flexDirection:'row',gap:8,marginVertical:12},quickGrid:{flexDirection:'row',flexWrap:'wrap',gap:9},quickCard:{width:'48.2%',backgroundColor:C.white,borderRadius:17,padding:14,borderWidth:1,borderColor:C.border,minHeight:128},quickIcon:{width:38,height:38,borderRadius:12,backgroundColor:'#EAF4FF',alignItems:'center',justifyContent:'center',marginBottom:10},quickTitle:{fontSize:14,fontWeight:'900',color:C.navy},quickSub:{fontSize:10.5,color:C.muted,lineHeight:15,marginTop:4},todayCard:{backgroundColor:'#EEF7FF',borderRadius:17,padding:15,marginTop:12,borderWidth:1,borderColor:'#D4E9FA',flexDirection:'row',alignItems:'center',justifyContent:'space-between'},todayKicker:{fontSize:8,fontWeight:'900',letterSpacing:1,color:C.blue},todayTitle:{fontSize:16,fontWeight:'900',color:C.navy,marginTop:3},todaySub:{fontSize:10.5,color:C.muted,lineHeight:15,marginTop:3,maxWidth:'82%'},statusPill:{paddingHorizontal:9,paddingVertical:6,borderRadius:10},statusPillText:{fontSize:9,fontWeight:'900'},stat:{flex:1,backgroundColor:C.white,borderRadius:14,padding:11,borderWidth:1,borderColor:C.border},statN:{fontSize:22,fontWeight:'900',color:C.navy},statT:{fontSize:9,color:C.muted,marginTop:2,fontWeight:'700'},
  tabs:{backgroundColor:C.white,borderRadius:13,padding:4,flexDirection:'row',marginBottom:14,borderWidth:1,borderColor:C.border},tab:{flex:1,padding:10,alignItems:'center',borderRadius:10},tabActive:{backgroundColor:'#EAF4FF'},tabText:{fontSize:12,fontWeight:'800',color:C.muted},tabTextActive:{color:C.blue},
