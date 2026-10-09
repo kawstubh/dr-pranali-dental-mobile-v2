@@ -1,7 +1,7 @@
 export const BRAND = {
   name: 'Dr. Pranali Dental',
   tagline: 'Better dental care, connected',
-  supportEmail: 'support@drpranalidental.com',
+  supportEmail: '',
   colors: {
     navy: '#0B2E4F',
     blue: '#1677D2',
