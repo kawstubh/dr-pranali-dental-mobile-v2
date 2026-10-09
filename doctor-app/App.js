@@ -30,7 +30,7 @@ function SafeImage({ source, style, resizeMode = 'cover', placeholder = '✚' })
   if (failed) {
     return <View style={[style, styles.imageFallback]}><Text style={styles.imageFallbackText}>{placeholder}</Text></View>;
   }
-  return <ExpoImage source={source} style={style} contentFit={resizeMode} transition={150} onError={() => setFailed(true)} />;
+  return <ExpoImage source={source} placeholder={require('./assets/doctor-icon.png')} style={style} contentFit={resizeMode} transition={150} onError={() => setFailed(true)} />;
 }
 
 function AppointmentCard({ item, token, onChanged }) {
