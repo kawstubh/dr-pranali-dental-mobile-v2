@@ -6,12 +6,11 @@ permissions:
   contents: write
 jobs:
   install:
-    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ui/brand-and-services
           token: ${{ github.token }}
       - uses: actions/setup-node@v4
         with:
