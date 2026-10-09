@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Linking,
   Platform,
   Pressable,
@@ -14,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { Image as ExpoImage } from 'expo-image';
 import { BRAND } from './src/brandConstants';
 import { DENTAL_SERVICES, DENTAL_SERVICE_CATEGORIES } from './shared/dentalServices';
 import { signInWithGoogle } from './src/auth/googleAuth';
@@ -50,7 +50,7 @@ function SafeImage({ source, style, resizeMode = 'cover', placeholder = '🦷' }
   if (failed) {
     return <View style={[style, styles.imageFallback]}><Text style={styles.imageFallbackText}>{placeholder}</Text></View>;
   }
-  return <Image source={source} style={style} resizeMode={resizeMode} onError={() => setFailed(true)} />;
+  return <ExpoImage source={source} style={style} contentFit={resizeMode} transition={150} onError={() => setFailed(true)} />;
 }
 
 function WelcomeScreen({ onStart }) {
