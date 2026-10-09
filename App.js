@@ -57,12 +57,14 @@ function WelcomeScreen({ onStart }) {
 
   const googleLogin = async () => {
     setGoogleBusy(true);
-    setGoogleMessage('');
+    setGoogleMessage('Waking up the clinic server…');
+    fetch(`${API_URL}/health`).catch(() => null);
     try {
       await signInWithGoogle();
       setGoogleMessage('Google account connected successfully.');
     } catch (error) {
-      setGoogleMessage(error?.message || 'Google sign-in failed.');
+      const code = error?.code || error?.errorCode || error?.name;
+      setGoogleMessage((code ? '[' + code + '] ' : '') + (error?.message || 'Google sign-in failed.'));
     } finally {
       setGoogleBusy(false);
     }
@@ -76,7 +78,7 @@ function WelcomeScreen({ onStart }) {
           <View style={styles.brandBadge}>
             <Image source={require('./assets/universal-dental-icon.png')} style={styles.brandBadgeLogo} resizeMode="contain" />
             <View>
-              <Text style={styles.welcomeBrand}>Dr. Pranali</Text>
+              <Text style={styles.welcomeBrand}>{BRAND.name}</Text>
               <Text style={styles.welcomeClinic}>DENTAL CLINIC</Text>
             </View>
           </View>
