@@ -24,12 +24,6 @@
     },
     "plugins": [
       "@react-native-google-signin/google-signin",
-      {
-        "expo-notifications": {
-          "icon": "./assets/dr-pranali-branded-logo.png",
-          "color": "#0D9488"
-        }
-      },
       [
         "expo-notifications",
         {
