@@ -50,7 +50,7 @@ function SafeImage({ source, style, resizeMode = 'cover', placeholder = '🦷' }
   if (failed) {
     return <View style={[style, styles.imageFallback]}><Text style={styles.imageFallbackText}>{placeholder}</Text></View>;
   }
-  return <ExpoImage source={source} style={style} contentFit={resizeMode} transition={150} onError={() => setFailed(true)} />;
+  return <ExpoImage source={source} placeholder={require('./assets/patient-icon.png')} style={style} contentFit={resizeMode} transition={150} onError={() => setFailed(true)} />;
 }
 
 function WelcomeScreen({ onStart }) {
