@@ -24,6 +24,14 @@ const STATUSES = ['requested','confirmed','scheduled','completed','cancelled','r
 
 function statusLabel(s){ return (s || '').replace('_',' ').replace(/^./, x => x.toUpperCase()); }
 
+function SafeImage({ source, style, resizeMode = 'cover', placeholder = '✚' }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return <View style={[style, styles.imageFallback]}><Text style={styles.imageFallbackText}>{placeholder}</Text></View>;
+  }
+  return <Image source={source} style={style} resizeMode={resizeMode} onError={() => setFailed(true)} />;
+}
+
 function AppointmentCard({ item, token, onChanged }) {
   const [busy,setBusy]=useState(false);
   const change=async(status)=>{
@@ -298,7 +306,7 @@ function Dashboard({ token, logout }) {
     <StatusBar style="dark"/>
     <View style={styles.header}>
       <View style={styles.headerBrand}>
-        <Image source={clinicLogo} style={styles.headerLogo} resizeMode="contain" />
+        <SafeImage source={clinicLogo} style={styles.headerLogo} resizeMode="contain" placeholder="✚" />
         <View><Text style={styles.headerTitle}>{BRAND.name}</Text><Text style={styles.headerSub}>Dental Clinic â€¢ Taloja</Text></View>
       </View>
       <Pressable onPress={()=>{logout();}} style={styles.headerAction}><Text style={styles.headerActionText}>Sign out</Text></Pressable>
@@ -408,7 +416,7 @@ function GoogleLoginScreen({ onSignedIn }) {
       <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.loginWrap} keyboardShouldPersistTaps="handled">
         <Animated.View style={{opacity:entrance,transform:[{translateY:entrance.interpolate({inputRange:[0,1],outputRange:[18,0]})}]}}>
-        <Image source={clinicLogo} style={styles.loginLogo} resizeMode="contain" />
+        <SafeImage source={clinicLogo} style={styles.loginLogo} resizeMode="contain" placeholder="✚" />
         <Text style={styles.kicker}>DOCTOR PORTAL</Text>
         <Text style={styles.loginTitle}>{BRAND.name} Doctor</Text>
         <Text style={styles.loginSub}>Sign in with the Google account authorized for this clinic.</Text>
@@ -446,6 +454,8 @@ export default function App(){
 }
 
 const styles=StyleSheet.create({
+ imageFallback:{alignItems:'center',justifyContent:'center',backgroundColor:'#E5F4F2',borderRadius:18,overflow:'hidden'},
+ imageFallbackText:{fontSize:30,color:'#0D9488',fontWeight:'900'},
  treatmentCatalogue:{backgroundColor:'#FFFFFF',borderRadius:18,padding:14,marginBottom:14,borderWidth:1,borderColor:C.border},
  treatmentCatalogueSub:{color:C.muted,fontSize:12,lineHeight:18,marginTop:5,marginBottom:8},
  treatmentServiceRow:{flexDirection:'row',alignItems:'center',paddingVertical:8,borderBottomWidth:1,borderBottomColor:'#EDF2F7',gap:10},
