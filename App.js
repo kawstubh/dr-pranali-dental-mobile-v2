@@ -74,64 +74,50 @@ const tabs = [
 
 function WelcomeScreen({ onStart, serverMessage }) {
   const [googleBusy, setGoogleBusy] = useState(false);
-  const [googleMessage, setGoogleMessage] = useState('');
   const [googleStage, setGoogleStage] = useState('');
   const [googleError, setGoogleError] = useState(null);
+  const [mobile, setMobile] = useState('');
+  const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(true);
+  const [localMessage, setLocalMessage] = useState('');
 
   const googleLogin = async () => {
-    setGoogleBusy(true); setGoogleError(null); setGoogleMessage(''); setGoogleStage('Opening Google...');
+    setGoogleBusy(true); setGoogleError(null); setLocalMessage(''); setGoogleStage('Opening Google...');
     try {
       await signInWithGoogle(setGoogleStage);
-      setGoogleMessage('Google account connected successfully.');
+      setLocalMessage('Google account connected successfully.');
     } catch (error) {
       setGoogleError({ message: error?.message || 'Google sign-in failed.', code: error?.code || error?.name || 'AUTH_ERROR', stage: error?.stage || googleStage || 'Unknown stage' });
     } finally { setGoogleBusy(false); }
   };
+  const unavailable = (method) => setLocalMessage(method + ' sign-in is displayed for the approved design but is not connected to an authentication provider yet.');
 
   return (
     <SafeAreaView style={styles.welcomeSafe}>
       <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={styles.welcomeContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.welcomeTop}>
-          <View style={styles.brandBadge}>
-            <Image source={require('./assets/universal-dental-icon.png')} style={styles.brandBadgeLogo} resizeMode="contain" />
-            <View>
-              <Text style={styles.welcomeBrand}>Dr. Pranali</Text>
-              <Text style={styles.welcomeClinic}>DENTAL CLINIC</Text>
-            </View>
-          </View>
-          <Pressable onPress={onStart} style={styles.skipButton}><Text style={styles.skipText}>Skip</Text></Pressable>
-        </View>
-        <Text style={styles.welcomeTitle}>Beautiful Smile</Text>
-        <Text style={styles.welcomeTitleBlue}>Confident You</Text>
-        <Text style={styles.welcomeSub}>Expert dental care for a healthier, brighter smile</Text>
-        <View style={styles.logoStage}>
-          <View style={styles.logoGlow} />
-          <Image source={require('./assets/universal-dental-icon.png')} style={styles.hero3dLogo} resizeMode="contain" />
-          <View style={styles.logoPedestal}><View style={styles.logoPedestalGlow} /></View>
-        </View>
-        <Pressable disabled={googleBusy} onPress={googleLogin} style={[styles.googleButton, googleBusy && { opacity: 0.6 }]}>
-          <Text style={styles.googleButtonText}>{googleBusy ? googleStage || 'Opening Google...' : 'Continue with Google'}</Text>
+      <ScrollView contentContainerStyle={styles.loginRedesignContent} keyboardShouldPersistTaps="handled">
+        <View style={styles.patientPhotoPlaceholder}><Text style={styles.photoPlaceholderTitle}>PATIENT HEADER PHOTO PLACEHOLDER</Text><Text style={styles.photoPlaceholderSub}>Smiling-woman image pending</Text></View>
+        <View style={styles.logoPlaceholder}><Text style={styles.logoPlaceholderText}>LOGO PLACEHOLDER</Text><Text style={styles.logoPlaceholderSub}>Original Dr Pranali orbit-tooth logo pending</Text></View>
+        <Text style={styles.loginBrandName}>Dr Pranali</Text>
+        <Text style={styles.loginBrandClinic}>D E N T A L   C L I N I C</Text>
+        <Text style={styles.loginWelcomeHeading}>Welcome</Text>
+        <Text style={styles.loginWelcomeSub}>Book Appointments • View Reports{"\n"}Stay Connected • Smile Brighter</Text>
+        <Pressable disabled={googleBusy} onPress={googleLogin} style={styles.loginProviderButton}>
+          <Text style={styles.providerIconGoogle}>G</Text><Text style={styles.loginProviderText}>{googleBusy ? googleStage || 'Opening Google...' : 'Continue with Google'}</Text>
         </Pressable>
-        {!!googleMessage && <Text style={styles.googleMessage}>{googleMessage}</Text>}
-        {!!serverMessage && <Text accessibilityRole="alert" style={styles.serverWakeMessage}>{serverMessage}</Text>}
+        <Pressable onPress={() => unavailable('Apple')} style={styles.loginProviderButton}><Text style={styles.providerIconApple}>●</Text><Text style={styles.loginProviderText}>Continue with Apple</Text></Pressable>
+        <View style={styles.loginOrRow}><View style={styles.loginOrLine}/><Text style={styles.loginOrText}>or</Text><View style={styles.loginOrLine}/></View>
+        <View style={styles.loginInputRow}><Text style={styles.loginInputIcon}>☎</Text><Text style={styles.countryCode}>+91</Text><TextInput value={mobile} onChangeText={setMobile} keyboardType="phone-pad" placeholder="Mobile Number" placeholderTextColor="#6D8CB0" style={styles.loginInput}/></View>
+        <View style={styles.loginInputRow}><Text style={styles.loginInputIcon}>♙</Text><TextInput value={password} onChangeText={setPassword} secureTextEntry placeholder="Password" placeholderTextColor="#6D8CB0" style={styles.loginInput}/></View>
+        <View style={styles.loginRememberRow}><Pressable onPress={() => setRemember(!remember)} style={styles.rememberToggle}><Text style={styles.rememberCheck}>{remember ? '✓' : ''}</Text></Pressable><Text style={styles.rememberLabel}>Remember me</Text><Pressable onPress={() => unavailable('Password recovery')}><Text style={styles.forgotText}>Forgot Password?</Text></Pressable></View>
+        <Pressable onPress={() => unavailable('Mobile/password')} style={styles.loginGradientButton}><Text style={styles.loginGradientText}>Login  →</Text></Pressable>
+        <Text style={styles.createAccountLine}>New here? <Text style={styles.createAccountLink} onPress={() => unavailable('Account creation')}>Create an Account</Text></Text>
+        {!!serverMessage && <Text style={styles.serverWakeMessage}>{serverMessage}</Text>}
+        {!!localMessage && <Text accessibilityRole="alert" style={styles.authErrorText}>{localMessage}</Text>}
         {!!googleError && <View style={styles.authErrorBox}><Text style={styles.authErrorTitle}>Sign-in failed</Text><Text style={styles.authErrorText}>{googleError.message}</Text><Text style={styles.authErrorDetail}>Stage: {googleError.stage} • Code: {googleError.code}</Text><Pressable onPress={googleLogin} style={styles.authRetry}><Text style={styles.authRetryText}>Retry</Text></Pressable></View>}
-        <Pressable onPress={onStart} style={styles.getStarted}>
-          <Text style={styles.getStartedText}>Get Started</Text>
-          <View style={styles.arrowCircle}><Text style={styles.arrowText}>→</Text></View>
-        </Pressable>
-        <Pressable onPress={() => onStart('Services')} style={styles.exploreButton}>
-          <Text style={styles.exploreText}>Explore Services</Text><Text style={styles.exploreArrow}>→</Text>
-        </Pressable>
-        <View style={styles.welcomeTrust}>
-          <View><Text style={styles.trustNumber}>20+</Text><Text style={styles.trustLabel}>Dental services</Text></View>
-          <View style={styles.trustDivider} />
-          <View><Text style={styles.trustNumber}>BDS</Text><Text style={styles.trustLabel}>Dental surgeon</Text></View>
-          <View style={styles.trustDivider} />
-          <View><Text style={styles.trustNumber}>AI</Text><Text style={styles.trustLabel}>Care support</Text></View>
+        <View style={styles.loginQuickActions}>
+          { [['▣','Book Appointment','Appointment'],['▤','View Reports','Gallery'],['♧','Dental Treatments','Services'],['♙','Family Members','Home']].map(([icon,label,tab]) => <Pressable key={label} onPress={() => onStart(tab)} style={styles.loginQuickAction}><Text style={styles.loginQuickIcon}>{icon}</Text><Text style={styles.loginQuickLabel}>{label}</Text></Pressable>)}
         </View>
-        <Text style={styles.terms}>By continuing, you agree to our</Text>
-        <Text style={styles.termsBlue}>Terms & Privacy Policy</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -654,6 +640,23 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
+  loginRedesignContent:{flexGrow:1,paddingHorizontal:20,paddingTop:18,paddingBottom:18,alignItems:'center',backgroundColor:'#F4FBFF'},
+  patientPhotoPlaceholder:{width:'100%',height:160,borderRadius:22,backgroundColor:'#E0F4FC',borderWidth:1,borderColor:'#B9E8F4',alignItems:'center',justifyContent:'center',marginBottom:10},
+  photoPlaceholderTitle:{fontSize:11,fontWeight:'900',color:'#0C3B82',letterSpacing:1,textAlign:'center'},photoPlaceholderSub:{fontSize:11,color:'#0C3B82',marginTop:6},
+  logoPlaceholder:{width:86,height:62,borderRadius:14,borderWidth:1,borderStyle:'dashed',borderColor:'#0A84E8',alignItems:'center',justifyContent:'center',marginTop:2},
+  logoPlaceholderText:{fontSize:9,fontWeight:'900',color:'#0C3B82'},logoPlaceholderSub:{fontSize:6,color:'#0C3B82',textAlign:'center',paddingHorizontal:4,marginTop:2},
+  loginWelcomeHeading:{fontSize:24,fontWeight:'900',color:'#0C3B82',marginTop:14},loginWelcomeSub:{fontSize:12,color:'#244D79',textAlign:'center',lineHeight:18,marginTop:3,marginBottom:12},
+  loginProviderButton:{width:'100%',minHeight:46,borderRadius:13,backgroundColor:'#FFFFFF',borderWidth:1,borderColor:'#E0EBF6',flexDirection:'row',alignItems:'center',justifyContent:'center',marginTop:7},
+  providerIconGoogle:{fontSize:20,fontWeight:'900',color:'#0A84E8',marginRight:12},providerIconApple:{fontSize:18,color:'#111111',marginRight:12},loginProviderText:{fontSize:13,fontWeight:'700',color:'#142C4C'},
+  loginOrRow:{width:'100%',flexDirection:'row',alignItems:'center',gap:10,marginVertical:12},loginOrLine:{height:1,flex:1,backgroundColor:'#D6E7F5'},loginOrText:{fontSize:11,color:'#4F6D90'},
+  loginInputRow:{width:'100%',minHeight:46,borderRadius:12,borderWidth:1,borderColor:'#D6E7F5',backgroundColor:'#FFFFFF',flexDirection:'row',alignItems:'center',paddingHorizontal:12,marginTop:8},
+  loginInputIcon:{fontSize:18,color:'#0C3B82',marginRight:9},countryCode:{fontSize:12,color:'#0C3B82',fontWeight:'800',paddingRight:8},loginInput:{flex:1,minHeight:42,color:'#18334D',fontSize:13},
+  loginRememberRow:{width:'100%',flexDirection:'row',alignItems:'center',marginTop:10},rememberToggle:{width:20,height:20,borderRadius:4,borderWidth:1,borderColor:'#0A84E8',backgroundColor:'#0A84E8',alignItems:'center',justifyContent:'center'},rememberCheck:{color:'#FFFFFF',fontWeight:'900'},rememberLabel:{fontSize:11,color:'#18334D',marginLeft:7},forgotText:{fontSize:11,color:'#0A84E8',marginLeft:'auto'},
+  loginGradientButton:{width:'100%',minHeight:46,borderRadius:14,backgroundColor:'#0A84E8',alignItems:'center',justifyContent:'center',marginTop:12,borderBottomWidth:3,borderBottomColor:'#00C6C8'},loginGradientText:{fontSize:15,color:'#FFFFFF',fontWeight:'900'},
+  createAccountLine:{fontSize:12,color:'#18334D',marginTop:12},createAccountLink:{fontWeight:'900',color:'#00AEB8'},
+  loginQuickActions:{width:'100%',flexDirection:'row',justifyContent:'space-between',gap:6,backgroundColor:'#FFFFFF',borderRadius:18,padding:10,marginTop:14,borderWidth:1,borderColor:'#D6E7F5'},
+  loginQuickAction:{flex:1,alignItems:'center',justifyContent:'center',minHeight:65},loginQuickIcon:{fontSize:20,color:'#0C3B82'},loginQuickLabel:{fontSize:9,color:'#0C3B82',textAlign:'center',marginTop:5},
+
   serverWakeMessage:{width:'100%',textAlign:'center',fontSize:11,color:'#0C3B82',marginTop:8},
   authErrorBox:{width:'100%',marginTop:12,padding:12,borderRadius:12,backgroundColor:'#FFF1F1',borderWidth:1,borderColor:'#F2C3C3'},
   authErrorTitle:{fontSize:13,fontWeight:'900',color:'#8B1E1E'},authErrorText:{fontSize:12,color:'#6F2424',marginTop:4},authErrorDetail:{fontSize:10,color:'#6F2424',marginTop:5},authRetry:{marginTop:8,padding:10,backgroundColor:'#0A84E8',borderRadius:10,alignItems:'center'},authRetryText:{color:'#FFFFFF',fontWeight:'800'},
