@@ -1,0 +1,41 @@
+name: Install Expo Image dependency
+on:
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: write
+jobs:
+  install:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ github.token }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install compatible Expo Image in Patient app
+        run: |
+          npm ci
+          npx expo install expo-image
+      - name: Install compatible Expo Image in Doctor app
+        working-directory: doctor-app
+        run: |
+          npm ci
+          npx expo install expo-image
+      - name: Commit dependency manifests and lockfiles
+        env:
+          TARGET_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json doctor-app/package.json doctor-app/package-lock.json
+          if git diff --cached --quiet; then
+            echo "Expo Image dependencies are already installed."
+            exit 0
+          fi
+          git commit -m "Add Expo Image with SDK-compatible versions"
+          git push origin "HEAD:$TARGET_BRANCH"
