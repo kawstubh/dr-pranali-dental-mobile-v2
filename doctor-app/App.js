@@ -1,7 +1,7 @@
 ﻿
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Alert, Animated, Image, Linking, Pressable, RefreshControl,
+  ActivityIndicator, Alert, Animated, Linking, Pressable, RefreshControl,
   ScrollView, StyleSheet, Text, TextInput, View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
