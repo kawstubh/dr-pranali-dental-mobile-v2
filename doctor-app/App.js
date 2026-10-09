@@ -13,7 +13,7 @@ import { listAppointments, listPatients, updateAppointment, getHealth, getDental
 import { getStoredDoctorSession, signInWithPassword, setupFirstDoctor, signOutDoctor } from './src/auth/googleAuth';
 import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
 
-const clinicLogo = require('./assets/doctor-icon.png');
+const clinicLogo = require('./assets/dr-pranali-branded-logo.png');
 
 const C = {
   ...BRAND.colors,
