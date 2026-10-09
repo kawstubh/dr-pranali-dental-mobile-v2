@@ -25,12 +25,13 @@
       "expo-status-bar",
       "@react-native-community/datetimepicker",
       "@react-native-google-signin/google-signin",
-      {
-        "expo-notifications": {
-          "icon": "./assets/dr-pranali-branded-logo.png",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-mark.svg",
           "color": "#1677D2"
         }
-      }
+      ]
     ],
     "extra": {
       "eas": {
