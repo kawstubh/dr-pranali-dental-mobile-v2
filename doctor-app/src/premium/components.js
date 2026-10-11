@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PREMIUM as P } from './theme';
 
 export function Screen({ children, style, scroll = true }) {
@@ -42,7 +43,8 @@ const doctorTabs = [
 ];
 export function PillTabBar({ active = 'Home', onChange, mode = 'patient' }) {
   const tabs = mode === 'doctor' ? doctorTabs : patientTabs;
-  return <View style={styles.tabDock}>{tabs.map(({key,label,icon}) => {
+  const insets = useSafeAreaInsets();
+  return <View style={[styles.tabDock,{bottom:Math.max(12,insets.bottom+8)}]}>{tabs.map(({key,label,icon}) => {
     const selected = key === active;
     return <Pressable key={key} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{selected}} onPress={()=>onChange?.(key)} style={[styles.tab, selected && styles.tabActive]}><Text style={[styles.tabIcon,selected&&styles.tabIconActive]}>{icon}</Text>{selected ? <Text style={styles.tabLabel}>{label}</Text> : null}</Pressable>;
   })}</View>;
