@@ -219,20 +219,34 @@ function Periodontogram({ token, patientId, patientName='Patient' }) {
   const [selected,setSelected]=useState('46');
   const [records,setRecords]=useState({});
   const [saving,setSaving]=useState(false);
-  useEffect(()=>{ let active=true; if(!patientId)return; getPeriodontogram(token,patientId).then(rows=>{ if(!active)return; const next={}; (rows||[]).forEach(r=>next[r.tooth_fdi]=r.measurements||{}); setRecords(next); }).catch(()=>{}); return()=>{active=false}; },[patientId,token]);
+  const [loaded,setLoaded]=useState(false);
+  const [loadError,setLoadError]=useState('');
+  const loadPeriodontogram=useCallback(async()=>{
+    if(!patientId||!token){setLoaded(true);setLoadError('Sign in with an authorized doctor account to load this clinical record.');return;}
+    setLoaded(false);setLoadError('');setRecords({});
+    try{
+      const response=await getPeriodontogram(token,patientId);
+      const rows=Array.isArray(response)?response:Array.isArray(response?.entries)?response.entries:[];
+      const next={}; rows.forEach(r=>{if(r?.tooth_fdi)next[String(r.tooth_fdi)]=r.measurements||{};});
+      setRecords(next);
+    }catch(error){setLoadError(error?.message||'Could not load the saved periodontogram.');}
+    finally{setLoaded(true);}
+  },[patientId,token]);
+  useEffect(()=>{loadPeriodontogram();},[loadPeriodontogram]);
   const current=records[selected]||{};
   const update=(key,value)=>setRecords(prev=>({...prev,[selected]:{...(prev[selected]||{}),[key]:value}}));
-  const save=async()=>{ if(!patientId||saving)return; setSaving(true); try{await savePeriodontogramEntry(token,patientId,{tooth_fdi:selected,measurements:current,note:''}); Alert.alert('Periodontogram','Measurements saved for tooth '+selected+'.');}catch(e){Alert.alert('Periodontogram',e.message||'Could not save measurements.')}finally{setSaving(false)} };
+  const save=async()=>{ if(!patientId||!token||saving||!loaded||loadError)return; setSaving(true); try{await savePeriodontogramEntry(token,patientId,{tooth_fdi:selected,measurements:current,note:''}); Alert.alert('Periodontogram','Measurements saved for tooth '+selected+'.');}catch(e){Alert.alert('Periodontogram',e.message||'Could not save measurements.')}finally{setSaving(false)} };
   return <View style={styles.chartCard}>
-    <View style={styles.chartHeader}><View style={{flex:1}}><Text style={styles.chartEyebrow}>CLINICAL PERIODONTICS</Text><Text style={styles.chartTitle}>Periodontogram</Text><Text style={styles.chartPatient}>{patientName} • 6-point periodontal probing</Text></View><View style={[styles.chartLegendDot,{backgroundColor:'#D98900'}]}/></View>
+    <View style={styles.chartHeader}><View style={{flex:1}}><Text style={styles.chartEyebrow}>CLINICAL PERIODONTICS</Text><Text style={styles.chartTitle}>Periodontogram</Text><Text style={styles.chartPatient}>{patientName} • {!loaded?'Loading record…':loadError?'Record not synced':'6-point probing · saved record loaded'}</Text></View><View style={[styles.chartLegendDot,{backgroundColor:'#D98900'}]}/></View>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap:6,paddingVertical:12}}>{teeth.map(n=><Pressable key={n} onPress={()=>setSelected(n)} style={[styles.perioTooth,selected===n&&styles.perioToothActive]}><Text style={[styles.perioToothText,selected===n&&styles.perioToothTextActive]}>{n}</Text></Pressable>)}</ScrollView>
+    {loadError ? <View style={styles.chartLoadError}><Text style={styles.chartLoadErrorText}>{loadError}</Text><Pressable onPress={loadPeriodontogram} style={styles.chartRetry}><Text style={styles.chartRetryText}>Retry loading</Text></Pressable></View> : null}
     <View style={styles.perioSelected}><Text style={styles.selectedLabel}>Tooth {selected}</Text><Text style={styles.selectedStatus}>Probing depths (mm) — MB · B · DB · ML · L · DL</Text></View>
     <View style={styles.perioGrid}>{points.map(p=><View key={p} style={styles.perioCell}><Text style={styles.perioPoint}>{p}</Text><TextInput value={String(current[p]??'')} onChangeText={v=>update(p,v.replace(/[^0-9]/g,''))} keyboardType="number-pad" maxLength={2} placeholder="0" placeholderTextColor="#AAB5BF" style={styles.perioInput}/></View>)}</View>
     <View style={styles.perioMeta}>
       {['recession','CAL'].map(k=><View key={k} style={styles.metaField}><Text style={styles.metaLabel}>{k==='recession'?'Recession':'CAL'} (mm)</Text><TextInput value={String(current[k]??'')} onChangeText={v=>update(k,v.replace(/[^0-9]/g,''))} keyboardType="number-pad" style={styles.metaInput}/></View>)}
       {['BOP','Mobility','Furcation','Plaque','Calculus'].map(k=><Pressable key={k} onPress={()=>update(k,current[k]?'':'Yes')} style={[styles.perioFlag,current[k]&&styles.perioFlagActive]}><Text style={[styles.perioFlagText,current[k]&&styles.perioFlagTextActive]}>{k}{current[k]?' ✓':''}</Text></Pressable>)}
     </View>
-    <Pressable disabled={saving||!patientId} onPress={save} style={[styles.primary,{marginTop:12,opacity:saving?0.6:1}]}><Text style={styles.primaryText}>{saving?'Saving…':'Save Periodontogram'}</Text></Pressable>
+    <Pressable disabled={saving||!patientId||!token||!loaded||!!loadError} onPress={save} style={[styles.primary,{marginTop:12,opacity:saving||!loaded||!!loadError||!token?0.5:1}]}><Text style={styles.primaryText}>{saving?'Saving…':!loaded?'Loading…':'Save Periodontogram'}</Text></Pressable>
   </View>;
 }
 
