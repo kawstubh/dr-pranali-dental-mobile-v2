@@ -454,8 +454,8 @@ export default function App(){
   }, []);
   const logout = async () => { await signOutGoogle(); setToken(null); };
   if (checking) return <SafeAreaView style={styles.safe}><ActivityIndicator size="large" color={C.blue} style={{marginTop:80}}/></SafeAreaView>;
-  // TEMPORARY UI-TESTING BYPASS: disable before production/release.
-  if (!token) return <Dashboard token={null} logout={async () => setToken(null)}/>;
+  // Production access is authenticated by default. Never mount the clinic dashboard without a doctor session.
+  if (!token) return <GoogleLoginScreen onSignedIn={setToken}/>;
   return <Dashboard token={token} logout={logout}/>;
 }
 
