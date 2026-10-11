@@ -324,7 +324,7 @@ function Dashboard({ token, logout }) {
 
   if(loading) return <SafeAreaView style={styles.safe}><ActivityIndicator size="large" color={C.blue} style={{marginTop:80}}/></SafeAreaView>;
 
-  return <SafeAreaView style={premiumDoctorStyles.safe}>
+  return <SafeAreaView edges={["top","left","right"]} style={premiumDoctorStyles.safe}>
     <StatusBar style="light"/>
     <View style={[styles.header,{backgroundColor:"#0A2F6B",borderBottomColor:"#123F7D"}]}>
       <View style={styles.headerBrand}>
