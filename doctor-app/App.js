@@ -274,7 +274,7 @@ function DoctorDailyAISummary({token}) {
   return <View style={styles.todayCard}><View style={{flex:1}}><Text style={styles.todayKicker}>AI DAILY SUMMARY</Text><Text style={styles.todayTitle}>Clinic workload insight</Text>{loading?<ActivityIndicator color={C.blue}/>:<Text style={styles.todaySub}>{result?.error|| (result?.result ? (typeof result.result==='string'?result.result:JSON.stringify(result.result)) : (token ? 'Run a secure AI summary using appointment status only.' : 'UI testing mode: sign-in is bypassed; AI requires a valid doctor session.'))}</Text>}</View><Pressable disabled={!token||loading} onPress={run} style={[styles.refresh,(!token||loading)&&{opacity:0.45}]}><Text>Run</Text></Pressable></View>;
 }
 
-function Dashboard({ token, logout }) {
+function Dashboard({ token, logout, onSignIn }) {
   const [appointments,setAppointments]=useState([]);
   const [patients,setPatients]=useState([]);
   const [tab,setTab]=useState('Home');
@@ -331,10 +331,10 @@ function Dashboard({ token, logout }) {
         <Image source={clinicLogo} style={styles.headerLogo} resizeMode="contain" />
         <View><Text style={[styles.headerTitle,{color:"#FFFFFF"}]}>Dr. Pranali</Text><Text style={[styles.headerSub,{color:"#BFD9F5"}]}>Dental Clinic • Taloja</Text></View>
       </View>
-      <View style={{flexDirection:"row",alignItems:"center",gap:8}}><View style={{backgroundColor:token?"#DDF7EA":"#FFF3D9",paddingHorizontal:9,paddingVertical:6,borderRadius:12}}><Text style={{fontSize:10,fontWeight:"800",color:token?"#147A4B":"#8C6200"}}>{token?"SECURE":"UI TEST"}</Text></View><Pressable onPress={()=>{logout();}} style={styles.headerAction}><Text style={styles.headerActionText}>{token?"Sign out":"Testing"}</Text></Pressable></View>
+      <View style={{flexDirection:"row",alignItems:"center",gap:8}}><View style={{backgroundColor:token?"#DDF7EA":"#FFF3D9",paddingHorizontal:9,paddingVertical:6,borderRadius:12}}><Text style={{fontSize:10,fontWeight:"800",color:token?"#147A4B":"#8C6200"}}>{token?"SECURE":"UI TEST"}</Text></View><Pressable onPress={()=>{token ? logout() : onSignIn?.();}} style={styles.headerAction}><Text style={styles.headerActionText}>{token?"Sign out":"Sign in"}</Text></Pressable></View>
     </View>
     <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={()=>{setRefreshing(true);load();}}/>} contentContainerStyle={styles.content}>
-      {!token && <View style={styles.testingBanner}><View style={styles.testingBadge}><Text style={styles.testingBadgeText}>UI TEST MODE</Text></View><Text style={styles.testingBannerText}>You can review the interface. Patient records, chart changes and doctor AI require an authenticated doctor session.</Text></View>}
+      {!token && <View style={styles.testingBanner}><View style={styles.testingBadge}><Text style={styles.testingBadgeText}>UI TEST MODE</Text></View><Text style={styles.testingBannerText}>You can review the interface. Patient records, chart changes and doctor AI require an authenticated doctor session.</Text><Pressable onPress={onSignIn} style={[styles.action,styles.confirm,{alignSelf:'flex-start'}]}><Text style={styles.confirmText}>Sign in for live clinic data</Text></Pressable></View>}
       <View style={styles.hero}><View><Text style={styles.heroKicker}>CLINIC CONTROL CENTER</Text><Text style={styles.heroTitle}>Good day, Doctor</Text><Text style={styles.heroSub}>Manage today's patient flow from one place.</Text></View><View style={[styles.dot,{backgroundColor:apiOk?C.green:C.red}]}/></View>
       <View style={styles.stats}>
         <Stat n={appointments.length} t="Appointments"/><Stat n={requested} t="New Requests"/><Stat n={confirmed} t="Confirmed"/><Stat n={patients.length} t="Patients"/>
@@ -453,14 +453,16 @@ function GoogleLoginScreen({ onSignedIn }) {
 export default function App(){
   const [token,setToken]=useState('');
   const [checking,setChecking]=useState(true);
+  const [showLogin,setShowLogin]=useState(false);
   useEffect(() => {
     getStoredDoctorSession().then(value => setToken(value || null)).finally(() => setChecking(false));
   }, []);
-  const logout = async () => { await signOutGoogle(); setToken(null); };
+  const logout = async () => { await signOutGoogle(); setToken(null); setShowLogin(false); };
+  const openLogin = () => setShowLogin(true);
   if (checking) return <SafeAreaView style={styles.safe}><ActivityIndicator size="large" color={C.blue} style={{marginTop:80}}/></SafeAreaView>;
-  // Production access is authenticated by default. Never mount the clinic dashboard without a doctor session.
-  if (!token) return <GoogleLoginScreen onSignedIn={setToken}/>;
-  return <Dashboard token={token} logout={logout}/>;
+  // Preview-only access is UI navigation only; every protected API and doctor-AI action still requires a real token.
+  if (!token && showLogin) return <GoogleLoginScreen onSignedIn={(value)=>{setToken(value);setShowLogin(false);}}/>;
+  return <Dashboard token={token || null} logout={logout} onSignIn={openLogin}/>;
 }
 
 const premiumDoctorStyles = StyleSheet.create({ safe:{flex:1,backgroundColor:"#F8FBFE"} });
