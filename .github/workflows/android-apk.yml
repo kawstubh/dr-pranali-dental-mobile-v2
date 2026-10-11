@@ -6,7 +6,7 @@ permissions:
 on:
   workflow_dispatch:
   push:
-    branches: [master]
+    branches: [master, ui/premium-d]
 
 jobs:
   build-apk:
@@ -130,12 +130,13 @@ jobs:
       - name: Upload RELEASE APK
         uses: actions/upload-artifact@v4
         with:
-          name: dr-pranali-dental-patient-release-apk
+          name: dr-pranali-dental-patient-${{ github.ref == 'refs/heads/master' && 'release-apk' || 'ui-test-apk' }}
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
 
       - name: Publish patient-latest GitHub Release
+        if: github.ref == 'refs/heads/master'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
