@@ -602,7 +602,7 @@ function ContactScreen() {
 }
 
 export default function App() {
-  const [started, setStarted] = useState(false);
+  const [started, setStarted] = useState(true);
   const [tab, setTab] = useState('Home');
   if (!started) return <WelcomeScreen onStart={(nextTab) => { setStarted(true); if (nextTab) setTab(nextTab); }} />;
   const screen = useMemo(() => {
