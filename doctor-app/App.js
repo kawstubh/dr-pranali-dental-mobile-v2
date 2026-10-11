@@ -411,7 +411,7 @@ function GoogleLoginScreen({ onSignedIn }) {
 }
 
 export default function App(){
-  const [token,setToken]=useState(null);
+  const [token,setToken]=useState('');
   const [checking,setChecking]=useState(true);
 
   useEffect(() => {
@@ -424,7 +424,9 @@ export default function App(){
   };
 
   if (checking) return <SafeAreaView style={styles.safe}><ActivityIndicator size="large" color={C.blue} style={{marginTop:80}}/></SafeAreaView>;
-  if (!token) return <GoogleLoginScreen onSignedIn={setToken}/>;
+  // TEMPORARY UI-TESTING BYPASS: remove before any production/release build.
+  // Dashboard can render without a session; protected API calls may return 401.
+  if (!token) return <Dashboard token={null} logout={async () => setToken(null)}/>;
   return <Dashboard token={token} logout={logout}/>;
 }
 
