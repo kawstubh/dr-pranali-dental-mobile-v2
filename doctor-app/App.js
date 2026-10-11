@@ -70,7 +70,9 @@ function Tooth({ number, state, onPress, upper, index, total }) {
       ? { fill:'#FFF3D8', edge:'#E7B54A', mark:'#D99118' }
       : state === 'treated'
         ? { fill:'#E8F1FF', edge:'#76A8E8', mark:'#3978C7' }
-        : { fill:'#F2F4F7', edge:'#C9D1DA', mark:'#A8B2BD' };
+        : state === 'unrecorded'
+          ? { fill:'#FFFFFF', edge:'#9AA9B8', mark:'#D8E0E8' }
+          : { fill:'#F2F4F7', edge:'#C9D1DA', mark:'#A8B2BD' };
 
   return (
     <Pressable
@@ -113,6 +115,7 @@ function DentalChart({ token, patientId, patientName='Patient' }) {
     }
     setLoaded(false);
     setLoadError('');
+    setStates({});
     try {
       const entries = await getDentalChart(token, patientId);
       const rows = Array.isArray(entries) ? entries : Array.isArray(entries?.entries) ? entries.entries : [];
@@ -137,8 +140,8 @@ function DentalChart({ token, patientId, patientName='Patient' }) {
 
   const cycleState = async () => {
     if (!patientId || !token || saving || !loaded || loadError) return;
-    const order=['unrecorded','attention','treated','missing','healthy'];
-    const next=order[(order.indexOf(currentState)+1)%order.length];
+    const order=['attention','treated','missing','healthy'];
+    const next=currentState === 'unrecorded' ? 'attention' : order[(order.indexOf(currentState)+1)%order.length];
     const previous = states[selected];
     setStates(prev=>({...prev,[selected]:next}));
     setSaving(true);
@@ -167,10 +170,10 @@ function DentalChart({ token, patientId, patientName='Patient' }) {
       </View>
 
       <View style={styles.archSwitch}>
-        <Pressable onPress={()=>setArch('adult')} style={[styles.archOption, arch==='adult'&&styles.archOptionActive]}>
+        <Pressable onPress={()=>{setArch('adult');setSelected('46');}} style={[styles.archOption, arch==='adult'&&styles.archOptionActive]}>
           <Text style={[styles.archText, arch==='adult'&&styles.archTextActive]}>Adult</Text>
         </Pressable>
-        <Pressable onPress={()=>setArch('child')} style={[styles.archOption, arch==='child'&&styles.archOptionActive]}>
+        <Pressable onPress={()=>{setArch('child');setSelected('85');}} style={[styles.archOption, arch==='child'&&styles.archOptionActive]}>
           <Text style={[styles.archText, arch==='child'&&styles.archTextActive]}>Children</Text>
         </Pressable>
       </View>
@@ -201,6 +204,7 @@ function DentalChart({ token, patientId, patientName='Patient' }) {
         <View style={styles.legendItem}><View style={[styles.legendDot,{backgroundColor:'#59C989'}]}/><Text>Healthy</Text></View>
         <View style={styles.legendItem}><View style={[styles.legendDot,{backgroundColor:'#E7B54A'}]}/><Text>Attention</Text></View>
         <View style={styles.legendItem}><View style={[styles.legendDot,{backgroundColor:'#76A8E8'}]}/><Text>Treated</Text></View>
+        <View style={styles.legendItem}><View style={[styles.legendDot,{backgroundColor:'#FFFFFF',borderWidth:1,borderColor:'#9AA9B8'}]}/><Text>Not recorded</Text></View>
         <View style={styles.legendItem}><View style={[styles.legendDot,{backgroundColor:'#C9D1DA'}]}/><Text>Missing</Text></View>
       </View>
     </View>
