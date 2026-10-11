@@ -262,8 +262,14 @@ function DoctorScanCard({token,patient}) {
 
 function DoctorDailyAISummary({token}) {
   const [result,setResult]=useState(null); const [loading,setLoading]=useState(false);
-  const run=async()=>{setLoading(true);try{setResult(await doctorDailySummary(token));}catch(e){setResult({error:e.message||'AI unavailable'});}finally{setLoading(false);}};
-  return <View style={styles.todayCard}><View style={{flex:1}}><Text style={styles.todayKicker}>AI DAILY SUMMARY</Text><Text style={styles.todayTitle}>Clinic workload insight</Text>{loading?<ActivityIndicator color={C.blue}/>:<Text style={styles.todaySub}>{result?.error|| (result?.result ? (typeof result.result==='string'?result.result:JSON.stringify(result.result)) : 'Run a secure AI summary using appointment status only.')}</Text>}</View><Pressable onPress={run} style={styles.refresh}><Text>Run</Text></Pressable></View>;
+  const run=async()=>{
+    if (!token) { setResult({error:'Sign-in is temporarily bypassed for UI testing. AI requests require an authenticated doctor session.'}); return; }
+    setLoading(true);
+    try { setResult(await doctorDailySummary(token)); }
+    catch(e) { setResult({error:e.message||'AI unavailable'}); }
+    finally { setLoading(false); }
+  };
+  return <View style={styles.todayCard}><View style={{flex:1}}><Text style={styles.todayKicker}>AI DAILY SUMMARY</Text><Text style={styles.todayTitle}>Clinic workload insight</Text>{loading?<ActivityIndicator color={C.blue}/>:<Text style={styles.todaySub}>{result?.error|| (result?.result ? (typeof result.result==='string'?result.result:JSON.stringify(result.result)) : (token ? 'Run a secure AI summary using appointment status only.' : 'UI testing mode: sign-in is bypassed; AI requires a valid doctor session.'))}</Text>}</View><Pressable disabled={!token||loading} onPress={run} style={[styles.refresh,(!token||loading)&&{opacity:0.45}]}><Text>Run</Text></Pressable></View>;
 }
 
 function Dashboard({ token, logout }) {
@@ -277,6 +283,15 @@ function Dashboard({ token, logout }) {
 
   const load=useCallback(async()=>{
     try {
+      if (!token) {
+        // Login bypass is for UI testing only. Do not make protected API calls
+        // without a session, and do not interrupt the dashboard with 401 alerts.
+        setAppointments([]);
+        setPatients([]);
+        const h=await getHealth().catch(()=>null);
+        setApiOk(h?.status==='ok');
+        return;
+      }
       const [a,p,h]=await Promise.all([listAppointments(token),listPatients(token),getHealth()]);
       setAppointments(a||[]); setPatients(p||[]); setApiOk(h?.status==='ok');
     } catch(e) {
