@@ -7,6 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { PillTabBar } from './src/premium/components';
+import AssistantWorkspace from './src/assistant/AssistantWorkspace';
 import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry } from './src/api/doctorApi';
 import { getStoredDoctorSession, signInWithGoogle, signOutGoogle } from './src/auth/googleAuth';
 import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
@@ -345,6 +346,7 @@ function Dashboard({ token, logout }) {
           <Pressable onPress={()=>setTab('Patients')} style={styles.quickCard}><View style={styles.quickIcon}><Text>ðŸ‘¥</Text></View><Text style={styles.quickTitle}>Patients</Text><Text style={styles.quickSub}>{patients.length} clinical record{patients.length===1?'':'s'}</Text></Pressable>
           <Pressable onPress={()=>setTab('Clinical')} style={styles.quickCard}><View style={styles.quickIcon}><Text>ðŸ¦·</Text></View><Text style={styles.quickTitle}>Dental Chart</Text><Text style={styles.quickSub}>Odontogram & perio</Text></Pressable>
           <Pressable onPress={()=>setTab('Clinical')} style={styles.quickCard}><View style={styles.quickIcon}><Text>âœ¦</Text></View><Text style={styles.quickTitle}>AI Intelligence</Text><Text style={styles.quickSub}>Clinical decision support</Text></Pressable>
+          <Pressable onPress={()=>setTab('Assistant')} style={styles.quickCard}><View style={[styles.quickIcon,{backgroundColor:'#E5FAF2'}]}><Text>✓</Text></View><Text style={styles.quickTitle}>Assistant Desk</Text><Text style={styles.quickSub}>Daily tasks & clinic preparation</Text></Pressable>
         </View>
         <View style={styles.todayCard}>
           <View><Text style={styles.todayKicker}>CLINIC STATUS</Text><Text style={styles.todayTitle}>{apiOk ? 'Everything is connected' : 'Connection needs attention'}</Text><Text style={styles.todaySub}>{token ? 'Patient bookings and clinical records load through the secure backend.' : 'Testing preview only. Protected patient records and doctor AI remain unavailable until an authorized session is active.'}</Text></View>
@@ -361,6 +363,7 @@ function Dashboard({ token, logout }) {
         {patients.length===0?<Empty text="No patients yet. Patient bookings will appear here."/>:patients.map((p,i)=><Pressable key={p.id} onPress={()=>setSelectedPatient(p)} style={[styles.patientCard,selectedPatient?.id===p.id&&styles.patientCardActive]}><View style={styles.patientTop}><View style={styles.avatar}><Text style={styles.avatarText}>{(p.name||'P').slice(0,1).toUpperCase()}</Text></View><View style={{flex:1}}><Text style={styles.patient}>{p.name}</Text><Text style={styles.phone}>{p.phone||'No phone'}{p.age?' • Age '+p.age:''}</Text></View><Text style={styles.chevron}>â€º</Text></View></Pressable>)}
         {selectedPatient ? <><View style={styles.selectedPatientBanner}><Text style={styles.selectedPatientLabel}>SELECTED PATIENT</Text><Text style={styles.selectedPatientName}>{selectedPatient.name}</Text><Text style={styles.selectedPatientMeta}>{selectedPatient.phone||'No phone'}{selectedPatient.age?' • Age '+selectedPatient.age:''}</Text></View><DoctorAIActionCard token={token} patient={selectedPatient} title="Patient Profile • AI Insights" description="Summary and risk flags from the authorized record." capability="patient_summary" run={doctorPatientSummary}/><DentalChart token={token} patientId={selectedPatient.id} patientName={selectedPatient.name} /><DoctorAIActionCard token={token} patient={selectedPatient} title="Dental Chart & Periodontogram • AI Insights" description="Patterns and findings that merit clinician review." capability="chart_insights" run={doctorChartInsights}/><Periodontogram token={token} patientId={selectedPatient.id} patientName={selectedPatient.name} /></> : <Empty text="Select a patient to open the dental chart and periodontogram." />}
       </View>}
+      {tab==='Assistant' && <AssistantWorkspace />}
       {tab==='Clinical' && <View>
         <View style={styles.intelHero}><Text style={styles.intelKicker}>AI DENTAL COMMAND CENTER</Text><Text style={styles.intelTitle}>Clinical intelligence</Text><Text style={styles.intelText}>Evidence-backed decision support. AI suggestions never write to the dental chart or treatment plan without doctor confirmation.</Text></View>
         <View style={styles.intelPatientPicker}>
