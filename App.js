@@ -444,7 +444,7 @@ function AppointmentScreen() {
       Alert.alert('Missing details', 'Please enter your name, phone, preferred date and time.');
       return;
     }
-    if (!/^[6-9]\\d{9}$/.test(phone.replace(/\\D/g, ''))) {
+    if (!/^[6-9]\d{9}$/.test(phone.replace(/\D/g, ''))) {
       Alert.alert('Check phone number', 'Enter a valid 10-digit Indian mobile number.');
       return;
     }
@@ -466,7 +466,7 @@ function AppointmentScreen() {
 
       const created = await requestPublicAppointment({
         name: name.trim(),
-        phone: phone.trim(),
+        phone: phone.replace(/\D/g, ''),
         starts_at: startsAt,
         treatment_type: reason.trim() || 'Dental consultation',
         note: note.trim() || null,
@@ -474,7 +474,7 @@ function AppointmentScreen() {
       });
       const requestRef = created?.id || created?.appointment_id || created?.reference;
       Alert.alert('Appointment Request Sent', requestRef
-        ? `Request reference: ${requestRef}\\nStatus: Requested. The clinic will contact you to confirm.`
+        ? `Request reference: ${requestRef}\nStatus: Requested. The clinic will contact you to confirm.`
         : 'Your request was saved. Status: Requested. The clinic will contact you to confirm.');
       setName(''); setPhone(''); setDate(''); setTime(''); setReason(''); setNote('');
     } catch {
