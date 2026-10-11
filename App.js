@@ -451,18 +451,38 @@ function AppointmentScreen() {
     setSending(true);
     try {
       const parts = date.split('/');
-      const t = time.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
-      if (parts.length !== 3 || !t) throw new Error('Invalid date/time');
+      const t = time.match(/^(\d{1,2}):?(\d{2})?\s*(AM|PM)?$/i);
+      if (parts.length !== 3 || !parts.every(part => /^\d+$/.test(part)) || !t) {
+        Alert.alert('Check appointment details', 'Select a valid preferred date and time.');
+        return;
+      }
+
+      const day = Number(parts[0]);
+      const month = Number(parts[1]);
+      const year = Number(parts[2]);
+      const dateCheck = new Date(year, month - 1, day);
+      if (dateCheck.getFullYear() !== year || dateCheck.getMonth() !== month - 1 || dateCheck.getDate() !== day) {
+        Alert.alert('Check appointment date', 'Select a valid calendar date.');
+        return;
+      }
 
       let hour = Number(t[1]);
       const minute = Number(t[2] || '00');
       const ampm = (t[3] || '').toUpperCase();
+      if (minute > 59 || (ampm && (hour < 1 || hour > 12)) || (!ampm && hour > 23)) {
+        Alert.alert('Check appointment time', 'Select a valid appointment time.');
+        return;
+      }
       if (ampm === 'PM' && hour !== 12) hour += 12;
       if (ampm === 'AM' && hour === 12) hour = 0;
 
       const startsAt =
         parts[2] + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0') +
         'T' + String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0') + ':00+05:30';
+      if (new Date(startsAt).getTime() <= Date.now()) {
+        Alert.alert('Choose a future slot', 'The preferred appointment date and time must be in the future.');
+        return;
+      }
 
       const created = await requestPublicAppointment({
         name: name.trim(),
