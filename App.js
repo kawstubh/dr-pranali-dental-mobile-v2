@@ -18,7 +18,7 @@ import { PillTabBar, HeroCard, PrimaryButton, GhostButton, SectionLabel, ListRow
 import { signInWithGoogle } from './src/auth/googleAuth';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { buildPatientCareRequest } from './src/intelligence/dentalIntelligence';
-import { requestPublicAppointment } from './src/api/dentalApi';
+import { requestPublicAppointment, getDentalHealth } from './src/api/dentalApi';
 import { getAIConsent, giveAIConsent, linkPatient, patientAIChat, explainTreatment, deleteAIHistory, registerExpoPushToken } from './src/api/aiApi';
 
 // Production HTTPS API. The patient app does not require the phone and computer to share a Wi-Fi network.
@@ -431,10 +431,22 @@ function AppointmentScreen() {
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState('checking');
+
+  useEffect(() => {
+    let active = true;
+    getDentalHealth().then(() => { if (active) setConnectionStatus('online'); })
+      .catch(() => { if (active) setConnectionStatus('offline'); });
+    return () => { active = false; };
+  }, []);
 
   const submit = async () => {
     if (!name.trim() || !phone.trim() || !date.trim() || !time.trim()) {
       Alert.alert('Missing details', 'Please enter your name, phone, preferred date and time.');
+      return;
+    }
+    if (!/^[6-9]\\d{9}$/.test(phone.replace(/\\D/g, ''))) {
+      Alert.alert('Check phone number', 'Enter a valid 10-digit Indian mobile number.');
       return;
     }
     setSending(true);
@@ -453,7 +465,7 @@ function AppointmentScreen() {
         parts[2] + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0') +
         'T' + String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0') + ':00+05:30';
 
-      await requestPublicAppointment({
+      const created = await requestPublicAppointment({
         name: name.trim(),
         phone: phone.trim(),
         starts_at: startsAt,
@@ -461,7 +473,10 @@ function AppointmentScreen() {
         note: note.trim() || null,
         intelligence_request: false,
       });
-      Alert.alert('Appointment Requested', 'Your appointment request has been sent to the clinic.');
+      const requestRef = created?.id || created?.appointment_id || created?.reference;
+      Alert.alert('Appointment Request Sent', requestRef
+        ? `Request reference: ${requestRef}\\nStatus: Requested. The clinic will contact you to confirm.`
+        : 'Your request was saved. Status: Requested. The clinic will contact you to confirm.');
       setName(''); setPhone(''); setDate(''); setTime(''); setReason(''); setNote('');
     } catch {
       Alert.alert(
@@ -477,6 +492,10 @@ function AppointmentScreen() {
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
       <Text style={styles.pageTitle}>Book Appointment</Text>
       <Text style={styles.pageSub}>Choose your preferred slot. The clinic will confirm your appointment.</Text>
+      <View style={{marginBottom:10,padding:11,borderRadius:12,backgroundColor:connectionStatus==='online'?'#E8F8EF':connectionStatus==='offline'?'#FFF2E8':'#EEF5FC',borderWidth:1,borderColor:connectionStatus==='online'?'#B9E7CB':connectionStatus==='offline'?'#F3D1B7':'#D7E5F2'}}>
+        <Text style={{fontSize:12,fontWeight:'800',color:connectionStatus==='online'?'#176C43':connectionStatus==='offline'?'#8A4D1A':'#315C83'}}>{connectionStatus==='online'?'Clinic connection available':connectionStatus==='offline'?'Clinic connection unavailable':'Checking clinic connection…'}</Text>
+        <Text style={{fontSize:11,color:'#5F7488',marginTop:3}}>{connectionStatus==='online'?'Appointment requests are sent securely to the clinic API.':connectionStatus==='offline'?'You can retry later or call '+PHONE+'.':'Checking the appointment service before you submit.'}</Text>
+      </View>
       <View style={styles.formCard}>
         <Field label="Full Name" value={name} onChangeText={setName} placeholder="Enter your full name" />
         <Field label="Phone Number" value={phone} onChangeText={setPhone} placeholder="10-digit mobile number" keyboardType="phone-pad" />
