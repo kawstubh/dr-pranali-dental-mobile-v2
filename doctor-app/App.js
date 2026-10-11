@@ -359,7 +359,7 @@ function Dashboard({ token, logout }) {
         {['Product & Supplier Intelligence','Practice Intelligence','Referral Intelligence'].map((x,i)=><View key={x} style={styles.intelCard}><Text style={styles.intelNum}>0{i+4}</Text><View style={{flex:1}}><Text style={styles.intelName}>{x}</Text><Text style={styles.comingSoon}>Coming soon</Text></View></View>)}
       </View>}
     </ScrollView>
-    <PillTabBar mode="doctor" active={tab==="Home"?"Home":tab==="Patients"?"Patients":tab==="Appointments"?"Calendar":"Reports"} onChange={(key)=>setTab(key==="Calendar"?"Appointments":key==="More"?"Clinical":key)}/>
+    <PillTabBar mode="doctor" active={tab==="Home"?"Home":tab==="Patients"?"Patients":tab==="Appointments"?"Calendar":"More"} onChange={(key)=>setTab(key==="Calendar"?"Appointments":key==="More"||key==="Reports"?"Clinical":key)}/>
   </SafeAreaView>;
 }
 
