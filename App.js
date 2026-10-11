@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { PillTabBar } from './src/premium/components';
+import { PillTabBar, HeroCard, PrimaryButton, GhostButton, SectionLabel, ListRow } from './src/premium/components';
 import { signInWithGoogle } from './src/auth/googleAuth';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { buildPatientCareRequest } from './src/intelligence/dentalIntelligence';
@@ -175,65 +175,72 @@ function ServiceCard({ name, desc, icon }) {
 
 function HomeScreen({ go }) {
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-      <View style={styles.hero}>
-        <View style={styles.profileColumn}>
-          <Image source={require('./assets/dr-pranali.jpg')} style={styles.profileImage} />
-          <View style={styles.bdsBadge}><Text style={styles.bdsText}>BDS</Text></View>
-          <Text style={styles.doctorName}>Dr. Pranali</Text>
-          <Text style={styles.degree}>BDS – Dental Surgeon</Text>
-          <View style={styles.divider} />
-          <Text style={styles.smallInfo}>⌖  Taloja, Navi Mumbai</Text>
-          <Text style={styles.smallInfo}>◷  Mon – Sun: 10:00 AM – 9:00 PM</Text>
-          <Text style={styles.byAppointment}>By Appointment Only</Text>
+    <ScrollView style={premiumHomeStyles.root} contentContainerStyle={premiumHomeStyles.content} showsVerticalScrollIndicator={false}>
+      <View style={premiumHomeStyles.intro}>
+        <Text style={premiumHomeStyles.eyebrow}>YOUR FAMILY DENTAL HOME</Text>
+        <Text style={premiumHomeStyles.title}>Care for your smile,</Text>
+        <Text style={premiumHomeStyles.titleAccent}>made a little easier.</Text>
+        <Text style={premiumHomeStyles.subtitle}>Friendly, thoughtful dental care for you and the people you love.</Text>
+      </View>
+
+      <HeroCard style={premiumHomeStyles.hero}>
+        <View style={premiumHomeStyles.heroTop}>
+          <View style={premiumHomeStyles.heroMark}><Text style={premiumHomeStyles.heroMarkText}>✦</Text></View>
+          <View style={{flex:1}}>
+            <Text style={premiumHomeStyles.heroEyebrow}>DR. PRANALI DENTAL CLINIC</Text>
+            <Text style={premiumHomeStyles.heroTitle}>Gentle care. Confident smiles.</Text>
+          </View>
         </View>
+        <Text style={premiumHomeStyles.heroSub}>Personal attention and modern dental care for every stage of life.</Text>
+        <View style={premiumHomeStyles.heroMetaRow}>
+          <View style={premiumHomeStyles.metaChip}><Text style={premiumHomeStyles.metaLabel}>LOCATION</Text><Text style={premiumHomeStyles.metaValue}>Taloja, Navi Mumbai</Text></View>
+          <View style={premiumHomeStyles.metaChip}><Text style={premiumHomeStyles.metaLabel}>CLINIC HOURS</Text><Text style={premiumHomeStyles.metaValue}>10 AM–2 PM · 5 PM–9 PM</Text></View>
+        </View>
+        <PrimaryButton title="Book an appointment" onPress={() => go('Appointment')} />
+        <GhostButton title="Contact the clinic" icon={<Text style={premiumHomeStyles.ghostGlyph}>☎</Text>} onPress={() => go('Contact')} />
+      </HeroCard>
 
-        <View style={styles.heroCopy}>
-          <View style={styles.brandLine}><Text style={styles.tooth}>♧</Text><Text style={styles.brand}>Dr. Pranali's</Text></View>
-          <Text style={styles.heroTitle}>Healthy Smile,</Text>
-          <Text style={[styles.heroTitle, styles.heroBlue]}>Happy You!</Text>
-          <Text style={styles.heroSub}>Expert dental care for you and your family, with gentle treatment and modern technology.</Text>
-          <ActionButton label="Book Appointment" icon="▣" onPress={() => go('Appointment')} />
-          <ActionButton label="WhatsApp Clinic" icon="◉" variant="secondary" onPress={() => Linking.openURL(`https://wa.me/${WHATSAPP}`)} />
-          <ActionButton label={`Call Us   ${PHONE}`} icon="☎" variant="secondary" onPress={() => Linking.openURL(`tel:+${WHATSAPP}`)} />
+      <View style={premiumHomeStyles.sectionHeader}>
+        <View style={{flex:1}}>
+          <SectionLabel>CARE FOR EVERY SMILE</SectionLabel>
+          <Text style={premiumHomeStyles.sectionTitle}>Explore our services</Text>
+        </View>
+        <Pressable accessibilityRole="button" onPress={() => go('Services')} style={premiumHomeStyles.viewAll}>
+          <Text style={premiumHomeStyles.viewAllText}>View all 20 ›</Text>
+        </Pressable>
+      </View>
+
+      <View style={premiumHomeStyles.serviceGrid}>
+        {services.slice(0, 6).map(([name, desc, icon], index) => (
+          <Pressable key={name} accessibilityRole="button" onPress={() => go('Services')} style={premiumHomeStyles.serviceCard}>
+            <View style={[premiumHomeStyles.serviceIcon,{backgroundColor:index%3===0?'#E5FAFA':index%3===1?'#EAF3FF':'#F1EDFF'}]}>
+              <Text style={premiumHomeStyles.serviceGlyph}>{icon}</Text>
+            </View>
+            <Text style={premiumHomeStyles.serviceName}>{name}</Text>
+            <Text style={premiumHomeStyles.serviceDesc}>{desc}</Text>
+            <Text style={premiumHomeStyles.cardArrow}>Explore ›</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <View style={premiumHomeStyles.sectionHeader}>
+        <View style={{flex:1}}>
+          <SectionLabel>QUICK ACCESS</SectionLabel>
+          <Text style={premiumHomeStyles.sectionTitle}>What can we help with?</Text>
         </View>
       </View>
-
-      <View style={styles.featureRow}>
-        <Feature icon="♧" title="Experienced" subtitle="Doctor" />
-        <Feature icon="✓" title="Safe & Hygienic" subtitle="Care" />
-        <Feature icon="♙" title="Patient First" subtitle="Approach" />
-        <Feature icon="☆" title="Modern" subtitle="Technology" />
+      <View style={premiumHomeStyles.quickList}>
+        <ListRow title="Manage an appointment" subtitle="Request a visit with the clinic" icon={<Text style={premiumHomeStyles.quickGlyph}>▦</Text>} onPress={() => go('Appointment')} />
+        <ListRow title="Meet the clinic" subtitle="Photos and the care environment" icon={<Text style={premiumHomeStyles.quickGlyph}>▧</Text>} onPress={() => go('Gallery')} />
+        <ListRow title="Call or message us" subtitle="Get in touch with Dr. Pranali Dental Clinic" icon={<Text style={premiumHomeStyles.quickGlyph}>☎</Text>} onPress={() => go('Contact')} />
       </View>
-
-      <Pressable onPress={() => go('AI Dental')} style={styles.homeAICard}>
-        <View style={styles.homeAIIcon}><Text style={styles.homeAIIconText}>✦</Text></View>
-        <View style={{flex:1}}><Text style={styles.homeAITitle}>Dr. Pranali Dental AI Assistant</Text><Text style={styles.homeAISub}>Ask questions, understand treatment information and get urgent-symptom guidance.</Text></View>
-        <Text style={styles.homeAIArrow}>›</Text>
-      </Pressable>
-
-      <View style={styles.aboutCard}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.sectionTitle}>About Dr. Pranali</Text>
-          <Text style={styles.aboutText}>A patient-focused dental practice offering preventive, restorative and cosmetic dental care in a comfortable environment.</Text>
-        </View>
-        <Text style={styles.aboutTooth}>♧</Text>
+      <View style={premiumHomeStyles.bottomNote}>
+        <Text style={premiumHomeStyles.bottomNoteTitle}>Here for your healthier smile</Text>
+        <Text style={premiumHomeStyles.bottomNoteSub}>For urgent or worsening symptoms, contact the clinic or seek appropriate in-person care.</Text>
       </View>
-
-      <View style={styles.sectionHeaderRow}>
-        <Text style={styles.sectionTooth}>♧</Text>
-        <Text style={styles.sectionTitle}>Our Dental Services</Text>
-      </View>
-      <View style={styles.servicesGrid}>
-        {services.slice(0, 8).map(([name, desc, icon]) => <ServiceCard key={name} name={name} desc={desc} icon={icon} />)}
-      </View>
-      <Pressable onPress={() => go('Services')} style={styles.viewAll}><Text style={styles.viewAllText}>View All Dental Services →</Text></Pressable>
-
-      <View style={styles.bottomSpacer} />
     </ScrollView>
   );
 }
-
 
 
 const PATIENT_UPPER = ['18','17','16','15','14','13','12','11','21','22','23','24','25','26','27','28'];
@@ -620,7 +627,7 @@ export default function App() {
     <SafeAreaView style={premiumStyles.safe}>
       <StatusBar style="dark" />
       <View style={premiumStyles.topHeader}>
-        <View style={premiumStyles.brandMark}><Text style={premiumStyles.toothMark}>✦</Text></View>
+        <Image source={require("./assets/dr-pranali-branded-logo.png")} style={premiumStyles.brandImage} resizeMode="contain" />
         <View style={{flex:1}}>
           <Text style={premiumStyles.brandTitle}>Dr. Pranali Dental</Text>
           <Text style={premiumStyles.brandSubtitle}>Healthy Smile, Happy You!</Text>
@@ -638,13 +645,50 @@ export default function App() {
 const premiumStyles = StyleSheet.create({
   safe:{flex:1,backgroundColor:'#F8FBFE'},
   topHeader:{minHeight:70,flexDirection:'row',alignItems:'center',gap:12,paddingHorizontal:18,paddingVertical:10,backgroundColor:'#FFFFFF',borderBottomWidth:1,borderBottomColor:'#E3ECF5'},
-  brandMark:{width:42,height:42,borderRadius:14,backgroundColor:'#0A2F6B',alignItems:'center',justifyContent:'center'},
-  toothMark:{fontSize:23,color:'#00C6C8',fontWeight:'900'},
+  brandImage:{width:46,height:46,borderRadius:13,backgroundColor:'#FFFFFF'},
   brandTitle:{fontSize:17,fontWeight:'800',color:'#0C3B82'},
   brandSubtitle:{fontSize:11,color:'#4C6A94',marginTop:2},
   headerAction:{width:38,height:38,borderRadius:19,backgroundColor:'#F4FBFF',borderWidth:1,borderColor:'#E3ECF5',alignItems:'center',justifyContent:'center'},
   headerActionText:{fontSize:18,fontWeight:'800',color:'#0A84E8'},
   screenBody:{flex:1},
+});
+ 
+const premiumHomeStyles = StyleSheet.create({
+  root:{flex:1,backgroundColor:'#F8FBFE'},
+  content:{paddingHorizontal:18,paddingTop:20,paddingBottom:125,gap:22},
+  intro:{gap:4,paddingHorizontal:2},
+  eyebrow:{fontSize:10,fontWeight:'900',letterSpacing:1.7,color:'#0A84E8'},
+  title:{fontSize:29,lineHeight:34,fontWeight:'800',letterSpacing:-.6,color:'#0C3B82'},
+  titleAccent:{fontSize:29,lineHeight:34,fontWeight:'800',letterSpacing:-.6,color:'#00AEB7'},
+  subtitle:{fontSize:14,lineHeight:21,color:'#4C6A94',marginTop:5,maxWidth:330},
+  hero:{backgroundColor:'#0A2F6B',gap:15,padding:20,borderRadius:26},
+  heroTop:{flexDirection:'row',alignItems:'center',gap:12},
+  heroMark:{height:46,width:46,borderRadius:16,backgroundColor:'rgba(0,198,200,0.2)',alignItems:'center',justifyContent:'center'},
+  heroMarkText:{fontSize:24,color:'#00C6C8',fontWeight:'900'},
+  heroEyebrow:{fontSize:9,fontWeight:'900',letterSpacing:1.1,color:'#BFE9F0'},
+  heroTitle:{fontSize:22,lineHeight:27,fontWeight:'800',color:'#FFFFFF',marginTop:4},
+  heroSub:{fontSize:13,lineHeight:19,color:'#E1F0FF'},
+  heroMetaRow:{flexDirection:'row',gap:9,flexWrap:'wrap'},
+  metaChip:{flexGrow:1,flexBasis:'45%',padding:11,borderRadius:15,backgroundColor:'rgba(255,255,255,0.1)',borderWidth:1,borderColor:'rgba(255,255,255,0.16)'},
+  metaLabel:{fontSize:8,fontWeight:'900',letterSpacing:1.1,color:'#BFE9F0'},
+  metaValue:{fontSize:11,fontWeight:'700',color:'#FFFFFF',marginTop:5,lineHeight:16},
+  ghostGlyph:{fontSize:17,color:'#0C3B82',fontWeight:'900'},
+  sectionHeader:{flexDirection:'row',alignItems:'flex-end',justifyContent:'space-between',gap:10},
+  sectionTitle:{fontSize:21,lineHeight:26,fontWeight:'800',color:'#0C3B82',marginTop:5},
+  viewAll:{paddingVertical:8,paddingHorizontal:11,borderRadius:999,backgroundColor:'#E5FAFA',marginBottom:1},
+  viewAllText:{fontSize:11,fontWeight:'800',color:'#087E8B'},
+  serviceGrid:{flexDirection:'row',flexWrap:'wrap',gap:10},
+  serviceCard:{width:'48.1%',minHeight:167,backgroundColor:'#FFFFFF',padding:13,borderRadius:20,borderWidth:1,borderColor:'#E3ECF5'},
+  serviceIcon:{width:40,height:40,borderRadius:14,alignItems:'center',justifyContent:'center',marginBottom:10},
+  serviceGlyph:{fontSize:23},
+  serviceName:{fontSize:13,fontWeight:'800',lineHeight:17,color:'#0C3B82'},
+  serviceDesc:{fontSize:10.5,lineHeight:15,color:'#5B779E',marginTop:4},
+  cardArrow:{fontSize:10,fontWeight:'800',color:'#0A84E8',marginTop:9},
+  quickList:{backgroundColor:'#FFFFFF',borderWidth:1,borderColor:'#E3ECF5',borderRadius:20,paddingHorizontal:14,paddingVertical:2},
+  quickGlyph:{fontSize:20,color:'#0A84E8',fontWeight:'800'},
+  bottomNote:{padding:16,borderRadius:18,backgroundColor:'#EAF8FF',borderWidth:1,borderColor:'#D8EFFB'},
+  bottomNoteTitle:{fontSize:14,fontWeight:'800',color:'#0C3B82'},
+  bottomNoteSub:{fontSize:12,lineHeight:18,color:'#4C6A94',marginTop:5},
 });
  
 const styles = StyleSheet.create({
