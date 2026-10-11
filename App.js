@@ -64,7 +64,6 @@ const services = [
 
 const tabs = [
   ['Home', '⌂'],
-  ['AI Dental', '✦'],
   ['Services', '♢'],
   ['Appointment', '▣'],
   ['Gallery', '▧'],
@@ -633,14 +632,15 @@ export default function App() {
   const [tab, setTab] = useState('Home');
   if (!started) return <WelcomeScreen onStart={(nextTab) => { setStarted(true); if (nextTab) setTab(nextTab); }} />;
   const screen = useMemo(() => {
-    if (tab === 'AI Dental') return <AIDentalScreen />;
+    // Patient-facing AI is intentionally disabled; clinical AI is doctor-only.
+    if (tab === 'AI Dental') return <ServicesScreen />;
     if (tab === 'Services') return <ServicesScreen />;
     if (tab === 'Appointment') return <AppointmentScreen />;
     if (tab === 'Gallery') return <GalleryScreen />;
     if (tab === 'Contact') return <ContactScreen />;
     return <HomeScreen go={setTab} />;
   }, [tab]);
-  const premiumTab = tab === 'AI Dental' ? 'Profile' : tab === 'Appointment' ? 'Visits' : tab === 'Contact' ? 'Profile' : tab === 'Gallery' ? 'Reports' : tab;
+  const premiumTab = tab === 'Appointment' ? 'Visits' : tab === 'Contact' ? 'Profile' : tab === 'Gallery' ? 'Reports' : tab;
   const goFromPremium = (key) => setTab(key === 'Visits' ? 'Appointment' : key === 'Profile' ? 'Contact' : key === 'Reports' ? 'Gallery' : key);
   return (
     <SafeAreaView style={premiumStyles.safe}>
