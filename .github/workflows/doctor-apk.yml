@@ -6,7 +6,7 @@ permissions:
 on:
   workflow_dispatch:
   push:
-    branches: [master]
+    branches: [master, ui/premium-d]
 
 jobs:
   build-doctor-apk:
@@ -25,6 +25,16 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: doctor-app/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Generate premium app icons
+        run: |
+          python -m pip install --disable-pip-version-check Pillow
+          python ../scripts/generate_app_icons.py
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -129,12 +139,13 @@ jobs:
       - name: Upload RELEASE APK
         uses: actions/upload-artifact@v4
         with:
-          name: dr-pranali-dental-doctor-release-apk
+          name: dr-pranali-dental-doctor-${{ github.ref == 'refs/heads/master' && 'release-apk' || 'ui-test-apk' }}
           path: doctor-app/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
 
       - name: Publish doctor-latest GitHub Release
+        if: github.ref == 'refs/heads/master'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
