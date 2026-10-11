@@ -100,36 +100,57 @@ function Tooth({ number, state, onPress, upper, index, total }) {
 function DentalChart({ token, patientId, patientName='Patient' }) {
   const [arch, setArch] = useState('adult');
   const [selected, setSelected] = useState('46');
-  const [states, setStates] = useState({46:'attention', 21:'treated', 11:'healthy', 36:'treated'});
+  const [states, setStates] = useState({});
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState('');
 
-  useEffect(() => {
-    let active = true;
-    if (!patientId) return undefined;
+  const loadChart = useCallback(async () => {
+    if (!patientId || !token) {
+      setLoaded(true);
+      setLoadError('Sign in with an authorized doctor account to load this clinical record.');
+      return;
+    }
     setLoaded(false);
-    getDentalChart(token, patientId).then(entries => {
-      if (!active) return;
+    setLoadError('');
+    try {
+      const entries = await getDentalChart(token, patientId);
+      const rows = Array.isArray(entries) ? entries : Array.isArray(entries?.entries) ? entries.entries : [];
       const next = {};
-      (entries || []).forEach(entry => { next[entry.tooth_fdi] = entry.status; });
-      setStates(prev => ({ ...prev, ...next }));
-    }).catch(() => {}).finally(() => { if (active) setLoaded(true); });
-    return () => { active = false; };
+      rows.forEach(entry => {
+        if (entry?.tooth_fdi && ['healthy','attention','treated','missing'].includes(entry.status)) {
+          next[String(entry.tooth_fdi)] = entry.status;
+        }
+      });
+      setStates(next);
+    } catch (error) {
+      setLoadError(error?.message || 'Could not load the saved dental chart.');
+    } finally {
+      setLoaded(true);
+    }
   }, [patientId, token]);
+
+  useEffect(() => { loadChart(); }, [loadChart]);
   const upper = arch === 'adult' ? ADULT_UPPER : CHILD_UPPER;
   const lower = arch === 'adult' ? ADULT_LOWER : CHILD_LOWER;
-  const currentState = states[selected] || 'healthy';
+  const currentState = states[selected] || 'unrecorded';
 
   const cycleState = async () => {
-    if (!patientId || saving) return;
-    const order=['healthy','attention','treated','missing'];
+    if (!patientId || !token || saving || !loaded || loadError) return;
+    const order=['unrecorded','attention','treated','missing','healthy'];
     const next=order[(order.indexOf(currentState)+1)%order.length];
+    const previous = states[selected];
     setStates(prev=>({...prev,[selected]:next}));
     setSaving(true);
     try {
       await saveDentalChartEntry(token, patientId, { tooth_fdi:selected, status:next, note:'' });
     } catch (e) {
-      setStates(prev=>({...prev,[selected]:currentState}));
+      setStates(prev => {
+        const copy = {...prev};
+        if (previous === undefined) delete copy[selected];
+        else copy[selected] = previous;
+        return copy;
+      });
       Alert.alert('Dental chart', e.message || 'Could not save tooth status.');
     } finally { setSaving(false); }
   };
@@ -140,7 +161,7 @@ function DentalChart({ token, patientId, patientName='Patient' }) {
         <View style={{flex:1}}>
           <Text style={styles.chartEyebrow}>CLINICAL ODONTOGRAM</Text>
           <Text style={styles.chartTitle}>Dental chart</Text>
-          <Text style={styles.chartPatient}>{patientName} • {loaded ? 'Synced clinical record' : 'Loading clinical record'}</Text>
+          <Text style={styles.chartPatient}>{patientName} • {!loaded ? 'Loading clinical record…' : loadError ? 'Record not synced' : 'Saved record loaded'}</Text>
         </View>
         <View style={styles.chartLegendDot}/>
       </View>
@@ -166,13 +187,14 @@ function DentalChart({ token, patientId, patientName='Patient' }) {
         <Text style={styles.sideLabel}>LEFT</Text>
       </View>
 
+      {loadError ? <View style={styles.chartLoadError}><Text style={styles.chartLoadErrorText}>{loadError}</Text><Pressable onPress={loadChart} style={styles.chartRetry}><Text style={styles.chartRetryText}>Retry loading</Text></Pressable></View> : null}
       <View style={styles.selectedTooth}>
         <View style={styles.selectedToothIcon}><Text style={styles.selectedToothIconText}>{selected}</Text></View>
         <View style={{flex:1}}>
           <Text style={styles.selectedLabel}>Tooth {selected}</Text>
-          <Text style={styles.selectedStatus}>Status: {currentState === 'attention' ? 'Needs attention' : currentState === 'treated' ? 'Treatment completed' : currentState === 'missing' ? 'Missing / extracted' : 'Healthy'}</Text>
+          <Text style={styles.selectedStatus}>Status: {currentState === 'attention' ? 'Needs attention' : currentState === 'treated' ? 'Treatment completed' : currentState === 'missing' ? 'Missing / extracted' : currentState === 'healthy' ? 'Healthy (recorded)' : 'Not recorded'}</Text>
         </View>
-        <Pressable disabled={!patientId || saving} onPress={cycleState} style={[styles.changeStatus, saving && {opacity:0.5}]}><Text style={styles.changeStatusText}>{saving ? 'Saving…' : 'Update'}</Text></Pressable>
+        <Pressable disabled={!patientId || !token || saving || !loaded || !!loadError} onPress={cycleState} style={[styles.changeStatus, (saving || !loaded || !!loadError || !token) && {opacity:0.5}]}><Text style={styles.changeStatusText}>{saving ? 'Saving…' : currentState === 'unrecorded' ? 'Set status' : 'Change'}</Text></Pressable>
       </View>
 
       <View style={styles.chartLegend}>
@@ -482,10 +504,10 @@ const styles=StyleSheet.create({
  sectionRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:10},sectionTitle:{fontSize:19,fontWeight:'900',color:C.navy},refresh:{color:C.blue,fontWeight:'800'},
  apptCard:{backgroundColor:C.white,borderRadius:17,borderWidth:1,borderColor:C.border,padding:15,marginBottom:10},rowBetween:{flexDirection:'row',justifyContent:'space-between'},patient:{fontSize:16,fontWeight:'900',color:C.navy},phone:{fontSize:12,color:C.muted,marginTop:3},badge:{paddingHorizontal:9,paddingVertical:6,borderRadius:10,backgroundColor:'#EAF4FF',alignSelf:'flex-start'},badgeText:{fontSize:10,fontWeight:'900',color:C.navy},apptDate:{fontSize:13,fontWeight:'800',color:C.blue,marginTop:12},reason:{fontSize:14,fontWeight:'800',color:C.text,marginTop:5},note:{fontSize:12,color:C.muted,lineHeight:18,marginTop:5},actions:{flexDirection:'row',gap:7,marginTop:12,flexWrap:'wrap'},action:{paddingHorizontal:11,paddingVertical:9,borderRadius:10,borderWidth:1,borderColor:C.border,backgroundColor:'#F9FBFD'},actionText:{fontSize:11,fontWeight:'800',color:C.navy},confirm:{backgroundColor:'#E5F8EE',borderColor:'#BDE8D0'},confirmText:{fontSize:11,fontWeight:'900',color:'#147A4B'},statusChip:{paddingHorizontal:9,paddingVertical:7,borderRadius:14,backgroundColor:'#F2F5F8'},statusChipText:{fontSize:9,fontWeight:'800',color:C.muted},
  patientCard:{backgroundColor:C.white,borderRadius:15,padding:14,borderWidth:1,borderColor:C.border,marginTop:8},patientCardActive:{borderColor:'#86BDF0',backgroundColor:'#F3F9FF'},patientTop:{flexDirection:'row',alignItems:'center',gap:11},avatar:{width:42,height:42,borderRadius:21,backgroundColor:'#EAF4FF',alignItems:'center',justifyContent:'center'},avatarText:{fontSize:17,fontWeight:'900',color:C.blue},chevron:{fontSize:26,color:'#9AA9B7',fontWeight:'300'},selectedPatientBanner:{backgroundColor:C.navy,borderRadius:16,padding:14,marginTop:12},selectedPatientLabel:{fontSize:8,fontWeight:'900',letterSpacing:1,color:'#8FCBFF'},selectedPatientName:{fontSize:19,fontWeight:'900',color:C.white,marginTop:3},selectedPatientMeta:{fontSize:11,color:'#D9EAF7',marginTop:2},patientCount:{fontSize:11,color:C.muted,fontWeight:'800'},empty:{backgroundColor:C.white,borderRadius:16,padding:24,borderWidth:1,borderColor:C.border,marginTop:8},emptyText:{textAlign:'center',color:C.muted,fontSize:13},
- chartCard:{backgroundColor:C.white,borderRadius:20,padding:15,borderWidth:1,borderColor:C.border,marginTop:14},
+ chartCard:{backgroundColor:C.white,borderRadius:20,padding:15,borderWidth:1,borderColor:C.border,marginTop:14},chartLoadError:{marginTop:10,padding:11,borderRadius:11,backgroundColor:'#FFF3F3',borderWidth:1,borderColor:'#F1C7C7'},chartLoadErrorText:{fontSize:11,lineHeight:16,color:'#8C3434'},chartRetry:{alignSelf:'flex-start',marginTop:8,paddingHorizontal:11,paddingVertical:7,borderRadius:8,backgroundColor:'#FFFFFF'},chartRetryText:{fontSize:10,fontWeight:'900',color:C.blue},
  chartHeader:{flexDirection:'row',alignItems:'center'},chartEyebrow:{fontSize:9,fontWeight:'900',letterSpacing:1.1,color:C.blue},chartTitle:{fontSize:24,fontWeight:'900',color:C.navy,marginTop:2},chartPatient:{fontSize:11,color:C.muted,marginTop:3},chartLegendDot:{width:10,height:10,borderRadius:5,backgroundColor:'#59C989',marginRight:3},
  archSwitch:{flexDirection:'row',borderWidth:1,borderColor:'#E4D3A0',borderRadius:10,overflow:'hidden',marginTop:14},archOption:{flex:1,paddingVertical:9,alignItems:'center',backgroundColor:C.white},archOptionActive:{backgroundColor:'#F4C24A'},archText:{fontSize:13,fontWeight:'800',color:'#D5A63A'},archTextActive:{color:C.white},
- mouthFrame:{marginTop:16,paddingVertical:8,backgroundColor:'#FCFCFD',borderRadius:18,borderWidth:1,borderColor:'#EEF1F4',alignItems:'center'},sideLabel:{fontSize:8,fontWeight:'900',letterSpacing:1.2,color:'#B7C0C9',marginVertical:4},teethArc:{flexDirection:'row',alignItems:'center',justifyContent:'center',paddingHorizontal:3},toothItem:{width:20,alignItems:'center',marginHorizontal:1},toothShape:{width:18,height:30,borderWidth:1.4,alignItems:'center',justifyContent:'flex-start',shadowOpacity:0.08,shadowRadius:2,elevation:1},toothCusp:{width:5,height:5,borderRadius:3,marginTop:5,opacity:0.8},toothRoot:{position:'absolute',width:5,height:7,borderLeftWidth:1,borderRightWidth:1,borderBottomWidth:1,borderBottomLeftRadius:4,borderBottomRightRadius:4,opacity:0.75},toothNumber:{fontSize:7.5,color:'#A6AFB8',fontWeight:'700',marginTop:3},mouthCenter:{height:26,alignItems:'center',justifyContent:'center'},mouthLine:{width:120,height:1,backgroundColor:'#EEF1F4'},mouthHint:{fontSize:7,color:'#C2C9D0',letterSpacing:1,marginTop:2},
+ mouthFrame:{marginTop:16,paddingVertical:8,backgroundColor:'#FCFCFD',borderRadius:18,borderWidth:1,borderColor:'#EEF1F4',alignItems:'center'},sideLabel:{fontSize:8,fontWeight:'900',letterSpacing:1.2,color:'#B7C0C9',marginVertical:4},teethArc:{flexDirection:'row',alignItems:'center',justifyContent:'center',paddingHorizontal:3},toothItem:{width:18,alignItems:'center',marginHorizontal:0},toothShape:{width:16,height:30,borderWidth:1.4,alignItems:'center',justifyContent:'flex-start',shadowOpacity:0.08,shadowRadius:2,elevation:1},toothCusp:{width:5,height:5,borderRadius:3,marginTop:5,opacity:0.8},toothRoot:{position:'absolute',width:5,height:7,borderLeftWidth:1,borderRightWidth:1,borderBottomWidth:1,borderBottomLeftRadius:4,borderBottomRightRadius:4,opacity:0.75},toothNumber:{fontSize:7.5,color:'#A6AFB8',fontWeight:'700',marginTop:3},mouthCenter:{height:26,alignItems:'center',justifyContent:'center'},mouthLine:{width:120,height:1,backgroundColor:'#EEF1F4'},mouthHint:{fontSize:7,color:'#C2C9D0',letterSpacing:1,marginTop:2},
  selectedTooth:{flexDirection:'row',alignItems:'center',backgroundColor:'#F7FAFD',borderRadius:13,padding:10,marginTop:12,borderWidth:1,borderColor:'#E4EDF5'},selectedToothIcon:{width:38,height:38,borderRadius:11,backgroundColor:'#FFF3D8',alignItems:'center',justifyContent:'center'},selectedToothIconText:{fontSize:12,fontWeight:'900',color:'#B87908'},selectedLabel:{fontSize:13,fontWeight:'900',color:C.navy},selectedStatus:{fontSize:10.5,color:C.muted,marginTop:2},changeStatus:{paddingHorizontal:10,paddingVertical:8,borderRadius:9,backgroundColor:'#EAF4FF'},changeStatusText:{fontSize:10,fontWeight:'900',color:C.blue},
  chartLegend:{flexDirection:'row',flexWrap:'wrap',gap:9,marginTop:11},legendItem:{flexDirection:'row',alignItems:'center',gap:4},legendItemText:{fontSize:9,color:C.muted},legendDot:{width:8,height:8,borderRadius:4},perioTooth:{paddingHorizontal:10,paddingVertical:7,borderRadius:9,backgroundColor:'#F2F5F8',borderWidth:1,borderColor:C.border},perioToothActive:{backgroundColor:'#FFF3D8',borderColor:'#E7B54A'},perioToothText:{fontSize:10,fontWeight:'900',color:C.muted},perioToothTextActive:{color:'#B87908'},perioSelected:{backgroundColor:'#F7FAFD',padding:11,borderRadius:12,borderWidth:1,borderColor:'#E4EDF5'},perioGrid:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:10},perioCell:{width:'15.4%',minWidth:42,alignItems:'center'},perioPoint:{fontSize:9,fontWeight:'900',color:C.blue,marginBottom:4},perioInput:{width:42,height:38,borderWidth:1,borderColor:C.border,borderRadius:9,textAlign:'center',fontSize:14,fontWeight:'900',color:C.navy,backgroundColor:'#FFF'},perioMeta:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:10},metaField:{width:'31%'},metaLabel:{fontSize:8,fontWeight:'800',color:C.muted,marginBottom:3},metaInput:{height:36,borderWidth:1,borderColor:C.border,borderRadius:8,textAlign:'center',backgroundColor:'#FFF',color:C.navy,fontWeight:'800'},perioFlag:{paddingHorizontal:8,paddingVertical:8,borderRadius:9,backgroundColor:'#F2F5F8',borderWidth:1,borderColor:C.border},perioFlagActive:{backgroundColor:'#E5F8EE',borderColor:'#BDE8D0'},perioFlagText:{fontSize:9,fontWeight:'800',color:C.muted},perioFlagTextActive:{color:'#147A4B'},
  bottomNav:{position:'absolute',left:0,right:0,bottom:0,backgroundColor:C.white,borderTopWidth:1,borderTopColor:C.border,height:76,flexDirection:'row',paddingTop:7,paddingBottom:5},navItem:{flex:1,alignItems:'center',justifyContent:'center'},navIcon:{width:36,height:30,borderRadius:10,alignItems:'center',justifyContent:'center'},navIconActive:{backgroundColor:'#EAF4FF'},navIconText:{fontSize:18,color:'#9AA9B7'},navIconTextActive:{color:C.blue},navLabel:{fontSize:9,fontWeight:'800',color:'#9AA9B7',marginTop:2},navLabelActive:{color:C.blue},intelCardLarge:{backgroundColor:C.white,borderRadius:16,padding:14,borderWidth:1,borderColor:C.border,marginBottom:10},intelCardHead:{flexDirection:'row',alignItems:'flex-start',gap:10},aiBadge:{fontSize:9,fontWeight:'900',color:C.blue,backgroundColor:'#EAF4FF',paddingHorizontal:7,paddingVertical:5,borderRadius:8},intelPatient:{fontSize:10,fontWeight:'800',color:C.muted,marginTop:9},intelRunButton:{backgroundColor:C.blue,borderRadius:11,paddingVertical:11,alignItems:'center',marginTop:11},intelRunText:{fontSize:11,fontWeight:'900',color:C.white},intelSkeleton:{marginTop:11,padding:12,borderRadius:12,backgroundColor:'#F5F8FB'},skeletonLineWide:{height:9,width:'92%',backgroundColor:'#E4EBF2',borderRadius:5},skeletonLine:{height:9,width:'72%',backgroundColor:'#E4EBF2',borderRadius:5,marginTop:8},skeletonLineShort:{height:9,width:'48%',backgroundColor:'#E4EBF2',borderRadius:5,marginTop:8},intelLoading:{fontSize:10,color:C.muted,marginTop:10},intelError:{marginTop:11,padding:12,borderRadius:12,backgroundColor:'#FCEAEA',borderWidth:1,borderColor:'#F2C3C3'},intelErrorTitle:{fontSize:12,fontWeight:'900',color:C.red},intelErrorText:{fontSize:11,color:'#7A2E2E',lineHeight:16,marginTop:4},intelRetry:{alignSelf:'flex-start',marginTop:8,paddingHorizontal:11,paddingVertical:7,borderRadius:8,backgroundColor:C.white},intelRetryText:{fontSize:10,fontWeight:'900',color:C.red},intelResult:{marginTop:11},aiVerify:{backgroundColor:'#FFF4D8',borderRadius:8,padding:7,alignSelf:'flex-start'},aiVerifyText:{fontSize:9,fontWeight:'900',color:'#8C6200'},intelAnswer:{fontSize:12.5,color:C.text,lineHeight:19,marginTop:10},intelEditInput:{minHeight:130,borderWidth:1,borderColor:C.border,borderRadius:10,padding:10,color:C.text,fontSize:12,lineHeight:18,marginTop:10,textAlignVertical:'top'},sourceBox:{marginTop:12,borderTopWidth:1,borderTopColor:C.border,paddingTop:10},sourceTitle:{fontSize:10,fontWeight:'900',color:C.navy},sourceItem:{marginTop:8,padding:9,borderRadius:9,backgroundColor:'#F7FAFD'},sourceName:{fontSize:10,fontWeight:'900',color:C.navy},sourceUrl:{fontSize:8,color:C.blue,marginTop:2},sourceContent:{fontSize:9.5,color:C.muted,lineHeight:14,marginTop:3},intelSafety:{fontSize:9,color:C.muted,lineHeight:13,marginTop:10},intelActions:{flexDirection:'row',gap:7,marginTop:11},acceptButton:{paddingHorizontal:11,paddingVertical:8,borderRadius:9,backgroundColor:'#E5F8EE'},acceptText:{fontSize:10,fontWeight:'900',color:'#147A4B'},editButton:{paddingHorizontal:11,paddingVertical:8,borderRadius:9,backgroundColor:'#EAF4FF'},editText:{fontSize:10,fontWeight:'900',color:C.blue},dismissButton:{paddingHorizontal:11,paddingVertical:8,borderRadius:9,backgroundColor:'#F2F5F8'},dismissText:{fontSize:10,fontWeight:'900',color:C.muted},intelAgain:{marginTop:8},intelAgainText:{fontSize:9,fontWeight:'800',color:C.blue},intelPatientPicker:{backgroundColor:C.white,borderRadius:16,padding:14,borderWidth:1,borderColor:C.border,marginBottom:10},intelPickerTitle:{fontSize:11,fontWeight:'900',color:C.navy},intelPickerHint:{fontSize:10,color:C.muted,lineHeight:15,marginTop:5},intelSelectedPatient:{marginTop:7},intelSelectedName:{fontSize:14,fontWeight:'900',color:C.navy},intelSelectedMeta:{fontSize:10,color:C.muted,marginTop:2},patientChip:{paddingHorizontal:10,paddingVertical:7,borderRadius:12,backgroundColor:'#F2F5F8',borderWidth:1,borderColor:C.border},patientChipActive:{backgroundColor:'#EAF4FF',borderColor:'#86BDF0'},patientChipText:{fontSize:9,fontWeight:'800',color:C.muted},patientChipTextActive:{color:C.blue},intelQuestionInput:{minHeight:72,borderWidth:1,borderColor:C.border,borderRadius:11,padding:10,color:C.text,fontSize:12,lineHeight:17,marginTop:11,textAlignVertical:'top'},comingSoon:{fontSize:10,fontWeight:'900',color:C.amber,marginTop:3},intelHero:{backgroundColor:'#0B2E4F',borderRadius:18,padding:18,marginBottom:10},intelKicker:{fontSize:9,color:'#8FCBFF',fontWeight:'900',letterSpacing:1},intelTitle:{fontSize:21,color:C.white,fontWeight:'900',marginTop:4},intelText:{fontSize:12,color:'#D9EAF7',lineHeight:18,marginTop:6},intelCard:{backgroundColor:C.white,borderRadius:15,padding:14,borderWidth:1,borderColor:C.border,marginBottom:8,flexDirection:'row',gap:12},intelNum:{fontSize:12,fontWeight:'900',color:C.blue},intelName:{fontSize:14,fontWeight:'900',color:C.navy},intelSub:{fontSize:11,color:C.muted,marginTop:3}
