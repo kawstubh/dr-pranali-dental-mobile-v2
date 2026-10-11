@@ -663,7 +663,7 @@ export default function App() {
   const premiumTab = tab === 'Appointment' ? 'Visits' : tab === 'Contact' ? 'Profile' : tab === 'Gallery' ? 'Reports' : tab;
   const goFromPremium = (key) => setTab(key === 'Visits' ? 'Appointment' : key === 'Profile' ? 'Contact' : key === 'Reports' ? 'Gallery' : key);
   return (
-    <SafeAreaView style={premiumStyles.safe}>
+    <SafeAreaView edges={["top","left","right"]} style={premiumStyles.safe}>
       <StatusBar style="dark" />
       <View style={premiumStyles.topHeader}>
         <Image source={require("./assets/dr-pranali-branded-logo.png")} style={premiumStyles.brandImage} resizeMode="contain" />
