@@ -46,7 +46,7 @@ function AppointmentCard({ item, token, onChanged }) {
     <View style={styles.actions}>
       <Pressable onPress={call} style={styles.action}><Text style={styles.actionText}>Call</Text></Pressable>
       <Pressable onPress={whatsapp} style={styles.action}><Text style={styles.actionText}>WhatsApp</Text></Pressable>
-      {item.status==='requested' && <Pressable disabled={busy} onPress={()=>change('confirmed')} style={[styles.action,styles.confirm]}><Text style={styles.confirmText}>{busy?'â€¦':'Confirm'}</Text></Pressable>}
+      {item.status==='requested' && <Pressable disabled={busy} onPress={()=>change('confirmed')} style={[styles.action,styles.confirm]}><Text style={styles.confirmText}>{busy?'…':'Confirm'}</Text></Pressable>}
       {item.status!=='completed' && item.status!=='cancelled' && item.status!=='no_show' && <Pressable disabled={busy} onPress={()=>change('completed')} style={styles.action}><Text style={styles.actionText}>Complete</Text></Pressable>}
     </View>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap:6,paddingTop:8}}>
@@ -139,7 +139,7 @@ function DentalChart({ token, patientId, patientName='Patient' }) {
         <View style={{flex:1}}>
           <Text style={styles.chartEyebrow}>CLINICAL ODONTOGRAM</Text>
           <Text style={styles.chartTitle}>Dental chart</Text>
-          <Text style={styles.chartPatient}>{patientName} â€¢ {loaded ? 'Synced clinical record' : 'Loading clinical record'}</Text>
+          <Text style={styles.chartPatient}>{patientName} • {loaded ? 'Synced clinical record' : 'Loading clinical record'}</Text>
         </View>
         <View style={styles.chartLegendDot}/>
       </View>
@@ -171,7 +171,7 @@ function DentalChart({ token, patientId, patientName='Patient' }) {
           <Text style={styles.selectedLabel}>Tooth {selected}</Text>
           <Text style={styles.selectedStatus}>Status: {currentState === 'attention' ? 'Needs attention' : currentState === 'treated' ? 'Treatment completed' : currentState === 'missing' ? 'Missing / extracted' : 'Healthy'}</Text>
         </View>
-        <Pressable disabled={!patientId || saving} onPress={cycleState} style={[styles.changeStatus, saving && {opacity:0.5}]}><Text style={styles.changeStatusText}>{saving ? 'Savingâ€¦' : 'Update'}</Text></Pressable>
+        <Pressable disabled={!patientId || saving} onPress={cycleState} style={[styles.changeStatus, saving && {opacity:0.5}]}><Text style={styles.changeStatusText}>{saving ? 'Saving…' : 'Update'}</Text></Pressable>
       </View>
 
       <View style={styles.chartLegend}>
@@ -196,15 +196,15 @@ function Periodontogram({ token, patientId, patientName='Patient' }) {
   const update=(key,value)=>setRecords(prev=>({...prev,[selected]:{...(prev[selected]||{}),[key]:value}}));
   const save=async()=>{ if(!patientId||saving)return; setSaving(true); try{await savePeriodontogramEntry(token,patientId,{tooth_fdi:selected,measurements:current,note:''}); Alert.alert('Periodontogram','Measurements saved for tooth '+selected+'.');}catch(e){Alert.alert('Periodontogram',e.message||'Could not save measurements.')}finally{setSaving(false)} };
   return <View style={styles.chartCard}>
-    <View style={styles.chartHeader}><View style={{flex:1}}><Text style={styles.chartEyebrow}>CLINICAL PERIODONTICS</Text><Text style={styles.chartTitle}>Periodontogram</Text><Text style={styles.chartPatient}>{patientName} â€¢ 6-point periodontal probing</Text></View><View style={[styles.chartLegendDot,{backgroundColor:'#D98900'}]}/></View>
+    <View style={styles.chartHeader}><View style={{flex:1}}><Text style={styles.chartEyebrow}>CLINICAL PERIODONTICS</Text><Text style={styles.chartTitle}>Periodontogram</Text><Text style={styles.chartPatient}>{patientName} • 6-point periodontal probing</Text></View><View style={[styles.chartLegendDot,{backgroundColor:'#D98900'}]}/></View>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap:6,paddingVertical:12}}>{teeth.map(n=><Pressable key={n} onPress={()=>setSelected(n)} style={[styles.perioTooth,selected===n&&styles.perioToothActive]}><Text style={[styles.perioToothText,selected===n&&styles.perioToothTextActive]}>{n}</Text></Pressable>)}</ScrollView>
-    <View style={styles.perioSelected}><Text style={styles.selectedLabel}>Tooth {selected}</Text><Text style={styles.selectedStatus}>Probing depths (mm) â€” MB Â· B Â· DB Â· ML Â· L Â· DL</Text></View>
+    <View style={styles.perioSelected}><Text style={styles.selectedLabel}>Tooth {selected}</Text><Text style={styles.selectedStatus}>Probing depths (mm) — MB · B · DB · ML · L · DL</Text></View>
     <View style={styles.perioGrid}>{points.map(p=><View key={p} style={styles.perioCell}><Text style={styles.perioPoint}>{p}</Text><TextInput value={String(current[p]??'')} onChangeText={v=>update(p,v.replace(/[^0-9]/g,''))} keyboardType="number-pad" maxLength={2} placeholder="0" placeholderTextColor="#AAB5BF" style={styles.perioInput}/></View>)}</View>
     <View style={styles.perioMeta}>
       {['recession','CAL'].map(k=><View key={k} style={styles.metaField}><Text style={styles.metaLabel}>{k==='recession'?'Recession':'CAL'} (mm)</Text><TextInput value={String(current[k]??'')} onChangeText={v=>update(k,v.replace(/[^0-9]/g,''))} keyboardType="number-pad" style={styles.metaInput}/></View>)}
-      {['BOP','Mobility','Furcation','Plaque','Calculus'].map(k=><Pressable key={k} onPress={()=>update(k,current[k]?'':'Yes')} style={[styles.perioFlag,current[k]&&styles.perioFlagActive]}><Text style={[styles.perioFlagText,current[k]&&styles.perioFlagTextActive]}>{k}{current[k]?' âœ“':''}</Text></Pressable>)}
+      {['BOP','Mobility','Furcation','Plaque','Calculus'].map(k=><Pressable key={k} onPress={()=>update(k,current[k]?'':'Yes')} style={[styles.perioFlag,current[k]&&styles.perioFlagActive]}><Text style={[styles.perioFlagText,current[k]&&styles.perioFlagTextActive]}>{k}{current[k]?' ✓':''}</Text></Pressable>)}
     </View>
-    <Pressable disabled={saving||!patientId} onPress={save} style={[styles.primary,{marginTop:12,opacity:saving?0.6:1}]}><Text style={styles.primaryText}>{saving?'Savingâ€¦':'Save Periodontogram'}</Text></Pressable>
+    <Pressable disabled={saving||!patientId} onPress={save} style={[styles.primary,{marginTop:12,opacity:saving?0.6:1}]}><Text style={styles.primaryText}>{saving?'Saving…':'Save Periodontogram'}</Text></Pressable>
   </View>;
 }
 
@@ -226,7 +226,7 @@ function IntelligenceCard({ token, patient, title, description, goal, requiresPa
     <View style={styles.intelCardHead}><View style={{flex:1}}><Text style={styles.intelName}>{title}</Text><Text style={styles.intelSub}>{description}</Text></View><Text style={styles.aiBadge}>AI</Text></View>
     {patient?.name&&<Text style={styles.intelPatient}>Patient: {patient.name}</Text>}
     {status==='idle'&&<Pressable onPress={run} style={styles.intelRunButton}><Text style={styles.intelRunText}>Run intelligence</Text></Pressable>}
-    {status==='loading'&&<View style={styles.intelSkeleton}><View style={styles.skeletonLineWide}/><View style={styles.skeletonLine}/><View style={styles.skeletonLineShort}/><Text style={styles.intelLoading}>Analyzing clinical context and evidenceâ€¦</Text></View>}
+    {status==='loading'&&<View style={styles.intelSkeleton}><View style={styles.skeletonLineWide}/><View style={styles.skeletonLine}/><View style={styles.skeletonLineShort}/><Text style={styles.intelLoading}>Analyzing clinical context and evidence…</Text></View>}
     {status==='error'&&<View style={styles.intelError}><Text style={styles.intelErrorTitle}>Could not complete</Text><Text style={styles.intelErrorText}>{result?.error}</Text><Pressable onPress={run} style={styles.intelRetry}><Text style={styles.intelRetryText}>Retry</Text></Pressable></View>}
     {status==='result'&&<View style={styles.intelResult}>
       <View style={styles.aiVerify}><Text style={styles.aiVerifyText}>AI suggestion, doctor to verify</Text></View>
@@ -303,6 +303,21 @@ function Dashboard({ token, logout }) {
 
   useEffect(()=>{load();},[load]);
 
+  // Keep the Doctor inbox connected to the same appointment API used by Patient booking.
+  // Poll quietly so temporary network errors do not create repeated alert dialogs.
+  useEffect(()=>{
+    if (!token) return undefined;
+    let active = true;
+    const refreshInbox = async () => {
+      try {
+        const [a,p] = await Promise.all([listAppointments(token), listPatients(token)]);
+        if (active) { setAppointments(a || []); setPatients(p || []); }
+      } catch { /* Keep the last successful inbox data; pull-to-refresh can retry visibly. */ }
+    };
+    const interval = setInterval(refreshInbox, 30000);
+    return () => { active = false; clearInterval(interval); };
+  },[token]);
+
   const requested=appointments.filter(a=>a.status==='requested').length;
   const confirmed=appointments.filter(a=>['confirmed','scheduled'].includes(a.status)).length;
 
@@ -343,8 +358,8 @@ function Dashboard({ token, logout }) {
       </View>}
       {tab==='Patients' && <View>
         <View style={styles.sectionRow}><Text style={styles.sectionTitle}>Patients</Text><Text style={styles.patientCount}>{patients.length} records</Text></View>
-        {patients.length===0?<Empty text="No patients yet. Patient bookings will appear here."/>:patients.map((p,i)=><Pressable key={p.id} onPress={()=>setSelectedPatient(p)} style={[styles.patientCard,selectedPatient?.id===p.id&&styles.patientCardActive]}><View style={styles.patientTop}><View style={styles.avatar}><Text style={styles.avatarText}>{(p.name||'P').slice(0,1).toUpperCase()}</Text></View><View style={{flex:1}}><Text style={styles.patient}>{p.name}</Text><Text style={styles.phone}>{p.phone||'No phone'}{p.age?' â€¢ Age '+p.age:''}</Text></View><Text style={styles.chevron}>â€º</Text></View></Pressable>)}
-        {selectedPatient ? <><View style={styles.selectedPatientBanner}><Text style={styles.selectedPatientLabel}>SELECTED PATIENT</Text><Text style={styles.selectedPatientName}>{selectedPatient.name}</Text><Text style={styles.selectedPatientMeta}>{selectedPatient.phone||'No phone'}{selectedPatient.age?' â€¢ Age '+selectedPatient.age:''}</Text></View><DoctorAIActionCard token={token} patient={selectedPatient} title="Patient Profile • AI Insights" description="Summary and risk flags from the authorized record." capability="patient_summary" run={doctorPatientSummary}/><DentalChart token={token} patientId={selectedPatient.id} patientName={selectedPatient.name} /><DoctorAIActionCard token={token} patient={selectedPatient} title="Dental Chart & Periodontogram • AI Insights" description="Patterns and findings that merit clinician review." capability="chart_insights" run={doctorChartInsights}/><Periodontogram token={token} patientId={selectedPatient.id} patientName={selectedPatient.name} /></> : <Empty text="Select a patient to open the dental chart and periodontogram." />}
+        {patients.length===0?<Empty text="No patients yet. Patient bookings will appear here."/>:patients.map((p,i)=><Pressable key={p.id} onPress={()=>setSelectedPatient(p)} style={[styles.patientCard,selectedPatient?.id===p.id&&styles.patientCardActive]}><View style={styles.patientTop}><View style={styles.avatar}><Text style={styles.avatarText}>{(p.name||'P').slice(0,1).toUpperCase()}</Text></View><View style={{flex:1}}><Text style={styles.patient}>{p.name}</Text><Text style={styles.phone}>{p.phone||'No phone'}{p.age?' • Age '+p.age:''}</Text></View><Text style={styles.chevron}>â€º</Text></View></Pressable>)}
+        {selectedPatient ? <><View style={styles.selectedPatientBanner}><Text style={styles.selectedPatientLabel}>SELECTED PATIENT</Text><Text style={styles.selectedPatientName}>{selectedPatient.name}</Text><Text style={styles.selectedPatientMeta}>{selectedPatient.phone||'No phone'}{selectedPatient.age?' • Age '+selectedPatient.age:''}</Text></View><DoctorAIActionCard token={token} patient={selectedPatient} title="Patient Profile • AI Insights" description="Summary and risk flags from the authorized record." capability="patient_summary" run={doctorPatientSummary}/><DentalChart token={token} patientId={selectedPatient.id} patientName={selectedPatient.name} /><DoctorAIActionCard token={token} patient={selectedPatient} title="Dental Chart & Periodontogram • AI Insights" description="Patterns and findings that merit clinician review." capability="chart_insights" run={doctorChartInsights}/><Periodontogram token={token} patientId={selectedPatient.id} patientName={selectedPatient.name} /></> : <Empty text="Select a patient to open the dental chart and periodontogram." />}
       </View>}
       {tab==='Clinical' && <View>
         <View style={styles.intelHero}><Text style={styles.intelKicker}>AI DENTAL COMMAND CENTER</Text><Text style={styles.intelTitle}>Clinical intelligence</Text><Text style={styles.intelText}>Evidence-backed decision support. AI suggestions never write to the dental chart or treatment plan without doctor confirmation.</Text></View>
@@ -379,9 +394,9 @@ function ClinicalResearchCard({ token, patient }) {
   const evidence=extractEvidence(result);
   return <View style={styles.intelCardLarge}>
     <View style={styles.intelCardHead}><View style={{flex:1}}><Text style={styles.intelName}>Clinical Research</Text><Text style={styles.intelSub}>Ask an evidence-based clinical question. Sources are shown when returned.</Text></View><Text style={styles.aiBadge}>AI</Text></View>
-    <TextInput value={question} onChangeText={setQuestion} placeholder="Ask a clinical questionâ€¦" placeholderTextColor="#91A0AE" multiline style={styles.intelQuestionInput}/>
-    <Pressable disabled={!question.trim()||status==='loading'} onPress={run} style={[styles.intelRunButton,(!question.trim()||status==='loading')&&{opacity:0.5}]}><Text style={styles.intelRunText}>{status==='loading'?'Researchingâ€¦':'Ask clinical research'}</Text></Pressable>
-    {status==='loading'&&<View style={styles.intelSkeleton}><View style={styles.skeletonLineWide}/><View style={styles.skeletonLine}/><View style={styles.skeletonLineShort}/><Text style={styles.intelLoading}>Retrieving evidence and reasoningâ€¦</Text></View>}
+    <TextInput value={question} onChangeText={setQuestion} placeholder="Ask a clinical question…" placeholderTextColor="#91A0AE" multiline style={styles.intelQuestionInput}/>
+    <Pressable disabled={!question.trim()||status==='loading'} onPress={run} style={[styles.intelRunButton,(!question.trim()||status==='loading')&&{opacity:0.5}]}><Text style={styles.intelRunText}>{status==='loading'?'Researching…':'Ask clinical research'}</Text></Pressable>
+    {status==='loading'&&<View style={styles.intelSkeleton}><View style={styles.skeletonLineWide}/><View style={styles.skeletonLine}/><View style={styles.skeletonLineShort}/><Text style={styles.intelLoading}>Retrieving evidence and reasoning…</Text></View>}
     {status==='error'&&<View style={styles.intelError}><Text style={styles.intelErrorTitle}>Could not complete</Text><Text style={styles.intelErrorText}>{result?.error}</Text><Pressable onPress={run} style={styles.intelRetry}><Text style={styles.intelRetryText}>Retry</Text></Pressable></View>}
     {status==='result'&&<View style={styles.intelResult}><View style={styles.aiVerify}><Text style={styles.aiVerifyText}>AI suggestion, doctor to verify</Text></View>{editing?<TextInput multiline value={edited} onChangeText={setEdited} style={styles.intelEditInput}/>:<Text style={styles.intelAnswer}>{typeof result?.answer==='string'?result.answer:JSON.stringify(result?.answer||result,null,2)}</Text>}{!!evidence.length&&<View style={styles.sourceBox}><Text style={styles.sourceTitle}>Sources / evidence</Text>{evidence.slice(0,6).map((item,index)=><View key={index} style={styles.sourceItem}><Text style={styles.sourceName}>{item.title||item.source||'Evidence'}</Text>{!!item.url&&<Text style={styles.sourceUrl}>{item.url}</Text>}{!!item.content&&<Text style={styles.sourceContent}>{item.content}</Text>}</View>)}</View>}<Text style={styles.intelSafety}>Nothing from this result is written to the dental chart or treatment plan automatically.</Text><View style={styles.intelActions}><Pressable onPress={()=>Alert.alert('Accepted','Accepted for this session only. No clinical record was changed.')} style={styles.acceptButton}><Text style={styles.acceptText}>Accept</Text></Pressable><Pressable onPress={()=>setEditing(v=>!v)} style={styles.editButton}><Text style={styles.editText}>{editing?'Preview':'Edit'}</Text></Pressable><Pressable onPress={()=>{setStatus('idle');setResult(null)}} style={styles.dismissButton}><Text style={styles.dismissText}>Dismiss</Text></Pressable></View></View>}
   </View>;
