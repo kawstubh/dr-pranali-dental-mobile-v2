@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { PillTabBar } from '../src/premium/components';
 import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry } from './src/api/doctorApi';
 import { getStoredDoctorSession, signInWithGoogle, signOutGoogle } from './src/auth/googleAuth';
 import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
@@ -307,14 +308,14 @@ function Dashboard({ token, logout }) {
 
   if(loading) return <SafeAreaView style={styles.safe}><ActivityIndicator size="large" color={C.blue} style={{marginTop:80}}/></SafeAreaView>;
 
-  return <SafeAreaView style={styles.safe}>
-    <StatusBar style="dark"/>
-    <View style={styles.header}>
+  return <SafeAreaView style={premiumDoctorStyles.safe}>
+    <StatusBar style="light"/>
+    <View style={[styles.header,{backgroundColor:"#0A2F6B",borderBottomColor:"#123F7D"}]}>
       <View style={styles.headerBrand}>
         <Image source={clinicLogo} style={styles.headerLogo} resizeMode="contain" />
-        <View><Text style={styles.headerTitle}>Dr. Pranali</Text><Text style={styles.headerSub}>Dental Clinic â€¢ Taloja</Text></View>
+        <View><Text style={[styles.headerTitle,{color:"#FFFFFF"}]}>Dr. Pranali</Text><Text style={[styles.headerSub,{color:"#BFD9F5"}]}>Dental Clinic • Taloja</Text></View>
       </View>
-      <Pressable onPress={()=>{logout();}} style={styles.headerAction}><Text style={styles.headerActionText}>Sign out</Text></Pressable>
+      <View style={{flexDirection:"row",alignItems:"center",gap:8}}><View style={{backgroundColor:token?"#DDF7EA":"#FFF3D9",paddingHorizontal:9,paddingVertical:6,borderRadius:12}}><Text style={{fontSize:10,fontWeight:"800",color:token?"#147A4B":"#8C6200"}}>{token?"SECURE":"UI TEST"}</Text></View><Pressable onPress={()=>{logout();}} style={styles.headerAction}><Text style={styles.headerActionText}>{token?"Sign out":"Testing"}</Text></Pressable></View>
     </View>
     <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={()=>{setRefreshing(true);load();}}/>} contentContainerStyle={styles.content}>
       <View style={styles.hero}><View><Text style={styles.heroKicker}>CLINIC CONTROL CENTER</Text><Text style={styles.heroTitle}>Good day, Doctor</Text><Text style={styles.heroSub}>Manage today's patient flow from one place.</Text></View><View style={[styles.dot,{backgroundColor:apiOk?C.green:C.red}]}/></View>
@@ -358,6 +359,7 @@ function Dashboard({ token, logout }) {
         {['Product & Supplier Intelligence','Practice Intelligence','Referral Intelligence'].map((x,i)=><View key={x} style={styles.intelCard}><Text style={styles.intelNum}>0{i+4}</Text><View style={{flex:1}}><Text style={styles.intelName}>{x}</Text><Text style={styles.comingSoon}>Coming soon</Text></View></View>)}
       </View>}
     </ScrollView>
+    <PillTabBar mode="doctor" active={tab==="Home"?"Home":tab==="Patients"?"Patients":tab==="Appointments"?"Calendar":"Reports"} onChange={(key)=>setTab(key==="Calendar"?"Appointments":key==="More"?"Clinical":key)}/>
   </SafeAreaView>;
 }
 
@@ -428,22 +430,17 @@ function GoogleLoginScreen({ onSignedIn }) {
 export default function App(){
   const [token,setToken]=useState('');
   const [checking,setChecking]=useState(true);
-
   useEffect(() => {
     getStoredDoctorSession().then(value => setToken(value || null)).finally(() => setChecking(false));
   }, []);
-
-  const logout = async () => {
-    await signOutGoogle();
-    setToken(null);
-  };
-
+  const logout = async () => { await signOutGoogle(); setToken(null); };
   if (checking) return <SafeAreaView style={styles.safe}><ActivityIndicator size="large" color={C.blue} style={{marginTop:80}}/></SafeAreaView>;
-  // TEMPORARY UI-TESTING BYPASS: remove before any production/release build.
-  // Dashboard can render without a session; protected API calls may return 401.
+  // TEMPORARY UI-TESTING BYPASS: disable before production/release.
   if (!token) return <Dashboard token={null} logout={async () => setToken(null)}/>;
   return <Dashboard token={token} logout={logout}/>;
 }
+
+const premiumDoctorStyles = StyleSheet.create({ safe:{flex:1,backgroundColor:"#F8FBFE"} });
 
 const styles=StyleSheet.create({
  safe:{flex:1,backgroundColor:C.bg}, loginWrap:{padding:24,paddingTop:70,flexGrow:1,justifyContent:'center'},
