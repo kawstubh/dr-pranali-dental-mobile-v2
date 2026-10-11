@@ -62,7 +62,7 @@ const ADULT_LOWER = ['48','47','46','45','44','43','42','41','31','32','33','34'
 const CHILD_UPPER = ['55','54','53','52','51','61','62','63','64','65'];
 const CHILD_LOWER = ['85','84','83','82','81','71','72','73','74','75'];
 
-function Tooth({ number, state, onPress, upper, index, total }) {
+function Tooth({ number, state, selected, onPress, upper, index, total }) {
   const curve = Math.abs((total - 1) / 2 - index);
   const palette = state === 'healthy'
     ? { fill:'#DFF6E9', edge:'#59C989', mark:'#35B878' }
@@ -86,7 +86,8 @@ function Tooth({ number, state, onPress, upper, index, total }) {
         styles.toothShape,
         {
           backgroundColor:palette.fill,
-          borderColor:palette.edge,
+          borderColor:selected ? '#0A84E8' : palette.edge,
+          borderWidth:selected ? 2.8 : 1.4,
           borderRadius:number.endsWith('1') || number.endsWith('2') ? 14 : 11,
           transform:[{ scaleY: upper ? 1 : 0.96 }]
         }
@@ -94,7 +95,7 @@ function Tooth({ number, state, onPress, upper, index, total }) {
         <View style={[styles.toothCusp, { backgroundColor:palette.mark }]} />
         <View style={[styles.toothRoot, { borderColor:palette.edge, top: upper ? 23 : 25 }]} />
       </View>
-      <Text style={[styles.toothNumber, state === 'attention' && {color:'#B87908'}]}>{number}</Text>
+      <Text style={[styles.toothNumber, state === 'attention' && {color:'#B87908'}, selected && {color:C.blue,fontWeight:'900'}]}>{number}</Text>
     </Pressable>
   );
 }
@@ -181,11 +182,11 @@ function DentalChart({ token, patientId, patientName='Patient' }) {
       <View style={styles.mouthFrame}>
         <Text style={styles.sideLabel}>RIGHT</Text>
         <View style={styles.teethArc}>
-          {upper.map((n,i)=><Tooth key={n} number={n} state={states[n]||'healthy'} upper index={i} total={upper.length} onPress={()=>setSelected(n)}/>)}
+          {upper.map((n,i)=><Tooth key={n} number={n} state={states[n]||'unrecorded'} selected={selected===n} upper index={i} total={upper.length} onPress={()=>setSelected(n)}/>)}
         </View>
         <View style={styles.mouthCenter}><View style={styles.mouthLine}/><Text style={styles.mouthHint}>UPPER</Text></View>
         <View style={styles.teethArc}>
-          {lower.map((n,i)=><Tooth key={n} number={n} state={states[n]||'healthy'} index={i} total={lower.length} onPress={()=>setSelected(n)}/>)}
+          {lower.map((n,i)=><Tooth key={n} number={n} state={states[n]||'unrecorded'} selected={selected===n} index={i} total={lower.length} onPress={()=>setSelected(n)}/>)}
         </View>
         <Text style={styles.sideLabel}>LEFT</Text>
       </View>
