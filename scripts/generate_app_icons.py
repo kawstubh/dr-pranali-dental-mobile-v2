@@ -56,7 +56,7 @@ def make_icon(kind, output, foreground=False):
         draw.polygon(pts, fill=(244,252,255,255), outline=(*cyan,255))
         # enamel highlight
         draw.arc((int(360*S),int(335*S),int(670*S),int(690*S)), 200, 320, fill=(255,255,255,240), width=13*S)
-        sparkle(draw, 745*S, 300*S, 68*S, (255,255,255,255))
+        sparkle(draw, 745, 300, 68, (255,255,255,255))
     else:
         im = gradient(W, top, bottom).convert("RGBA")
         draw = ImageDraw.Draw(im)
@@ -82,7 +82,7 @@ def make_icon(kind, output, foreground=False):
         draw.line(ribbon, fill=(*navy,255), width=62*S, joint="curve")
         draw.line(ribbon, fill=(*cyan,255), width=39*S, joint="curve")
         draw.line([(x,y-5*S) for x,y in ribbon], fill=(110,255,255,180), width=5*S, joint="curve")
-        sparkle(draw, 760*S, 260*S, 65*S, (255,255,255,255))
+        sparkle(draw, 760, 260, 65, (255,255,255,255))
     im = im.resize((SIZE,SIZE), Image.Resampling.LANCZOS)
     output.parent.mkdir(parents=True, exist_ok=True)
     im.save(output, "PNG", optimize=True)
