@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { PillTabBar } from './src/premium/components';
 import { signInWithGoogle } from './src/auth/googleAuth';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { buildPatientCareRequest } from './src/intelligence/dentalIntelligence';
@@ -613,33 +614,39 @@ export default function App() {
     if (tab === 'Contact') return <ContactScreen />;
     return <HomeScreen go={setTab} />;
   }, [tab]);
-
+  const premiumTab = tab === 'AI Dental' ? 'Profile' : tab === 'Appointment' ? 'Visits' : tab === 'Contact' ? 'Profile' : tab === 'Gallery' ? 'Reports' : tab;
+  const goFromPremium = (key) => setTab(key === 'Visits' ? 'Appointment' : key === 'Profile' ? 'Contact' : key === 'Reports' ? 'Gallery' : key);
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={premiumStyles.safe}>
       <StatusBar style="dark" />
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>Dr. Pranali Dental</Text>
-          <Text style={styles.headerSub}>Healthy Smile, Happy You!</Text>
+      <View style={premiumStyles.topHeader}>
+        <View style={premiumStyles.brandMark}><Text style={premiumStyles.toothMark}>✦</Text></View>
+        <View style={{flex:1}}>
+          <Text style={premiumStyles.brandTitle}>Dr. Pranali Dental</Text>
+          <Text style={premiumStyles.brandSubtitle}>Healthy Smile, Happy You!</Text>
         </View>
-        <Pressable onPress={() => Alert.alert('Dr. Pranali Dental', `BDS – Dental Surgeon\n\nTaloja, Navi Mumbai\n${PHONE}`)} style={styles.settings}><Text style={styles.settingsText}>⚙</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Clinic information" onPress={() => Alert.alert('Dr. Pranali Dental', 'BDS – Dental Surgeon\n\nTaloja, Navi Mumbai\n' + PHONE)} style={premiumStyles.headerAction}>
+          <Text style={premiumStyles.headerActionText}>i</Text>
+        </Pressable>
       </View>
-      <View style={styles.body}>{screen}</View>
-      <View style={styles.bottomNav}>
-        {tabs.map(([name, icon]) => {
-          const active = tab === name;
-          return (
-            <Pressable key={name} onPress={() => setTab(name)} style={styles.tab}>
-              <Text style={[styles.tabIcon, active && styles.tabActive]}>{icon}</Text>
-              <Text style={[styles.tabLabel, active && styles.tabActive]}>{name}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <View style={premiumStyles.screenBody}>{screen}</View>
+      <PillTabBar active={premiumTab} onChange={goFromPremium} />
     </SafeAreaView>
   );
 }
 
+const premiumStyles = StyleSheet.create({
+  safe:{flex:1,backgroundColor:'#F8FBFE'},
+  topHeader:{minHeight:70,flexDirection:'row',alignItems:'center',gap:12,paddingHorizontal:18,paddingVertical:10,backgroundColor:'#FFFFFF',borderBottomWidth:1,borderBottomColor:'#E3ECF5'},
+  brandMark:{width:42,height:42,borderRadius:14,backgroundColor:'#0A2F6B',alignItems:'center',justifyContent:'center'},
+  toothMark:{fontSize:23,color:'#00C6C8',fontWeight:'900'},
+  brandTitle:{fontSize:17,fontWeight:'800',color:'#0C3B82'},
+  brandSubtitle:{fontSize:11,color:'#4C6A94',marginTop:2},
+  headerAction:{width:38,height:38,borderRadius:19,backgroundColor:'#F4FBFF',borderWidth:1,borderColor:'#E3ECF5',alignItems:'center',justifyContent:'center'},
+  headerActionText:{fontSize:18,fontWeight:'800',color:'#0A84E8'},
+  screenBody:{flex:1},
+});
+ 
 const styles = StyleSheet.create({
   welcomeSafe:{flex:1,backgroundColor:'#F7FBFF'},
   welcomeContent:{flexGrow:1,paddingHorizontal:22,paddingTop:18,paddingBottom:18,alignItems:'center'},
