@@ -1,26 +1,37 @@
 ﻿
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Alert, Image, Linking, Pressable, RefreshControl,
+  ActivityIndicator, Alert, Animated, Linking, Pressable, RefreshControl,
   ScrollView, StyleSheet, Text, TextInput, View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { Image as ExpoImage } from 'expo-image';
+import { BRAND } from '../src/brandConstants';
+import { DENTAL_SERVICES } from '../shared/dentalServices';
 import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry } from './src/api/doctorApi';
 import { getStoredDoctorSession, signInWithGoogle, signOutGoogle } from './src/auth/googleAuth';
 import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
 
-const clinicLogo = require('./assets/dr-pranali-branded-logo.png');
+const clinicLogo = require('./assets/doctor-icon.png');
 
 const C = {
-  navy:'#082B49', blue:'#1677D2', bg:'#F5F9FC', white:'#FFF',
-  text:'#18334D', muted:'#6B7D8F', border:'#DCE8F4',
+  ...BRAND.colors,
+  bg: BRAND.colors.background,
   green:'#1DAA68', amber:'#D98900', red:'#D64B4B'
 };
 
 const STATUSES = ['requested','confirmed','scheduled','completed','cancelled','rescheduled','no_show'];
 
 function statusLabel(s){ return (s || '').replace('_',' ').replace(/^./, x => x.toUpperCase()); }
+
+function SafeImage({ source, style, resizeMode = 'cover', placeholder = '✚' }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return <View style={[style, styles.imageFallback]}><Text style={styles.imageFallbackText}>{placeholder}</Text></View>;
+  }
+  return <ExpoImage source={source} placeholder={require('./assets/doctor-icon.png')} style={style} contentFit={resizeMode} transition={150} onError={() => setFailed(true)} />;
+}
 
 function AppointmentCard({ item, token, onChanged }) {
   const [busy,setBusy]=useState(false);
@@ -296,8 +307,8 @@ function Dashboard({ token, logout }) {
     <StatusBar style="dark"/>
     <View style={styles.header}>
       <View style={styles.headerBrand}>
-        <Image source={clinicLogo} style={styles.headerLogo} resizeMode="contain" />
-        <View><Text style={styles.headerTitle}>Dr. Pranali</Text><Text style={styles.headerSub}>Dental Clinic â€¢ Taloja</Text></View>
+        <SafeImage source={clinicLogo} style={styles.headerLogo} resizeMode="contain" placeholder="✚" />
+        <View><Text style={styles.headerTitle}>{BRAND.name}</Text><Text style={styles.headerSub}>Dental Clinic â€¢ Taloja</Text></View>
       </View>
       <Pressable onPress={()=>{logout();}} style={styles.headerAction}><Text style={styles.headerActionText}>Sign out</Text></Pressable>
     </View>
@@ -336,7 +347,12 @@ function Dashboard({ token, logout }) {
           {selectedPatient?<View style={styles.intelSelectedPatient}><Text style={styles.intelSelectedName}>{selectedPatient.name}</Text><Text style={styles.intelSelectedMeta}>{selectedPatient.age?'Age '+selectedPatient.age:'Clinical record selected'}</Text></View>:<Text style={styles.intelPickerHint}>Choose a patient below for Patient Intelligence and Treatment Research.</Text>}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap:7,paddingTop:9}}>{patients.map(p=><Pressable key={p.id} onPress={()=>setSelectedPatient(p)} style={[styles.patientChip,selectedPatient?.id===p.id&&styles.patientChipActive]}><Text style={[styles.patientChipText,selectedPatient?.id===p.id&&styles.patientChipTextActive]}>{p.name}</Text></Pressable>)}</ScrollView>
         </View>
-        <DoctorAIActionCard token={token} patient={selectedPatient} title="Treatment Planning • AI Suggestion" description="Treatment-plan options with rationale, alternatives and verification points." capability="treatment_plan" run={doctorTreatmentPlan}/>
+        <View style={styles.treatmentCatalogue}>
+          <Text style={styles.sectionTitle}>Treatment service catalogue</Text>
+          <Text style={styles.treatmentCatalogueSub}>Select a service to discuss in the clinical plan. The catalogue does not write to a patient record.</Text>
+          {DENTAL_SERVICES.map(service => <View key={service.id} style={styles.treatmentServiceRow}><Text style={styles.treatmentServiceIcon}>{service.icon}</Text><View style={{flex:1}}><Text style={styles.treatmentServiceName}>{service.name}</Text><Text style={styles.treatmentServiceMeta}>{service.category}</Text></View></View>)}
+        </View>
+                <DoctorAIActionCard token={token} patient={selectedPatient} title="Treatment Planning • AI Suggestion" description="Treatment-plan options with rationale, alternatives and verification points." capability="treatment_plan" run={doctorTreatmentPlan}/>
         <DoctorAIActionCard token={token} patient={selectedPatient} title="Follow-up & Recall Recommendations" description="Recall timing and follow-up considerations; no appointment is created automatically." capability="follow_up" run={doctorFollowUp}/>
         <DoctorScanCard token={token} patient={selectedPatient}/>
         <IntelligenceCard token={token} patient={selectedPatient} title="Clinical Research" description="Evidence-backed research with sources." goal="Answer an evidence-based clinical question and show sources and uncertainty." />
@@ -375,36 +391,50 @@ function Empty({text}){return <View style={styles.empty}><Text style={styles.emp
 function GoogleLoginScreen({ onSignedIn }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [serverWaking, setServerWaking] = useState(false);
+  const entrance = useRef(new Animated.Value(0)).current;
+  useEffect(() => { Animated.timing(entrance, { toValue: 1, duration: 520, useNativeDriver: true }).start(); }, [entrance]);
 
   const login = async () => {
     setBusy(true);
     setError('');
+    setServerWaking(true);
+    fetch('https://dr-pranali-dental-api.onrender.com/health').catch(() => null);
     try {
       const session = await signInWithGoogle('https://dr-pranali-dental-api.onrender.com');
       onSignedIn(session.access_token);
     } catch (e) {
-      setError(e?.message || 'Google sign-in failed.');
+      const code = e?.code || e?.errorCode || e?.name;
+      setError((code ? '[' + code + '] ' : '') + (e?.message || 'Google sign-in failed.'));
     } finally {
       setBusy(false);
+      setServerWaking(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={styles.loginWrap}>
-        <Image source={clinicLogo} style={styles.loginLogo} resizeMode="contain" />
-        <Text style={styles.kicker}>DOCTOR PORTAL</Text>
-        <Text style={styles.loginTitle}>Dr. Pranali Dental Clinic</Text>
-        <Text style={styles.loginSub}>Sign in with the Google account authorized for this clinic.</Text>
-        <View style={styles.card}>
-          <Text style={styles.label}>Secure doctor authentication</Text>
-          <Text style={styles.help}>This uses native Android Google Sign-In. No Expo OAuth proxy and no OTP are used.</Text>
-          <Pressable disabled={busy} onPress={login} style={[styles.primary, busy && {opacity:0.6}]}>
-            {busy ? <ActivityIndicator color={C.white} /> : <Text style={styles.primaryText}>Continue with Google</Text>}
-          </Pressable>
-          {!!error && <View style={styles.loginError}><Text style={styles.loginErrorTitle}>Sign-in error</Text><Text style={styles.loginErrorText}>{error}</Text></View>}
-        </View>
+    <SafeAreaView style={styles.loginSafe}>
+      <StatusBar style="light" />
+      <ScrollView contentContainerStyle={styles.loginWrap} keyboardShouldPersistTaps="handled">
+        <Animated.View style={{opacity:entrance,transform:[{translateY:entrance.interpolate({inputRange:[0,1],outputRange:[18,0]})}]}}>
+          <View style={styles.doctorBrandMark}>
+            <SafeImage source={clinicLogo} style={styles.loginLogo} resizeMode="contain" placeholder="✚" />
+          </View>
+          <Text style={styles.kicker}>SECURE CLINIC PORTAL</Text>
+          <Text style={styles.loginTitle}>{BRAND.name}</Text>
+          <Text style={styles.loginSub}>Care • Precision • Progress</Text>
+          <View style={styles.card}>
+            <Text style={styles.label}>Doctor Login</Text>
+            <Text style={styles.doctorLoginIntro}>Access your appointments, patient records and clinical workspace.</Text>
+            <Pressable disabled={busy} onPress={login} style={[styles.googleBrandButton, busy && {opacity:0.6}]}>
+              {busy ? <ActivityIndicator color={C.blue} /> : <><Text style={styles.googleG}>G</Text><Text style={styles.googleBrandText}>Continue with Google</Text></>}
+            </Pressable>
+            {serverWaking && <Text style={styles.serverWake}>Connecting to the clinic service…</Text>}
+            {!!error && <View accessibilityRole="alert" style={styles.loginError}><Text style={styles.loginErrorTitle}>Sign-in error</Text><Text style={styles.loginErrorText}>{error}</Text></View>}
+            <Text style={styles.help}>Only the clinic's authorised Google account can access clinical records. No OTP or unsupported login method is shown.</Text>
+          </View>
+          <Text style={styles.doctorLoginFooter}>Protected access for clinical information</Text>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -429,12 +459,24 @@ export default function App(){
 }
 
 const styles=StyleSheet.create({
- safe:{flex:1,backgroundColor:C.bg}, loginWrap:{padding:24,paddingTop:70,flexGrow:1,justifyContent:'center'},
- loginLogo:{width:150,height:150,borderRadius:34,alignSelf:'center',marginBottom:14},
+ imageFallback:{alignItems:'center',justifyContent:'center',backgroundColor:'#E5F4F2',borderRadius:18,overflow:'hidden'},
+ imageFallbackText:{fontSize:30,color:'#0D9488',fontWeight:'900'},
+ treatmentCatalogue:{backgroundColor:'#FFFFFF',borderRadius:18,padding:14,marginBottom:14,borderWidth:1,borderColor:C.border},
+ treatmentCatalogueSub:{color:C.muted,fontSize:12,lineHeight:18,marginTop:5,marginBottom:8},
+ treatmentServiceRow:{flexDirection:'row',alignItems:'center',paddingVertical:8,borderBottomWidth:1,borderBottomColor:'#EDF2F7',gap:10},
+ treatmentServiceIcon:{fontSize:20,width:28,textAlign:'center'},
+ treatmentServiceName:{color:C.text,fontWeight:'700',fontSize:13},
+ treatmentServiceMeta:{color:C.muted,fontSize:11,marginTop:2},
+ googleBrandButton:{minHeight:52,borderRadius:14,backgroundColor:'#FFFFFF',borderWidth:1,borderColor:'#D6E2EE',flexDirection:'row',alignItems:'center',justifyContent:'center',gap:12},
+ googleG:{fontSize:22,fontWeight:'900',color:'#4285F4'},
+ googleBrandText:{fontSize:14,fontWeight:'800',color:C.text},
+ serverWake:{fontSize:12,color:C.muted,textAlign:'center',marginTop:10},
+ safe:{flex:1,backgroundColor:C.bg}, loginSafe:{flex:1,backgroundColor:'#071E35'}, loginWrap:{padding:24,paddingTop:38,paddingBottom:30,flexGrow:1,justifyContent:'center'},
+ loginLogo:{width:168,height:168,borderRadius:34,alignSelf:'center',marginBottom:8}, doctorBrandMark:{alignItems:'center',justifyContent:'center',marginBottom:8},
  logo:{width:82,height:82,borderRadius:24,backgroundColor:'#0B2E4F',alignItems:'center',justifyContent:'center',alignSelf:'center',marginBottom:18},
- logoTooth:{fontSize:42,color:'#FFF'}, kicker:{fontSize:10,fontWeight:'900',letterSpacing:1.2,color:C.blue,textAlign:'center'},
- loginTitle:{fontSize:34,fontWeight:'900',color:C.navy,textAlign:'center',marginTop:4},loginSub:{fontSize:14,color:C.muted,lineHeight:21,textAlign:'center',marginTop:9,marginBottom:20},
- card:{backgroundColor:C.white,borderRadius:20,borderWidth:1,borderColor:C.border,padding:18},label:{fontSize:13,fontWeight:'800',color:C.navy,marginBottom:7},input:{borderWidth:1,borderColor:C.border,borderRadius:12,padding:13,fontSize:15,color:C.text,backgroundColor:'#F9FBFD'},primary:{backgroundColor:C.blue,borderRadius:13,padding:15,alignItems:'center',marginTop:13},primaryText:{color:C.white,fontWeight:'900',fontSize:15},help:{fontSize:11,color:C.muted,lineHeight:17,marginTop:10},loginError:{marginTop:12,padding:12,borderRadius:12,backgroundColor:'#FCEAEA',borderWidth:1,borderColor:'#F2C3C3'},loginErrorTitle:{fontSize:12,fontWeight:'900',color:C.red},loginErrorText:{fontSize:11,color:'#7A2E2E',lineHeight:16,marginTop:4},
+ logoTooth:{fontSize:42,color:'#FFF'}, kicker:{fontSize:10,fontWeight:'900',letterSpacing:1.6,color:'#00C6C8',textAlign:'center'},
+ loginTitle:{fontSize:29,fontWeight:'900',color:'#FFFFFF',textAlign:'center',marginTop:7},loginSub:{fontSize:14,color:'#BFD5E8',lineHeight:21,textAlign:'center',marginTop:9,marginBottom:22}, doctorLoginIntro:{fontSize:12,color:C.muted,lineHeight:18,marginBottom:14}, doctorLoginFooter:{fontSize:10,color:'#9CB8D0',textAlign:'center',marginTop:18},
+ card:{backgroundColor:'#F4FBFF',borderRadius:24,borderWidth:1,borderColor:'#D4EAF7',padding:20,shadowColor:'#000000',shadowOpacity:0.18,shadowRadius:18,elevation:6},label:{fontSize:13,fontWeight:'800',color:C.navy,marginBottom:7},input:{borderWidth:1,borderColor:C.border,borderRadius:12,padding:13,fontSize:15,color:C.text,backgroundColor:'#F9FBFD'},primary:{backgroundColor:C.blue,borderRadius:13,padding:15,alignItems:'center',marginTop:13},primaryText:{color:C.white,fontWeight:'900',fontSize:15},help:{fontSize:11,color:C.muted,lineHeight:17,marginTop:10},loginError:{marginTop:12,padding:12,borderRadius:12,backgroundColor:'#FCEAEA',borderWidth:1,borderColor:'#F2C3C3'},loginErrorTitle:{fontSize:12,fontWeight:'900',color:C.red},loginErrorText:{fontSize:11,color:'#7A2E2E',lineHeight:16,marginTop:4},
  header:{backgroundColor:C.white,borderBottomWidth:1,borderBottomColor:C.border,paddingHorizontal:16,paddingVertical:12,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},headerBrand:{flexDirection:'row',alignItems:'center',gap:10},headerLogo:{width:38,height:38,borderRadius:12},headerTitle:{fontSize:19,fontWeight:'900',color:C.navy},headerSub:{fontSize:11,color:C.muted,marginTop:1},headerAction:{paddingHorizontal:10,paddingVertical:7,borderRadius:10,backgroundColor:'#F2F7FC'},headerActionText:{color:C.blue,fontWeight:'800',fontSize:10},
  content:{padding:16,paddingBottom:95},hero:{backgroundColor:C.navy,borderRadius:20,padding:18,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},heroKicker:{fontSize:9,color:'#8FCBFF',fontWeight:'900',letterSpacing:1},heroTitle:{fontSize:25,color:C.white,fontWeight:'900',marginTop:4},heroSub:{fontSize:12,color:'#D9EAF7',marginTop:5},dot:{width:13,height:13,borderRadius:7,borderWidth:2,borderColor:C.white},
  stats:{flexDirection:'row',gap:8,marginVertical:12},quickGrid:{flexDirection:'row',flexWrap:'wrap',gap:9},quickCard:{width:'48.2%',backgroundColor:C.white,borderRadius:17,padding:14,borderWidth:1,borderColor:C.border,minHeight:128},quickIcon:{width:38,height:38,borderRadius:12,backgroundColor:'#EAF4FF',alignItems:'center',justifyContent:'center',marginBottom:10},quickTitle:{fontSize:14,fontWeight:'900',color:C.navy},quickSub:{fontSize:10.5,color:C.muted,lineHeight:15,marginTop:4},todayCard:{backgroundColor:'#EEF7FF',borderRadius:17,padding:15,marginTop:12,borderWidth:1,borderColor:'#D4E9FA',flexDirection:'row',alignItems:'center',justifyContent:'space-between'},todayKicker:{fontSize:8,fontWeight:'900',letterSpacing:1,color:C.blue},todayTitle:{fontSize:16,fontWeight:'900',color:C.navy,marginTop:3},todaySub:{fontSize:10.5,color:C.muted,lineHeight:15,marginTop:3,maxWidth:'82%'},statusPill:{paddingHorizontal:9,paddingVertical:6,borderRadius:10},statusPillText:{fontSize:9,fontWeight:'900'},stat:{flex:1,backgroundColor:C.white,borderRadius:14,padding:11,borderWidth:1,borderColor:C.border},statN:{fontSize:22,fontWeight:'900',color:C.navy},statT:{fontSize:9,color:C.muted,marginTop:2,fontWeight:'700'},

@@ -1,20 +1,21 @@
 {
   "expo": {
-    "name": "Dr. Pranali Dental Clinic",
+    "name": "Dr. Pranali Dental",
     "slug": "dr-pranali-dental",
     "version": "1.0.3",
     "orientation": "portrait",
-    "icon": "./assets/dr-pranali-branded-logo.png",
+    "icon": "./assets/patient-icon.png",
     "splash": {
-      "image": "./assets/dr-pranali-branded-logo.png",
+      "image": "./assets/patient-splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FFF7FB"
+      "backgroundColor": "#F4FBFF"
     },
     "android": {
       "package": "com.drpranali.dental",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/dr-pranali-branded-logo.png",
-        "backgroundColor": "#FFF7FB"
+        "foregroundImage": "./assets/patient-adaptive-foreground.png",
+        "backgroundColor": "#F4FBFF",
+        "monochromeImage": "./assets/patient-monochrome.png"
       }
     },
     "ios": {
@@ -24,12 +25,22 @@
       "expo-status-bar",
       "@react-native-community/datetimepicker",
       "@react-native-google-signin/google-signin",
-      "expo-notifications"
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/patient-notification.png",
+          "color": "#1677D2"
+        }
+      ],
+      "expo-image"
     ],
     "extra": {
       "eas": {
         "projectId": "7237b92a-a286-4f47-b519-caf145a88d7d"
       }
+    },
+    "web": {
+      "favicon": "./assets/patient-favicon.png"
     }
   }
 }

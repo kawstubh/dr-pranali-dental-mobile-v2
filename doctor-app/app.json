@@ -1,34 +1,46 @@
 {
   "expo": {
     "owner": "kaus2b",
-    "name": "Dental Clinic Doctor",
+    "name": "Dr. Pranali Dental Doctor",
     "slug": "dr-pranali-dental-doctor",
     "version": "1.0.2",
     "orientation": "portrait",
-    "icon": "./assets/dr-pranali-branded-logo.png",
+    "icon": "./assets/doctor-icon.png",
     "splash": {
-      "image": "./assets/dr-pranali-branded-logo.png",
+      "image": "./assets/doctor-splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FFF7FB"
+      "backgroundColor": "#073B4C"
     },
     "android": {
       "package": "com.drpranali.dental.doctor",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/dr-pranali-branded-logo.png",
-        "backgroundColor": "#FFF7FB"
+        "foregroundImage": "./assets/doctor-adaptive-foreground.png",
+        "backgroundColor": "#073B4C",
+        "monochromeImage": "./assets/doctor-monochrome.png"
       }
     },
     "ios": {
       "bundleIdentifier": "com.drpranali.dental.doctor"
     },
     "plugins": [
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      "expo-image",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/doctor-notification.png",
+          "color": "#0D9488"
+        }
+      ]
     ],
     "extra": {
       "apiUrl": "https://dr-pranali-dental-api.onrender.com",
       "eas": {
         "projectId": "67bbd408-3b22-4a4c-8063-a2425edb4ef1"
       }
+    },
+    "web": {
+      "favicon": "./assets/doctor-favicon.png"
     }
   }
 }
