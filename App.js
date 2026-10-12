@@ -11,7 +11,7 @@ import {
   Text as NativeText, TextInput as NativeTextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Image as ExpoImage } from 'expo-image';
 import { BRAND } from './src/brandConstants';
@@ -741,4 +741,4 @@ const styles = StyleSheet.create({
   bottomSpacer: { height: 8 },
 });
 
-export default function App() { return <LanguageProvider><AppContent /></LanguageProvider>; }
+export default function App() { return <SafeAreaProvider><LanguageProvider><AppContent /></LanguageProvider></SafeAreaProvider>; }
