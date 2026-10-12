@@ -509,7 +509,7 @@ function ContactScreen({ clinic }) {
       <View style={styles.contactCard}>
         <Text style={styles.contactLabel}>{clinic?.name || 'Dr. Pranali Dental Clinic'}</Text>
         <Text style={styles.contactDegree}>BDS – Dental Surgeon</Text>
-        <View style={styles.contactLine}><Text style={styles.contactIcon}>⌖</Text><Text style={styles.contactText}>Taloja, Navi Mumbai</Text></View>
+        <View style={styles.contactLine}><Text style={styles.contactIcon}>⌖</Text><Text style={styles.contactText}>{clinic?.address || 'Taloja, Navi Mumbai'}</Text></View>
         <View style={styles.contactLine}><Text style={styles.contactIcon}>◷</Text><Text style={styles.contactText}>Monday – Sunday{`\n`}10:00 AM – 9:00 PM{`\n`}By Appointment Only</Text></View>
         <ActionButton label="Call Clinic" icon="?~Z" onPress={() => clinic?.phone_e164 && Linking.openURL('tel:' + clinic.phone_e164)} variant="primary" />
         <ActionButton label="WhatsApp Clinic" icon="?-%" variant="secondary" onPress={() => clinic?.whatsapp_phone && Linking.openURL('https://wa.me/' + clinic.whatsapp_phone)} />
@@ -546,7 +546,7 @@ function AppContent() {
           <Text style={styles.headerTitle}>{BRAND.name}</Text>
           <Text style={styles.headerSub}>{BRAND.tagline}</Text>
         </View>
-        <Pressable onPress={() => Alert.alert('Dr. Pranali Dental', `BDS – Dental Surgeon\n\nTaloja, Navi Mumbai\n${PHONE}`)} style={styles.settings}><Text style={styles.settingsText}>⚙</Text></Pressable>
+        <Pressable onPress={() => Alert.alert('Dr. Pranali Dental', 'BDS ? Dental Surgeon\n\n' + (clinic?.address || 'Taloja, Navi Mumbai') + '\n' + (clinic?.phone || 'Contact details unavailable'))} style={styles.settings}><Text style={styles.settingsText}>?</Text></Pressable>
       </View>
       <View style={styles.body}>{screen}</View>
       <View style={styles.bottomNav}>
