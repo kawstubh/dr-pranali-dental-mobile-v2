@@ -127,6 +127,7 @@ jobs:
           retention-days: 14
 
       - name: Publish Doctor APK latest
+        if: github.ref == 'refs/heads/master'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: doctor-latest

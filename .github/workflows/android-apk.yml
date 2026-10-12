@@ -131,6 +131,7 @@ jobs:
           retention-days: 14
 
       - name: Publish Patient APK latest
+        if: github.ref == 'refs/heads/master'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: patient-latest
