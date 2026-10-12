@@ -18,15 +18,13 @@ import { BRAND } from './src/brandConstants';
 import { DENTAL_SERVICES, DENTAL_SERVICE_CATEGORIES } from './shared/dentalServices';
 import { signInWithGoogle } from './src/auth/googleAuth';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { requestPublicAppointment } from './src/api/dentalApi';
+import { requestPublicAppointment, getPublicClinic } from './src/api/dentalApi';
 
 // Production HTTPS API. The patient app does not require the phone and computer to share a Wi-Fi network.
 const API_URL = 'https://dr-pranali-dental-api.onrender.com';
 
 function Text({ children, ...props }) { const { t } = useTranslation(); return <NativeText {...props}>{React.Children.map(children, child => typeof child === 'string' ? t(child) : child)}</NativeText>; }
 function TextInput(props) { const { t } = useTranslation(); return <NativeTextInput {...props} placeholder={t(props.placeholder)} />; }
-const PHONE = '9137007432';
-const WHATSAPP = '919137007432';
 
 const COLORS = {
   ...BRAND.colors,
@@ -176,7 +174,7 @@ function ServiceCard({ name, desc, icon, image, onPress }) {
   );
 }
 
-function HomeScreen({ go }) {
+function HomeScreen({ go, clinic }) {
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
       <View style={styles.hero}>
@@ -197,9 +195,20 @@ function HomeScreen({ go }) {
           <Text style={[styles.heroTitle, styles.heroBlue]}>Happy You!</Text>
           <Text style={styles.heroSub}>Expert dental care for you and your family, with gentle treatment and modern technology.</Text>
           <ActionButton label="Book Appointment" icon="▣" onPress={() => go('Appointment')} />
-          <ActionButton label="WhatsApp Clinic" icon="◉" variant="secondary" onPress={() => Linking.openURL(`https://wa.me/${WHATSAPP}`)} />
-          <ActionButton label={`Call Us   ${PHONE}`} icon="☎" variant="secondary" onPress={() => Linking.openURL(`tel:+${WHATSAPP}`)} />
         </View>
+      </View>
+
+      <View style={styles.homeContactCard}>
+        <View style={{flex:1}}>
+          <Text style={styles.homeContactTitle}>Contact the clinic</Text>
+          <Text style={styles.homeContactSub}>{clinic?.phone || 'Clinic contact details are loading.'}</Text>
+        </View>
+        <Pressable disabled={!clinic?.phone_e164} onPress={() => Linking.openURL('tel:' + clinic.phone_e164)} style={[styles.homeContactButton,!clinic?.phone_e164&&{opacity:0.45}]}>
+          <Text style={styles.homeContactButtonText}>Call</Text>
+        </Pressable>
+        <Pressable disabled={!clinic?.whatsapp_phone} onPress={() => Linking.openURL('https://wa.me/' + clinic.whatsapp_phone)} style={[styles.homeContactButton,styles.homeWhatsAppButton,!clinic?.whatsapp_phone&&{opacity:0.45}]}>
+          <Text style={styles.homeContactButtonText}>WhatsApp</Text>
+        </Pressable>
       </View>
 
       <View style={styles.featureRow}>
@@ -325,7 +334,7 @@ function ServicesScreen({ onBook }) {
   );
 }
 
-function AppointmentScreen({ initialReason }) {
+function AppointmentScreen({ initialReason, clinic }) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [date, setDate] = useState('');
@@ -364,14 +373,13 @@ function AppointmentScreen({ initialReason }) {
         starts_at: startsAt,
         treatment_type: reason.trim() || 'Dental consultation',
         note: note.trim() || null,
-        intelligence_request: false,
       });
       Alert.alert('Appointment Requested', 'Your appointment request has been sent to the clinic.');
       setName(''); setPhone(''); setDate(''); setTime(''); setReason(''); setNote('');
     } catch {
       Alert.alert(
         'Connection problem',
-        `The clinic appointment service could not be reached right now. Please call ${PHONE} if you need immediate assistance.`
+        'The clinic appointment service could not be reached right now.' + (clinic?.phone ? ' Please call ' + clinic.phone + ' for assistance.' : ' Please try again later.')
       );
     } finally {
       setSending(false);
@@ -448,7 +456,7 @@ function AppointmentScreen({ initialReason }) {
         <Pressable disabled={sending} onPress={submit} style={({ pressed }) => [styles.submitButton, pressed && { opacity: 0.8 }, sending && { opacity: 0.55 }]}>
           <Text style={styles.submitText}>{sending ? 'Sending…' : 'Submit Appointment Request'}</Text>
         </Pressable>
-        <Text style={styles.formNote}>Or call {PHONE} for immediate assistance.</Text>
+        <Text style={styles.formNote}>{clinic?.phone ? 'Or call ' + clinic.phone + ' for immediate assistance.' : 'For assistance, use the Contact tab.'}</Text>
       </View>
       <View style={styles.bottomSpacer} />
     </ScrollView>
@@ -492,20 +500,19 @@ function GalleryScreen() {
   );
 }
 
-function ContactScreen() {
+function ContactScreen({ clinic }) {
   const openMaps = () => Linking.openURL('https://www.google.com/maps/search/?api=1&query=Taloja%20Navi%20Mumbai');
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
       <Text style={styles.pageTitle}>Contact Clinic</Text>
       <Text style={styles.pageSub}>We are here to help you with your dental care.</Text>
       <View style={styles.contactCard}>
-        <Text style={styles.contactLabel}>Dr. Pranali Dental</Text>
+        <Text style={styles.contactLabel}>{clinic?.name || 'Dr. Pranali Dental Clinic'}</Text>
         <Text style={styles.contactDegree}>BDS – Dental Surgeon</Text>
         <View style={styles.contactLine}><Text style={styles.contactIcon}>⌖</Text><Text style={styles.contactText}>Taloja, Navi Mumbai</Text></View>
         <View style={styles.contactLine}><Text style={styles.contactIcon}>◷</Text><Text style={styles.contactText}>Monday – Sunday{`\n`}10:00 AM – 9:00 PM{`\n`}By Appointment Only</Text></View>
-        <View style={styles.contactLine}><Text style={styles.contactIcon}>☎</Text><Text style={styles.contactText}>{PHONE}</Text></View>
-        <ActionButton label="Call Clinic" icon="☎" onPress={() => Linking.openURL(`tel:+${WHATSAPP}`)} />
-        <ActionButton label="WhatsApp Clinic" icon="◉" variant="secondary" onPress={() => Linking.openURL(`https://wa.me/${WHATSAPP}`)} />
+        <ActionButton label="Call Clinic" icon="?~Z" onPress={() => clinic?.phone_e164 && Linking.openURL('tel:' + clinic.phone_e164)} variant="primary" />
+        <ActionButton label="WhatsApp Clinic" icon="?-%" variant="secondary" onPress={() => clinic?.whatsapp_phone && Linking.openURL('https://wa.me/' + clinic.whatsapp_phone)} />
         <Pressable onPress={openMaps} style={styles.mapButton}><Text style={styles.mapButtonText}>Open Location in Google Maps</Text></Pressable>
       </View>
       <View style={styles.infoCard}><Text style={styles.infoTitle}>Emergency Dental Care</Text><Text style={styles.aboutText}>For urgent dental pain, swelling, bleeding or a dental injury, call the clinic directly so we can guide you on the next step.</Text></View>
@@ -518,14 +525,16 @@ function AppContent() {
   const [started, setStarted] = useState(false);
   const [tab, setTab] = useState('Home');
   const [selectedServiceReason, setSelectedServiceReason] = useState('');
+  const [clinic, setClinic] = useState(null);
+  useEffect(() => { getPublicClinic().then(data => setClinic(data?.clinic || null)).catch(() => setClinic(null)); }, []);
   // Hooks must run in the same order on every render, including the Welcome screen.
   const screen = useMemo(() => {
     if (tab === 'Services') return <ServicesScreen onBook={(name) => { setSelectedServiceReason(name); setTab('Appointment'); }} />;
-    if (tab === 'Appointment') return <AppointmentScreen initialReason={selectedServiceReason} />;
+    if (tab === 'Appointment') return <AppointmentScreen initialReason={selectedServiceReason} clinic={clinic} />;
     if (tab === 'Gallery') return <GalleryScreen />;
-    if (tab === 'Contact') return <ContactScreen />;
-    return <HomeScreen go={setTab} />;
-  }, [tab, selectedServiceReason]);
+    if (tab === 'Contact') return <ContactScreen clinic={clinic} />;
+    return <HomeScreen go={setTab} clinic={clinic} />;
+  }, [tab, selectedServiceReason, clinic]);
 
   if (!started) return <WelcomeScreen onStart={(nextTab) => { setStarted(true); if (nextTab) setTab(nextTab); }} />;
 
@@ -704,40 +713,12 @@ const styles = StyleSheet.create({
   pArchSwitch:{flexDirection:'row',borderWidth:1,borderColor:'#E4D3A0',borderRadius:10,overflow:'hidden',marginTop:13},pArchOption:{flex:1,paddingVertical:8,alignItems:'center'},pArchActive:{backgroundColor:'#F4C24A'},pArchText:{fontSize:12,fontWeight:'800',color:'#D5A63A'},pArchTextActive:{color:COLORS.white},
   pMouth:{marginTop:14,paddingVertical:7,backgroundColor:'#FCFCFD',borderRadius:16,borderWidth:1,borderColor:'#EEF1F4',alignItems:'center'},pSide:{fontSize:7,fontWeight:'900',letterSpacing:1.2,color:'#B7C0C9',marginVertical:3},pTeethRow:{flexDirection:'row',alignItems:'center',justifyContent:'center'},pToothItem:{width:18,alignItems:'center',marginHorizontal:1},pToothShape:{width:17,height:28,borderWidth:1.2,borderColor:'#C8D0D8',backgroundColor:'#F4F6F8',borderRadius:10,alignItems:'center'},pToothSelected:{backgroundColor:'#EAF4FF',borderColor:COLORS.blue,borderWidth:1.7},pToothCusp:{width:5,height:5,borderRadius:3,backgroundColor:'#B9C3CC',marginTop:5},pToothRoot:{position:'absolute',width:5,height:7,top:21,borderLeftWidth:1,borderRightWidth:1,borderBottomWidth:1,borderColor:'#B9C3CC',borderBottomLeftRadius:4,borderBottomRightRadius:4},pToothNumber:{fontSize:7,color:'#A6AFB8',marginTop:3},pMouthCenter:{height:24,alignItems:'center',justifyContent:'center'},pMouthLine:{width:115,height:1,backgroundColor:'#EEF1F4'},pMouthHint:{fontSize:7,color:'#C2C9D0',letterSpacing:1,marginTop:2},
   pSelected:{flexDirection:'row',alignItems:'center',backgroundColor:'#F7FAFD',borderRadius:12,padding:9,marginTop:10,borderWidth:1,borderColor:'#E4EDF5'},pSelectedIcon:{width:36,height:36,borderRadius:10,backgroundColor:'#EAF4FF',alignItems:'center',justifyContent:'center'},pSelectedIconText:{fontSize:11,fontWeight:'900',color:COLORS.blue},pSelectedTitle:{fontSize:13,fontWeight:'900',color:COLORS.navy},pSelectedSub:{fontSize:10,color:COLORS.muted,marginTop:2},
-  aiHero: { backgroundColor: '#0B2E4F', borderRadius: 22, padding: 20, marginBottom: 14 },
-  aiEyebrow: { color: '#8FCBFF', fontSize: 10, fontWeight: '900', letterSpacing: 1.1 },
-  aiTitle: { color: '#FFFFFF', fontSize: 30, fontWeight: '900', marginTop: 5 },
-  aiSub: { color: '#D9EAF7', fontSize: 14, lineHeight: 21, marginTop: 8 },
-  scanoPill: { alignSelf: 'flex-start', backgroundColor: '#16476D', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 7, marginTop: 14 },
-  scanoPillText: { color: '#FFFFFF', fontSize: 9, fontWeight: '900' },
-  aiCard: { backgroundColor: COLORS.white, borderRadius: 17, padding: 15, flexDirection: 'row', alignItems: 'center', marginBottom: 10, borderWidth: 1, borderColor: '#E2EBF3' },
-  aiIcon: { width: 45, height: 45, borderRadius: 13, backgroundColor: '#EAF4FF', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  aiIconText: { color: COLORS.blue, fontSize: 23, fontWeight: '900' },
-  aiCardTitle: { color: COLORS.navy, fontSize: 15, fontWeight: '900' },
-  aiCardSub: { color: COLORS.muted, fontSize: 12.5, lineHeight: 18, marginTop: 3 },
-  safetyCard: { backgroundColor: '#FFF9E9', borderRadius: 17, padding: 16, marginTop: 4, borderWidth: 1, borderColor: '#F1E2AE' },
-  safetyTitle: { color: COLORS.navy, fontSize: 16, fontWeight: '900' },
-  safetyText: { color: COLORS.text, fontSize: 12.5, lineHeight: 19, marginTop: 6 },
-  commandLabel: { color: COLORS.muted, fontSize: 10, fontWeight: '900', letterSpacing: 1.1, marginBottom: 7 },
-  commandChip: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 18, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: COLORS.white },
-  commandChipActive: { backgroundColor: COLORS.blue, borderColor: COLORS.blue },
-  commandChipText: { color: COLORS.navy, fontSize: 11, fontWeight: '800' },
-  commandChipTextActive: { color: COLORS.white },
-  aiCardLarge: { backgroundColor: COLORS.white, borderRadius: 19, padding: 17, marginBottom: 12, borderWidth: 1, borderColor: '#DCE8F4' },
-  pipelineRow: { flexDirection: 'row', alignItems: 'center', marginTop: 16, flexWrap: 'wrap', gap: 5 },
-  pipelineItem: { color: COLORS.blue, backgroundColor: '#EAF4FF', fontSize: 9, fontWeight: '900', paddingHorizontal: 7, paddingVertical: 5, borderRadius: 7 },
-  pipelineArrow: { color: COLORS.muted, fontSize: 12 },
-  statusRow: { flexDirection: 'row', alignItems: 'center', marginTop: 13 },
-  statusDot: { color: COLORS.green, fontSize: 10, marginRight: 6 },
-  statusText: { color: COLORS.muted, fontSize: 11.5, fontWeight: '700' },
-  scanFlow: { backgroundColor: '#EEF7FF', borderRadius: 17, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#D6E9F8' },
-  scanFlowTitle: { color: COLORS.navy, fontSize: 16, fontWeight: '900' },
-  scanFlowText: { color: COLORS.text, fontSize: 12.5, lineHeight: 19, marginTop: 6 },
-  homeAICard:{backgroundColor:COLORS.white,borderRadius:18,padding:14,flexDirection:'row',alignItems:'center',borderWidth:1,borderColor:'#D7E8F6',marginBottom:14},
-  homeAIIcon:{width:44,height:44,borderRadius:14,backgroundColor:'#EAF4FF',alignItems:'center',justifyContent:'center',marginRight:12},
-  homeAIIconText:{fontSize:23,color:COLORS.blue,fontWeight:'900'},homeAITitle:{fontSize:14,fontWeight:'900',color:COLORS.navy},homeAISub:{fontSize:11.5,color:COLORS.muted,lineHeight:17,marginTop:3},homeAIArrow:{fontSize:28,color:COLORS.blue,marginLeft:8},
-  aiConsentCard:{backgroundColor:COLORS.white,borderRadius:22,padding:20,borderWidth:1,borderColor:'#DCE8F4',marginTop:8},aiConsentTitle:{fontSize:27,fontWeight:'900',color:COLORS.navy,marginTop:5},aiConsentText:{fontSize:13.5,color:COLORS.text,lineHeight:20,marginTop:8},aiSafetyList:{backgroundColor:'#F7FAFD',borderRadius:14,padding:14,marginTop:14},aiSafetyItem:{fontSize:12.5,color:COLORS.text,lineHeight:22},aiError:{color:'#C53E3E',fontSize:12,marginTop:10},
-  aiLoading:{paddingTop:60,alignItems:'center'},patientNotDiagnosis:{alignSelf:'flex-start',backgroundColor:'#16476D',borderRadius:12,paddingHorizontal:10,paddingVertical:7,marginTop:13},patientNotDiagnosisText:{color:'#FFF',fontSize:10,fontWeight:'900'},emergencyBanner:{backgroundColor:'#FFF0F0',borderWidth:1,borderColor:'#E6A0A0',borderRadius:18,padding:15,marginBottom:12},emergencyTitle:{color:'#A52828',fontSize:11,fontWeight:'900',letterSpacing:1},emergencyText:{color:'#6D2525',fontSize:13,lineHeight:19,marginTop:5},quickReplyRow:{gap:8,paddingBottom:12},aiQuickChip:{borderWidth:1,borderColor:'#D5E3EF',borderRadius:18,paddingHorizontal:12,paddingVertical:9,backgroundColor:COLORS.white},aiQuickChipText:{color:COLORS.navy,fontSize:11,fontWeight:'800'},chatCard:{backgroundColor:COLORS.white,borderRadius:19,padding:14,borderWidth:1,borderColor:'#DCE8F4'},chatEmpty:{color:COLORS.muted,fontSize:12.5,lineHeight:19,padding:8},chatBubble:{padding:11,borderRadius:15,marginBottom:8,maxWidth:'92%'},chatUser:{backgroundColor:'#EAF4FF',alignSelf:'flex-end'},chatAssistant:{backgroundColor:'#F5F7F9',alignSelf:'flex-start'},chatText:{color:COLORS.text,fontSize:13,lineHeight:19},chatComposer:{flexDirection:'row',alignItems:'flex-end',marginTop:6},chatSend:{backgroundColor:COLORS.blue,borderRadius:12,paddingHorizontal:14,paddingVertical:12},chatSendText:{color:'#FFF',fontWeight:'900'},aiUtilityCard:{backgroundColor:COLORS.white,borderRadius:18,padding:15,borderWidth:1,borderColor:'#E2EBF3',marginTop:12},aiUtilityLink:{color:COLORS.blue,fontSize:13,fontWeight:'900',paddingVertical:10},aiDeleteLink:{color:'#B33434',fontSize:12,fontWeight:'800',paddingVertical:10},linkCard:{backgroundColor:COLORS.white,borderRadius:18,padding:15,borderWidth:1,borderColor:'#E2EBF3',marginBottom:12},
+  homeContactCard:{backgroundColor:COLORS.white,borderRadius:18,padding:14,flexDirection:'row',alignItems:'center',gap:7,borderWidth:1,borderColor:'#D7E8F6',marginBottom:14},
+  homeContactTitle:{fontSize:14,fontWeight:'900',color:COLORS.navy},
+  homeContactSub:{fontSize:11.5,color:COLORS.muted,marginTop:3},
+  homeContactButton:{paddingHorizontal:11,paddingVertical:10,borderRadius:11,backgroundColor:COLORS.blue},
+  homeWhatsAppButton:{backgroundColor:'#25D366'},
+  homeContactButtonText:{fontSize:10.5,fontWeight:'900',color:COLORS.white},
   bottomSpacer: { height: 8 },
 });
 

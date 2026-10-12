@@ -1,4 +1,4 @@
-﻿
+
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator, Alert, Animated, Linking, Pressable, RefreshControl,
@@ -11,7 +11,7 @@ import { Image as ExpoImage } from 'expo-image';
 import { BRAND } from '../src/brandConstants';
 import { DENTAL_SERVICES } from '../shared/dentalServices';
 import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry } from './src/api/doctorApi';
-import { getStoredDoctorSession, signInWithPassword, signOutGoogle } from './src/auth/googleAuth';
+import { getStoredDoctorSession, getStoredDoctorUser, signInWithPassword, setupFirstDoctor, changeDoctorPassword, signOutDoctor } from './src/auth/doctorAuth';
 import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
 
 const clinicLogo = require('./assets/approved-clinic-logo-white.png');
@@ -392,10 +392,13 @@ function ClinicalResearchCard({ token, patient }) {
 function Stat({n,t}){return <View style={styles.stat}><Text style={styles.statN}>{n}</Text><Text style={styles.statT}>{t}</Text></View>}
 function Empty({text}){return <View style={styles.empty}><Text style={styles.emptyText}>{text}</Text></View>}
 
-function GoogleLoginScreen({ onSignedIn }) {
+function DoctorLoginScreen({ onSignedIn }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [serverWaking, setServerWaking] = useState(false);
+  const [setupMode, setSetupMode] = useState(false);
+  const [displayName, setDisplayName] = useState('');
+  const [setupToken, setSetupToken] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const entrance = useRef(new Animated.Value(0)).current;
@@ -403,13 +406,14 @@ function GoogleLoginScreen({ onSignedIn }) {
 
   const login = async () => {
     if (!email.trim() || !password) { setError('Enter your registered clinic email and password.'); return; }
+    if (setupMode && (password.length < 10 || !setupToken.trim() || !displayName.trim())) { setError('Enter your name, setup token, and a password of at least 10 characters.'); return; }
     setBusy(true);
     setError('');
     setServerWaking(true);
     fetch('https://dr-pranali-dental-api.onrender.com/health').catch(() => null);
     try {
-      const session = await signInWithPassword(email, password);
-      onSignedIn(session.access_token);
+      const session = setupMode ? await setupFirstDoctor({ email, password, displayName, setupToken }) : await signInWithPassword(email, password);
+      onSignedIn(session, password);
     } catch (e) {
       const code = e?.code || e?.errorCode || e?.name;
       setError((code ? '[' + code + '] ' : '') + (e?.message || 'Doctor login failed.'));
@@ -434,19 +438,25 @@ function GoogleLoginScreen({ onSignedIn }) {
           </View>
           <Text style={styles.kicker}>CARE  •  PRECISION  •  PROGRESS</Text>
           <Text style={styles.loginTitle}>Dr Pranali</Text>
-          <Text style={styles.loginSub}>D E N T A L   C L I N I C</Text>
+          <Text style={styles.doctorLoginIntro}>D E N T A L   C L I N I C</Text>
           <View style={styles.card}>
-            <Text style={styles.label}>Doctor Login</Text>
-            <Text style={styles.doctorLoginIntro}>Access your schedule, patients and clinical records securely.</Text>
+            <Text style={styles.label}>{setupMode ? "First-time clinic setup" : "Doctor Login"}</Text>
+            <Text style={styles.doctorLoginIntro}>{setupMode ? "Create the first clinic administrator using the one-time server setup token." : "Sign in with your clinic-issued email and password."}</Text>
+            {setupMode && <><Text style={styles.label}>Administrator name</Text><TextInput value={displayName} onChangeText={setDisplayName} placeholder="Full name" placeholderTextColor="#8A9AAF" style={styles.input} editable={!busy}/></>}
             <Text style={styles.label}>Clinic email</Text>
             <TextInput value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" textContentType="username" accessibilityLabel="Clinic email" placeholder="doctor@clinic.com" placeholderTextColor="#8A9AAF" style={styles.input} editable={!busy} returnKeyType="next" />
-            <Text style={[styles.label,{marginTop:14}]}>Password</Text>
+            <Text style={[styles.label,{marginTop:14}]}>Password{setupMode ? " (minimum 10 characters)" : ""}</Text>
             <TextInput value={password} onChangeText={setPassword} secureTextEntry textContentType="password" accessibilityLabel="Password" placeholder="Enter your password" placeholderTextColor="#8A9AAF" style={styles.input} editable={!busy} onSubmitEditing={login} returnKeyType="go" />
+            {setupMode && <><Text style={[styles.label,{marginTop:14}]}>One-time setup token</Text><TextInput value={setupToken} onChangeText={setSetupToken} placeholder="Provided securely by the clinic owner" placeholderTextColor="#8A9AAF" style={styles.input} autoCapitalize="none" secureTextEntry editable={!busy}/></>}
             <Pressable disabled={busy} onPress={login} style={[styles.passwordLoginButton, busy && {opacity:0.6}]}>
-              {busy ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.passwordLoginText}>Secure doctor login</Text>}
+              {busy ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.passwordLoginText}>{setupMode ? "Create first administrator" : "Secure doctor login"}</Text>}
             </Pressable>
             {serverWaking && <Text style={styles.serverWake}>Connecting securely to the clinic service…</Text>}
             {!!error && <View accessibilityRole="alert" style={styles.loginError}><Text style={styles.loginErrorTitle}>Sign-in error</Text><Text style={styles.loginErrorText}>{error}</Text></View>}
+            <Pressable disabled={busy} onPress={() => { setSetupMode(v => !v); setError(''); }} style={{paddingVertical:14,alignItems:'center'}}>
+              <Text style={{color:C.blue,fontWeight:'800'}}>{setupMode ? "Back to sign in" : "First-time clinic setup"}</Text>
+            </Pressable>
+            <Text style={{fontSize:11,color:C.muted,lineHeight:17,marginTop:5}}>Doctor access uses clinic email and password only. Google sign-in is not available.</Text>
             <View style={styles.loginSecureRow}><Text style={styles.loginSecureIcon}>✓</Text><Text style={styles.loginSecureText}>Authorised clinic account only</Text></View>
           </View>
           <Text style={styles.doctorLoginFooter}>Protected access for clinical information</Text>
@@ -456,21 +466,20 @@ function GoogleLoginScreen({ onSignedIn }) {
   );
 }
 
+function ForcedPasswordChangeScreen({ token, initialPassword, onComplete }) {
+  const [currentPassword,setCurrentPassword]=useState(initialPassword||'');const [newPassword,setNewPassword]=useState('');const [confirmPassword,setConfirmPassword]=useState('');const [busy,setBusy]=useState(false);const [error,setError]=useState('');
+  const submit=async()=>{if(newPassword.length<10){setError('Use at least 10 characters for your new password.');return;}if(newPassword!==confirmPassword){setError('The new passwords do not match.');return;}setBusy(true);setError('');try{await changeDoctorPassword(token,currentPassword,newPassword);await signOutDoctor();onComplete();}catch(e){setError(e?.message||'Password change failed.');}finally{setBusy(false);}};
+  return <SafeAreaView style={styles.loginSafe}><ScrollView contentContainerStyle={styles.loginWrap} keyboardShouldPersistTaps="handled"><SafeImage source={clinicLogo} style={styles.loginLogo} resizeMode="contain"/><Text style={styles.kicker}>PASSWORD UPDATE REQUIRED</Text><Text style={styles.loginTitle}>Set a new password</Text><Text style={styles.doctorLoginIntro}>Change the temporary password before opening clinic records.</Text>{!initialPassword&&<><Text style={styles.label}>Current temporary password</Text><TextInput value={currentPassword} onChangeText={setCurrentPassword} secureTextEntry style={styles.input} autoCapitalize="none"/></>}<Text style={styles.label}>New password (minimum 10 characters)</Text><TextInput value={newPassword} onChangeText={setNewPassword} secureTextEntry style={styles.input} autoCapitalize="none"/><Text style={styles.label}>Confirm new password</Text><TextInput value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry style={styles.input} autoCapitalize="none"/>{!!error&&<Text style={styles.loginError}>{error}</Text>}<Pressable disabled={busy} onPress={submit} style={styles.passwordLoginButton}>{busy?<ActivityIndicator color={C.white}/>:<Text style={styles.passwordLoginText}>Change password</Text>}</Pressable><Text style={{fontSize:11,color:C.muted,lineHeight:17,marginTop:10}}>Password change revokes all existing sessions. Sign in again with the new password.</Text></ScrollView></SafeAreaView>;
+}
+
 function AppContent(){
-  const [token,setToken]=useState(null);
-  const [checking,setChecking]=useState(true);
-
-  useEffect(() => {
-    getStoredDoctorSession().then(value => setToken(value || null)).finally(() => setChecking(false));
-  }, []);
-
-  const logout = useCallback(async () => {
-    await signOutGoogle();
-    setToken(null);
-  }, []);
-
-  if (checking) return <SafeAreaView style={styles.safe}><ActivityIndicator size="large" color={C.blue} style={{marginTop:80}}/></SafeAreaView>;
-  if (!token) return <LanguageProvider><GoogleLoginScreen onSignedIn={setToken}/></LanguageProvider>;
+  const [token,setToken]=useState(null);const [checking,setChecking]=useState(true);const [doctorUser,setDoctorUser]=useState(null);const [initialPassword,setInitialPassword]=useState('');
+  useEffect(()=>{Promise.all([getStoredDoctorSession(),getStoredDoctorUser()]).then(([value,user])=>{setToken(value||null);setDoctorUser(user||null);}).finally(()=>setChecking(false));},[]);
+  const signedIn=useCallback((session,password)=>{setToken(session.access_token);setDoctorUser(session.user||null);setInitialPassword(password||'');},[]);
+  const logout=useCallback(async()=>{await signOutDoctor();setToken(null);setDoctorUser(null);setInitialPassword('');},[]);
+  if(checking)return <SafeAreaView style={styles.safe}><ActivityIndicator size="large" color={C.blue} style={{marginTop:80}}/></SafeAreaView>;
+  if(!token)return <LanguageProvider><DoctorLoginScreen onSignedIn={signedIn}/></LanguageProvider>;
+  if(doctorUser?.must_change_password||doctorUser?.mustChangePassword)return <LanguageProvider><ForcedPasswordChangeScreen token={token} initialPassword={initialPassword} onComplete={()=>{setToken(null);setDoctorUser(null);setInitialPassword('');}}/></LanguageProvider>;
   return <LanguageProvider><Dashboard token={token} logout={logout}/></LanguageProvider>;
 }
 
