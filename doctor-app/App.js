@@ -1,4 +1,4 @@
-﻿
+
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator, Alert, Animated, Linking, Pressable, RefreshControl,
@@ -10,7 +10,7 @@ import { Image as ExpoImage } from 'expo-image';
 import { BRAND } from '../src/brandConstants';
 import { DENTAL_SERVICES } from '../shared/dentalServices';
 import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry } from './src/api/doctorApi';
-import { getStoredDoctorSession, signInWithPassword, signOutGoogle } from './src/auth/googleAuth';
+import { getStoredDoctorSession, signInWithPassword, signOutDoctor } from './src/auth/doctorAuth';
 import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
 
 const clinicLogo = require('./assets/approved-clinic-logo-white.png');
@@ -388,7 +388,7 @@ function ClinicalResearchCard({ token, patient }) {
 function Stat({n,t}){return <View style={styles.stat}><Text style={styles.statN}>{n}</Text><Text style={styles.statT}>{t}</Text></View>}
 function Empty({text}){return <View style={styles.empty}><Text style={styles.emptyText}>{text}</Text></View>}
 
-function GoogleLoginScreen({ onSignedIn }) {
+function DoctorLoginScreen({ onSignedIn }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [serverWaking, setServerWaking] = useState(false);
@@ -460,12 +460,12 @@ export default function App(){
   }, []);
 
   const logout = async () => {
-    await signOutGoogle();
+    await signOutDoctor();
     setToken(null);
   };
 
   if (checking) return <SafeAreaView style={styles.safe}><ActivityIndicator size="large" color={C.blue} style={{marginTop:80}}/></SafeAreaView>;
-  if (!token) return <GoogleLoginScreen onSignedIn={setToken}/>;
+  if (!token) return <DoctorLoginScreen onSignedIn={setToken}/>;
   return <Dashboard token={token} logout={logout}/>;
 }
 

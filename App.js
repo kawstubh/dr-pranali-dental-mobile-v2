@@ -16,12 +16,10 @@ import { StatusBar } from 'expo-status-bar';
 import { Image as ExpoImage } from 'expo-image';
 import { BRAND } from './src/brandConstants';
 import { DENTAL_SERVICES, DENTAL_SERVICE_CATEGORIES } from './shared/dentalServices';
-import { signInWithGoogle } from './src/auth/googleAuth';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { requestPublicAppointment } from './src/api/dentalApi';
 
 // Production HTTPS API. The patient app does not require the phone and computer to share a Wi-Fi network.
-const API_URL = 'https://dr-pranali-dental-api.onrender.com';
 const PHONE = '9137007432';
 const WHATSAPP = '919137007432';
 
@@ -74,25 +72,6 @@ function SafeImage({ source, style, resizeMode = 'cover', placeholder = '🦷' }
 }
 
 function WelcomeScreen({ onStart }) {
-  const [googleBusy, setGoogleBusy] = useState(false);
-  const [googleMessage, setGoogleMessage] = useState('');
-
-  const googleLogin = async () => {
-    setGoogleBusy(true);
-    setGoogleMessage('Connecting securely to your Google account…');
-    fetch(`${API_URL}/health`).catch(() => null);
-    try {
-      await signInWithGoogle();
-      setGoogleMessage('Signed in successfully. Opening your dental care home…');
-      onStart();
-    } catch (error) {
-      const code = error?.code || error?.errorCode || error?.name;
-      setGoogleMessage((code ? '[' + code + '] ' : '') + (error?.message || 'Google sign-in failed.'));
-    } finally {
-      setGoogleBusy(false);
-    }
-  };
-
   return (
     <SafeAreaView style={styles.welcomeSafe}>
       <StatusBar style="dark" />
@@ -110,16 +89,11 @@ function WelcomeScreen({ onStart }) {
         <View style={styles.patientLoginCard}>
           <Text style={styles.patientLoginHeading}>Welcome</Text>
           <Text style={styles.patientLoginCopy}>Your family's dental care, all in one place.</Text>
-          <Pressable disabled={googleBusy} onPress={googleLogin} style={[styles.googleButton, googleBusy && { opacity: 0.6 }]}>
-            {googleBusy ? <ActivityIndicator color={COLORS.blue} /> : <><Text style={styles.googleMark}>G</Text><Text style={styles.googleButtonText}>Continue with Google</Text></>}
-          </Pressable>
-          {!!googleMessage && <Text accessibilityRole="alert" style={styles.googleMessage}>{googleMessage}</Text>}
-          <View style={styles.loginDivider}><View style={styles.loginDividerLine}/><Text style={styles.loginDividerText}>OR</Text><View style={styles.loginDividerLine}/></View>
           <Pressable onPress={() => onStart()} style={styles.getStarted}>
-            <Text style={styles.getStartedText}>Explore as a guest</Text>
-            <View style={styles.arrowCircle}><Text style={styles.arrowText}>→</Text></View>
+            <Text style={styles.getStartedText}>Explore the clinic</Text>
+            <View style={styles.arrowCircle}><Text style={styles.arrowText}>?</Text></View>
           </Pressable>
-          <Text style={styles.guestHint}>You can browse services and request an appointment without signing in.</Text>
+          <Text style={styles.guestHint}>Browse all 20 dental services and request an appointment without creating an account.</Text>
         </View>
 
         <View style={styles.patientTrustRow}>
@@ -489,7 +463,7 @@ function GalleryScreen() {
 }
 
 function ContactScreen() {
-  const openMaps = () => Linking.openURL('https://www.google.com/maps/search/?api=1&query=Taloja%20Navi%20Mumbai');
+  const openMaps = () => Linking.openURL(Platform.OS === 'ios' ? 'http://maps.apple.com/?q=Taloja%20Navi%20Mumbai' : 'geo:0,0?q=Taloja%20Navi%20Mumbai');
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
       <Text style={styles.pageTitle}>Contact Clinic</Text>
@@ -502,7 +476,7 @@ function ContactScreen() {
         <View style={styles.contactLine}><Text style={styles.contactIcon}>☎</Text><Text style={styles.contactText}>{PHONE}</Text></View>
         <ActionButton label="Call Clinic" icon="☎" onPress={() => Linking.openURL(`tel:+${WHATSAPP}`)} />
         <ActionButton label="WhatsApp Clinic" icon="◉" variant="secondary" onPress={() => Linking.openURL(`https://wa.me/${WHATSAPP}`)} />
-        <Pressable onPress={openMaps} style={styles.mapButton}><Text style={styles.mapButtonText}>Open Location in Google Maps</Text></Pressable>
+        <Pressable onPress={openMaps} style={styles.mapButton}><Text style={styles.mapButtonText}>Open clinic location</Text></Pressable>
       </View>
       <View style={styles.infoCard}><Text style={styles.infoTitle}>Emergency Dental Care</Text><Text style={styles.aboutText}>For urgent dental pain, swelling, bleeding or a dental injury, call the clinic directly so we can guide you on the next step.</Text></View>
       <View style={styles.bottomSpacer} />
@@ -561,7 +535,6 @@ const styles = StyleSheet.create({
   patientLoginCard:{width:'100%',backgroundColor:'#FFFFFF',borderRadius:26,borderWidth:1,borderColor:'#DDEEF7',padding:20,marginTop:22,shadowColor:'#0C3B82',shadowOpacity:0.07,shadowRadius:16,elevation:3},
   patientLoginHeading:{fontSize:23,fontWeight:'900',color:'#0C3B82',textAlign:'center'},
   patientLoginCopy:{fontSize:12.5,color:'#657789',textAlign:'center',lineHeight:18,marginTop:5,marginBottom:16},
-  googleMark:{fontSize:22,fontWeight:'900',color:'#4285F4',marginRight:10},
   loginDivider:{flexDirection:'row',alignItems:'center',gap:10,marginVertical:12},
   loginDividerLine:{height:1,backgroundColor:'#E2EDF5',flex:1},
   loginDividerText:{fontSize:10,fontWeight:'800',color:'#9AA9B7'},
@@ -588,9 +561,6 @@ const styles = StyleSheet.create({
   hero3dLogo:{width:270,height:270,zIndex:2},
   logoPedestal:{position:'absolute',bottom:18,width:220,height:22,borderRadius:14,backgroundColor:'#D8EBFB',borderWidth:1,borderColor:'#BBDCF6',shadowOpacity:0.12,shadowRadius:12,elevation:5},
   logoPedestalGlow:{position:'absolute',left:18,right:18,top:5,height:5,borderRadius:4,backgroundColor:'#4EA5F5',opacity:0.75},
-  googleButton:{width:'100%',minHeight:52,borderRadius:15,backgroundColor:'#FFFFFF',borderWidth:1,borderColor:'#D6E2EE',alignItems:'center',justifyContent:'center',flexDirection:'row',marginBottom:8},
-  googleButtonText:{color:'#18334D',fontSize:14,fontWeight:'900'},
-  googleMessage:{fontSize:11,color:'#6B7D8F',textAlign:'center',marginBottom:8,lineHeight:16},
   getStarted:{width:'100%',height:54,borderRadius:15,backgroundColor:'#0A84E8',flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingLeft:18,paddingRight:6,shadowOpacity:0.12,shadowRadius:10,elevation:3},
   getStartedText:{color:'#FFFFFF',fontSize:15,fontWeight:'900',marginLeft:0},
   arrowCircle:{width:42,height:42,borderRadius:13,backgroundColor:'#00C6C8',alignItems:'center',justifyContent:'center'},

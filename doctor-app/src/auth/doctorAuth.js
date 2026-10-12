@@ -15,7 +15,7 @@ export async function signInWithPassword(email, password) {
   if (!normalizedEmail || !password) throw new DoctorAuthError('Enter your registered clinic email and password.');
   let response;
   try {
-    response = await fetch(API_BASE + '/v1/dental/auth/login', {
+    response = await fetch(API_BASE + '/v1/dental/auth/password/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({ email: normalizedEmail, password }),
@@ -44,6 +44,16 @@ export async function signInWithPassword(email, password) {
 
 export async function getStoredDoctorSession() { return AsyncStorage.getItem('doctor_session'); }
 
-export async function signOutGoogle() {
-  await AsyncStorage.multiRemove(['doctor_session', 'doctor_user']);
+export async function signOutDoctor() {
+  const token = await AsyncStorage.getItem('doctor_session');
+  try {
+    if (token) {
+      await fetch(API_BASE + '/v1/dental/auth/logout', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
+      });
+    }
+  } finally {
+    await AsyncStorage.multiRemove(['doctor_session', 'doctor_user']);
+  }
 }

@@ -20,8 +20,8 @@ export async function request(path, token, options = {}) {
     if (!response.ok) {
       const detail = data?.detail;
       const message = typeof detail === 'string' ? detail : detail?.message;
-      const code = detail?.google_code || detail?.code || ('HTTP_' + response.status);
-      const status = detail?.google_status || detail?.status || response.status;
+      const code = detail?.code || ('HTTP_' + response.status);
+      const status = detail?.status || response.status;
       throw new Error((message || data?.message || 'API request failed') + ' (HTTP ' + status + ', code ' + code + ')');
     }
     return data;
