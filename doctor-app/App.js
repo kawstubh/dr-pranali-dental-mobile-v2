@@ -1,4 +1,4 @@
-﻿
+
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator, Alert, Animated, Linking, Pressable, RefreshControl,
@@ -223,6 +223,7 @@ function Periodontogram({ token, patientId, patientName='Patient' }) {
 }
 
 function IntelligenceCard({ token, patient, title, description, goal, requiresPatient=true }) {
+  const { language } = useTranslation();
   const [status,setStatus]=useState('idle');
   const [result,setResult]=useState(null);
   const [edited,setEdited]=useState('');
@@ -231,7 +232,7 @@ function IntelligenceCard({ token, patient, title, description, goal, requiresPa
     if (requiresPatient && !patient?.id) { setStatus('error'); setResult({error:'Select a patient before running this clinical intelligence.'}); return; }
     setStatus('loading'); setResult(null); setEditing(false);
     try {
-      const response=await runDentalIntelligence(token,{patient_id:patient?.id||null,goal,language:'en',locale:'IN-MH',context:{}});
+      const response=await runDentalIntelligence(token,{patient_id:patient?.id||null,goal,language,locale:'IN-MH',context:{}});
       setResult(response||{}); setEdited(typeof response?.answer==='string'?response.answer:JSON.stringify(response?.answer||'',null,2)); setStatus('result');
     } catch(e){ setResult({error:e?.message||'Clinical AI is unavailable. Please retry.'}); setStatus('error'); }
   };
@@ -254,11 +255,12 @@ function IntelligenceCard({ token, patient, title, description, goal, requiresPa
 }
 
 function DoctorAIActionCard({ token, patient, title, description, capability, run }) {
+  const { language } = useTranslation();
   const [state,setState]=useState('idle');
   const [result,setResult]=useState(null);
   const [editing,setEditing]=useState(false);
   const [draft,setDraft]=useState('');
-  const execute=async()=>{ if(!patient?.id)return; setState('loading'); try{const r=await run(token,patient.id);setResult(r);setDraft(typeof r?.result==='string'?r.result:JSON.stringify(r?.result||r,null,2));setState('result');}catch(e){setResult({error:e.message||'AI unavailable'});setState('error');} };
+  const execute=async()=>{ if(!patient?.id)return; setState('loading'); try{const r=await run(token,patient.id,language);setResult(r);setDraft(typeof r?.result==='string'?r.result:JSON.stringify(r?.result||r,null,2));setState('result');}catch(e){setResult({error:e.message||'AI unavailable'});setState('error');} };
   const approve=async(action)=>{ try{await approveDoctorAI(token,{patient_id:patient.id,capability,action,content:{result:draft}});Alert.alert(action==='accepted'?'Accepted':'Saved',action==='accepted'?'Doctor approval recorded. No clinical record was changed.':'Doctor action recorded.');if(action==='dismissed')setState('idle');}catch(e){Alert.alert('AI approval',e.message||'Could not record doctor action.');} };
   return <View style={styles.intelCardLarge}>
     <View style={styles.intelCardHead}><View style={{flex:1}}><Text style={styles.intelName}>{title}</Text><Text style={styles.intelSub}>{description}</Text></View><Text style={styles.aiBadge}>AI</Text></View>
@@ -270,14 +272,16 @@ function DoctorAIActionCard({ token, patient, title, description, capability, ru
 }
 
 function DoctorScanCard({token,patient}) {
+  const { language } = useTranslation();
   const [ref,setRef]=useState(''); const [result,setResult]=useState(null); const [loading,setLoading]=useState(false);
-  const run=async()=>{if(!patient?.id||!ref.trim())return;setLoading(true);try{setResult(await doctorScanAnalysis(token,{patient_id:patient.id,scan_reference:ref.trim(),scan_type:'oral_screening',metadata:{}}));}catch(e){setResult({error:e.message||'AI unavailable'});}finally{setLoading(false);}};
+  const run=async()=>{if(!patient?.id||!ref.trim())return;setLoading(true);try{setResult(await doctorScanAnalysis(token,{patient_id:patient.id,scan_reference:ref.trim(),scan_type:'oral_screening',metadata:{}},language));}catch(e){setResult({error:e.message||'AI unavailable'});}finally{setLoading(false);}};
   return <View style={styles.intelCardLarge}><Text style={styles.intelName}>Images • ScanO AI Analysis</Text><Text style={styles.intelSub}>Official ScanO adapter status is reported; AI does not diagnose from an unavailable adapter.</Text><TextInput value={ref} onChangeText={setRef} placeholder="Scan reference / approved image identifier" placeholderTextColor="#91A0AE" style={styles.intelQuestionInput}/><Pressable onPress={run} disabled={!patient?.id||!ref.trim()||loading} style={[styles.intelRunButton,(!patient?.id||!ref.trim())&&{opacity:0.45}]}><Text style={styles.intelRunText}>{loading?'Analyzing…':'Analyze scan'}</Text></Pressable>{result&&<Text style={styles.intelAnswer}>{result.error||JSON.stringify(result,null,2)}</Text>}</View>;
 }
 
 function DoctorDailyAISummary({token}) {
+  const { language } = useTranslation();
   const [result,setResult]=useState(null); const [loading,setLoading]=useState(false);
-  const run=async()=>{setLoading(true);try{setResult(await doctorDailySummary(token));}catch(e){setResult({error:e.message||'AI unavailable'});}finally{setLoading(false);}};
+  const run=async()=>{setLoading(true);try{setResult(await doctorDailySummary(token,language));}catch(e){setResult({error:e.message||'AI unavailable'});}finally{setLoading(false);}};
   return <View style={styles.todayCard}><View style={{flex:1}}><Text style={styles.todayKicker}>AI DAILY SUMMARY</Text><Text style={styles.todayTitle}>Clinic workload insight</Text>{loading?<ActivityIndicator color={C.blue}/>:<Text style={styles.todaySub}>{result?.error|| (result?.result ? (typeof result.result==='string'?result.result:JSON.stringify(result.result)) : 'Run a secure AI summary using appointment status only.')}</Text>}</View><Pressable onPress={run} style={styles.refresh}><Text>Run</Text></Pressable></View>;
 }
 
@@ -367,6 +371,7 @@ function Dashboard({ token, logout }) {
 }
 
 function ClinicalResearchCard({ token, patient }) {
+  const { language } = useTranslation();
   const [question,setQuestion]=useState('');
   const [status,setStatus]=useState('idle');
   const [result,setResult]=useState(null);
@@ -375,7 +380,7 @@ function ClinicalResearchCard({ token, patient }) {
   const run=async()=>{
     if(!question.trim())return;
     setStatus('loading');setResult(null);setEditing(false);
-    try{const response=await runDentalIntelligence(token,{patient_id:patient?.id||null,goal:question.trim(),language:'en',locale:'IN-MH',context:{}});setResult(response||{});setEdited(typeof response?.answer==='string'?response.answer:JSON.stringify(response?.answer||'',null,2));setStatus('result');}
+    try{const response=await runDentalIntelligence(token,{patient_id:patient?.id||null,goal:question.trim(),language,locale:'IN-MH',context:{}});setResult(response||{});setEdited(typeof response?.answer==='string'?response.answer:JSON.stringify(response?.answer||'',null,2));setStatus('result');}
     catch(e){setResult({error:e?.message||'Clinical AI is unavailable. Please retry.'});setStatus('error');}
   };
   const evidence=extractEvidence(result);

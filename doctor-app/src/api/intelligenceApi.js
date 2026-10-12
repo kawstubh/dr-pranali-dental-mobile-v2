@@ -46,26 +46,26 @@ async function callAI(token, path, payload = {}) {
 export async function runDentalIntelligence(token, payload) {
   return callAI(token, '/v1/dental/intelligence/run', payload);
 }
-export async function doctorPatientSummary(token, patient_id) {
-  return callAI(token, '/v1/dental/ai/doctor/patient-summary', { patient_id });
+export async function doctorPatientSummary(token, patient_id, language = 'en') {
+  return callAI(token, '/v1/dental/ai/doctor/patient-summary', { patient_id, language });
 }
-export async function doctorTreatmentPlan(token, patient_id) {
-  return callAI(token, '/v1/dental/ai/doctor/treatment-plan', { patient_id });
+export async function doctorTreatmentPlan(token, patient_id, language = 'en') {
+  return callAI(token, '/v1/dental/ai/doctor/treatment-plan', { patient_id, language });
 }
-export async function doctorChartInsights(token, patient_id) {
-  return callAI(token, '/v1/dental/ai/doctor/chart-insights', { patient_id });
+export async function doctorChartInsights(token, patient_id, language = 'en') {
+  return callAI(token, '/v1/dental/ai/doctor/chart-insights', { patient_id, language });
 }
-export async function doctorClinicalNote(token, patient_id, visit_context = '') {
-  return callAI(token, '/v1/dental/ai/doctor/clinical-note', { patient_id, visit_context });
+export async function doctorClinicalNote(token, patient_id, visit_context = '', language = 'en') {
+  return callAI(token, '/v1/dental/ai/doctor/clinical-note', { patient_id, visit_context, language });
 }
-export async function doctorFollowUp(token, patient_id) {
-  return callAI(token, '/v1/dental/ai/doctor/follow-up', { patient_id });
+export async function doctorFollowUp(token, patient_id, language = 'en') {
+  return callAI(token, '/v1/dental/ai/doctor/follow-up', { patient_id, language });
 }
-export async function doctorDailySummary(token) {
-  return callAI(token, '/v1/dental/ai/doctor/daily-summary', {});
+export async function doctorDailySummary(token, language = 'en') {
+  return callAI(token, '/v1/dental/ai/doctor/daily-summary', { language });
 }
-export async function doctorScanAnalysis(token, payload) {
-  return callAI(token, '/v1/dental/ai/doctor/scan-analysis', payload);
+export async function doctorScanAnalysis(token, payload, language = 'en') {
+  return callAI(token, '/v1/dental/ai/doctor/scan-analysis', { ...payload, language });
 }
 export async function approveDoctorAI(token, payload) {
   return callAI(token, '/v1/dental/ai/doctor/approve', payload);

@@ -1,6 +1,19 @@
 import { supabase } from '../auth/googleAuth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { checkEmergency } from '../safety/emergencyCheck';
 
 const API_URL = 'https://dr-pranali-dental-api.onrender.com';
+const SUPPORTED_LANGUAGES = ['en', 'hi', 'mr'];
+
+async function resolveLanguage(language) {
+  if (SUPPORTED_LANGUAGES.includes(language)) return language;
+  try {
+    const stored = await AsyncStorage.getItem('dental-app-language');
+    return SUPPORTED_LANGUAGES.includes(stored) ? stored : 'en';
+  } catch {
+    return 'en';
+  }
+}
 
 async function sessionToken() {
   const { data } = await supabase.auth.getSession();
@@ -32,18 +45,16 @@ async function request(path, options = {}) {
   return data;
 }
 
-export const getAIConsent = async () => {
-  const raw = await import('@react-native-async-storage/async-storage');
-  return (await raw.default.getItem('drpranali_ai_consent')) === 'true';
-};
+export async function getAIConsent() {
+  return (await AsyncStorage.getItem('drpranali_ai_consent')) === 'true';
+}
 
 export async function giveAIConsent() {
   const result = await request('/v1/dental/ai/patient/consent', {
     method: 'POST',
     body: JSON.stringify({ consent: true }),
   });
-  const raw = await import('@react-native-async-storage/async-storage');
-  await raw.default.setItem('drpranali_ai_consent', 'true');
+  await AsyncStorage.setItem('drpranali_ai_consent', 'true');
   return result;
 }
 
@@ -54,24 +65,32 @@ export async function linkPatient(inviteCode) {
   });
 }
 
-export async function patientAIChat(message, patientId) {
+export async function patientAIChat(message, patientId, language) {
+  const selectedLanguage = await resolveLanguage(language);
+  const emergency = checkEmergency(message, selectedLanguage);
+  if (emergency) return emergency;
   return request('/v1/dental/ai/patient/chat', {
     method: 'POST',
-    body: JSON.stringify({ message, patient_id: patientId || null, language: 'en' }),
+    body: JSON.stringify({ message, patient_id: patientId || null, language: selectedLanguage }),
   });
 }
 
-export async function explainTreatment(treatmentPlan, patientId) {
+export async function explainTreatment(treatmentPlan, patientId, language) {
+  const selectedLanguage = await resolveLanguage(language);
   return request('/v1/dental/ai/patient/treatment-explanation', {
     method: 'POST',
-    body: JSON.stringify({ treatment_plan: treatmentPlan, patient_id: patientId || null, language: 'en' }),
+    body: JSON.stringify({ treatment_plan: treatmentPlan, patient_id: patientId || null, language: selectedLanguage }),
   });
 }
 
-export async function triageSymptoms(symptoms, patientId) {
+export async function triageSymptoms(symptoms, patientId, language) {
+  const selectedLanguage = await resolveLanguage(language);
+  const text = typeof symptoms === 'string' ? symptoms : JSON.stringify(symptoms ?? '');
+  const emergency = checkEmergency(text, selectedLanguage);
+  if (emergency) return emergency;
   return request('/v1/dental/ai/patient/triage', {
     method: 'POST',
-    body: JSON.stringify({ symptoms, patient_id: patientId || null, language: 'en' }),
+    body: JSON.stringify({ symptoms, patient_id: patientId || null, language: selectedLanguage }),
   });
 }
 
