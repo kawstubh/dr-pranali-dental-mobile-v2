@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { LanguageProvider, LanguageSwitch, useTranslation } from './src/i18n';
 import {
   ActivityIndicator,
   Alert,
@@ -7,8 +8,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
+  Text as NativeText, TextInput as NativeTextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,6 +22,9 @@ import { requestPublicAppointment } from './src/api/dentalApi';
 
 // Production HTTPS API. The patient app does not require the phone and computer to share a Wi-Fi network.
 const API_URL = 'https://dr-pranali-dental-api.onrender.com';
+
+function Text({ children, ...props }) { const { t } = useTranslation(); return <NativeText {...props}>{React.Children.map(children, child => typeof child === 'string' ? t(child) : child)}</NativeText>; }
+function TextInput(props) { const { t } = useTranslation(); return <NativeTextInput {...props} placeholder={t(props.placeholder)} />; }
 const PHONE = '9137007432';
 const WHATSAPP = '919137007432';
 
@@ -97,6 +100,7 @@ function WelcomeScreen({ onStart }) {
     <SafeAreaView style={styles.welcomeSafe}>
       <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.welcomeContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <LanguageSwitch />
         <View style={styles.loginBrand}>
           <SafeImage source={require('./assets/dr-pranali-branded-logo.png')} style={styles.loginBrandLogo} resizeMode="contain" />
           <Text style={styles.loginBrandName}>Dr Pranali</Text>
@@ -510,7 +514,7 @@ function ContactScreen() {
   );
 }
 
-export default function App() {
+function AppContent() {
   const [started, setStarted] = useState(false);
   const [tab, setTab] = useState('Home');
   const [selectedServiceReason, setSelectedServiceReason] = useState('');
@@ -736,3 +740,5 @@ const styles = StyleSheet.create({
   aiLoading:{paddingTop:60,alignItems:'center'},patientNotDiagnosis:{alignSelf:'flex-start',backgroundColor:'#16476D',borderRadius:12,paddingHorizontal:10,paddingVertical:7,marginTop:13},patientNotDiagnosisText:{color:'#FFF',fontSize:10,fontWeight:'900'},emergencyBanner:{backgroundColor:'#FFF0F0',borderWidth:1,borderColor:'#E6A0A0',borderRadius:18,padding:15,marginBottom:12},emergencyTitle:{color:'#A52828',fontSize:11,fontWeight:'900',letterSpacing:1},emergencyText:{color:'#6D2525',fontSize:13,lineHeight:19,marginTop:5},quickReplyRow:{gap:8,paddingBottom:12},aiQuickChip:{borderWidth:1,borderColor:'#D5E3EF',borderRadius:18,paddingHorizontal:12,paddingVertical:9,backgroundColor:COLORS.white},aiQuickChipText:{color:COLORS.navy,fontSize:11,fontWeight:'800'},chatCard:{backgroundColor:COLORS.white,borderRadius:19,padding:14,borderWidth:1,borderColor:'#DCE8F4'},chatEmpty:{color:COLORS.muted,fontSize:12.5,lineHeight:19,padding:8},chatBubble:{padding:11,borderRadius:15,marginBottom:8,maxWidth:'92%'},chatUser:{backgroundColor:'#EAF4FF',alignSelf:'flex-end'},chatAssistant:{backgroundColor:'#F5F7F9',alignSelf:'flex-start'},chatText:{color:COLORS.text,fontSize:13,lineHeight:19},chatComposer:{flexDirection:'row',alignItems:'flex-end',marginTop:6},chatSend:{backgroundColor:COLORS.blue,borderRadius:12,paddingHorizontal:14,paddingVertical:12},chatSendText:{color:'#FFF',fontWeight:'900'},aiUtilityCard:{backgroundColor:COLORS.white,borderRadius:18,padding:15,borderWidth:1,borderColor:'#E2EBF3',marginTop:12},aiUtilityLink:{color:COLORS.blue,fontSize:13,fontWeight:'900',paddingVertical:10},aiDeleteLink:{color:'#B33434',fontSize:12,fontWeight:'800',paddingVertical:10},linkCard:{backgroundColor:COLORS.white,borderRadius:18,padding:15,borderWidth:1,borderColor:'#E2EBF3',marginBottom:12},
   bottomSpacer: { height: 8 },
 });
+
+export default function App() { return <LanguageProvider><AppContent /></LanguageProvider>; }

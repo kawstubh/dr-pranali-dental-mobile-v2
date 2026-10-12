@@ -12,6 +12,16 @@ function friendlyError(error) {
   return message.replace(/\s*\(HTTP\s+\d+,[^)]+\)$/, '');
 }
 
+function isRetryableAIError(error) {
+  const message = String(error?.message || error || '');
+  // Never retry auth, permission, validation, missing-config, or patient-access errors.
+  if (/HTTP\s+(400|401|403|404|409|422)\b|PROVIDER_NOT_CONFIGURED|UIE_BACKEND_NOT_CONFIGURED|PATIENT_CLINIC_ACCESS_DENIED|Bearer access token required|Invalid or expired doctor session/i.test(message)) {
+    return false;
+  }
+  // Retry once only for transient network, timeout, throttling, or upstream failures.
+  return /AbortError|timeout|timed out|network request failed|fetch failed|HTTP\s+(429|500|502|503|504)\b|UIE_TIMEOUT|UIE_UNREACHABLE/i.test(message);
+}
+
 async function callAI(token, path, payload = {}) {
   let lastError;
   for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -23,7 +33,11 @@ async function callAI(token, path, payload = {}) {
       });
     } catch (error) {
       lastError = error;
-      if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 350));
+      if (attempt === 0 && isRetryableAIError(error)) {
+        await new Promise(resolve => setTimeout(resolve, 350));
+        continue;
+      }
+      break;
     }
   }
   throw new Error(friendlyError(lastError));

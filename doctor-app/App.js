@@ -2,10 +2,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator, Alert, Animated, Linking, Pressable, RefreshControl,
-  ScrollView, StyleSheet, Text, TextInput, View
+  ScrollView, StyleSheet, Text as NativeText, TextInput as NativeTextInput, View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { LanguageProvider, LanguageSwitch, useTranslation } from '../src/i18n';
 import { Image as ExpoImage } from 'expo-image';
 import { BRAND } from '../src/brandConstants';
 import { DENTAL_SERVICES } from '../shared/dentalServices';
@@ -14,6 +15,9 @@ import { getStoredDoctorSession, signInWithPassword, signOutGoogle } from './src
 import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
 
 const clinicLogo = require('./assets/approved-clinic-logo-white.png');
+
+function Text({ children, ...props }) { const { t } = useTranslation(); return <NativeText {...props}>{React.Children.map(children, child => typeof child === 'string' ? t(child) : child)}</NativeText>; }
+function TextInput(props) { const { t } = useTranslation(); return <NativeTextInput {...props} placeholder={t(props.placeholder)} />; }
 
 const C = {
   ...BRAND.colors,
@@ -294,7 +298,7 @@ function Dashboard({ token, logout }) {
       setApiOk(false);
       Alert.alert('Clinic connection', e.message || 'Could not reach the dental backend.');
     } finally {setLoading(false);setRefreshing(false);}
-  },[token]);
+  },[token, logout]);
 
   useEffect(()=>{load();},[load]);
 
@@ -310,7 +314,7 @@ function Dashboard({ token, logout }) {
         <SafeImage source={clinicLogo} style={styles.headerLogo} resizeMode="contain" placeholder="✚" />
         <View><Text style={styles.headerTitle}>{BRAND.name}</Text><Text style={styles.headerSub}>Dental Clinic â€¢ Taloja</Text></View>
       </View>
-      <Pressable onPress={()=>{logout();}} style={styles.headerAction}><Text style={styles.headerActionText}>Sign out</Text></Pressable>
+      <View style={{alignItems:'flex-end'}}><LanguageSwitch /><Pressable onPress={()=>{logout();}} style={styles.headerAction}><Text style={styles.headerActionText}>Sign out</Text></Pressable></View>
     </View>
     <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={()=>{setRefreshing(true);load();}}/>} contentContainerStyle={styles.content}>
       <View style={styles.hero}><View><Text style={styles.heroKicker}>CLINIC CONTROL CENTER</Text><Text style={styles.heroTitle}>Good day, Doctor</Text><Text style={styles.heroSub}>Manage today's patient flow from one place.</Text></View><View style={[styles.dot,{backgroundColor:apiOk?C.green:C.red}]}/></View>
@@ -422,6 +426,7 @@ function GoogleLoginScreen({ onSignedIn }) {
       <View pointerEvents="none" style={styles.loginGlowBottom} />
       <ScrollView contentContainerStyle={styles.loginWrap} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Animated.View style={{opacity:entrance,transform:[{translateY:entrance.interpolate({inputRange:[0,1],outputRange:[18,0]})}]}}>
+          <LanguageSwitch />
           <View style={styles.doctorBrandMark}>
             <View style={styles.loginLogoHalo}>
               <SafeImage source={clinicLogo} style={styles.loginLogo} resizeMode="contain" placeholder="+" />
@@ -451,7 +456,7 @@ function GoogleLoginScreen({ onSignedIn }) {
   );
 }
 
-export default function App(){
+function AppContent(){
   const [token,setToken]=useState(null);
   const [checking,setChecking]=useState(true);
 
@@ -459,14 +464,14 @@ export default function App(){
     getStoredDoctorSession().then(value => setToken(value || null)).finally(() => setChecking(false));
   }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await signOutGoogle();
     setToken(null);
-  };
+  }, []);
 
   if (checking) return <SafeAreaView style={styles.safe}><ActivityIndicator size="large" color={C.blue} style={{marginTop:80}}/></SafeAreaView>;
-  if (!token) return <GoogleLoginScreen onSignedIn={setToken}/>;
-  return <Dashboard token={token} logout={logout}/>;
+  if (!token) return <LanguageProvider><GoogleLoginScreen onSignedIn={setToken}/></LanguageProvider>;
+  return <LanguageProvider><Dashboard token={token} logout={logout}/></LanguageProvider>;
 }
 
 const styles=StyleSheet.create({
