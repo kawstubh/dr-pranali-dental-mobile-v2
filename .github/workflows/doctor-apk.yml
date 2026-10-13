@@ -19,17 +19,17 @@ jobs:
         working-directory: doctor-app
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: doctor-app/package-lock.json
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -131,7 +131,7 @@ jobs:
           unzip -l "$APK" | grep -E 'AndroidManifest.xml|index\.android\.bundle|\.hbc|_expo/static/js' | head -20 || true
 
       - name: Upload RELEASE APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: dr-pranali-dental-doctor-release-apk
           path: doctor-app/android/app/build/outputs/apk/release/app-release.apk
