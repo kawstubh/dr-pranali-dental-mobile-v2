@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Temporary, narrowly-scoped exceptions for known advisories in the Expo/Metro build toolchain. The audit script still fails closed on any high/critical advisory not listed here.",
+  "reviewAfter": "2026-11-14",
+  "advisories": {
+    "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm": {
+      "package": "braces",
+      "reason": "Transitive through micromatch -> Metro file-map / Expo Metro tooling. No upstream patched braces release is available in the current lockfile audit; do not force an Expo downgrade to satisfy npm's suggested Expo 44 fix."
+    },
+    "https://github.com/advisories/GHSA-86w9-cpqp-85rv": {
+      "package": "node-forge",
+      "reason": "Transitive through @expo/code-signing-certificates -> @expo/cli. No upstream patched node-forge release is available in the current lockfile audit; do not force an Expo downgrade to satisfy npm's suggested Expo 44 fix."
+    }
+  }
+}

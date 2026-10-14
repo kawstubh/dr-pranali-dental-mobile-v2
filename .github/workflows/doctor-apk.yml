@@ -37,6 +37,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Audit dependencies (reviewed toolchain exceptions only)
+        run: node ../scripts/audit-dependencies.cjs
+
       - name: TypeScript compiler check
         run: npx tsc --noEmit
 

@@ -28,9 +28,14 @@ jobs:
       - run: python scripts/audit_images.py
       - run: python scripts/audit_service_assets.py
       - run: npm ci
+      - name: Audit dependencies (reviewed toolchain exceptions only)
+        run: node scripts/audit-dependencies.cjs
       - run: npx tsc --noEmit
       - run: npx expo export --platform android
       - run: npm ci
+        working-directory: doctor-app
+      - name: Audit dependencies (reviewed toolchain exceptions only)
+        run: node ../scripts/audit-dependencies.cjs
         working-directory: doctor-app
       - run: npx tsc --noEmit
         working-directory: doctor-app
