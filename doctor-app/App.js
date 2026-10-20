@@ -7,7 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry } from './src/api/doctorApi';
-import { getStoredDoctorSession, signInWithGoogle, signOutGoogle } from './src/auth/googleAuth';
+import { getStoredDoctorSession, signInWithPassword, signOutDoctor } from './src/auth/passwordAuth';
 import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
 
 const clinicLogo = require('./assets/dr-pranali-branded-logo.png');
@@ -372,18 +372,28 @@ function ClinicalResearchCard({ token, patient }) {
 function Stat({n,t}){return <View style={styles.stat}><Text style={styles.statN}>{n}</Text><Text style={styles.statT}>{t}</Text></View>}
 function Empty({text}){return <View style={styles.empty}><Text style={styles.emptyText}>{text}</Text></View>}
 
-function GoogleLoginScreen({ onSignedIn }) {
+function DoctorLoginScreen({ onSignedIn }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   const login = async () => {
+    if (!email.trim() || !password) {
+      setError('Enter your clinic email and password.');
+      return;
+    }
     setBusy(true);
     setError('');
     try {
-      const session = await signInWithGoogle('https://dr-pranali-dental-api.onrender.com');
+      const session = await signInWithPassword(
+        'https://dr-pranali-dental-api.onrender.com',
+        email.trim(),
+        password
+      );
       onSignedIn(session.access_token);
     } catch (e) {
-      setError(e?.message || 'Google sign-in failed.');
+      setError(e?.message || 'Sign-in failed. Check your clinic email and password.');
     } finally {
       setBusy(false);
     }
@@ -392,18 +402,48 @@ function GoogleLoginScreen({ onSignedIn }) {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={styles.loginWrap}>
+      <ScrollView contentContainerStyle={styles.loginWrap} keyboardShouldPersistTaps="handled">
         <Image source={clinicLogo} style={styles.loginLogo} resizeMode="contain" />
         <Text style={styles.kicker}>DOCTOR PORTAL</Text>
         <Text style={styles.loginTitle}>Dr. Pranali Dental Clinic</Text>
-        <Text style={styles.loginSub}>Sign in with the Google account authorized for this clinic.</Text>
+        <Text style={styles.loginSub}>Sign in with your clinic-issued email and password.</Text>
         <View style={styles.card}>
-          <Text style={styles.label}>Secure doctor authentication</Text>
-          <Text style={styles.help}>This uses native Android Google Sign-In. No Expo OAuth proxy and no OTP are used.</Text>
+          <Text style={styles.label}>Clinic email</Text>
+          <TextInput
+            value={email}
+            onChangeText={setEmail}
+            placeholder="doctor@clinic.com"
+            placeholderTextColor="#91A0AE"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="email"
+            textContentType="emailAddress"
+            editable={!busy}
+            returnKeyType="next"
+            style={styles.input}
+          />
+          <Text style={[styles.label, {marginTop:14}]}>Password</Text>
+          <TextInput
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Enter your password"
+            placeholderTextColor="#91A0AE"
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="current-password"
+            textContentType="password"
+            editable={!busy}
+            onSubmitEditing={login}
+            returnKeyType="go"
+            style={styles.input}
+          />
+          <Text style={styles.help}>Access is managed by the clinic administrator. No Google login, SMS OTP, or public sign-up.</Text>
           <Pressable disabled={busy} onPress={login} style={[styles.primary, busy && {opacity:0.6}]}>
-            {busy ? <ActivityIndicator color={C.white} /> : <Text style={styles.primaryText}>Continue with Google</Text>}
+            {busy ? <ActivityIndicator color={C.white} /> : <Text style={styles.primaryText}>Sign in securely</Text>}
           </Pressable>
-          {!!error && <View style={styles.loginError}><Text style={styles.loginErrorTitle}>Sign-in error</Text><Text style={styles.loginErrorText}>{error}</Text></View>}
+          {!!error && <View style={styles.loginError}><Text style={styles.loginErrorTitle}>Sign-in failed</Text><Text style={styles.loginErrorText}>{error}</Text></View>}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -419,12 +459,12 @@ export default function App(){
   }, []);
 
   const logout = async () => {
-    await signOutGoogle();
+    await signOutDoctor('https://dr-pranali-dental-api.onrender.com');
     setToken(null);
   };
 
   if (checking) return <SafeAreaView style={styles.safe}><ActivityIndicator size="large" color={C.blue} style={{marginTop:80}}/></SafeAreaView>;
-  if (!token) return <GoogleLoginScreen onSignedIn={setToken}/>;
+  if (!token) return <DoctorLoginScreen onSignedIn={setToken}/>;
   return <Dashboard token={token} logout={logout}/>;
 }
 
