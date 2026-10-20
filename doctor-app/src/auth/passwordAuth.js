@@ -69,7 +69,7 @@ export async function signOutDoctor(apiUrl) {
           'Content-Type': 'application/json',
           Authorization: 'Bearer ' + token,
         },
-      });
+      }).catch(() => {});
     }
   } finally {
     await AsyncStorage.multiRemove([SESSION_KEY, USER_KEY]);
