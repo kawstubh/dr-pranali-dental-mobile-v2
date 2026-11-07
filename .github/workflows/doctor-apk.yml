@@ -127,17 +127,46 @@ jobs:
           ./gradlew assembleRelease --no-daemon
 
       - name: Verify signed RELEASE APK
+        env:
+          DENTAL_DOCTOR_STORE_PASSWORD: ${{ secrets.DENTAL_DOCTOR_STORE_PASSWORD }}
         run: |
-          APK="android/app/build/outputs/apk/release/app-release.apk"
+          set -euo pipefail
+          APK="doctor-app/android/app/build/outputs/apk/release/app-release.apk"
           test -s "$APK"
           unzip -t "$APK" >/dev/null
-          apksigner verify --print-certs "$APK" | tee /tmp/doctor-certs.txt
+
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          APKSIGNER="$(find "$SDK_ROOT/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          if [ -z "$APKSIGNER" ] || [ ! -x "$APKSIGNER" ]; then
+            echo "::error::Android SDK apksigner was not found; refusing to mark this APK verified."
+            exit 1
+          fi
+          AAPT="$(dirname "$APKSIGNER")/aapt"
+          if [ ! -x "$AAPT" ]; then
+            echo "::error::Android SDK aapt was not found alongside apksigner."
+            exit 1
+          fi
+
+          "$APKSIGNER" verify --verbose --print-certs "$APK" | tee /tmp/doctor-certs.txt
           if grep -qi "Android Debug" /tmp/doctor-certs.txt; then
             echo "::error::Release APK is debug-signed. Fixed release signing was not applied."
             exit 1
           fi
-          unzip -l "$APK" | grep -E 'AndroidManifest.xml|index\.android\.bundle|\.hbc|_expo/static/js' | head -20 || true
 
+          EXPECTED_CERT="$(keytool -list -v -keystore doctor-app/android/app/release.keystore -alias "$DENTAL_DOCTOR_KEY_ALIAS" -storepass "$DENTAL_DOCTOR_STORE_PASSWORD" | awk -F': ' '/SHA256:/{print $2; exit}' | tr -d ': \r\n' | tr '[:upper:]' '[:lower:]')"
+          ACTUAL_CERT="$(awk -F': ' '/Signer #1 certificate SHA-256 digest:/{print $2; exit}' /tmp/doctor-certs.txt | tr -d ': \r\n' | tr '[:upper:]' '[:lower:]')"
+          if [ -z "$EXPECTED_CERT" ] || [ -z "$ACTUAL_CERT" ] || [ "$EXPECTED_CERT" != "$ACTUAL_CERT" ]; then
+            echo "::error::APK signer certificate does not match the fixed Doctor release keystore."
+            exit 1
+          fi
+
+          PACKAGE_NAME="$("$AAPT" dump badging "$APK" | grep -m1 -o "package: name='[^']*'" | cut -d"'" -f2)"
+          if [ "$PACKAGE_NAME" != "com.drpranali.dental.doctor" ]; then
+            echo "::error::Unexpected Doctor APK package ID: $PACKAGE_NAME"
+            exit 1
+          fi
+          unzip -l "$APK" | grep -Eq 'assets/index[.]android[.]bundle([.]hbc)?'
+          echo "Verified Doctor APK package and release certificate: $PACKAGE_NAME"
       - name: Upload RELEASE APK
         uses: actions/upload-artifact@v4
         with:
@@ -151,7 +180,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          APK="android/app/build/outputs/apk/release/app-release.apk"
+          APK="doctor-app/android/app/build/outputs/apk/release/app-release.apk"
           if gh release view doctor-latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload doctor-latest "$APK#dr-pranali-doctor.apk" --repo "$GITHUB_REPOSITORY" --clobber
           else
