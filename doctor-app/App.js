@@ -7,7 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry, listOrganisationWorkspaces, createOrganisationWorkspace, createDentalOrganisation, createDoctorAccount, createWorkspaceMembership } from './src/api/doctorApi';
-import { getStoredDoctorSession, getStoredDoctorUser, refreshStoredDoctorWorkspaces, switchStoredDoctorWorkspace, signInWithPassword, signInWithGoogle, signOutDoctor } from './src/auth/passwordAuth';
+import { getStoredDoctorSession, getStoredDoctorUser, refreshStoredDoctorWorkspaces, switchStoredDoctorWorkspace, signInWithPassword, signOutDoctor } from './src/auth/passwordAuth';
 import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
 
 const clinicLogo = require('./assets/dr-pranali-branded-logo.png');
@@ -744,19 +744,6 @@ function DoctorLoginScreen({ onSignedIn }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  const googleLogin = async () => {
-    setBusy(true);
-    setError('');
-    try {
-      const session = await signInWithGoogle(DOCTOR_API_URL);
-      onSignedIn(session);
-    } catch (e) {
-      setError(e?.message || 'Google sign-in failed. You can use your clinic password instead.');
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const login = async () => {
     if (!email.trim() || !password) {
       setError('Enter your clinic email and password.');
@@ -785,12 +772,8 @@ function DoctorLoginScreen({ onSignedIn }) {
         <Image source={clinicLogo} style={styles.loginLogo} resizeMode="contain" />
         <Text style={styles.kicker}>DOCTOR PORTAL</Text>
         <Text style={styles.loginTitle}>Dr. Pranali Dental Clinic</Text>
-        <Text style={styles.loginSub}>Sign in securely with your authorised Google account or clinic password.</Text>
+        <Text style={styles.loginSub}>Sign in with your clinic-issued email and password.</Text>
         <View style={styles.card}>
-          <Pressable disabled={busy} onPress={googleLogin} style={[styles.primary, { marginTop: 0, backgroundColor: C.navy }, busy && { opacity: 0.6 }]}>
-            {busy ? <ActivityIndicator color={C.white} /> : <Text style={styles.primaryText}>Continue with Google</Text>}
-          </Pressable>
-          <Text style={[styles.help, { textAlign: 'center', marginBottom: 12 }]}>Authorised clinic Google account only</Text>
           <Text style={styles.label}>Clinic email</Text>
           <TextInput
             value={email}
@@ -822,7 +805,7 @@ function DoctorLoginScreen({ onSignedIn }) {
             returnKeyType="go"
             style={styles.input}
           />
-          <Text style={styles.help}>Google access is restricted to clinic-approved identities. Password sign-in remains available as a fallback. No public sign-up.</Text>
+          <Text style={styles.help}>Access is managed by the clinic administrator. No Google login, SMS OTP, or public sign-up.</Text>
           <Pressable disabled={busy} onPress={login} style={[styles.primary, busy && {opacity:0.6}]}>
             {busy ? <ActivityIndicator color={C.white} /> : <Text style={styles.primaryText}>Sign in securely</Text>}
           </Pressable>
