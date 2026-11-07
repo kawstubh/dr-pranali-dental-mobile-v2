@@ -14,11 +14,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { signInWithGoogle } from './src/auth/googleAuth';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { buildPatientCareRequest } from './src/intelligence/dentalIntelligence';
 import { requestPublicAppointment } from './src/api/dentalApi';
-import { getAIConsent, giveAIConsent, linkPatient, patientAIChat, explainTreatment, deleteAIHistory, registerExpoPushToken } from './src/api/aiApi';
 
 // Production HTTPS API. The patient app does not require the phone and computer to share a Wi-Fi network.
 const API_URL = 'https://dr-pranali-dental-api.onrender.com';
@@ -63,7 +60,6 @@ const services = [
 
 const tabs = [
   ['Home', '⌂'],
-  ['AI Dental', '✦'],
   ['Services', '♢'],
   ['Appointment', '▣'],
   ['Gallery', '▧'],
@@ -71,22 +67,6 @@ const tabs = [
 ];
 
 function WelcomeScreen({ onStart }) {
-  const [googleBusy, setGoogleBusy] = useState(false);
-  const [googleMessage, setGoogleMessage] = useState('');
-
-  const googleLogin = async () => {
-    setGoogleBusy(true);
-    setGoogleMessage('');
-    try {
-      await signInWithGoogle();
-      setGoogleMessage('Google account connected successfully.');
-    } catch (error) {
-      setGoogleMessage(error?.message || 'Google sign-in failed.');
-    } finally {
-      setGoogleBusy(false);
-    }
-  };
-
   return (
     <SafeAreaView style={styles.welcomeSafe}>
       <StatusBar style="dark" />
@@ -109,10 +89,6 @@ function WelcomeScreen({ onStart }) {
           <Image source={require('./assets/universal-dental-icon.png')} style={styles.hero3dLogo} resizeMode="contain" />
           <View style={styles.logoPedestal}><View style={styles.logoPedestalGlow} /></View>
         </View>
-        <Pressable disabled={googleBusy} onPress={googleLogin} style={[styles.googleButton, googleBusy && { opacity: 0.6 }]}>
-          <Text style={styles.googleButtonText}>{googleBusy ? 'Connecting to Google…' : 'Continue with Google'}</Text>
-        </Pressable>
-        {!!googleMessage && <Text style={styles.googleMessage}>{googleMessage}</Text>}
         <Pressable onPress={onStart} style={styles.getStarted}>
           <Text style={styles.getStartedText}>Get Started</Text>
           <View style={styles.arrowCircle}><Text style={styles.arrowText}>→</Text></View>
@@ -125,7 +101,7 @@ function WelcomeScreen({ onStart }) {
           <View style={styles.trustDivider} />
           <View><Text style={styles.trustNumber}>BDS</Text><Text style={styles.trustLabel}>Dental surgeon</Text></View>
           <View style={styles.trustDivider} />
-          <View><Text style={styles.trustNumber}>AI</Text><Text style={styles.trustLabel}>Care support</Text></View>
+          <View><Text style={styles.trustNumber}>Family</Text><Text style={styles.trustLabel}>Friendly care</Text></View>
         </View>
         <Text style={styles.terms}>By continuing, you agree to our</Text>
         <Text style={styles.termsBlue}>Terms & Privacy Policy</Text>
@@ -205,12 +181,6 @@ function HomeScreen({ go }) {
         <Feature icon="☆" title="Modern" subtitle="Technology" />
       </View>
 
-      <Pressable onPress={() => go('AI Dental')} style={styles.homeAICard}>
-        <View style={styles.homeAIIcon}><Text style={styles.homeAIIconText}>✦</Text></View>
-        <View style={{flex:1}}><Text style={styles.homeAITitle}>Dr. Pranali Dental AI Assistant</Text><Text style={styles.homeAISub}>Ask questions, understand treatment information and get urgent-symptom guidance.</Text></View>
-        <Text style={styles.homeAIArrow}>›</Text>
-      </Pressable>
-
       <View style={styles.aboutCard}>
         <View style={{ flex: 1 }}>
           <Text style={styles.sectionTitle}>About Dr. Pranali</Text>
@@ -287,119 +257,6 @@ function PatientDentalChart() {
   );
 }
 
-function PatientAIConsent({ onDone }) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const continueAI = async () => {
-    setBusy(true); setError('');
-    try {
-      await signInWithGoogle();
-      await giveAIConsent();
-      await registerExpoPushToken();
-      onDone();
-    } catch (e) {
-      setError(e?.message || 'Could not enable Dental AI.');
-    } finally { setBusy(false); }
-  };
-  return (
-    <View style={styles.aiConsentCard}>
-      <Text style={styles.aiEyebrow}>BEFORE FIRST USE</Text>
-      <Text style={styles.aiConsentTitle}>Your Dental AI Assistant</Text>
-      <Text style={styles.aiConsentText}>AI can explain dental information in simple language, help you prepare questions and flag symptoms that may need urgent attention.</Text>
-      <View style={styles.aiSafetyList}>
-        <Text style={styles.aiSafetyItem}>• Not a diagnosis</Text>
-        <Text style={styles.aiSafetyItem}>• Never prescribes medicines or dosage</Text>
-        <Text style={styles.aiSafetyItem}>• Emergency symptoms are flagged conservatively</Text>
-        <Text style={styles.aiSafetyItem}>• You can delete your AI chat history</Text>
-      </View>
-      <Pressable disabled={busy} onPress={continueAI} style={[styles.submitButton,busy&&{opacity:0.55}]}>
-        <Text style={styles.submitText}>{busy ? 'Connecting…' : 'Continue with Google & Consent'}</Text>
-      </Pressable>
-      {!!error && <Text style={styles.aiError}>{error}</Text>}
-    </View>
-  );
-}
-
-function PatientAssistantScreen() {
-  const [ready, setReady] = useState(false);
-  const [checking, setChecking] = useState(true);
-  const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [busy, setBusy] = useState(false);
-  const [emergency, setEmergency] = useState(null);
-  const [planText, setPlanText] = useState('');
-  const [planBusy, setPlanBusy] = useState(false);
-  const [inviteCode, setInviteCode] = useState('');
-  const [linked, setLinked] = useState(true);
-  const [linking, setLinking] = useState(false);
-
-  useEffect(() => {
-    getAIConsent().then(value => setReady(value)).finally(() => setChecking(false));
-  }, []);
-
-  const send = async (text = message) => {
-    const value = text.trim();
-    if (!value || busy) return;
-    setBusy(true); setMessage('');
-    setMessages(prev => [...prev, { role:'user', text:value }]);
-    try {
-      const result = await patientAIChat(value);
-      setEmergency(result?.emergency ? result : null);
-      const answer = typeof result?.result === 'string' ? result.result : result?.result?.message || JSON.stringify(result?.result || result);
-      setMessages(prev => [...prev, { role:'assistant', text:answer }]);
-    } catch (e) {
-      setMessages(prev => [...prev, { role:'assistant', text:e?.message || 'The assistant is unavailable right now.' }]);
-    } finally { setBusy(false); }
-  };
-
-  const link = async () => {
-    if (!inviteCode.trim()) return;
-    setLinking(true);
-    try { await linkPatient(inviteCode.trim().toUpperCase()); setLinked(true); Alert.alert('Patient account','Your clinic-issued invite has linked your record to this Google account.'); }
-    catch(e){ Alert.alert('Link patient record', e?.message || 'Invalid or expired clinic invite code.'); }
-    finally { setLinking(false); }
-  };
-
-  const clearHistory = () => Alert.alert('Delete AI chat history?', 'This permanently deletes your saved AI conversation from the clinic AI store.', [
-    {text:'Cancel',style:'cancel'},
-    {text:'Delete',style:'destructive',onPress:async()=>{try{await deleteAIHistory();setMessages([]);Alert.alert('Deleted','Your AI chat history was deleted.');}catch(e){Alert.alert('Delete failed',e.message||'Could not delete history.');}}}
-  ]);
-
-  if (checking) return <View style={styles.aiLoading}><ActivityIndicator size="large" color={COLORS.blue}/></View>;
-  if (!ready) return <ScrollView contentContainerStyle={styles.scrollContent}><PatientAIConsent onDone={()=>setReady(true)}/></ScrollView>;
-
-  return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-      <View style={styles.aiHero}>
-        <Text style={styles.aiEyebrow}>DR. PRANALI • DENTAL AI</Text>
-        <Text style={styles.aiTitle}>Your AI Assistant</Text>
-        <Text style={styles.aiSub}>Ask dental questions, understand your treatment plan and get safer next-step guidance.</Text>
-        <View style={styles.patientNotDiagnosis}><Text style={styles.patientNotDiagnosisText}>Not a diagnosis • No prescriptions or dosage advice</Text></View>
-      </View>
-      {!!emergency && <View style={styles.emergencyBanner}><Text style={styles.emergencyTitle}>URGENT DENTAL WARNING</Text><Text style={styles.emergencyText}>{emergency?.result?.message || 'Seek urgent care now.'}</Text></View>}
-      {!linked && <View style={styles.linkCard}><Text style={styles.aiCardTitle}>Link your clinic record</Text><Text style={styles.aiCardSub}>Enter the one-time invite code issued by the clinic. Your phone number alone cannot claim a patient record.</Text><TextInput value={inviteCode} onChangeText={setInviteCode} autoCapitalize="characters" placeholder="Clinic invite code" style={styles.input}/><Pressable onPress={link} disabled={linking} style={styles.submitButton}><Text style={styles.submitText}>{linking?'Linking…':'Link patient record'}</Text></Pressable></View>}
-      <View style={styles.quickReplyRow}>
-        {['Explain my treatment','I have tooth pain','What should I ask my dentist?','Is this urgent?'].map(chip=><Pressable key={chip} onPress={()=>send(chip)} style={styles.aiQuickChip}><Text style={styles.aiQuickChipText}>{chip}</Text></Pressable>)}
-      </View>
-      <View style={styles.chatCard}>
-        {messages.length===0 && <Text style={styles.chatEmpty}>Start with a question. The assistant will clearly say when something needs a dentist or urgent care.</Text>}
-        {messages.map((m,i)=><View key={i} style={[styles.chatBubble,m.role==='user'?styles.chatUser:styles.chatAssistant]}><Text style={styles.chatText}>{m.text}</Text></View>)}
-        {busy && <View style={styles.chatBubble}><ActivityIndicator color={COLORS.blue}/></View>}
-        <View style={styles.chatComposer}><TextInput value={message} onChangeText={setMessage} placeholder="Ask your dental question…" style={[styles.input,{flex:1,marginRight:8}]} multiline/><Pressable onPress={()=>send()} style={styles.chatSend}><Text style={styles.chatSendText}>Send</Text></Pressable></View>
-      </View>
-      <View style={styles.aiUtilityCard}>
-        <Text style={styles.aiCardTitle}>Plain-language treatment plan</Text>
-        <TextInput value={planText} onChangeText={setPlanText} placeholder="Paste your dentist's treatment plan here…" multiline style={[styles.input,{minHeight:70,marginTop:8}]} />
-        <Pressable disabled={!planText.trim()||planBusy} onPress={async()=>{setPlanBusy(true);try{const r=await explainTreatment(planText.trim());const answer=typeof r?.result==='string'?r.result:r?.result?.message||JSON.stringify(r?.result);setMessages(prev=>[...prev,{role:'assistant',text:answer}]);setPlanText('');}catch(e){Alert.alert('AI',e.message||'Unavailable');}finally{setPlanBusy(false);}}} style={[styles.submitButton,(!planText.trim()||planBusy)&&{opacity:0.5}]}><Text style={styles.submitText}>{planBusy?'Explaining…':'Explain my treatment plan'}</Text></Pressable>
-        <Pressable onPress={clearHistory}><Text style={styles.aiDeleteLink}>Delete my AI chat history</Text></Pressable>
-      </View>
-    </ScrollView>
-  );
-}
-
-function AIDentalScreen() {
-  return <PatientAssistantScreen />;
-}
 function ServicesScreen() {
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -606,7 +463,6 @@ export default function App() {
   const [tab, setTab] = useState('Home');
   if (!started) return <WelcomeScreen onStart={(nextTab) => { setStarted(true); if (nextTab) setTab(nextTab); }} />;
   const screen = useMemo(() => {
-    if (tab === 'AI Dental') return <AIDentalScreen />;
     if (tab === 'Services') return <ServicesScreen />;
     if (tab === 'Appointment') return <AppointmentScreen />;
     if (tab === 'Gallery') return <GalleryScreen />;
@@ -792,9 +648,6 @@ const styles = StyleSheet.create({
   scanFlow: { backgroundColor: '#EEF7FF', borderRadius: 17, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#D6E9F8' },
   scanFlowTitle: { color: COLORS.navy, fontSize: 16, fontWeight: '900' },
   scanFlowText: { color: COLORS.text, fontSize: 12.5, lineHeight: 19, marginTop: 6 },
-  homeAICard:{backgroundColor:COLORS.white,borderRadius:18,padding:14,flexDirection:'row',alignItems:'center',borderWidth:1,borderColor:'#D7E8F6',marginBottom:14},
-  homeAIIcon:{width:44,height:44,borderRadius:14,backgroundColor:'#EAF4FF',alignItems:'center',justifyContent:'center',marginRight:12},
-  homeAIIconText:{fontSize:23,color:COLORS.blue,fontWeight:'900'},homeAITitle:{fontSize:14,fontWeight:'900',color:COLORS.navy},homeAISub:{fontSize:11.5,color:COLORS.muted,lineHeight:17,marginTop:3},homeAIArrow:{fontSize:28,color:COLORS.blue,marginLeft:8},
   aiConsentCard:{backgroundColor:COLORS.white,borderRadius:22,padding:20,borderWidth:1,borderColor:'#DCE8F4',marginTop:8},aiConsentTitle:{fontSize:27,fontWeight:'900',color:COLORS.navy,marginTop:5},aiConsentText:{fontSize:13.5,color:COLORS.text,lineHeight:20,marginTop:8},aiSafetyList:{backgroundColor:'#F7FAFD',borderRadius:14,padding:14,marginTop:14},aiSafetyItem:{fontSize:12.5,color:COLORS.text,lineHeight:22},aiError:{color:'#C53E3E',fontSize:12,marginTop:10},
   aiLoading:{paddingTop:60,alignItems:'center'},patientNotDiagnosis:{alignSelf:'flex-start',backgroundColor:'#16476D',borderRadius:12,paddingHorizontal:10,paddingVertical:7,marginTop:13},patientNotDiagnosisText:{color:'#FFF',fontSize:10,fontWeight:'900'},emergencyBanner:{backgroundColor:'#FFF0F0',borderWidth:1,borderColor:'#E6A0A0',borderRadius:18,padding:15,marginBottom:12},emergencyTitle:{color:'#A52828',fontSize:11,fontWeight:'900',letterSpacing:1},emergencyText:{color:'#6D2525',fontSize:13,lineHeight:19,marginTop:5},quickReplyRow:{gap:8,paddingBottom:12},aiQuickChip:{borderWidth:1,borderColor:'#D5E3EF',borderRadius:18,paddingHorizontal:12,paddingVertical:9,backgroundColor:COLORS.white},aiQuickChipText:{color:COLORS.navy,fontSize:11,fontWeight:'800'},chatCard:{backgroundColor:COLORS.white,borderRadius:19,padding:14,borderWidth:1,borderColor:'#DCE8F4'},chatEmpty:{color:COLORS.muted,fontSize:12.5,lineHeight:19,padding:8},chatBubble:{padding:11,borderRadius:15,marginBottom:8,maxWidth:'92%'},chatUser:{backgroundColor:'#EAF4FF',alignSelf:'flex-end'},chatAssistant:{backgroundColor:'#F5F7F9',alignSelf:'flex-start'},chatText:{color:COLORS.text,fontSize:13,lineHeight:19},chatComposer:{flexDirection:'row',alignItems:'flex-end',marginTop:6},chatSend:{backgroundColor:COLORS.blue,borderRadius:12,paddingHorizontal:14,paddingVertical:12},chatSendText:{color:'#FFF',fontWeight:'900'},aiUtilityCard:{backgroundColor:COLORS.white,borderRadius:18,padding:15,borderWidth:1,borderColor:'#E2EBF3',marginTop:12},aiUtilityLink:{color:COLORS.blue,fontSize:13,fontWeight:'900',paddingVertical:10},aiDeleteLink:{color:'#B33434',fontSize:12,fontWeight:'800',paddingVertical:10},linkCard:{backgroundColor:COLORS.white,borderRadius:18,padding:15,borderWidth:1,borderColor:'#E2EBF3',marginBottom:12},
   bottomSpacer: { height: 8 },
