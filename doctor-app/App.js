@@ -21,6 +21,8 @@ const C = {
 const STATUSES = ['requested','confirmed','scheduled','completed','cancelled','rescheduled','no_show'];
 
 function statusLabel(s){ return (s || '').replace('_',' ').replace(/^./, x => x.toUpperCase()); }
+function organisationLabel(type){ return type === 'hospital' ? 'Hospital' : type === 'group' ? 'Healthcare group' : 'Clinic'; }
+function workspaceLabel(type){ return type === 'hospital_department' ? 'Department' : type === 'branch' ? 'Branch' : 'Clinic'; }
 
 function AppointmentCard({ item, token, onChanged }) {
   const [busy,setBusy]=useState(false);
@@ -315,12 +317,12 @@ function Dashboard({ token, logout, user, workspaces, onSwitchWorkspace }) {
         </View>
       </View>
       <View style={{flexDirection:'row',gap:6,alignItems:'center'}}>
-        {(workspaces || []).length > 1 && <Pressable onPress={onSwitchWorkspace} style={styles.headerAction}><Text style={styles.headerActionText}>Switch clinic</Text></Pressable>}
+        {(workspaces || []).length > 1 && <Pressable onPress={onSwitchWorkspace} style={styles.headerAction}><Text style={styles.headerActionText}>Switch workspace</Text></Pressable>}
         <Pressable onPress={logout} style={styles.headerAction}><Text style={styles.headerActionText}>Sign out</Text></Pressable>
       </View>
     </View>
     <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={()=>{setRefreshing(true);load();}}/>} contentContainerStyle={styles.content}>
-      <View style={styles.hero}><View><Text style={styles.heroKicker}>CLINIC CONTROL CENTER</Text><Text style={styles.heroTitle}>Good day, Doctor</Text><Text style={styles.heroSub}>Manage today's patient flow from one place.</Text></View><View style={[styles.dot,{backgroundColor:apiOk?C.green:C.red}]}/></View>
+      <View style={styles.hero}><View><Text style={styles.heroKicker}>WORKSPACE CONTROL CENTER</Text><Text style={styles.heroTitle}>Good day, Doctor</Text><Text style={styles.heroSub}>Manage today's patient flow from one place.</Text></View><View style={[styles.dot,{backgroundColor:apiOk?C.green:C.red}]}/></View>
       <View style={styles.stats}>
         <Stat n={appointments.length} t="Appointments"/><Stat n={requested} t="New Requests"/><Stat n={confirmed} t="Confirmed"/><Stat n={patients.length} t="Patients"/>
       </View>
@@ -486,9 +488,9 @@ function WorkspaceSelectionScreen({
       <ScrollView contentContainerStyle={styles.loginWrap}>
         <Image source={clinicLogo} style={styles.loginLogo} resizeMode="contain" />
         <Text style={styles.kicker}>DOCTOR WORKSPACE</Text>
-        <Text style={styles.loginTitle}>Choose a clinic</Text>
+        <Text style={styles.loginTitle}>Choose a workspace</Text>
         <Text style={styles.loginSub}>
-          Your account can access multiple clinics. Choose the workspace whose patient records you need to manage.
+          Your account can access multiple clinics, hospital departments or branches. Choose the workspace whose records you are authorised to manage.
         </Text>
         <View style={styles.card}>
           {(workspaces || []).map((workspace) => {
@@ -511,19 +513,19 @@ function WorkspaceSelectionScreen({
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.patient}>{workspace.name || workspace.id}</Text>
-                    <Text style={styles.phone}>{workspace.organisation_name || 'Dental workspace'}</Text>
-                    <Text style={styles.phone}>Role: {workspace.role || 'doctor'}{current ? ' ? Current workspace' : ''}</Text>
+                    <Text style={styles.phone}>{workspace.organisation_name || 'Healthcare organisation'} · {organisationLabel(workspace.organisation_type)}</Text>
+                    <Text style={styles.phone}>{workspaceLabel(workspace.clinic_type)} · Role: {workspace.role || 'doctor'}{current ? ' · Current workspace' : ''}</Text>
                   </View>
                   <Text style={styles.chevron}>{current ? '?' : '?'}</Text>
                 </View>
               </Pressable>
             );
           })}
-          {!workspaces?.length && <Empty text="No active clinic workspaces were returned. Sign out and contact your clinic administrator." />}
+          {!workspaces?.length && <Empty text="No active workspaces were returned. Sign out and contact your organisation administrator." />}
           {!!error && <View style={styles.loginError}><Text style={styles.loginErrorTitle}>Workspace switch</Text><Text style={styles.loginErrorText}>{error}</Text></View>}
-          <Text style={styles.help}>Only the selected workspace is active in this session. Patient and clinical records remain separated by clinic.</Text>
+          <Text style={styles.help}>Only the selected workspace is active in this session. Patient and clinical records remain separated by workspace.</Text>
           {busy && <ActivityIndicator color={C.blue} style={{ marginTop: 12 }} />}
-          {allowCancel && <Pressable disabled={busy} onPress={onCancel} style={styles.action}><Text style={styles.actionText}>Return to current clinic</Text></Pressable>}
+          {allowCancel && <Pressable disabled={busy} onPress={onCancel} style={styles.action}><Text style={styles.actionText}>Return to current workspace</Text></Pressable>}
           <Pressable disabled={busy} onPress={onExit} style={[styles.primary, { backgroundColor: '#EAF0F6' }]}><Text style={[styles.primaryText, { color: C.navy }]}>Sign out</Text></Pressable>
         </View>
       </ScrollView>
