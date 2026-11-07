@@ -18,7 +18,7 @@ import { BRAND } from './src/brandConstants';
 import { DENTAL_SERVICES, DENTAL_SERVICE_CATEGORIES } from './shared/dentalServices';
 import { signInWithGoogle } from './src/auth/googleAuth';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { requestPublicAppointment, getPublicClinic } from './src/api/dentalApi';
+import { requestPublicAppointment } from './src/api/dentalApi';
 
 // Production HTTPS API. The patient app does not require the phone and computer to share a Wi-Fi network.
 const API_URL = 'https://dr-pranali-dental-api.onrender.com';
@@ -201,7 +201,7 @@ function HomeScreen({ go, clinic }) {
       <View style={styles.homeContactCard}>
         <View style={{flex:1}}>
           <Text style={styles.homeContactTitle}>Contact the clinic</Text>
-          <Text style={styles.homeContactSub}>{clinic?.phone || 'Clinic contact details are loading.'}</Text>
+          <Text style={styles.homeContactSub}>{clinic?.phone || 'Request an appointment and the clinic will contact you.'}</Text>
         </View>
         <Pressable disabled={!clinic?.phone_e164} onPress={() => Linking.openURL('tel:' + clinic.phone_e164)} style={[styles.homeContactButton,!clinic?.phone_e164&&{opacity:0.45}]}>
           <Text style={styles.homeContactButtonText}>Call</Text>
@@ -525,8 +525,7 @@ function AppContent() {
   const [started, setStarted] = useState(false);
   const [tab, setTab] = useState('Home');
   const [selectedServiceReason, setSelectedServiceReason] = useState('');
-  const [clinic, setClinic] = useState(null);
-  useEffect(() => { getPublicClinic().then(data => setClinic(data?.clinic || null)).catch(() => setClinic(null)); }, []);
+  const [clinic] = useState({ name: 'Dr. Pranali Dental Clinic', address: 'Taloja, Navi Mumbai' });
   // Hooks must run in the same order on every render, including the Welcome screen.
   const screen = useMemo(() => {
     if (tab === 'Services') return <ServicesScreen onBook={(name) => { setSelectedServiceReason(name); setTab('Appointment'); }} />;
