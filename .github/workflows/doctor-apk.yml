@@ -57,6 +57,9 @@ jobs:
           fi
           node -e "const p=require('./package.json'); const l=require('./package-lock.json'); if (JSON.stringify(p.dependencies)!==JSON.stringify(l.packages[''].dependencies)) { console.error('package.json and package-lock root dependencies differ'); process.exit(1); }"
 
+      - name: Run workspace-state tests
+        run: npm test
+
       - name: TypeScript compiler check
         run: npx tsc --noEmit
 
