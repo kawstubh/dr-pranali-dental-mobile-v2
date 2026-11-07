@@ -167,8 +167,11 @@ jobs:
             echo "::error::Could not read the fixed Doctor release keystore alias for certificate comparison."
             exit 1
           fi
-          EXPECTED_CERT="$(awk -F': ' '/SHA256:/{print $2; exit}' /tmp/doctor-keystore.txt | tr -d ': \r\n' | tr '[:upper:]' '[:lower:]')"
-          ACTUAL_CERT="$(awk -F': ' '/Signer #1 certificate SHA-256 digest:/{print $2; exit}' /tmp/doctor-certs.txt | tr -d ': \r\n' | tr '[:upper:]' '[:lower:]')"
+          EXPECTED_CERT="$(awk -F': ' '/SHA256:/{print $NF; exit}' /tmp/doctor-keystore.txt | tr -d ': \r\n' | tr '[:upper:]' '[:lower:]')"
+          # apksigner output differs by build-tools version (e.g. "V2 Signer: certificate SHA-256 digest").
+          ACTUAL_CERT="$(awk -F': ' '/certificate SHA-256 digest:/{print $NF; exit}' /tmp/doctor-certs.txt | tr -d ': \r\n' | tr '[:upper:]' '[:lower:]')"
+          echo "Fixed release keystore SHA-256: $EXPECTED_CERT"
+          echo "APK signer SHA-256: $ACTUAL_CERT"
           if [ -z "$EXPECTED_CERT" ] || [ -z "$ACTUAL_CERT" ] || [ "$EXPECTED_CERT" != "$ACTUAL_CERT" ]; then
             echo "::error::APK signer certificate does not match the fixed Doctor release keystore."
             exit 1
