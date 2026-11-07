@@ -51,6 +51,22 @@ export const switchDoctorWorkspace = (token, clinicId) =>
     method: 'POST',
     body: JSON.stringify({ clinic_id: clinicId }),
   });
+
+export const listOrganisationWorkspaces = (token, organisationId) =>
+  request('/v1/dental/organisations/' + encodeURIComponent(organisationId) + '/workspaces', token);
+
+export const createOrganisationWorkspace = (token, organisationId, payload) =>
+  request('/v1/dental/organisations/' + encodeURIComponent(organisationId) + '/workspaces', token, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
+export const createDentalOrganisation = (token, payload) =>
+  request('/v1/dental/organisations', token, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
 export const listPatients = (token) => request('/v1/dental/patients', token);
 
 export const updateAppointment = (token, id, payload) =>

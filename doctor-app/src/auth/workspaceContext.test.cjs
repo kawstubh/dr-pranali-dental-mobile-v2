@@ -32,6 +32,7 @@ test('normalizes and de-duplicates authorised workspaces', () => {
     {
       id: 'clinic-a',
       clinic_id: 'clinic-a',
+      organisation_id: 'org-a',
       name: 'Main Clinic',
       organisation_name: 'Clinic Group',
       role: 'owner',
@@ -50,6 +51,7 @@ test('normalizes and de-duplicates authorised workspaces', () => {
     {
       id: 'clinic-a',
       clinic_id: 'clinic-a',
+      organisation_id: 'org-a',
       name: 'Main Clinic',
       organisation_name: 'Clinic Group',
       organisation_type: '',
@@ -75,7 +77,7 @@ test('persists the replacement token and active user with workspace list', async
   const result = await persistWorkspaceSession(storage, {
     access_token: 'new-token',
     user: { id: 'doctor-1', clinic_id: 'clinic-b', role: 'dentist' },
-    workspaces: [{ id: 'clinic-b', name: 'Branch B', role: 'dentist' }],
+    workspaces: [{ id: 'clinic-b', organisation_id: 'org-b', name: 'Branch B', role: 'dentist' }],
   });
 
   assert.equal(await storage.getItem('doctor_session'), 'new-token');
@@ -87,6 +89,7 @@ test('persists the replacement token and active user with workspace list', async
       {
         id: 'clinic-b',
         clinic_id: 'clinic-b',
+        organisation_id: 'org-b',
         name: 'Branch B',
         organisation_name: '',
         organisation_type: '',

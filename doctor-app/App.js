@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry } from './src/api/doctorApi';
+import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry, listOrganisationWorkspaces, createOrganisationWorkspace, createDentalOrganisation } from './src/api/doctorApi';
 import { getStoredDoctorSession, getStoredDoctorUser, refreshStoredDoctorWorkspaces, switchStoredDoctorWorkspace, signInWithPassword, signOutDoctor } from './src/auth/passwordAuth';
 import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
 
@@ -268,7 +268,196 @@ function DoctorDailyAISummary({token}) {
   return <View style={styles.todayCard}><View style={{flex:1}}><Text style={styles.todayKicker}>AI DAILY SUMMARY</Text><Text style={styles.todayTitle}>Clinic workload insight</Text>{loading?<ActivityIndicator color={C.blue}/>:<Text style={styles.todaySub}>{result?.error|| (result?.result ? (typeof result.result==='string'?result.result:JSON.stringify(result.result)) : 'Run a secure AI summary using appointment status only.')}</Text>}</View><Pressable onPress={run} style={styles.refresh}><Text>Run</Text></Pressable></View>;
 }
 
-function Dashboard({ token, logout, user, workspaces, onSwitchWorkspace }) {
+function WorkspaceManagementCard({ token, user, activeWorkspace, onRefreshWorkspaces }) {
+  const canManage = ['owner', 'admin'].includes(user?.role);
+  const organisationId = activeWorkspace?.organisation_id;
+  const [workspaces, setWorkspaces] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [workspaceName, setWorkspaceName] = useState('');
+  const [workspaceType, setWorkspaceType] = useState(
+    activeWorkspace?.organisation_type === 'hospital' ? 'hospital_department' : 'branch'
+  );
+  const [organisationName, setOrganisationName] = useState('');
+  const [organisationType, setOrganisationType] = useState('hospital');
+  const [firstWorkspaceName, setFirstWorkspaceName] = useState('');
+  const [showCreateOrganisation, setShowCreateOrganisation] = useState(false);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+
+  useEffect(() => {
+    setWorkspaceType(activeWorkspace?.organisation_type === 'hospital' ? 'hospital_department' : 'branch');
+  }, [activeWorkspace?.organisation_type]);
+
+  const refresh = useCallback(async () => {
+    if (!canManage || !organisationId) return;
+    setLoading(true);
+    try {
+      const payload = await listOrganisationWorkspaces(token, organisationId);
+      setWorkspaces(payload?.workspaces || []);
+      setError('');
+    } catch (e) {
+      setError(e?.message || 'Could not load organisation workspaces.');
+    } finally {
+      setLoading(false);
+    }
+  }, [token, organisationId, canManage]);
+
+  useEffect(() => {
+    if (canManage) refresh();
+  }, [canManage, refresh]);
+
+  const addWorkspace = async () => {
+    if (!workspaceName.trim()) {
+      setError('Enter a name for the new workspace.');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      await createOrganisationWorkspace(token, organisationId, {
+        name: workspaceName.trim(),
+        clinic_type: workspaceType,
+      });
+      setWorkspaceName('');
+      await refresh();
+      await onRefreshWorkspaces?.();
+      setNotice('Workspace created and added to your authorised workspace list.');
+    } catch (e) {
+      setError(e?.message || 'Could not create the workspace.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const addOrganisation = async () => {
+    if (!organisationName.trim()) {
+      setError('Enter the clinic or hospital name.');
+      return;
+    }
+    const firstWorkspace = firstWorkspaceName.trim() || organisationName.trim();
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      await createDentalOrganisation(token, {
+        name: organisationName.trim(),
+        organisation_type: organisationType,
+        workspace_name: firstWorkspace,
+        clinic_type: organisationType === 'hospital' ? 'hospital_department' : 'clinic',
+      });
+      setOrganisationName('');
+      setFirstWorkspaceName('');
+      setShowCreateOrganisation(false);
+      await onRefreshWorkspaces?.();
+      setNotice('Organisation created. Use Switch workspace to open its first workspace.');
+    } catch (e) {
+      setError(e?.message || 'Could not create the organisation.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!canManage) return null;
+
+  const workspaceOptions = activeWorkspace?.organisation_type === 'hospital'
+    ? [{ value: 'hospital_department', label: 'Department' }, { value: 'branch', label: 'Branch' }]
+    : [{ value: 'branch', label: 'Branch' }, { value: 'clinic', label: 'Clinic' }];
+
+  return (
+    <View style={[styles.card, { marginTop: 12 }]}>
+      <View style={styles.sectionRow}>
+        <Text style={styles.sectionTitle}>Workspace management</Text>
+        <Pressable disabled={loading} onPress={refresh}><Text style={styles.refresh}>Refresh</Text></Pressable>
+      </View>
+      <Text style={styles.help}>
+        Manage {activeWorkspace?.organisation_name || 'your organisation'} · {organisationLabel(activeWorkspace?.organisation_type)}.
+      </Text>
+      {loading ? <ActivityIndicator color={C.blue} style={{ marginTop: 10 }} /> : workspaces.map((workspace) => (
+        <View key={workspace.id} style={[styles.patientCard, { marginTop: 7 }]}>
+          <Text style={styles.patient}>{workspace.name}</Text>
+          <Text style={styles.phone}>
+            {workspaceLabel(workspace.clinic_type)} · {Number(workspace.active_doctors || 0)} active doctor(s)
+          </Text>
+        </View>
+      ))}
+
+      <Text style={[styles.label, { marginTop: 14 }]}>Add a workspace</Text>
+      <TextInput
+        value={workspaceName}
+        onChangeText={setWorkspaceName}
+        placeholder={activeWorkspace?.organisation_type === 'hospital' ? 'e.g. Dental Department' : 'e.g. Seawoods Branch'}
+        placeholderTextColor="#91A0AE"
+        editable={!busy}
+        style={styles.input}
+      />
+      <View style={{ flexDirection: 'row', gap: 7, flexWrap: 'wrap', marginTop: 8 }}>
+        {workspaceOptions.map((option) => (
+          <Pressable
+            key={option.value}
+            onPress={() => setWorkspaceType(option.value)}
+            style={[styles.action, workspaceType === option.value && styles.patientCardActive]}
+          >
+            <Text style={styles.actionText}>{option.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+      <Pressable disabled={busy || !organisationId} onPress={addWorkspace} style={[styles.primary, busy && { opacity: 0.6 }]}>
+        <Text style={styles.primaryText}>{busy ? 'Saving…' : 'Create workspace'}</Text>
+      </Pressable>
+
+      <Pressable
+        onPress={() => setShowCreateOrganisation((value) => !value)}
+        style={[styles.action, { alignSelf: 'flex-start', marginTop: 12 }]}
+      >
+        <Text style={styles.actionText}>{showCreateOrganisation ? 'Cancel' : 'Create another clinic or hospital'}</Text>
+      </Pressable>
+      {showCreateOrganisation && (
+        <View style={{ marginTop: 10 }}>
+          <Text style={styles.label}>Organisation name</Text>
+          <TextInput
+            value={organisationName}
+            onChangeText={setOrganisationName}
+            placeholder="e.g. New Dental Hospital"
+            placeholderTextColor="#91A0AE"
+            editable={!busy}
+            style={styles.input}
+          />
+          <View style={{ flexDirection: 'row', gap: 7, marginTop: 8 }}>
+            {['clinic', 'hospital'].map((type) => (
+              <Pressable
+                key={type}
+                onPress={() => setOrganisationType(type)}
+                style={[styles.action, organisationType === type && styles.patientCardActive]}
+              >
+                <Text style={styles.actionText}>{organisationLabel(type)}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text style={[styles.label, { marginTop: 10 }]}>
+            First {organisationType === 'hospital' ? 'department' : 'clinic workspace'} name
+          </Text>
+          <TextInput
+            value={firstWorkspaceName}
+            onChangeText={setFirstWorkspaceName}
+            placeholder={organisationType === 'hospital' ? 'e.g. Dental Department' : 'e.g. Main Clinic'}
+            placeholderTextColor="#91A0AE"
+            editable={!busy}
+            style={styles.input}
+          />
+          <Pressable disabled={busy} onPress={addOrganisation} style={[styles.primary, busy && { opacity: 0.6 }]}>
+            <Text style={styles.primaryText}>{busy ? 'Creating…' : 'Create organisation'}</Text>
+          </Pressable>
+        </View>
+      )}
+      {!!error && <View style={styles.loginError}><Text style={styles.loginErrorTitle}>Workspace management</Text><Text style={styles.loginErrorText}>{error}</Text></View>}
+      {!!notice && <Text style={styles.help}>{notice}</Text>}
+    </View>
+  );
+}
+
+function Dashboard({ token, logout, user, workspaces, onSwitchWorkspace, onRefreshWorkspaces }) {
   const [appointments,setAppointments]=useState([]);
   const [patients,setPatients]=useState([]);
   const [tab,setTab]=useState('Home');
@@ -339,6 +528,7 @@ function Dashboard({ token, logout, user, workspaces, onSwitchWorkspace }) {
           <View style={[styles.statusPill,{backgroundColor:apiOk?'#DDF7EA':'#FCEAEA'}]}><Text style={[styles.statusPillText,{color:apiOk?C.green:C.red}]}>{apiOk?'ONLINE':'OFFLINE'}</Text></View>
         </View>
         <DoctorDailyAISummary token={token}/>
+        <WorkspaceManagementCard token={token} user={user} activeWorkspace={activeWorkspace} onRefreshWorkspaces={onRefreshWorkspaces}/>
       </View>}
       {tab==='Appointments' && <View>
         <View style={styles.sectionRow}><Text style={styles.sectionTitle}>Appointment Queue</Text><Pressable onPress={load}><Text style={styles.refresh}>Refresh</Text></Pressable></View>
@@ -632,6 +822,15 @@ export default function App(){
     setSelectingWorkspace(true);
   };
 
+  const refreshWorkspaces = useCallback(async () => {
+    const refreshed = await refreshStoredDoctorWorkspaces();
+    if (refreshed) {
+      setUser(refreshed.user);
+      setWorkspaces(refreshed.workspaces);
+    }
+    return refreshed;
+  }, []);
+
   if (checking) return <SafeAreaView style={styles.safe}><ActivityIndicator size="large" color={C.blue} style={{marginTop:80}}/></SafeAreaView>;
   if (!token) return <DoctorLoginScreen onSignedIn={handleSignedIn}/>;
   if (selectingWorkspace) {
@@ -655,6 +854,7 @@ export default function App(){
       workspaces={workspaces}
       logout={logout}
       onSwitchWorkspace={requestWorkspaceSwitch}
+      onRefreshWorkspaces={refreshWorkspaces}
     />
   );
 }

@@ -14,6 +14,7 @@ function normalizeWorkspaces(workspaces) {
     normalized.push({
       id,
       clinic_id: String(workspace.clinic_id || id),
+      organisation_id: String(workspace.organisation_id || ''),
       name: String(workspace.name || workspace.workspace_name || id),
       organisation_name: String(workspace.organisation_name || ''),
       organisation_type: String(workspace.organisation_type || ''),
