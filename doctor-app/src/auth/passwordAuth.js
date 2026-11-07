@@ -1,7 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  listDoctorWorkspaces,
+  switchDoctorWorkspace,
+} from '../api/doctorApi';
 
 const SESSION_KEY = 'doctor_session';
 const USER_KEY = 'doctor_user';
+const {
+  persistWorkspaceSession,
+  switchAndPersistWorkspaceSession,
+} = require('./workspaceContext');
 
 export class DoctorAuthError extends Error {
   constructor(message, code = '', status = null) {
@@ -40,9 +48,7 @@ export async function signInWithPassword(apiUrl, email, password) {
     if (!payload.access_token || !payload.user) {
       throw new DoctorAuthError('The clinic API returned an incomplete login session.', 'INVALID_SESSION_RESPONSE');
     }
-    await AsyncStorage.setItem(SESSION_KEY, payload.access_token);
-    await AsyncStorage.setItem(USER_KEY, JSON.stringify(payload.user));
-    return payload;
+    return await persistWorkspaceSession(AsyncStorage, payload);
   } catch (error) {
     if (error instanceof DoctorAuthError) throw error;
     throw new DoctorAuthError(
@@ -57,6 +63,34 @@ export async function signInWithPassword(apiUrl, email, password) {
 
 export async function getStoredDoctorSession() {
   return AsyncStorage.getItem(SESSION_KEY);
+}
+
+export async function getStoredDoctorUser() {
+  const raw = await AsyncStorage.getItem(USER_KEY);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+}
+
+export async function refreshStoredDoctorWorkspaces() {
+  const token = await getStoredDoctorSession();
+  const user = await getStoredDoctorUser();
+  if (!token || !user) return null;
+  const payload = await listDoctorWorkspaces(token);
+  return persistWorkspaceSession(AsyncStorage, {
+    access_token: token,
+    user,
+    workspaces: payload?.workspaces || [],
+  });
+}
+
+export async function switchStoredDoctorWorkspace(clinicId) {
+  const token = await getStoredDoctorSession();
+  return switchAndPersistWorkspaceSession(
+    AsyncStorage,
+    token,
+    clinicId,
+    switchDoctorWorkspace
+  );
 }
 
 export async function signOutDoctor(apiUrl) {

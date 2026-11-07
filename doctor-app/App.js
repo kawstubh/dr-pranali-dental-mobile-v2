@@ -7,7 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry } from './src/api/doctorApi';
-import { getStoredDoctorSession, signInWithPassword, signOutDoctor } from './src/auth/passwordAuth';
+import { getStoredDoctorSession, getStoredDoctorUser, refreshStoredDoctorWorkspaces, switchStoredDoctorWorkspace, signInWithPassword, signOutDoctor } from './src/auth/passwordAuth';
 import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
 
 const clinicLogo = require('./assets/dr-pranali-branded-logo.png');
@@ -266,7 +266,7 @@ function DoctorDailyAISummary({token}) {
   return <View style={styles.todayCard}><View style={{flex:1}}><Text style={styles.todayKicker}>AI DAILY SUMMARY</Text><Text style={styles.todayTitle}>Clinic workload insight</Text>{loading?<ActivityIndicator color={C.blue}/>:<Text style={styles.todaySub}>{result?.error|| (result?.result ? (typeof result.result==='string'?result.result:JSON.stringify(result.result)) : 'Run a secure AI summary using appointment status only.')}</Text>}</View><Pressable onPress={run} style={styles.refresh}><Text>Run</Text></Pressable></View>;
 }
 
-function Dashboard({ token, logout }) {
+function Dashboard({ token, logout, user, workspaces, onSwitchWorkspace }) {
   const [appointments,setAppointments]=useState([]);
   const [patients,setPatients]=useState([]);
   const [tab,setTab]=useState('Home');
@@ -281,12 +281,24 @@ function Dashboard({ token, logout }) {
       setAppointments(a||[]); setPatients(p||[]); setApiOk(h?.status==='ok');
     } catch(e) {
       setApiOk(false);
+      if (e?.status === 401) {
+        await logout();
+        return;
+      }
       Alert.alert('Clinic connection', e.message || 'Could not reach the dental backend.');
     } finally {setLoading(false);setRefreshing(false);}
-  },[token]);
+  },[token,logout]);
 
-  useEffect(()=>{load();},[load]);
+  useEffect(()=>{
+    setLoading(true);
+    setAppointments([]);
+    setPatients([]);
+    setSelectedPatient(null);
+    setTab('Home');
+    load();
+  },[load]);
 
+  const activeWorkspace = (workspaces || []).find(w => w.id === user?.clinic_id || w.clinic_id === user?.clinic_id);
   const requested=appointments.filter(a=>a.status==='requested').length;
   const confirmed=appointments.filter(a=>['confirmed','scheduled'].includes(a.status)).length;
 
@@ -297,9 +309,15 @@ function Dashboard({ token, logout }) {
     <View style={styles.header}>
       <View style={styles.headerBrand}>
         <Image source={clinicLogo} style={styles.headerLogo} resizeMode="contain" />
-        <View><Text style={styles.headerTitle}>Dr. Pranali</Text><Text style={styles.headerSub}>Dental Clinic â€¢ Taloja</Text></View>
+        <View style={{flex:1}}>
+          <Text style={styles.headerTitle} numberOfLines={1}>{activeWorkspace?.organisation_name || 'Dr. Pranali'}</Text>
+          <Text style={styles.headerSub} numberOfLines={1}>{activeWorkspace?.name || 'Dental Clinic - Taloja'}{activeWorkspace?.role ? ' - ' + activeWorkspace.role : ''}</Text>
+        </View>
       </View>
-      <Pressable onPress={()=>{logout();}} style={styles.headerAction}><Text style={styles.headerActionText}>Sign out</Text></Pressable>
+      <View style={{flexDirection:'row',gap:6,alignItems:'center'}}>
+        {(workspaces || []).length > 1 && <Pressable onPress={onSwitchWorkspace} style={styles.headerAction}><Text style={styles.headerActionText}>Switch clinic</Text></Pressable>}
+        <Pressable onPress={logout} style={styles.headerAction}><Text style={styles.headerActionText}>Sign out</Text></Pressable>
+      </View>
     </View>
     <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={()=>{setRefreshing(true);load();}}/>} contentContainerStyle={styles.content}>
       <View style={styles.hero}><View><Text style={styles.heroKicker}>CLINIC CONTROL CENTER</Text><Text style={styles.heroTitle}>Good day, Doctor</Text><Text style={styles.heroSub}>Manage today's patient flow from one place.</Text></View><View style={[styles.dot,{backgroundColor:apiOk?C.green:C.red}]}/></View>
@@ -391,7 +409,7 @@ function DoctorLoginScreen({ onSignedIn }) {
         email.trim(),
         password
       );
-      onSignedIn(session.access_token);
+      onSignedIn(session);
     } catch (e) {
       setError(e?.message || 'Sign-in failed. Check your clinic email and password.');
     } finally {
@@ -450,22 +468,193 @@ function DoctorLoginScreen({ onSignedIn }) {
   );
 }
 
+const DOCTOR_API_URL = 'https://dr-pranali-dental-api.onrender.com';
+
+function WorkspaceSelectionScreen({
+  workspaces,
+  activeClinicId,
+  busy,
+  error,
+  allowCancel,
+  onSelect,
+  onCancel,
+  onExit,
+}) {
+  return (
+    <SafeAreaView style={styles.safe}>
+      <StatusBar style="dark" />
+      <ScrollView contentContainerStyle={styles.loginWrap}>
+        <Image source={clinicLogo} style={styles.loginLogo} resizeMode="contain" />
+        <Text style={styles.kicker}>DOCTOR WORKSPACE</Text>
+        <Text style={styles.loginTitle}>Choose a clinic</Text>
+        <Text style={styles.loginSub}>
+          Your account can access multiple clinics. Choose the workspace whose patient records you need to manage.
+        </Text>
+        <View style={styles.card}>
+          {(workspaces || []).map((workspace) => {
+            const current = workspace.id === activeClinicId || workspace.clinic_id === activeClinicId;
+            return (
+              <Pressable
+                key={workspace.id}
+                disabled={busy}
+                onPress={() => onSelect(workspace.id)}
+                style={[
+                  styles.patientCard,
+                  current && styles.patientCardActive,
+                  { marginTop: 0, marginBottom: 9 },
+                  busy && { opacity: 0.6 },
+                ]}
+              >
+                <View style={styles.patientTop}>
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>{(workspace.name || 'C').slice(0, 1).toUpperCase()}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.patient}>{workspace.name || workspace.id}</Text>
+                    <Text style={styles.phone}>{workspace.organisation_name || 'Dental workspace'}</Text>
+                    <Text style={styles.phone}>Role: {workspace.role || 'doctor'}{current ? ' ? Current workspace' : ''}</Text>
+                  </View>
+                  <Text style={styles.chevron}>{current ? '?' : '?'}</Text>
+                </View>
+              </Pressable>
+            );
+          })}
+          {!workspaces?.length && <Empty text="No active clinic workspaces were returned. Sign out and contact your clinic administrator." />}
+          {!!error && <View style={styles.loginError}><Text style={styles.loginErrorTitle}>Workspace switch</Text><Text style={styles.loginErrorText}>{error}</Text></View>}
+          <Text style={styles.help}>Only the selected workspace is active in this session. Patient and clinical records remain separated by clinic.</Text>
+          {busy && <ActivityIndicator color={C.blue} style={{ marginTop: 12 }} />}
+          {allowCancel && <Pressable disabled={busy} onPress={onCancel} style={styles.action}><Text style={styles.actionText}>Return to current clinic</Text></Pressable>}
+          <Pressable disabled={busy} onPress={onExit} style={[styles.primary, { backgroundColor: '#EAF0F6' }]}><Text style={[styles.primaryText, { color: C.navy }]}>Sign out</Text></Pressable>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
 export default function App(){
   const [token,setToken]=useState(null);
+  const [user,setUser]=useState(null);
+  const [workspaces,setWorkspaces]=useState([]);
   const [checking,setChecking]=useState(true);
+  const [selectingWorkspace,setSelectingWorkspace]=useState(false);
+  const [workspaceBusy,setWorkspaceBusy]=useState(false);
+  const [workspaceError,setWorkspaceError]=useState('');
+  const [allowWorkspaceCancel,setAllowWorkspaceCancel]=useState(false);
 
   useEffect(() => {
-    getStoredDoctorSession().then(value => setToken(value || null)).finally(() => setChecking(false));
+    let mounted = true;
+    (async () => {
+      try {
+        const storedToken = await getStoredDoctorSession();
+        const storedUser = await getStoredDoctorUser();
+        if (!storedToken || !storedUser) {
+          if (storedToken) await signOutDoctor(DOCTOR_API_URL);
+          return;
+        }
+        if (mounted) {
+          setToken(storedToken);
+          setUser(storedUser);
+          setWorkspaces(storedUser.workspaces || []);
+        }
+        try {
+          const refreshed = await refreshStoredDoctorWorkspaces();
+          if (mounted && refreshed) {
+            setUser(refreshed.user);
+            setWorkspaces(refreshed.workspaces);
+          }
+        } catch (error) {
+          if (error?.status === 401 || error?.status === 403) {
+            await signOutDoctor(DOCTOR_API_URL);
+            if (mounted) {
+              setToken(null);
+              setUser(null);
+              setWorkspaces([]);
+            }
+          }
+          // On a network outage keep the last authorised workspace list cached.
+        }
+      } catch (error) {
+        if (mounted) setWorkspaceError(error?.message || 'Could not restore the doctor session.');
+      } finally {
+        if (mounted) setChecking(false);
+      }
+    })();
+    return () => { mounted = false; };
   }, []);
 
-  const logout = async () => {
-    await signOutDoctor('https://dr-pranali-dental-api.onrender.com');
+  const handleSignedIn = (session) => {
+    const nextWorkspaces = session.workspaces || session.user?.workspaces || [];
+    setToken(session.access_token);
+    setUser(session.user);
+    setWorkspaces(nextWorkspaces);
+    setWorkspaceError('');
+    setAllowWorkspaceCancel(false);
+    setSelectingWorkspace(nextWorkspaces.length > 1);
+  };
+
+  const logout = useCallback(async () => {
+    await signOutDoctor(DOCTOR_API_URL);
     setToken(null);
+    setUser(null);
+    setWorkspaces([]);
+    setSelectingWorkspace(false);
+    setWorkspaceError('');
+  }, []);
+
+  const chooseWorkspace = async (clinicId) => {
+    setWorkspaceError('');
+    if (clinicId === user?.clinic_id) {
+      setSelectingWorkspace(false);
+      setAllowWorkspaceCancel(false);
+      return;
+    }
+    setWorkspaceBusy(true);
+    try {
+      const session = await switchStoredDoctorWorkspace(clinicId);
+      setToken(session.access_token);
+      setUser(session.user);
+      setWorkspaces(session.workspaces || []);
+      setSelectingWorkspace(false);
+      setAllowWorkspaceCancel(false);
+    } catch (error) {
+      setWorkspaceError(error?.message || 'Could not switch clinic workspace.');
+      if (error?.status === 401) await logout();
+    } finally {
+      setWorkspaceBusy(false);
+    }
+  };
+
+  const requestWorkspaceSwitch = () => {
+    setWorkspaceError('');
+    setAllowWorkspaceCancel(true);
+    setSelectingWorkspace(true);
   };
 
   if (checking) return <SafeAreaView style={styles.safe}><ActivityIndicator size="large" color={C.blue} style={{marginTop:80}}/></SafeAreaView>;
-  if (!token) return <DoctorLoginScreen onSignedIn={setToken}/>;
-  return <Dashboard token={token} logout={logout}/>;
+  if (!token) return <DoctorLoginScreen onSignedIn={handleSignedIn}/>;
+  if (selectingWorkspace) {
+    return (
+      <WorkspaceSelectionScreen
+        workspaces={workspaces}
+        activeClinicId={user?.clinic_id}
+        busy={workspaceBusy}
+        error={workspaceError}
+        allowCancel={allowWorkspaceCancel}
+        onSelect={chooseWorkspace}
+        onCancel={() => { setSelectingWorkspace(false); setAllowWorkspaceCancel(false); setWorkspaceError(''); }}
+        onExit={logout}
+      />
+    );
+  }
+  return (
+    <Dashboard
+      token={token}
+      user={user}
+      workspaces={workspaces}
+      logout={logout}
+      onSwitchWorkspace={requestWorkspaceSwitch}
+    />
+  );
 }
 
 const styles=StyleSheet.create({

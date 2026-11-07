@@ -22,7 +22,13 @@ export async function request(path, token, options = {}) {
       const message = typeof detail === 'string' ? detail : detail?.message;
       const code = detail?.google_code || detail?.code || ('HTTP_' + response.status);
       const status = detail?.google_status || detail?.status || response.status;
-      throw new Error((message || data?.message || 'API request failed') + ' (HTTP ' + status + ', code ' + code + ')');
+      const apiError = new Error(
+        (message || data?.message || 'API request failed') +
+          ' (HTTP ' + status + ', code ' + code + ')'
+      );
+      apiError.status = status;
+      apiError.code = code;
+      throw apiError;
     }
     return data;
   } catch (error) {
@@ -36,6 +42,15 @@ export async function request(path, token, options = {}) {
 }
 
 export const listAppointments = (token) => request('/v1/dental/appointments', token);
+
+export const listDoctorWorkspaces = (token) =>
+  request('/v1/dental/auth/workspaces', token);
+
+export const switchDoctorWorkspace = (token, clinicId) =>
+  request('/v1/dental/auth/workspace/switch', token, {
+    method: 'POST',
+    body: JSON.stringify({ clinic_id: clinicId }),
+  });
 export const listPatients = (token) => request('/v1/dental/patients', token);
 
 export const updateAppointment = (token, id, payload) =>
