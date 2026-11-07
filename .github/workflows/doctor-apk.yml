@@ -37,6 +37,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Reject vulnerable dependency tree
+        run: npm audit --audit-level=low
+
       - name: Enforce clinic password-only Doctor authentication
         run: |
           test -f src/auth/passwordAuth.js
