@@ -1,6 +1,6 @@
-export const BRAND = {
-  name: 'Dr. Pranali Dental',
-  tagline: 'Healthy Smiles • Happier Lives',
+﻿export const BRAND = {
+  name: 'Oralyn',
+  tagline: 'Healthy Smiles â€¢ Happier Lives',
   supportEmail: '',
   colors: {
     navy: '#0C3B82',
@@ -14,3 +14,4 @@ export const BRAND = {
     white: '#FFFFFF',
   },
 } as const;
+

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { LanguageProvider, LanguageSwitch, useTranslation } from './src/i18n';
 import {
   ActivityIndicator,
@@ -59,14 +59,14 @@ const SERVICE_IMAGES = {
 const services = DENTAL_SERVICES.map(({ name, description, icon, image }) => [name, description, icon, SERVICE_IMAGES[image]]);
 
 const tabs = [
-  ['Home', '⌂'],
-  ['Services', '♢'],
-  ['Appointment', '▣'],
-  ['Gallery', '▧'],
-  ['Contact', '☎'],
+  ['Home', 'âŒ‚'],
+  ['Services', 'â™¢'],
+  ['Appointment', 'â–£'],
+  ['Gallery', 'â–§'],
+  ['Contact', 'â˜Ž'],
 ];
 
-function SafeImage({ source, style, resizeMode = 'cover', placeholder = '🦷' }) {
+function SafeImage({ source, style, resizeMode = 'cover', placeholder = 'ðŸ¦·' }) {
   const [failed, setFailed] = useState(false);
   if (failed) {
     return <View style={[style, styles.imageFallback]}><Text style={styles.imageFallbackText}>{placeholder}</Text></View>;
@@ -80,11 +80,11 @@ function WelcomeScreen({ onStart }) {
 
   const googleLogin = async () => {
     setGoogleBusy(true);
-    setGoogleMessage('Connecting securely to your Google account…');
+    setGoogleMessage('Connecting securely to your Google accountâ€¦');
     fetch(`${API_URL}/health`).catch(() => null);
     try {
       await signInWithGoogle();
-      setGoogleMessage('Signed in successfully. Opening your dental care home…');
+      setGoogleMessage('Signed in successfully. Opening your dental care homeâ€¦');
       onStart();
     } catch (error) {
       const code = error?.code || error?.errorCode || error?.name;
@@ -100,9 +100,9 @@ function WelcomeScreen({ onStart }) {
       <ScrollView contentContainerStyle={styles.welcomeContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <LanguageSwitch />
         <View style={styles.loginBrand}>
-          <SafeImage source={require('./assets/dr-pranali-branded-logo.png')} style={styles.loginBrandLogo} resizeMode="contain" />
-          <Text style={styles.loginBrandName}>Dr Pranali</Text>
-          <Text style={styles.loginBrandClinic}>D E N T A L   C L I N I C</Text>
+          <SafeImage source={require('./assets/oralyn-logo.png')} style={styles.loginBrandLogo} resizeMode="contain" />
+          <Text style={styles.loginBrandName}>Oralyn</Text>
+          <Text style={styles.loginBrandClinic}>SMART DENTAL CARE FOR HEALTHIER SMILES</Text>
         </View>
 
         <Text style={styles.welcomeTitle}>Healthy Smiles</Text>
@@ -119,20 +119,20 @@ function WelcomeScreen({ onStart }) {
           <View style={styles.loginDivider}><View style={styles.loginDividerLine}/><Text style={styles.loginDividerText}>OR</Text><View style={styles.loginDividerLine}/></View>
           <Pressable onPress={() => onStart()} style={styles.getStarted}>
             <Text style={styles.getStartedText}>Explore as a guest</Text>
-            <View style={styles.arrowCircle}><Text style={styles.arrowText}>→</Text></View>
+            <View style={styles.arrowCircle}><Text style={styles.arrowText}>â†’</Text></View>
           </Pressable>
           <Text style={styles.guestHint}>You can browse services and request an appointment without signing in.</Text>
         </View>
 
         <View style={styles.patientTrustRow}>
-          <View style={styles.patientTrustItem}><Text style={styles.patientTrustIcon}>▣</Text><Text style={styles.patientTrustLabel}>Appointments</Text></View>
-          <View style={styles.patientTrustItem}><Text style={styles.patientTrustIcon}>♡</Text><Text style={styles.patientTrustLabel}>Care history</Text></View>
-          <View style={styles.patientTrustItem}><Text style={styles.patientTrustIcon}>✦</Text><Text style={styles.patientTrustLabel}>Dental guidance</Text></View>
+          <View style={styles.patientTrustItem}><Text style={styles.patientTrustIcon}>â–£</Text><Text style={styles.patientTrustLabel}>Appointments</Text></View>
+          <View style={styles.patientTrustItem}><Text style={styles.patientTrustIcon}>â™¡</Text><Text style={styles.patientTrustLabel}>Care history</Text></View>
+          <View style={styles.patientTrustItem}><Text style={styles.patientTrustIcon}>âœ¦</Text><Text style={styles.patientTrustLabel}>Dental guidance</Text></View>
         </View>
         <Pressable onPress={() => onStart('Services')} style={styles.exploreButton}>
-          <Text style={styles.exploreText}>Browse dental services</Text><Text style={styles.exploreArrow}>→</Text>
+          <Text style={styles.exploreText}>Browse dental services</Text><Text style={styles.exploreArrow}>â†’</Text>
         </Pressable>
-        <Text style={styles.terms}>Secure sign-in • Your dental care journey, connected</Text>
+        <Text style={styles.terms}>Secure sign-in â€¢ Your dental care journey, connected</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -179,22 +179,22 @@ function HomeScreen({ go, clinic }) {
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
       <View style={styles.hero}>
         <View style={styles.profileColumn}>
-          <SafeImage source={require('./assets/dr-pranali.jpg')} style={styles.profileImage} placeholder="👩‍⚕️" />
+          <SafeImage source={require('./assets/dr-pranali.jpg')} style={styles.profileImage} placeholder="ðŸ‘©â€âš•ï¸" />
           <View style={styles.bdsBadge}><Text style={styles.bdsText}>BDS</Text></View>
           <Text style={styles.doctorName}>Dr. Pranali</Text>
-          <Text style={styles.degree}>BDS – Dental Surgeon</Text>
+          <Text style={styles.degree}>BDS â€“ Dental Surgeon</Text>
           <View style={styles.divider} />
-          <Text style={styles.smallInfo}>⌖  Taloja, Navi Mumbai</Text>
-          <Text style={styles.smallInfo}>◷  Mon – Sun: 10:00 AM – 9:00 PM</Text>
+          <Text style={styles.smallInfo}>âŒ–  Taloja, Navi Mumbai</Text>
+          <Text style={styles.smallInfo}>â—·  Mon â€“ Sun: 10:00 AM â€“ 9:00 PM</Text>
           <Text style={styles.byAppointment}>By Appointment Only</Text>
         </View>
 
         <View style={styles.heroCopy}>
-          <View style={styles.brandLine}><SafeImage source={require('./assets/dr-pranali-branded-logo.png')} style={styles.brandLineLogo} resizeMode="contain" /><Text style={styles.brand}>Dr. Pranali Dental Clinic</Text></View>
+          <View style={styles.brandLine}><SafeImage source={require('./assets/oralyn-logo.png')} style={styles.brandLineLogo} resizeMode="contain" /><Text style={styles.brand}>Oralyn</Text></View>
           <Text style={styles.heroTitle}>Healthy Smile,</Text>
           <Text style={[styles.heroTitle, styles.heroBlue]}>Happy You!</Text>
           <Text style={styles.heroSub}>Expert dental care for you and your family, with gentle treatment and modern technology.</Text>
-          <ActionButton label="Book Appointment" icon="▣" onPress={() => go('Appointment')} />
+          <ActionButton label="Book Appointment" icon="â–£" onPress={() => go('Appointment')} />
         </View>
       </View>
 
@@ -212,10 +212,10 @@ function HomeScreen({ go, clinic }) {
       </View>
 
       <View style={styles.featureRow}>
-        <Feature icon="♧" title="Experienced" subtitle="Doctor" />
-        <Feature icon="✓" title="Safe & Hygienic" subtitle="Care" />
-        <Feature icon="♙" title="Patient First" subtitle="Approach" />
-        <Feature icon="☆" title="Modern" subtitle="Technology" />
+        <Feature icon="â™§" title="Experienced" subtitle="Doctor" />
+        <Feature icon="âœ“" title="Safe & Hygienic" subtitle="Care" />
+        <Feature icon="â™™" title="Patient First" subtitle="Approach" />
+        <Feature icon="â˜†" title="Modern" subtitle="Technology" />
       </View>
 
       <View style={styles.aboutCard}>
@@ -223,17 +223,17 @@ function HomeScreen({ go, clinic }) {
           <Text style={styles.sectionTitle}>About Dr. Pranali</Text>
           <Text style={styles.aboutText}>A patient-focused dental practice offering preventive, restorative and cosmetic dental care in a comfortable environment.</Text>
         </View>
-        <Text style={styles.aboutTooth}>♧</Text>
+        <Text style={styles.aboutTooth}>â™§</Text>
       </View>
 
       <View style={styles.sectionHeaderRow}>
-        <Text style={styles.sectionTooth}>♧</Text>
+        <Text style={styles.sectionTooth}>â™§</Text>
         <Text style={styles.sectionTitle}>Our Dental Services</Text>
       </View>
       <View style={styles.servicesGrid}>
         {services.slice(0, 8).map(([name, desc, icon, image]) => <ServiceCard key={name} name={name} desc={desc} icon={icon} image={image} />)}
       </View>
-      <Pressable onPress={() => go('Services')} style={styles.viewAll}><Text style={styles.viewAllText}>View All Dental Services →</Text></Pressable>
+      <Pressable onPress={() => go('Services')} style={styles.viewAll}><Text style={styles.viewAllText}>View All Dental Services â†’</Text></Pressable>
 
       <View style={styles.bottomSpacer} />
     </ScrollView>
@@ -305,7 +305,7 @@ function ServicesScreen({ onBook }) {
   if (selectedService) {
     return (
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Pressable onPress={() => setSelectedService(null)} style={styles.viewAll}><Text style={styles.viewAllText}>‹ All services</Text></Pressable>
+        <Pressable onPress={() => setSelectedService(null)} style={styles.viewAll}><Text style={styles.viewAllText}>â€¹ All services</Text></Pressable>
         <View style={styles.serviceDetailCard}>
           <SafeImage source={selectedService.image} style={styles.serviceDetailPhoto} resizeMode="cover" placeholder="Dental service" />
           <Text style={styles.pageTitle}>{selectedService.name}</Text>
@@ -321,7 +321,7 @@ function ServicesScreen({ onBook }) {
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
       <Text style={styles.pageTitle}>Dental Services</Text>
       <Text style={styles.pageSub}>Explore care options and choose a reason for your visit.</Text>
-      <TextInput value={query} onChangeText={setQuery} placeholder="Search dental services…" placeholderTextColor="#91A1B0" style={styles.input} />
+      <TextInput value={query} onChangeText={setQuery} placeholder="Search dental servicesâ€¦" placeholderTextColor="#91A1B0" style={styles.input} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap:8,paddingVertical:12}}>
         {DENTAL_SERVICE_CATEGORIES.map(item => <Pressable key={item} onPress={() => setCategory(item)} style={[styles.chip,category===item&&styles.chipActive]}><Text style={[styles.chipText,category===item&&styles.chipTextActive]}>{item}</Text></Pressable>)}
       </ScrollView>
@@ -454,7 +454,7 @@ function AppointmentScreen({ initialReason, clinic }) {
         </ScrollView>
         <Field label="Additional Message" value={note} onChangeText={setNote} placeholder="Tell us anything important" multiline />
         <Pressable disabled={sending} onPress={submit} style={({ pressed }) => [styles.submitButton, pressed && { opacity: 0.8 }, sending && { opacity: 0.55 }]}>
-          <Text style={styles.submitText}>{sending ? 'Sending…' : 'Submit Appointment Request'}</Text>
+          <Text style={styles.submitText}>{sending ? 'Sendingâ€¦' : 'Submit Appointment Request'}</Text>
         </Pressable>
         <Text style={styles.formNote}>{clinic?.phone ? 'Or call ' + clinic.phone + ' for immediate assistance.' : 'For assistance, use the Contact tab.'}</Text>
       </View>
@@ -486,12 +486,12 @@ function GalleryScreen() {
       <Text style={styles.pageTitle}>Gallery</Text>
       <Text style={styles.pageSub}>A glimpse of Dr. Pranali and the clinic experience.</Text>
       <View style={styles.galleryCard}>
-        <SafeImage source={require('./assets/dr-pranali.jpg')} style={styles.galleryImage} placeholder="🏥" />
-        <Text style={styles.galleryTitle}>Dr. Pranali – BDS Dental Surgeon</Text>
+        <SafeImage source={require('./assets/dr-pranali.jpg')} style={styles.galleryImage} placeholder="ðŸ¥" />
+        <Text style={styles.galleryTitle}>Dr. Pranali â€“ BDS Dental Surgeon</Text>
         <Text style={styles.gallerySub}>Patient-focused dental care with a gentle approach.</Text>
       </View>
       <View style={styles.galleryPlaceholder}>
-        <Text style={styles.galleryPlaceholderIcon}>＋</Text>
+        <Text style={styles.galleryPlaceholderIcon}>ï¼‹</Text>
         <Text style={styles.galleryTitle}>Clinic photos can be added here</Text>
         <Text style={styles.gallerySub}>We can replace these cards with real clinic, treatment and before/after images.</Text>
       </View>
@@ -508,9 +508,9 @@ function ContactScreen({ clinic }) {
       <Text style={styles.pageSub}>We are here to help you with your dental care.</Text>
       <View style={styles.contactCard}>
         <Text style={styles.contactLabel}>{clinic?.name || 'Dr. Pranali Dental Clinic'}</Text>
-        <Text style={styles.contactDegree}>BDS – Dental Surgeon</Text>
-        <View style={styles.contactLine}><Text style={styles.contactIcon}>⌖</Text><Text style={styles.contactText}>{clinic?.address || 'Taloja, Navi Mumbai'}</Text></View>
-        <View style={styles.contactLine}><Text style={styles.contactIcon}>◷</Text><Text style={styles.contactText}>Monday – Sunday{`\n`}10:00 AM – 9:00 PM{`\n`}By Appointment Only</Text></View>
+        <Text style={styles.contactDegree}>BDS â€“ Dental Surgeon</Text>
+        <View style={styles.contactLine}><Text style={styles.contactIcon}>âŒ–</Text><Text style={styles.contactText}>{clinic?.address || 'Taloja, Navi Mumbai'}</Text></View>
+        <View style={styles.contactLine}><Text style={styles.contactIcon}>â—·</Text><Text style={styles.contactText}>Monday â€“ Sunday{`\n`}10:00 AM â€“ 9:00 PM{`\n`}By Appointment Only</Text></View>
         <ActionButton label="Call Clinic" icon="?~Z" onPress={() => clinic?.phone_e164 && Linking.openURL('tel:' + clinic.phone_e164)} variant="primary" />
         <ActionButton label="WhatsApp Clinic" icon="?-%" variant="secondary" onPress={() => clinic?.whatsapp_phone && Linking.openURL('https://wa.me/' + clinic.whatsapp_phone)} />
         <Pressable onPress={openMaps} style={styles.mapButton}><Text style={styles.mapButtonText}>Open Location in Google Maps</Text></Pressable>
@@ -546,7 +546,7 @@ function AppContent() {
           <Text style={styles.headerTitle}>{BRAND.name}</Text>
           <Text style={styles.headerSub}>{BRAND.tagline}</Text>
         </View>
-        <Pressable onPress={() => Alert.alert('Dr. Pranali Dental', 'BDS ? Dental Surgeon\n\n' + (clinic?.address || 'Taloja, Navi Mumbai') + '\n' + (clinic?.phone || 'Contact details unavailable'))} style={styles.settings}><Text style={styles.settingsText}>?</Text></Pressable>
+        <Pressable onPress={() => Alert.alert('Oralyn', 'BDS ? Dental Surgeon\n\n' + (clinic?.address || 'Taloja, Navi Mumbai') + '\n' + (clinic?.phone || 'Contact details unavailable'))} style={styles.settings}><Text style={styles.settingsText}>?</Text></Pressable>
       </View>
       <View style={styles.body}>{screen}</View>
       <View style={styles.bottomNav}>
@@ -723,3 +723,4 @@ const styles = StyleSheet.create({
 });
 
 export default function App() { return <SafeAreaProvider><LanguageProvider><AppContent /></LanguageProvider></SafeAreaProvider>; }
+

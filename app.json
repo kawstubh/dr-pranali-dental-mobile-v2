@@ -1,19 +1,19 @@
-{
+﻿{
   "expo": {
     "name": "Oralyn",
     "slug": "dr-pranali-dental",
     "version": "1.0.3",
     "orientation": "portrait",
-    "icon": "./assets/approved-clinic-icon.png",
+    "icon": "./assets/oralyn-icon.png",
     "splash": {
-      "image": "./assets/approved-clinic-splash.png",
+      "image": "./assets/oralyn-splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#F4FBFF"
     },
     "android": {
       "package": "com.drpranali.dental",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/approved-clinic-icon.png",
+        "foregroundImage": "./assets/oralyn-icon.png",
         "backgroundColor": "#F4FBFF",
         "monochromeImage": "./assets/patient-monochrome.png"
       }
@@ -44,3 +44,4 @@
     }
   }
 }
+
