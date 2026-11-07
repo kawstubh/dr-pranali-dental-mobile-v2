@@ -1,6 +1,6 @@
-workflows:
+﻿workflows:
   android-debug:
-    name: Dr. Pranali Dental Patient Android APK
+    name: Oralyn Patient Android APK
     max_build_duration: 120
     instance_type: linux_x2
     environment:
@@ -22,3 +22,4 @@ workflows:
           ./gradlew assembleDebug --no-daemon
     artifacts:
       - android/app/build/outputs/apk/debug/app-debug.apk
+

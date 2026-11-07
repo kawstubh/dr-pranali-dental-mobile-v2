@@ -1,4 +1,4 @@
-
+﻿
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator, Alert, Animated, Linking, Pressable, RefreshControl,
@@ -29,7 +29,7 @@ const STATUSES = ['requested','confirmed','scheduled','completed','cancelled','r
 
 function statusLabel(s){ return (s || '').replace('_',' ').replace(/^./, x => x.toUpperCase()); }
 
-function SafeImage({ source, style, resizeMode = 'cover', placeholder = '✚' }) {
+function SafeImage({ source, style, resizeMode = 'cover', placeholder = 'âœš' }) {
   const [failed, setFailed] = useState(false);
   if (failed) {
     return <View style={[style, styles.imageFallback]}><Text style={styles.imageFallbackText}>{placeholder}</Text></View>;
@@ -60,7 +60,7 @@ function AppointmentCard({ item, token, onChanged }) {
     <View style={styles.actions}>
       <Pressable onPress={call} style={styles.action}><Text style={styles.actionText}>Call</Text></Pressable>
       <Pressable onPress={whatsapp} style={styles.action}><Text style={styles.actionText}>WhatsApp</Text></Pressable>
-      {item.status==='requested' && <Pressable disabled={busy} onPress={()=>change('confirmed')} style={[styles.action,styles.confirm]}><Text style={styles.confirmText}>{busy?'â€¦':'Confirm'}</Text></Pressable>}
+      {item.status==='requested' && <Pressable disabled={busy} onPress={()=>change('confirmed')} style={[styles.action,styles.confirm]}><Text style={styles.confirmText}>{busy?'Ã¢â‚¬Â¦':'Confirm'}</Text></Pressable>}
       {item.status!=='completed' && item.status!=='cancelled' && item.status!=='no_show' && <Pressable disabled={busy} onPress={()=>change('completed')} style={styles.action}><Text style={styles.actionText}>Complete</Text></Pressable>}
     </View>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap:6,paddingTop:8}}>
@@ -153,7 +153,7 @@ function DentalChart({ token, patientId, patientName='Patient' }) {
         <View style={{flex:1}}>
           <Text style={styles.chartEyebrow}>CLINICAL ODONTOGRAM</Text>
           <Text style={styles.chartTitle}>Dental chart</Text>
-          <Text style={styles.chartPatient}>{patientName} â€¢ {loaded ? 'Synced clinical record' : 'Loading clinical record'}</Text>
+          <Text style={styles.chartPatient}>{patientName} Ã¢â‚¬Â¢ {loaded ? 'Synced clinical record' : 'Loading clinical record'}</Text>
         </View>
         <View style={styles.chartLegendDot}/>
       </View>
@@ -185,7 +185,7 @@ function DentalChart({ token, patientId, patientName='Patient' }) {
           <Text style={styles.selectedLabel}>Tooth {selected}</Text>
           <Text style={styles.selectedStatus}>Status: {currentState === 'attention' ? 'Needs attention' : currentState === 'treated' ? 'Treatment completed' : currentState === 'missing' ? 'Missing / extracted' : 'Healthy'}</Text>
         </View>
-        <Pressable disabled={!patientId || saving} onPress={cycleState} style={[styles.changeStatus, saving && {opacity:0.5}]}><Text style={styles.changeStatusText}>{saving ? 'Savingâ€¦' : 'Update'}</Text></Pressable>
+        <Pressable disabled={!patientId || saving} onPress={cycleState} style={[styles.changeStatus, saving && {opacity:0.5}]}><Text style={styles.changeStatusText}>{saving ? 'SavingÃ¢â‚¬Â¦' : 'Update'}</Text></Pressable>
       </View>
 
       <View style={styles.chartLegend}>
@@ -210,15 +210,15 @@ function Periodontogram({ token, patientId, patientName='Patient' }) {
   const update=(key,value)=>setRecords(prev=>({...prev,[selected]:{...(prev[selected]||{}),[key]:value}}));
   const save=async()=>{ if(!patientId||saving)return; setSaving(true); try{await savePeriodontogramEntry(token,patientId,{tooth_fdi:selected,measurements:current,note:''}); Alert.alert('Periodontogram','Measurements saved for tooth '+selected+'.');}catch(e){Alert.alert('Periodontogram',e.message||'Could not save measurements.')}finally{setSaving(false)} };
   return <View style={styles.chartCard}>
-    <View style={styles.chartHeader}><View style={{flex:1}}><Text style={styles.chartEyebrow}>CLINICAL PERIODONTICS</Text><Text style={styles.chartTitle}>Periodontogram</Text><Text style={styles.chartPatient}>{patientName} â€¢ 6-point periodontal probing</Text></View><View style={[styles.chartLegendDot,{backgroundColor:'#D98900'}]}/></View>
+    <View style={styles.chartHeader}><View style={{flex:1}}><Text style={styles.chartEyebrow}>CLINICAL PERIODONTICS</Text><Text style={styles.chartTitle}>Periodontogram</Text><Text style={styles.chartPatient}>{patientName} Ã¢â‚¬Â¢ 6-point periodontal probing</Text></View><View style={[styles.chartLegendDot,{backgroundColor:'#D98900'}]}/></View>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap:6,paddingVertical:12}}>{teeth.map(n=><Pressable key={n} onPress={()=>setSelected(n)} style={[styles.perioTooth,selected===n&&styles.perioToothActive]}><Text style={[styles.perioToothText,selected===n&&styles.perioToothTextActive]}>{n}</Text></Pressable>)}</ScrollView>
-    <View style={styles.perioSelected}><Text style={styles.selectedLabel}>Tooth {selected}</Text><Text style={styles.selectedStatus}>Probing depths (mm) â€” MB Â· B Â· DB Â· ML Â· L Â· DL</Text></View>
+    <View style={styles.perioSelected}><Text style={styles.selectedLabel}>Tooth {selected}</Text><Text style={styles.selectedStatus}>Probing depths (mm) Ã¢â‚¬â€ MB Ã‚Â· B Ã‚Â· DB Ã‚Â· ML Ã‚Â· L Ã‚Â· DL</Text></View>
     <View style={styles.perioGrid}>{points.map(p=><View key={p} style={styles.perioCell}><Text style={styles.perioPoint}>{p}</Text><TextInput value={String(current[p]??'')} onChangeText={v=>update(p,v.replace(/[^0-9]/g,''))} keyboardType="number-pad" maxLength={2} placeholder="0" placeholderTextColor="#AAB5BF" style={styles.perioInput}/></View>)}</View>
     <View style={styles.perioMeta}>
       {['recession','CAL'].map(k=><View key={k} style={styles.metaField}><Text style={styles.metaLabel}>{k==='recession'?'Recession':'CAL'} (mm)</Text><TextInput value={String(current[k]??'')} onChangeText={v=>update(k,v.replace(/[^0-9]/g,''))} keyboardType="number-pad" style={styles.metaInput}/></View>)}
-      {['BOP','Mobility','Furcation','Plaque','Calculus'].map(k=><Pressable key={k} onPress={()=>update(k,current[k]?'':'Yes')} style={[styles.perioFlag,current[k]&&styles.perioFlagActive]}><Text style={[styles.perioFlagText,current[k]&&styles.perioFlagTextActive]}>{k}{current[k]?' âœ“':''}</Text></Pressable>)}
+      {['BOP','Mobility','Furcation','Plaque','Calculus'].map(k=><Pressable key={k} onPress={()=>update(k,current[k]?'':'Yes')} style={[styles.perioFlag,current[k]&&styles.perioFlagActive]}><Text style={[styles.perioFlagText,current[k]&&styles.perioFlagTextActive]}>{k}{current[k]?' Ã¢Å“â€œ':''}</Text></Pressable>)}
     </View>
-    <Pressable disabled={saving||!patientId} onPress={save} style={[styles.primary,{marginTop:12,opacity:saving?0.6:1}]}><Text style={styles.primaryText}>{saving?'Savingâ€¦':'Save Periodontogram'}</Text></Pressable>
+    <Pressable disabled={saving||!patientId} onPress={save} style={[styles.primary,{marginTop:12,opacity:saving?0.6:1}]}><Text style={styles.primaryText}>{saving?'SavingÃ¢â‚¬Â¦':'Save Periodontogram'}</Text></Pressable>
   </View>;
 }
 
@@ -240,7 +240,7 @@ function IntelligenceCard({ token, patient, title, description, goal, requiresPa
     <View style={styles.intelCardHead}><View style={{flex:1}}><Text style={styles.intelName}>{title}</Text><Text style={styles.intelSub}>{description}</Text></View><Text style={styles.aiBadge}>AI</Text></View>
     {patient?.name&&<Text style={styles.intelPatient}>Patient: {patient.name}</Text>}
     {status==='idle'&&<Pressable onPress={run} style={styles.intelRunButton}><Text style={styles.intelRunText}>Run intelligence</Text></Pressable>}
-    {status==='loading'&&<View style={styles.intelSkeleton}><View style={styles.skeletonLineWide}/><View style={styles.skeletonLine}/><View style={styles.skeletonLineShort}/><Text style={styles.intelLoading}>Analyzing clinical context and evidenceâ€¦</Text></View>}
+    {status==='loading'&&<View style={styles.intelSkeleton}><View style={styles.skeletonLineWide}/><View style={styles.skeletonLine}/><View style={styles.skeletonLineShort}/><Text style={styles.intelLoading}>Analyzing clinical context and evidenceÃ¢â‚¬Â¦</Text></View>}
     {status==='error'&&<View style={styles.intelError}><Text style={styles.intelErrorTitle}>Could not complete</Text><Text style={styles.intelErrorText}>{result?.error}</Text><Pressable onPress={run} style={styles.intelRetry}><Text style={styles.intelRetryText}>Retry</Text></Pressable></View>}
     {status==='result'&&<View style={styles.intelResult}>
       <View style={styles.aiVerify}><Text style={styles.aiVerifyText}>AI suggestion, doctor to verify</Text></View>
@@ -263,16 +263,16 @@ function DoctorAIActionCard({ token, patient, title, description, capability, ru
   return <View style={styles.intelCardLarge}>
     <View style={styles.intelCardHead}><View style={{flex:1}}><Text style={styles.intelName}>{title}</Text><Text style={styles.intelSub}>{description}</Text></View><Text style={styles.aiBadge}>AI</Text></View>
     {state==='idle'&&<Pressable onPress={execute} disabled={!patient?.id} style={[styles.intelRunButton,!patient?.id&&{opacity:0.45}]}><Text style={styles.intelRunText}>{patient?.id?'Run AI insight':'Select a patient'}</Text></Pressable>}
-    {state==='loading'&&<View style={styles.intelSkeleton}><ActivityIndicator color={C.blue}/><Text style={styles.intelLoading}>Analyzing authorized clinical data…</Text></View>}
+    {state==='loading'&&<View style={styles.intelSkeleton}><ActivityIndicator color={C.blue}/><Text style={styles.intelLoading}>Analyzing authorized clinical dataâ€¦</Text></View>}
     {state==='error'&&<View style={styles.intelError}><Text style={styles.intelErrorTitle}>Could not complete</Text><Text style={styles.intelErrorText}>{result?.error}</Text><Pressable onPress={execute} style={styles.intelRetry}><Text style={styles.intelRetryText}>Retry</Text></Pressable></View>}
-    {state==='result'&&<View style={styles.intelResult}><View style={styles.aiVerify}><Text style={styles.aiVerifyText}>AI suggestion — doctor to verify</Text></View>{editing?<TextInput multiline value={draft} onChangeText={setDraft} style={styles.intelEditInput}/>:<Text style={styles.intelAnswer}>{draft}</Text>}<Text style={styles.intelSafety}>AI never writes the chart, periodontogram, treatment plan or appointment automatically.</Text><View style={styles.intelActions}><Pressable onPress={()=>approve('accepted')} style={styles.acceptButton}><Text style={styles.acceptText}>Accept</Text></Pressable><Pressable onPress={()=>setEditing(v=>!v)} style={styles.editButton}><Text style={styles.editText}>{editing?'Preview':'Edit'}</Text></Pressable><Pressable onPress={()=>approve('dismissed')} style={styles.dismissButton}><Text style={styles.dismissText}>Dismiss</Text></Pressable></View></View>}
+    {state==='result'&&<View style={styles.intelResult}><View style={styles.aiVerify}><Text style={styles.aiVerifyText}>AI suggestion â€” doctor to verify</Text></View>{editing?<TextInput multiline value={draft} onChangeText={setDraft} style={styles.intelEditInput}/>:<Text style={styles.intelAnswer}>{draft}</Text>}<Text style={styles.intelSafety}>AI never writes the chart, periodontogram, treatment plan or appointment automatically.</Text><View style={styles.intelActions}><Pressable onPress={()=>approve('accepted')} style={styles.acceptButton}><Text style={styles.acceptText}>Accept</Text></Pressable><Pressable onPress={()=>setEditing(v=>!v)} style={styles.editButton}><Text style={styles.editText}>{editing?'Preview':'Edit'}</Text></Pressable><Pressable onPress={()=>approve('dismissed')} style={styles.dismissButton}><Text style={styles.dismissText}>Dismiss</Text></Pressable></View></View>}
   </View>;
 }
 
 function DoctorScanCard({token,patient}) {
   const [ref,setRef]=useState(''); const [result,setResult]=useState(null); const [loading,setLoading]=useState(false);
   const run=async()=>{if(!patient?.id||!ref.trim())return;setLoading(true);try{setResult(await doctorScanAnalysis(token,{patient_id:patient.id,scan_reference:ref.trim(),scan_type:'oral_screening',metadata:{}}));}catch(e){setResult({error:e.message||'AI unavailable'});}finally{setLoading(false);}};
-  return <View style={styles.intelCardLarge}><Text style={styles.intelName}>Images • ScanO AI Analysis</Text><Text style={styles.intelSub}>Official ScanO adapter status is reported; AI does not diagnose from an unavailable adapter.</Text><TextInput value={ref} onChangeText={setRef} placeholder="Scan reference / approved image identifier" placeholderTextColor="#91A0AE" style={styles.intelQuestionInput}/><Pressable onPress={run} disabled={!patient?.id||!ref.trim()||loading} style={[styles.intelRunButton,(!patient?.id||!ref.trim())&&{opacity:0.45}]}><Text style={styles.intelRunText}>{loading?'Analyzing…':'Analyze scan'}</Text></Pressable>{result&&<Text style={styles.intelAnswer}>{result.error||JSON.stringify(result,null,2)}</Text>}</View>;
+  return <View style={styles.intelCardLarge}><Text style={styles.intelName}>Images â€¢ ScanO AI Analysis</Text><Text style={styles.intelSub}>Official ScanO adapter status is reported; AI does not diagnose from an unavailable adapter.</Text><TextInput value={ref} onChangeText={setRef} placeholder="Scan reference / approved image identifier" placeholderTextColor="#91A0AE" style={styles.intelQuestionInput}/><Pressable onPress={run} disabled={!patient?.id||!ref.trim()||loading} style={[styles.intelRunButton,(!patient?.id||!ref.trim())&&{opacity:0.45}]}><Text style={styles.intelRunText}>{loading?'Analyzingâ€¦':'Analyze scan'}</Text></Pressable>{result&&<Text style={styles.intelAnswer}>{result.error||JSON.stringify(result,null,2)}</Text>}</View>;
 }
 
 function DoctorDailyAISummary({token}) {
@@ -311,8 +311,8 @@ function Dashboard({ token, logout }) {
     <StatusBar style="light"/>
     <View style={styles.header}>
       <View style={styles.headerBrand}>
-        <SafeImage source={clinicLogo} style={styles.headerLogo} resizeMode="contain" placeholder="✚" />
-        <View><Text style={styles.headerTitle}>{BRAND.name}</Text><Text style={styles.headerSub}>Dental Clinic â€¢ Taloja</Text></View>
+        <SafeImage source={clinicLogo} style={styles.headerLogo} resizeMode="contain" placeholder="âœš" />
+        <View><Text style={styles.headerTitle}>{BRAND.name}</Text><Text style={styles.headerSub}>Dental Clinic Ã¢â‚¬Â¢ Taloja</Text></View>
       </View>
       <View style={{alignItems:'flex-end'}}><LanguageSwitch /><Pressable onPress={()=>{logout();}} style={styles.headerAction}><Text style={styles.headerActionText}>Sign out</Text></Pressable></View>
     </View>
@@ -324,10 +324,10 @@ function Dashboard({ token, logout }) {
       {tab==='Home' && <View>
         <View style={styles.sectionRow}><Text style={styles.sectionTitle}>Today's workspace</Text><Text style={styles.patientCount}>Live clinic data</Text></View>
         <View style={styles.quickGrid}>
-          <Pressable onPress={()=>setTab('Appointments')} style={styles.quickCard}><View style={styles.quickIcon}><Text>ðŸ“…</Text></View><Text style={styles.quickTitle}>Appointments</Text><Text style={styles.quickSub}>{requested} new request{requested===1?'':'s'}</Text></Pressable>
-          <Pressable onPress={()=>setTab('Patients')} style={styles.quickCard}><View style={styles.quickIcon}><Text>ðŸ‘¥</Text></View><Text style={styles.quickTitle}>Patients</Text><Text style={styles.quickSub}>{patients.length} clinical record{patients.length===1?'':'s'}</Text></Pressable>
-          <Pressable onPress={()=>setTab('Clinical')} style={styles.quickCard}><View style={styles.quickIcon}><Text>ðŸ¦·</Text></View><Text style={styles.quickTitle}>Dental Chart</Text><Text style={styles.quickSub}>Odontogram & perio</Text></Pressable>
-          <Pressable onPress={()=>setTab('Clinical')} style={styles.quickCard}><View style={styles.quickIcon}><Text>âœ¦</Text></View><Text style={styles.quickTitle}>AI Intelligence</Text><Text style={styles.quickSub}>Clinical decision support</Text></Pressable>
+          <Pressable onPress={()=>setTab('Appointments')} style={styles.quickCard}><View style={styles.quickIcon}><Text>Ã°Å¸â€œâ€¦</Text></View><Text style={styles.quickTitle}>Appointments</Text><Text style={styles.quickSub}>{requested} new request{requested===1?'':'s'}</Text></Pressable>
+          <Pressable onPress={()=>setTab('Patients')} style={styles.quickCard}><View style={styles.quickIcon}><Text>Ã°Å¸â€˜Â¥</Text></View><Text style={styles.quickTitle}>Patients</Text><Text style={styles.quickSub}>{patients.length} clinical record{patients.length===1?'':'s'}</Text></Pressable>
+          <Pressable onPress={()=>setTab('Clinical')} style={styles.quickCard}><View style={styles.quickIcon}><Text>Ã°Å¸Â¦Â·</Text></View><Text style={styles.quickTitle}>Dental Chart</Text><Text style={styles.quickSub}>Odontogram & perio</Text></Pressable>
+          <Pressable onPress={()=>setTab('Clinical')} style={styles.quickCard}><View style={styles.quickIcon}><Text>Ã¢Å“Â¦</Text></View><Text style={styles.quickTitle}>AI Intelligence</Text><Text style={styles.quickSub}>Clinical decision support</Text></Pressable>
         </View>
         <View style={styles.todayCard}>
           <View><Text style={styles.todayKicker}>CLINIC STATUS</Text><Text style={styles.todayTitle}>{apiOk ? 'Everything is connected' : 'Connection needs attention'}</Text><Text style={styles.todaySub}>Patient bookings and doctor records use the same secure backend.</Text></View>
@@ -341,8 +341,8 @@ function Dashboard({ token, logout }) {
       </View>}
       {tab==='Patients' && <View>
         <View style={styles.sectionRow}><Text style={styles.sectionTitle}>Patients</Text><Text style={styles.patientCount}>{patients.length} records</Text></View>
-        {patients.length===0?<Empty text="No patients yet. Patient bookings will appear here."/>:patients.map((p,i)=><Pressable key={p.id} onPress={()=>setSelectedPatient(p)} style={[styles.patientCard,selectedPatient?.id===p.id&&styles.patientCardActive]}><View style={styles.patientTop}><View style={styles.avatar}><Text style={styles.avatarText}>{(p.name||'P').slice(0,1).toUpperCase()}</Text></View><View style={{flex:1}}><Text style={styles.patient}>{p.name}</Text><Text style={styles.phone}>{p.phone||'No phone'}{p.age?' â€¢ Age '+p.age:''}</Text></View><Text style={styles.chevron}>â€º</Text></View></Pressable>)}
-        {selectedPatient ? <><View style={styles.selectedPatientBanner}><Text style={styles.selectedPatientLabel}>SELECTED PATIENT</Text><Text style={styles.selectedPatientName}>{selectedPatient.name}</Text><Text style={styles.selectedPatientMeta}>{selectedPatient.phone||'No phone'}{selectedPatient.age?' â€¢ Age '+selectedPatient.age:''}</Text></View><DoctorAIActionCard token={token} patient={selectedPatient} title="Patient Profile • AI Insights" description="Summary and risk flags from the authorized record." capability="patient_summary" run={doctorPatientSummary}/><DentalChart token={token} patientId={selectedPatient.id} patientName={selectedPatient.name} /><DoctorAIActionCard token={token} patient={selectedPatient} title="Dental Chart & Periodontogram • AI Insights" description="Patterns and findings that merit clinician review." capability="chart_insights" run={doctorChartInsights}/><Periodontogram token={token} patientId={selectedPatient.id} patientName={selectedPatient.name} /></> : <Empty text="Select a patient to open the dental chart and periodontogram." />}
+        {patients.length===0?<Empty text="No patients yet. Patient bookings will appear here."/>:patients.map((p,i)=><Pressable key={p.id} onPress={()=>setSelectedPatient(p)} style={[styles.patientCard,selectedPatient?.id===p.id&&styles.patientCardActive]}><View style={styles.patientTop}><View style={styles.avatar}><Text style={styles.avatarText}>{(p.name||'P').slice(0,1).toUpperCase()}</Text></View><View style={{flex:1}}><Text style={styles.patient}>{p.name}</Text><Text style={styles.phone}>{p.phone||'No phone'}{p.age?' Ã¢â‚¬Â¢ Age '+p.age:''}</Text></View><Text style={styles.chevron}>Ã¢â‚¬Âº</Text></View></Pressable>)}
+        {selectedPatient ? <><View style={styles.selectedPatientBanner}><Text style={styles.selectedPatientLabel}>SELECTED PATIENT</Text><Text style={styles.selectedPatientName}>{selectedPatient.name}</Text><Text style={styles.selectedPatientMeta}>{selectedPatient.phone||'No phone'}{selectedPatient.age?' Ã¢â‚¬Â¢ Age '+selectedPatient.age:''}</Text></View><DoctorAIActionCard token={token} patient={selectedPatient} title="Patient Profile â€¢ AI Insights" description="Summary and risk flags from the authorized record." capability="patient_summary" run={doctorPatientSummary}/><DentalChart token={token} patientId={selectedPatient.id} patientName={selectedPatient.name} /><DoctorAIActionCard token={token} patient={selectedPatient} title="Dental Chart & Periodontogram â€¢ AI Insights" description="Patterns and findings that merit clinician review." capability="chart_insights" run={doctorChartInsights}/><Periodontogram token={token} patientId={selectedPatient.id} patientName={selectedPatient.name} /></> : <Empty text="Select a patient to open the dental chart and periodontogram." />}
       </View>}
       {tab==='Clinical' && <View>
         <View style={styles.intelHero}><Text style={styles.intelKicker}>AI DENTAL COMMAND CENTER</Text><Text style={styles.intelTitle}>Clinical intelligence</Text><Text style={styles.intelText}>Evidence-backed decision support. AI suggestions never write to the dental chart or treatment plan without doctor confirmation.</Text></View>
@@ -356,7 +356,7 @@ function Dashboard({ token, logout }) {
           <Text style={styles.treatmentCatalogueSub}>Select a service to discuss in the clinical plan. The catalogue does not write to a patient record.</Text>
           {DENTAL_SERVICES.map(service => <View key={service.id} style={styles.treatmentServiceRow}><Text style={styles.treatmentServiceIcon}>{service.icon}</Text><View style={{flex:1}}><Text style={styles.treatmentServiceName}>{service.name}</Text><Text style={styles.treatmentServiceMeta}>{service.category}</Text></View></View>)}
         </View>
-                <DoctorAIActionCard token={token} patient={selectedPatient} title="Treatment Planning • AI Suggestion" description="Treatment-plan options with rationale, alternatives and verification points." capability="treatment_plan" run={doctorTreatmentPlan}/>
+                <DoctorAIActionCard token={token} patient={selectedPatient} title="Treatment Planning â€¢ AI Suggestion" description="Treatment-plan options with rationale, alternatives and verification points." capability="treatment_plan" run={doctorTreatmentPlan}/>
         <DoctorAIActionCard token={token} patient={selectedPatient} title="Follow-up & Recall Recommendations" description="Recall timing and follow-up considerations; no appointment is created automatically." capability="follow_up" run={doctorFollowUp}/>
         <DoctorScanCard token={token} patient={selectedPatient}/>
         <IntelligenceCard token={token} patient={selectedPatient} title="Clinical Research" description="Evidence-backed research with sources." goal="Answer an evidence-based clinical question and show sources and uncertainty." />
@@ -381,9 +381,9 @@ function ClinicalResearchCard({ token, patient }) {
   const evidence=extractEvidence(result);
   return <View style={styles.intelCardLarge}>
     <View style={styles.intelCardHead}><View style={{flex:1}}><Text style={styles.intelName}>Clinical Research</Text><Text style={styles.intelSub}>Ask an evidence-based clinical question. Sources are shown when returned.</Text></View><Text style={styles.aiBadge}>AI</Text></View>
-    <TextInput value={question} onChangeText={setQuestion} placeholder="Ask a clinical questionâ€¦" placeholderTextColor="#91A0AE" multiline style={styles.intelQuestionInput}/>
-    <Pressable disabled={!question.trim()||status==='loading'} onPress={run} style={[styles.intelRunButton,(!question.trim()||status==='loading')&&{opacity:0.5}]}><Text style={styles.intelRunText}>{status==='loading'?'Researchingâ€¦':'Ask clinical research'}</Text></Pressable>
-    {status==='loading'&&<View style={styles.intelSkeleton}><View style={styles.skeletonLineWide}/><View style={styles.skeletonLine}/><View style={styles.skeletonLineShort}/><Text style={styles.intelLoading}>Retrieving evidence and reasoningâ€¦</Text></View>}
+    <TextInput value={question} onChangeText={setQuestion} placeholder="Ask a clinical questionÃ¢â‚¬Â¦" placeholderTextColor="#91A0AE" multiline style={styles.intelQuestionInput}/>
+    <Pressable disabled={!question.trim()||status==='loading'} onPress={run} style={[styles.intelRunButton,(!question.trim()||status==='loading')&&{opacity:0.5}]}><Text style={styles.intelRunText}>{status==='loading'?'ResearchingÃ¢â‚¬Â¦':'Ask clinical research'}</Text></Pressable>
+    {status==='loading'&&<View style={styles.intelSkeleton}><View style={styles.skeletonLineWide}/><View style={styles.skeletonLine}/><View style={styles.skeletonLineShort}/><Text style={styles.intelLoading}>Retrieving evidence and reasoningÃ¢â‚¬Â¦</Text></View>}
     {status==='error'&&<View style={styles.intelError}><Text style={styles.intelErrorTitle}>Could not complete</Text><Text style={styles.intelErrorText}>{result?.error}</Text><Pressable onPress={run} style={styles.intelRetry}><Text style={styles.intelRetryText}>Retry</Text></Pressable></View>}
     {status==='result'&&<View style={styles.intelResult}><View style={styles.aiVerify}><Text style={styles.aiVerifyText}>AI suggestion, doctor to verify</Text></View>{editing?<TextInput multiline value={edited} onChangeText={setEdited} style={styles.intelEditInput}/>:<Text style={styles.intelAnswer}>{typeof result?.answer==='string'?result.answer:JSON.stringify(result?.answer||result,null,2)}</Text>}{!!evidence.length&&<View style={styles.sourceBox}><Text style={styles.sourceTitle}>Sources / evidence</Text>{evidence.slice(0,6).map((item,index)=><View key={index} style={styles.sourceItem}><Text style={styles.sourceName}>{item.title||item.source||'Evidence'}</Text>{!!item.url&&<Text style={styles.sourceUrl}>{item.url}</Text>}{!!item.content&&<Text style={styles.sourceContent}>{item.content}</Text>}</View>)}</View>}<Text style={styles.intelSafety}>Nothing from this result is written to the dental chart or treatment plan automatically.</Text><View style={styles.intelActions}><Pressable onPress={()=>Alert.alert('Accepted','Accepted for this session only. No clinical record was changed.')} style={styles.acceptButton}><Text style={styles.acceptText}>Accept</Text></Pressable><Pressable onPress={()=>setEditing(v=>!v)} style={styles.editButton}><Text style={styles.editText}>{editing?'Preview':'Edit'}</Text></Pressable><Pressable onPress={()=>{setStatus('idle');setResult(null)}} style={styles.dismissButton}><Text style={styles.dismissText}>Dismiss</Text></Pressable></View></View>}
   </View>;
@@ -436,8 +436,8 @@ function DoctorLoginScreen({ onSignedIn }) {
               <SafeImage source={clinicLogo} style={styles.loginLogo} resizeMode="contain" placeholder="+" />
             </View>
           </View>
-          <Text style={styles.kicker}>CARE  •  PRECISION  •  PROGRESS</Text>
-          <Text style={styles.loginTitle}>Dr Pranali</Text>
+          <Text style={styles.kicker}>CARE  â€¢  PRECISION  â€¢  PROGRESS</Text>
+          <Text style={styles.loginTitle}>Oralyn Doctor</Text>
           <Text style={styles.doctorLoginIntro}>D E N T A L   C L I N I C</Text>
           <View style={styles.card}>
             <Text style={styles.label}>{setupMode ? "First-time clinic setup" : "Doctor Login"}</Text>
@@ -451,13 +451,13 @@ function DoctorLoginScreen({ onSignedIn }) {
             <Pressable disabled={busy} onPress={login} style={[styles.passwordLoginButton, busy && {opacity:0.6}]}>
               {busy ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.passwordLoginText}>{setupMode ? "Create first administrator" : "Secure doctor login"}</Text>}
             </Pressable>
-            {serverWaking && <Text style={styles.serverWake}>Connecting securely to the clinic service…</Text>}
+            {serverWaking && <Text style={styles.serverWake}>Connecting securely to the clinic serviceâ€¦</Text>}
             {!!error && <View accessibilityRole="alert" style={styles.loginError}><Text style={styles.loginErrorTitle}>Sign-in error</Text><Text style={styles.loginErrorText}>{error}</Text></View>}
             <Pressable disabled={busy} onPress={() => { setSetupMode(v => !v); setError(''); }} style={{paddingVertical:14,alignItems:'center'}}>
               <Text style={{color:C.blue,fontWeight:'800'}}>{setupMode ? "Back to sign in" : "First-time clinic setup"}</Text>
             </Pressable>
             <Text style={{fontSize:11,color:C.muted,lineHeight:17,marginTop:5}}>Doctor access uses clinic email and password only. Google sign-in is not available.</Text>
-            <View style={styles.loginSecureRow}><Text style={styles.loginSecureIcon}>✓</Text><Text style={styles.loginSecureText}>Authorised clinic account only</Text></View>
+            <View style={styles.loginSecureRow}><Text style={styles.loginSecureIcon}>âœ“</Text><Text style={styles.loginSecureText}>Authorised clinic account only</Text></View>
           </View>
           <Text style={styles.doctorLoginFooter}>Protected access for clinical information</Text>
         </Animated.View>
@@ -520,3 +520,4 @@ const styles=StyleSheet.create({
 });
 
 export default function App() { return <SafeAreaProvider><AppContent /></SafeAreaProvider>; }
+
