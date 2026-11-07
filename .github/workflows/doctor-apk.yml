@@ -14,6 +14,8 @@ jobs:
   build-doctor-apk:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      EXPO_PUBLIC_DENTAL_API_URL: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && 'https://dr-pranali-dental-api.onrender.com' || 'https://dr-pranali-dental-api-staging.onrender.com' }}
     defaults:
       run:
         working-directory: doctor-app
@@ -62,6 +64,14 @@ jobs:
 
       - name: TypeScript compiler check
         run: npx tsc --noEmit
+
+      - name: Verify selected API environment
+        run: |
+          case "$EXPO_PUBLIC_DENTAL_API_URL" in
+            https://dr-pranali-dental-api-staging.onrender.com|https://dr-pranali-dental-api.onrender.com) ;;
+            *) echo "::error::Unexpected Doctor API target."; exit 1 ;;
+          esac
+          echo "Doctor API target: $EXPO_PUBLIC_DENTAL_API_URL"
 
       - name: Generate Android project
         run: npx expo prebuild --platform android --non-interactive

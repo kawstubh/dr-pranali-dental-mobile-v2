@@ -1,4 +1,6 @@
-const API_URL = 'https://dr-pranali-dental-api.onrender.com';
+import { DOCTOR_API_URL } from './apiConfig';
+
+const API_URL = DOCTOR_API_URL;
 
 export async function request(path, token, options = {}) {
   const { timeoutMs = 15000, ...fetchOptions } = options;
