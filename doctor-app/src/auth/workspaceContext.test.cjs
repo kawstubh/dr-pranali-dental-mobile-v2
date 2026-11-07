@@ -17,6 +17,9 @@ function createStorage(initial = {}) {
     async setItem(key, value) {
       values.set(key, value);
     },
+    async multiSet(entries) {
+      entries.forEach(([key, value]) => values.set(key, value));
+    },
     async multiRemove(keys) {
       keys.forEach((key) => values.delete(key));
     },

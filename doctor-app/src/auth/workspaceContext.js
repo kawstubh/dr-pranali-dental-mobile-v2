@@ -41,8 +41,16 @@ async function persistWorkspaceSession(storage, session) {
   }
   const workspaces = normalizeWorkspaces(session.workspaces);
   const user = { ...session.user, workspaces };
-  await storage.setItem(SESSION_KEY, session.access_token);
-  await storage.setItem(USER_KEY, JSON.stringify(user));
+  const entries = [
+    [SESSION_KEY, session.access_token],
+    [USER_KEY, JSON.stringify(user)],
+  ];
+  if (typeof storage.multiSet === 'function') {
+    await storage.multiSet(entries);
+  } else {
+    await storage.setItem(SESSION_KEY, session.access_token);
+    await storage.setItem(USER_KEY, JSON.stringify(user));
+  }
   return {
     ...session,
     user,
