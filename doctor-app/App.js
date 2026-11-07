@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry, listOrganisationWorkspaces, createOrganisationWorkspace, createDentalOrganisation } from './src/api/doctorApi';
+import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry, listOrganisationWorkspaces, createOrganisationWorkspace, createDentalOrganisation, createDoctorAccount, createWorkspaceMembership } from './src/api/doctorApi';
 import { getStoredDoctorSession, getStoredDoctorUser, refreshStoredDoctorWorkspaces, switchStoredDoctorWorkspace, signInWithPassword, signOutDoctor } from './src/auth/passwordAuth';
 import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
 
@@ -284,10 +284,24 @@ function WorkspaceManagementCard({ token, user, activeWorkspace, onRefreshWorksp
   const [showCreateOrganisation, setShowCreateOrganisation] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [doctorEmail, setDoctorEmail] = useState('');
+  const [doctorPassword, setDoctorPassword] = useState('');
+  const [doctorRole, setDoctorRole] = useState('dentist');
+  const [createdDoctorId, setCreatedDoctorId] = useState('');
+  const [membershipDoctorId, setMembershipDoctorId] = useState('');
+  const [membershipWorkspaceId, setMembershipWorkspaceId] = useState('');
+  const [membershipRole, setMembershipRole] = useState('dentist');
 
   useEffect(() => {
     setWorkspaceType(activeWorkspace?.organisation_type === 'hospital' ? 'hospital_department' : 'branch');
   }, [activeWorkspace?.organisation_type]);
+
+  useEffect(() => {
+    const available = workspaces.filter((workspace) => workspace.id !== activeWorkspace?.id);
+    if (!available.some((workspace) => workspace.id === membershipWorkspaceId)) {
+      setMembershipWorkspaceId(available[0]?.id || '');
+    }
+  }, [workspaces, activeWorkspace?.id, membershipWorkspaceId]);
 
   const refresh = useCallback(async () => {
     if (!canManage || !organisationId) return;
@@ -359,11 +373,62 @@ function WorkspaceManagementCard({ token, user, activeWorkspace, onRefreshWorksp
     }
   };
 
+  const addDoctorAccount = async () => {
+    if (!doctorEmail.trim() || doctorPassword.length < 12) {
+      setError('Enter a valid email and a password of at least 12 characters.');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      const created = await createDoctorAccount(token, {
+        email: doctorEmail.trim().toLowerCase(),
+        password: doctorPassword,
+        role: doctorRole,
+      });
+      setCreatedDoctorId(created.id);
+      setMembershipDoctorId(created.id);
+      setDoctorEmail('');
+      setDoctorPassword('');
+      await refresh();
+      setNotice('Doctor account created and assigned to this workspace. Its ID is shown below for adding it to another workspace.');
+    } catch (e) {
+      setError(e?.message || 'Could not create the doctor account.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const assignDoctorToWorkspace = async () => {
+    if (!membershipDoctorId.trim() || !membershipWorkspaceId) {
+      setError('Enter a doctor ID and choose another workspace.');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      await createWorkspaceMembership(token, membershipWorkspaceId, {
+        doctor_id: membershipDoctorId.trim(),
+        role: membershipRole,
+      });
+      const target = workspaces.find((workspace) => workspace.id === membershipWorkspaceId);
+      setNotice('Doctor added to ' + (target?.name || 'the selected workspace') + '.');
+      await refresh();
+    } catch (e) {
+      setError(e?.message || 'Could not add the doctor to this workspace.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (!canManage) return null;
 
   const workspaceOptions = activeWorkspace?.organisation_type === 'hospital'
     ? [{ value: 'hospital_department', label: 'Department' }, { value: 'branch', label: 'Branch' }]
     : [{ value: 'branch', label: 'Branch' }, { value: 'clinic', label: 'Clinic' }];
+  const targetWorkspaces = workspaces.filter((workspace) => workspace.id !== activeWorkspace?.id);
 
   return (
     <View style={[styles.card, { marginTop: 12 }]}>
@@ -451,6 +516,97 @@ function WorkspaceManagementCard({ token, user, activeWorkspace, onRefreshWorksp
           </Pressable>
         </View>
       )}
+      <View style={{ marginTop: 16, borderTopWidth: 1, borderTopColor: C.border, paddingTop: 14 }}>
+        <Text style={styles.sectionTitle}>Doctor access</Text>
+        <Text style={styles.help}>Create a clinic-issued account. The new doctor is automatically assigned to the current workspace.</Text>
+        <Text style={[styles.label, { marginTop: 10 }]}>Doctor email</Text>
+        <TextInput
+          value={doctorEmail}
+          onChangeText={setDoctorEmail}
+          placeholder="doctor@clinic.com"
+          placeholderTextColor="#91A0AE"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          editable={!busy}
+          style={styles.input}
+        />
+        <Text style={[styles.label, { marginTop: 9 }]}>Temporary password (minimum 12 characters)</Text>
+        <TextInput
+          value={doctorPassword}
+          onChangeText={setDoctorPassword}
+          placeholder="Set a strong temporary password"
+          placeholderTextColor="#91A0AE"
+          secureTextEntry
+          autoCapitalize="none"
+          editable={!busy}
+          style={styles.input}
+        />
+        <View style={{ flexDirection: 'row', gap: 7, marginTop: 8 }}>
+          {['dentist', 'doctor', 'admin'].map((role) => (
+            <Pressable
+              key={role}
+              onPress={() => setDoctorRole(role)}
+              style={[styles.action, doctorRole === role && styles.patientCardActive]}
+            >
+              <Text style={styles.actionText}>{role === 'admin' ? 'Administrator' : role === 'dentist' ? 'Dentist' : 'Doctor'}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Pressable disabled={busy} onPress={addDoctorAccount} style={[styles.primary, busy && { opacity: 0.6 }]}>
+          <Text style={styles.primaryText}>{busy ? 'Creating…' : 'Create doctor account'}</Text>
+        </Pressable>
+        {!!createdDoctorId && <Text style={styles.help}>New doctor ID: {createdDoctorId}</Text>}
+      </View>
+
+      <View style={{ marginTop: 14, borderTopWidth: 1, borderTopColor: C.border, paddingTop: 14 }}>
+        <Text style={styles.sectionTitle}>Assign doctor to another workspace</Text>
+        <Text style={styles.help}>Use the doctor ID shown after account creation, or enter an existing doctor ID.</Text>
+        <TextInput
+          value={membershipDoctorId}
+          onChangeText={setMembershipDoctorId}
+          placeholder="Doctor account ID"
+          placeholderTextColor="#91A0AE"
+          autoCapitalize="none"
+          editable={!busy}
+          style={styles.input}
+        />
+        {targetWorkspaces.length ? (
+          <View style={{ marginTop: 9 }}>
+            <Text style={styles.label}>Choose destination workspace</Text>
+            {targetWorkspaces.map((workspace) => (
+              <Pressable
+                key={workspace.id}
+                onPress={() => setMembershipWorkspaceId(workspace.id)}
+                style={[styles.patientCard, membershipWorkspaceId === workspace.id && styles.patientCardActive]}
+              >
+                <Text style={styles.patient}>{workspace.name}</Text>
+                <Text style={styles.phone}>{workspaceLabel(workspace.clinic_type)}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.help}>Create another workspace first to assign a doctor to it.</Text>
+        )}
+        <View style={{ flexDirection: 'row', gap: 7, marginTop: 8 }}>
+          {['dentist', 'doctor', 'admin'].map((role) => (
+            <Pressable
+              key={role}
+              onPress={() => setMembershipRole(role)}
+              style={[styles.action, membershipRole === role && styles.patientCardActive]}
+            >
+              <Text style={styles.actionText}>{role === 'admin' ? 'Administrator' : role === 'dentist' ? 'Dentist' : 'Doctor'}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Pressable
+          disabled={busy || !membershipWorkspaceId || !membershipDoctorId.trim()}
+          onPress={assignDoctorToWorkspace}
+          style={[styles.primary, (busy || !membershipWorkspaceId || !membershipDoctorId.trim()) && { opacity: 0.5 }]}
+        >
+          <Text style={styles.primaryText}>{busy ? 'Saving…' : 'Assign doctor to workspace'}</Text>
+        </Pressable>
+      </View>
       {!!error && <View style={styles.loginError}><Text style={styles.loginErrorTitle}>Workspace management</Text><Text style={styles.loginErrorText}>{error}</Text></View>}
       {!!notice && <Text style={styles.help}>{notice}</Text>}
     </View>

@@ -67,6 +67,18 @@ export const createDentalOrganisation = (token, payload) =>
     body: JSON.stringify(payload),
   });
 
+export const createDoctorAccount = (token, payload) =>
+  request('/v1/dental/auth/doctors', token, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
+export const createWorkspaceMembership = (token, clinicId, payload) =>
+  request('/v1/dental/workspaces/' + encodeURIComponent(clinicId) + '/memberships', token, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
 export const listPatients = (token) => request('/v1/dental/patients', token);
 
 export const updateAppointment = (token, id, payload) =>
