@@ -147,13 +147,27 @@ jobs:
             exit 1
           fi
 
-          "$APKSIGNER" verify --verbose --print-certs "$APK" | tee /tmp/doctor-certs.txt
+          # Capture both output streams so verification failures are diagnosable in Actions logs.
+          set +e
+          "$APKSIGNER" verify --verbose --print-certs "$APK" > /tmp/doctor-certs.txt 2>&1
+          APKSIGNER_STATUS=$?
+          set -e
+          cat /tmp/doctor-certs.txt
+          if [ "$APKSIGNER_STATUS" -ne 0 ]; then
+            echo "::error::apksigner rejected the built Doctor APK (exit $APKSIGNER_STATUS)."
+            exit 1
+          fi
           if grep -qi "Android Debug" /tmp/doctor-certs.txt; then
             echo "::error::Release APK is debug-signed. Fixed release signing was not applied."
             exit 1
           fi
 
-          EXPECTED_CERT="$(keytool -list -v -keystore doctor-app/android/app/release.keystore -alias "$DENTAL_DOCTOR_KEY_ALIAS" -storepass "$DENTAL_DOCTOR_STORE_PASSWORD" | awk -F': ' '/SHA256:/{print $2; exit}' | tr -d ': \r\n' | tr '[:upper:]' '[:lower:]')"
+          if ! keytool -list -v -keystore doctor-app/android/app/release.keystore -alias "$DENTAL_DOCTOR_KEY_ALIAS" -storepass "$DENTAL_DOCTOR_STORE_PASSWORD" > /tmp/doctor-keystore.txt 2>&1; then
+            cat /tmp/doctor-keystore.txt
+            echo "::error::Could not read the fixed Doctor release keystore alias for certificate comparison."
+            exit 1
+          fi
+          EXPECTED_CERT="$(awk -F': ' '/SHA256:/{print $2; exit}' /tmp/doctor-keystore.txt | tr -d ': \r\n' | tr '[:upper:]' '[:lower:]')"
           ACTUAL_CERT="$(awk -F': ' '/Signer #1 certificate SHA-256 digest:/{print $2; exit}' /tmp/doctor-certs.txt | tr -d ': \r\n' | tr '[:upper:]' '[:lower:]')"
           if [ -z "$EXPECTED_CERT" ] || [ -z "$ACTUAL_CERT" ] || [ "$EXPECTED_CERT" != "$ACTUAL_CERT" ]; then
             echo "::error::APK signer certificate does not match the fixed Doctor release keystore."
