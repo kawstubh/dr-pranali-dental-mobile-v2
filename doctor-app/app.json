@@ -1,8 +1,8 @@
 {
   "expo": {
     "owner": "kaus2b",
-    "name": "Dental Clinic Doctor",
-    "slug": "dr-pranali-dental-doctor",
+    "name": "Oralyn Doctor",
+    "slug": "oralyn-doctor",
     "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/dr-pranali-branded-logo.png",
