@@ -131,7 +131,7 @@ jobs:
           DENTAL_DOCTOR_STORE_PASSWORD: ${{ secrets.DENTAL_DOCTOR_STORE_PASSWORD }}
         run: |
           set -euo pipefail
-          APK="doctor-app/android/app/build/outputs/apk/release/app-release.apk"
+          APK="android/app/build/outputs/apk/release/app-release.apk"
           test -s "$APK"
           unzip -t "$APK" >/dev/null
 
@@ -162,7 +162,7 @@ jobs:
             exit 1
           fi
 
-          if ! keytool -list -v -keystore doctor-app/android/app/release.keystore -alias "$DENTAL_DOCTOR_KEY_ALIAS" -storepass "$DENTAL_DOCTOR_STORE_PASSWORD" > /tmp/doctor-keystore.txt 2>&1; then
+          if ! keytool -list -v -keystore android/app/release.keystore -alias "$DENTAL_DOCTOR_KEY_ALIAS" -storepass "$DENTAL_DOCTOR_STORE_PASSWORD" > /tmp/doctor-keystore.txt 2>&1; then
             cat /tmp/doctor-keystore.txt
             echo "::error::Could not read the fixed Doctor release keystore alias for certificate comparison."
             exit 1
