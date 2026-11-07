@@ -41,9 +41,16 @@ jobs:
         run: |
           test -f src/auth/passwordAuth.js
           test ! -e src/auth/googleAuth.js
-          if grep -E 'GoogleSignin|signInWithGoogle|/v1/dental/auth/google|googleAuth|@react-native-google-signin/google-signin|@supabase/supabase-js|react-native-url-polyfill' App.js src/auth app.json package.json; then
+          set +e
+          grep -R -n -E 'GoogleSignin|signInWithGoogle|/v1/dental/auth/google|googleAuth|@react-native-google-signin/google-signin|@supabase/supabase-js|react-native-url-polyfill' App.js src/auth app.json package.json
+          grep_status=$?
+          set -e
+          if [ "$grep_status" -eq 0 ]; then
             echo "::error::Doctor app must use clinic email/password authentication only."
             exit 1
+          elif [ "$grep_status" -gt 1 ]; then
+            echo "::error::Could not complete the recursive Doctor authentication source scan (grep exit $grep_status)."
+            exit "$grep_status"
           fi
           node -e "const p=require('./package.json'); const l=require('./package-lock.json'); if (JSON.stringify(p.dependencies)!==JSON.stringify(l.packages[''].dependencies)) { console.error('package.json and package-lock root dependencies differ'); process.exit(1); }"
 
