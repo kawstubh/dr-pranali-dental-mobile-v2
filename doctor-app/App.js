@@ -861,7 +861,7 @@ function WorkspaceSelectionScreen({
                     <Text style={styles.phone}>{workspace.organisation_name || 'Healthcare organisation'} · {organisationLabel(workspace.organisation_type)}</Text>
                     <Text style={styles.phone}>{workspaceLabel(workspace.clinic_type)} · Role: {workspace.role || 'doctor'}{current ? ' · Current workspace' : ''}</Text>
                   </View>
-                  <Text style={styles.chevron}>{current ? '?' : '?'}</Text>
+                  <Text style={styles.chevron}>{current ? '✓' : '›'}</Text>
                 </View>
               </Pressable>
             );
