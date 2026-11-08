@@ -754,7 +754,7 @@ function DoctorLoginScreen({ onSignedIn }) {
     setError('');
     try {
       const session = await signInWithPassword(
-        'https://dr-pranali-dental-api.onrender.com',
+        DOCTOR_API_URL,
         email.trim(),
         password
       );
