@@ -145,7 +145,7 @@ jobs:
           test -x "$APKSIGNER" || { echo "::error::Android SDK apksigner not found"; exit 1; }
           test -x "$AAPT" || { echo "::error::Android SDK aapt not found"; exit 1; }
           "$APKSIGNER" verify --verbose --print-certs "$APK" | tee /tmp/patient-certs.txt
-          APK_CERT="$(awk -F': ' '/certificate SHA-256 digest:/{gsub(/:/,\"\",\$NF); print toupper(\$NF); exit}' /tmp/patient-certs.txt)"
+          APK_CERT=$(awk -F': ' '/certificate SHA-256 digest:/{gsub(/:/,"",$NF); print toupper($NF); exit}' /tmp/patient-certs.txt)
           KEYSTORE_CERT="$(keytool -list -v -keystore android/app/release.keystore -alias "$DENTAL_PATIENT_KEY_ALIAS" -storepass "$DENTAL_PATIENT_STORE_PASSWORD" | sed -nE 's/.*SHA256: ([0-9A-Fa-f:]+).*/\1/p' | head -n 1 | tr -d ':' | tr '[:lower:]' '[:upper:]')"
           test -n "$APK_CERT" || { echo "::error::APK signer SHA-256 fingerprint missing"; exit 1; }
           test -n "$KEYSTORE_CERT" || { echo "::error::Release keystore SHA-256 fingerprint missing"; exit 1; }
