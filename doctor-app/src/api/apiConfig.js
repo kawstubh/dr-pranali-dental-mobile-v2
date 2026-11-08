@@ -3,4 +3,4 @@
 // explicitly injects the production API URL from the release workflow.
 export const DOCTOR_API_URL =
   process.env.EXPO_PUBLIC_DENTAL_API_URL ||
-  'https://dr-pranali-dental-api-staging.onrender.com';
+  'https://oralyn-multitenant-staging.onrender.com';
