@@ -6,7 +6,7 @@ permissions:
 on:
   workflow_dispatch:
   push:
-    branches: [master, ui/brand-and-services]
+    branches: [master, ui/brand-and-services, staging/patient-workspace-test]
   pull_request:
     branches: [master]
 
@@ -14,6 +14,8 @@ jobs:
   build-apk:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      EXPO_PUBLIC_DENTAL_API_URL: ${{ github.ref == 'refs/heads/master' && 'https://dr-pranali-dental-api.onrender.com' || 'https://dr-pranali-dental-api-staging.onrender.com' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -34,8 +36,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: TypeScript compiler check
-        run: npx tsc --noEmit
+      - name: TypeScript and app identity checks
+        run: |
+          npx tsc --noEmit
+          node -e "const e=require('./app.json').expo; if(e.android.package!=='com.drpranali.dental') throw new Error('Patient Android package ID changed'); if(e.extra?.eas?.projectId!=='7237b92a-a286-4f47-b519-caf145a88d7d') throw new Error('Patient EAS project ID changed');"
+          if grep -E 'patientAIChat|explainTreatment|/v1/dental/ai|AI Dental|AI diagnosis' App.js; then
+            echo "::error::Patient-facing AI must remain disabled."
+            exit 1
+          fi
 
       - name: Generate Android project
         run: npx expo prebuild --platform android --non-interactive
@@ -114,27 +122,37 @@ jobs:
           printf '\napply from: "./release-signing.gradle"\n' >> app/build.gradle
           ./gradlew assembleRelease --no-daemon
 
-      - name: Verify signed RELEASE APK
+      - name: Verify package, fixed signing certificate, and embedded bundle
+        env:
+          DENTAL_PATIENT_STORE_PASSWORD: ${{ secrets.DENTAL_PATIENT_STORE_PASSWORD }}
         run: |
+          set -euo pipefail
           APK="android/app/build/outputs/apk/release/app-release.apk"
           test -s "$APK"
           unzip -t "$APK" >/dev/null
-          APKSIGNER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -type f -name apksigner 2>/dev/null | sort -V | tail -n 1)"
-          test -n "$APKSIGNER" || { echo "::error::Android SDK apksigner not found"; exit 1; }
-          "$APKSIGNER" verify --print-certs "$APK" | tee /tmp/patient-certs.txt
-          if grep -qi "Android Debug" /tmp/patient-certs.txt; then
-            echo "::error::Release APK is debug-signed. Fixed release signing was not applied."
-            exit 1
-          fi
-          unzip -l "$APK" | grep -E 'assets/(index|.*\.bundle)|index.android.bundle' || {
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          test -n "$SDK_ROOT"
+          APKSIGNER="$(find "$SDK_ROOT/build-tools" -type f -name apksigner 2>/dev/null | sort -V | tail -n 1)"
+          AAPT="$(find "$SDK_ROOT/build-tools" -type f -name aapt 2>/dev/null | sort -V | tail -n 1)"
+          test -x "$APKSIGNER" || { echo "::error::Android SDK apksigner not found"; exit 1; }
+          test -x "$AAPT" || { echo "::error::Android SDK aapt not found"; exit 1; }
+          "$APKSIGNER" verify --verbose --print-certs "$APK" | tee /tmp/patient-certs.txt
+          APK_CERT="$(sed -nE 's/.*Signer #1 certificate SHA-256 digest: ([0-9a-fA-F:]+).*/\1/p' /tmp/patient-certs.txt | head -n 1 | tr -d ':' | tr '[:lower:]' '[:upper:]')"
+          KEYSTORE_CERT="$(keytool -list -v -keystore android/app/release.keystore -alias "$DENTAL_PATIENT_KEY_ALIAS" -storepass "$DENTAL_PATIENT_STORE_PASSWORD" | sed -nE 's/.*SHA256: ([0-9A-Fa-f:]+).*/\1/p' | head -n 1 | tr -d ':' | tr '[:lower:]' '[:upper:]')"
+          test -n "$APK_CERT" || { echo "::error::APK signer SHA-256 fingerprint missing"; exit 1; }
+          test -n "$KEYSTORE_CERT" || { echo "::error::Release keystore SHA-256 fingerprint missing"; exit 1; }
+          test "$APK_CERT" = "$KEYSTORE_CERT" || { echo "::error::APK signer does not match the fixed Patient release keystore"; exit 1; }
+          PACKAGE_ID="$("$AAPT" dump badging "$APK" | sed -n "s/^package: name='\\([^']*\\)'.*/\\1/p" | head -n 1)"
+          test "$PACKAGE_ID" = "com.drpranali.dental" || { echo "::error::Unexpected Patient package ID: $PACKAGE_ID"; exit 1; }
+          unzip -l "$APK" | grep -q 'assets/index.android.bundle' || {
             echo "::error::APK does not contain an embedded JavaScript bundle."
             exit 1
           }
-
+          echo "Verified package=$PACKAGE_ID signer_sha256=$APK_CERT API=$EXPO_PUBLIC_DENTAL_API_URL"
       - name: Upload RELEASE APK
         uses: actions/upload-artifact@v4
         with:
-          name: dr-pranali-dental-patient-release-apk
+          name: dr-pranali-dental-patient-${{ github.ref == 'refs/heads/master' && 'release-apk' || 'staging-test-apk' }}
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
