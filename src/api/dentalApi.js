@@ -1,4 +1,4 @@
-const API_URL = 'https://dr-pranali-dental-api.onrender.com';
+const API_URL = process.env.EXPO_PUBLIC_DENTAL_API_URL || 'https://dr-pranali-dental-api-staging.onrender.com';
 
 async function request(path, options = {}) {
   const response = await fetch(API_URL + path, {
