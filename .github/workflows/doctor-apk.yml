@@ -73,6 +73,18 @@ jobs:
           esac
           echo "Doctor API target: $EXPO_PUBLIC_DENTAL_API_URL"
 
+      - name: Verify password login uses the selected API target
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const source = fs.readFileSync('App.js', 'utf8');
+          const match = source.match(/signInWithPassword\\(\\s*([^,]+)/);
+          if (!match || match[1].trim() !== 'DOCTOR_API_URL') {
+            console.error('Doctor password login must use DOCTOR_API_URL, not a hard-coded host.');
+            process.exit(1);
+          }
+          NODE
+
       - name: Generate Android project
         run: npx expo prebuild --platform android --non-interactive
 
