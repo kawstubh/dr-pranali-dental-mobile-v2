@@ -21,7 +21,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { requestPublicAppointment } from './src/api/dentalApi';
 
 // Production HTTPS API. The patient app does not require the phone and computer to share a Wi-Fi network.
-const API_URL = 'https://dr-pranali-dental-api.onrender.com';
+const API_URL = process.env.EXPO_PUBLIC_DENTAL_API_URL || 'https://dr-pranali-dental-api-staging.onrender.com';
 const PHONE = '9137007432';
 const WHATSAPP = '919137007432';
 
