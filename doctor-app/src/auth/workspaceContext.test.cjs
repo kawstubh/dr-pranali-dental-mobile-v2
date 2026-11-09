@@ -17,6 +17,7 @@ test('workspace management is visible only to owners/admins with an organisation
   assert.equal(canManageWorkspace({ role: 'doctor' }, activeWorkspace), false);
   assert.equal(canManageWorkspace({ role: 'dentist' }, activeWorkspace), false);
   assert.equal(canManageWorkspace({ role: 'owner' }, { organisation_id: '' }), false);
+  assert.equal(canManageWorkspace({ role: 'admin' }, { organisation_id: '   ' }), false);
   assert.equal(canManageWorkspace({ role: 'admin' }, null), false);
 });
 
