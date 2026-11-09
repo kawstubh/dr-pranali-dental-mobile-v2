@@ -47,7 +47,7 @@ jobs:
           test -f src/auth/passwordAuth.js
           test ! -e src/auth/googleAuth.js
           set +e
-          grep -R -n -E 'GoogleSignin|signInWithGoogle|/v1/dental/auth/google|googleAuth|@react-native-google-signin/google-signin|@supabase/supabase-js|react-native-url-polyfill' App.js src/auth app.json package.json
+          grep -R -n -E 'GoogleSignin|signInWithGoogle|/v1/dental/auth/google|googleAuth|google_code|google_status|@react-native-google-signin/google-signin|@supabase/supabase-js|react-native-url-polyfill|signInWithOtp|sendSmsOtp|verifySmsOtp|/v1/dental/auth/(sms|otp)|@twilio/|/v1/dental/auth/(register|signup)|publicSignUp' App.js src/auth src/api app.json package.json
           grep_status=$?
           set -e
           if [ "$grep_status" -eq 0 ]; then
