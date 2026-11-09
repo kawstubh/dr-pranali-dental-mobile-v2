@@ -25,6 +25,11 @@ function normalizeWorkspaces(workspaces) {
   return normalized;
 }
 
+function canManageWorkspace(user, activeWorkspace) {
+  const organisationId = String(activeWorkspace?.organisation_id || '').trim();
+  return Boolean(organisationId) && ['owner', 'admin'].includes(user?.role);
+}
+
 function selectDefaultWorkspace(workspaces, defaultClinicId) {
   const normalized = normalizeWorkspaces(workspaces);
   if (!normalized.length) return null;
@@ -75,6 +80,7 @@ async function switchAndPersistWorkspaceSession(
 
 module.exports = {
   normalizeWorkspaces,
+  canManageWorkspace,
   selectDefaultWorkspace,
   persistWorkspaceSession,
   switchAndPersistWorkspaceSession,
