@@ -9,6 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import { DOCTOR_API_URL } from './src/api/apiConfig';
 import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry, listOrganisationWorkspaces, createOrganisationWorkspace, createDentalOrganisation, createDoctorAccount, createWorkspaceMembership } from './src/api/doctorApi';
 import { getStoredDoctorSession, getStoredDoctorUser, refreshStoredDoctorWorkspaces, switchStoredDoctorWorkspace, signInWithPassword, signOutDoctor } from './src/auth/passwordAuth';
+const { canManageWorkspace } = require('./src/auth/workspaceContext');
 import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
 
 const clinicLogo = require('./assets/oralyn-logo.png');
@@ -270,7 +271,7 @@ function DoctorDailyAISummary({token}) {
 }
 
 function WorkspaceManagementCard({ token, user, activeWorkspace, onRefreshWorkspaces }) {
-  const canManage = ['owner', 'admin'].includes(user?.role);
+  const canManage = canManageWorkspace(user, activeWorkspace);
   const organisationId = activeWorkspace?.organisation_id;
   const [workspaces, setWorkspaces] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -321,6 +322,10 @@ function WorkspaceManagementCard({ token, user, activeWorkspace, onRefreshWorksp
   useEffect(() => {
     if (canManage) refresh();
   }, [canManage, refresh]);
+
+  // Do not render organisation controls to doctors without an owner/admin role
+  // in an active organisation. The API remains the authoritative access guard.
+  if (!canManage) return null;
 
   const addWorkspace = async () => {
     if (!workspaceName.trim()) {
