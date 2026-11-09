@@ -3,10 +3,22 @@ const assert = require('node:assert/strict');
 
 const {
   normalizeWorkspaces,
+  canManageWorkspace,
   selectDefaultWorkspace,
   persistWorkspaceSession,
   switchAndPersistWorkspaceSession,
 } = require('./workspaceContext.js');
+
+
+test('workspace management is visible only to owners/admins with an organisation', () => {
+  const activeWorkspace = { organisation_id: 'org-a' };
+  assert.equal(canManageWorkspace({ role: 'owner' }, activeWorkspace), true);
+  assert.equal(canManageWorkspace({ role: 'admin' }, activeWorkspace), true);
+  assert.equal(canManageWorkspace({ role: 'doctor' }, activeWorkspace), false);
+  assert.equal(canManageWorkspace({ role: 'dentist' }, activeWorkspace), false);
+  assert.equal(canManageWorkspace({ role: 'owner' }, { organisation_id: '' }), false);
+  assert.equal(canManageWorkspace({ role: 'admin' }, null), false);
+});
 
 function createStorage(initial = {}) {
   const values = new Map(Object.entries(initial));
