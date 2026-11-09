@@ -25,9 +25,12 @@ function normalizeWorkspaces(workspaces) {
   return normalized;
 }
 
-function canManageWorkspace(user, activeWorkspace) {
+function canManageWorkspace(_user, activeWorkspace) {
   const organisationId = String(activeWorkspace?.organisation_id || '').trim();
-  return Boolean(organisationId) && ['owner', 'admin'].includes(user?.role);
+  // The active workspace membership is authoritative; the cached user role can
+  // be stale after an administrator is demoted or membership permissions change.
+  const workspaceRole = String(activeWorkspace?.role || '').trim();
+  return Boolean(organisationId) && ['owner', 'admin'].includes(workspaceRole);
 }
 
 function selectDefaultWorkspace(workspaces, defaultClinicId) {
