@@ -130,7 +130,13 @@ function createSessionWriteCoordinator(writeSession, clearSession) {
           return null;
         }
         const result = await writeSession(session);
-        if (expectedGeneration !== generation) return null;
+        if (expectedGeneration !== generation) {
+          // A newer mutation may have failed before it queued its own storage
+          // write. Remove this now-stale session before the next queued write
+          // runs, rather than leaving old credentials persisted.
+          await clearSession();
+          return null;
+        }
         mutationPending = false;
         return result;
       });
