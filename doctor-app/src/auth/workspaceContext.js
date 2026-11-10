@@ -92,3 +92,56 @@ module.exports = {
   persistWorkspaceSession,
   switchAndPersistWorkspaceSession,
 };
+
+
+function createSessionWriteCoordinator(writeSession, clearSession) {
+  if (typeof writeSession !== 'function' || typeof clearSession !== 'function') {
+    throw new TypeError('Session write and clear handlers are required.');
+  }
+
+  let generation = 0;
+  let mutationPending = false;
+  let queue = Promise.resolve();
+
+  function enqueue(operation) {
+    const result = queue.then(operation, operation);
+    queue = result.catch(() => {});
+    return result;
+  }
+
+  return {
+    beginMutation() {
+      generation += 1;
+      mutationPending = true;
+      return generation;
+    },
+
+    captureRead() {
+      return mutationPending ? null : generation;
+    },
+
+    finishMutation(expectedGeneration) {
+      if (expectedGeneration === generation) mutationPending = false;
+    },
+
+    writeIfCurrent(expectedGeneration, session) {
+      return enqueue(async () => {
+        if (expectedGeneration === null || expectedGeneration !== generation) {
+          return null;
+        }
+        const result = await writeSession(session);
+        if (expectedGeneration === generation) mutationPending = false;
+        return result;
+      });
+    },
+
+    clearIfCurrent(expectedGeneration) {
+      return enqueue(async () => {
+        if (expectedGeneration !== generation) return false;
+        await clearSession();
+        if (expectedGeneration === generation) mutationPending = false;
+        return true;
+      });
+    },
+  };
+}
