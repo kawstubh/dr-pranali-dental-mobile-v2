@@ -983,6 +983,8 @@ export default function App(){
       setAllowWorkspaceCancel(false);
       return;
     }
+    // Fail closed while the server revalidates the target workspace membership.
+    setWorkspaceMembershipFresh(false);
     setWorkspaceBusy(true);
     try {
       const session = await switchStoredDoctorWorkspace(clinicId);
@@ -1008,6 +1010,8 @@ export default function App(){
   };
 
   const refreshWorkspaces = useCallback(async () => {
+    // Do not leave stale owner/admin controls visible while membership is pending.
+    setWorkspaceMembershipFresh(false);
     try {
       const refreshed = await refreshStoredDoctorWorkspaces();
       if (refreshed) {
