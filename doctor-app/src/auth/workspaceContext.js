@@ -25,7 +25,11 @@ function normalizeWorkspaces(workspaces) {
   return normalized;
 }
 
-function canManageWorkspace(_user, activeWorkspace) {
+function canManageWorkspace(_user, activeWorkspace, membershipFresh = false) {
+  // Cached memberships are useful for navigation while offline, but must never
+  // expose organisation administration controls until the API has refreshed
+  // the active workspace membership for this session.
+  if (membershipFresh !== true) return false;
   const organisationId = String(activeWorkspace?.organisation_id || '').trim();
   // The active workspace membership is authoritative; the cached user role can
   // be stale after an administrator is demoted or membership permissions change.

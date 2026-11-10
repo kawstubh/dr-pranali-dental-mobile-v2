@@ -16,12 +16,15 @@ test('workspace management follows the active membership role and requires an or
   const doctorWorkspace = { organisation_id: 'org-a', role: 'doctor' };
   const dentistWorkspace = { organisation_id: 'org-a', role: 'dentist' };
 
-  assert.equal(canManageWorkspace({ role: 'owner' }, ownerWorkspace), true);
-  assert.equal(canManageWorkspace({ role: 'admin' }, adminWorkspace), true);
+  assert.equal(canManageWorkspace({ role: 'owner' }, ownerWorkspace, true), true);
+  assert.equal(canManageWorkspace({ role: 'admin' }, adminWorkspace, true), true);
   // The active membership returned by the API wins over a stale cached user role.
-  assert.equal(canManageWorkspace({ role: 'doctor' }, adminWorkspace), true);
-  assert.equal(canManageWorkspace({ role: 'admin' }, doctorWorkspace), false);
-  assert.equal(canManageWorkspace({ role: 'admin' }, dentistWorkspace), false);
+  assert.equal(canManageWorkspace({ role: 'doctor' }, adminWorkspace, true), true);
+  assert.equal(canManageWorkspace({ role: 'admin' }, doctorWorkspace, true), false);
+  assert.equal(canManageWorkspace({ role: 'admin' }, dentistWorkspace, true), false);
+  // A cached admin membership cannot expose controls during an offline startup.
+  assert.equal(canManageWorkspace({ role: 'admin' }, adminWorkspace, false), false);
+  assert.equal(canManageWorkspace({ role: 'owner' }, ownerWorkspace), false);
   assert.equal(canManageWorkspace({ role: 'owner' }, { organisation_id: 'org-a' }), false);
   assert.equal(canManageWorkspace({ role: 'owner' }, { organisation_id: '' , role: 'owner' }), false);
   assert.equal(canManageWorkspace({ role: 'admin' }, { organisation_id: '   ', role: 'admin' }), false);

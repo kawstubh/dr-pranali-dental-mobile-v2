@@ -270,8 +270,8 @@ function DoctorDailyAISummary({token}) {
   return <View style={styles.todayCard}><View style={{flex:1}}><Text style={styles.todayKicker}>AI DAILY SUMMARY</Text><Text style={styles.todayTitle}>Clinic workload insight</Text>{loading?<ActivityIndicator color={C.blue}/>:<Text style={styles.todaySub}>{result?.error|| (result?.result ? (typeof result.result==='string'?result.result:JSON.stringify(result.result)) : 'Run a secure AI summary using appointment status only.')}</Text>}</View><Pressable onPress={run} style={styles.refresh}><Text>Run</Text></Pressable></View>;
 }
 
-function WorkspaceManagementCard({ token, user, activeWorkspace, onRefreshWorkspaces }) {
-  const canManage = canManageWorkspace(user, activeWorkspace);
+function WorkspaceManagementCard({ token, user, activeWorkspace, workspaceMembershipFresh, onRefreshWorkspaces }) {
+  const canManage = canManageWorkspace(user, activeWorkspace, workspaceMembershipFresh);
   const organisationId = activeWorkspace?.organisation_id;
   const [workspaces, setWorkspaces] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -619,7 +619,7 @@ function WorkspaceManagementCard({ token, user, activeWorkspace, onRefreshWorksp
   );
 }
 
-function Dashboard({ token, logout, user, workspaces, onSwitchWorkspace, onRefreshWorkspaces }) {
+function Dashboard({ token, logout, user, workspaces, workspaceMembershipFresh, onSwitchWorkspace, onRefreshWorkspaces }) {
   const [appointments,setAppointments]=useState([]);
   const [patients,setPatients]=useState([]);
   const [tab,setTab]=useState('Home');
@@ -690,7 +690,23 @@ function Dashboard({ token, logout, user, workspaces, onSwitchWorkspace, onRefre
           <View style={[styles.statusPill,{backgroundColor:apiOk?'#DDF7EA':'#FCEAEA'}]}><Text style={[styles.statusPillText,{color:apiOk?C.green:C.red}]}>{apiOk?'ONLINE':'OFFLINE'}</Text></View>
         </View>
         <DoctorDailyAISummary token={token}/>
-        <WorkspaceManagementCard token={token} user={user} activeWorkspace={activeWorkspace} onRefreshWorkspaces={onRefreshWorkspaces}/>
+        {!workspaceMembershipFresh && <View style={styles.loginError}>
+          <Text style={styles.loginErrorTitle}>Workspace access needs verification</Text>
+          <Text style={styles.loginErrorText}>Organisation and doctor-management controls stay hidden until the clinic service confirms your current workspace membership.</Text>
+          <Pressable
+            onPress={async () => {
+              try {
+                await onRefreshWorkspaces?.();
+              } catch (error) {
+                Alert.alert('Workspace access', error?.message || 'Could not verify your current workspace permissions.');
+              }
+            }}
+            style={styles.action}
+          >
+            <Text style={styles.actionText}>Retry workspace verification</Text>
+          </Pressable>
+        </View>}
+        <WorkspaceManagementCard token={token} user={user} activeWorkspace={activeWorkspace} workspaceMembershipFresh={workspaceMembershipFresh} onRefreshWorkspaces={onRefreshWorkspaces}/>
       </View>}
       {tab==='Appointments' && <View>
         <View style={styles.sectionRow}><Text style={styles.sectionTitle}>Appointment Queue</Text><Pressable onPress={load}><Text style={styles.refresh}>Refresh</Text></Pressable></View>
@@ -887,6 +903,7 @@ export default function App(){
   const [token,setToken]=useState(null);
   const [user,setUser]=useState(null);
   const [workspaces,setWorkspaces]=useState([]);
+  const [workspaceMembershipFresh,setWorkspaceMembershipFresh]=useState(false);
   const [checking,setChecking]=useState(true);
   const [selectingWorkspace,setSelectingWorkspace]=useState(false);
   const [workspaceBusy,setWorkspaceBusy]=useState(false);
@@ -913,17 +930,21 @@ export default function App(){
           if (mounted && refreshed) {
             setUser(refreshed.user);
             setWorkspaces(refreshed.workspaces);
+            setWorkspaceMembershipFresh(true);
           }
         } catch (error) {
+          if (mounted) setWorkspaceMembershipFresh(false);
           if (error?.status === 401 || error?.status === 403) {
             await signOutDoctor(DOCTOR_API_URL);
             if (mounted) {
               setToken(null);
               setUser(null);
               setWorkspaces([]);
+              setWorkspaceMembershipFresh(false);
             }
           }
-          // On a network outage keep the last authorised workspace list cached.
+          // Cached workspaces remain available for navigation, but never grant
+          // management UI permission until a live membership refresh succeeds.
         }
       } catch (error) {
         if (mounted) setWorkspaceError(error?.message || 'Could not restore the doctor session.');
@@ -939,6 +960,7 @@ export default function App(){
     setToken(session.access_token);
     setUser(session.user);
     setWorkspaces(nextWorkspaces);
+    setWorkspaceMembershipFresh(true);
     setWorkspaceError('');
     setAllowWorkspaceCancel(false);
     setSelectingWorkspace(nextWorkspaces.length > 1);
@@ -949,6 +971,7 @@ export default function App(){
     setToken(null);
     setUser(null);
     setWorkspaces([]);
+    setWorkspaceMembershipFresh(false);
     setSelectingWorkspace(false);
     setWorkspaceError('');
   }, []);
@@ -966,9 +989,11 @@ export default function App(){
       setToken(session.access_token);
       setUser(session.user);
       setWorkspaces(session.workspaces || []);
+      setWorkspaceMembershipFresh(true);
       setSelectingWorkspace(false);
       setAllowWorkspaceCancel(false);
     } catch (error) {
+      setWorkspaceMembershipFresh(false);
       setWorkspaceError(error?.message || 'Could not switch clinic workspace.');
       if (error?.status === 401) await logout();
     } finally {
@@ -983,12 +1008,20 @@ export default function App(){
   };
 
   const refreshWorkspaces = useCallback(async () => {
-    const refreshed = await refreshStoredDoctorWorkspaces();
-    if (refreshed) {
-      setUser(refreshed.user);
-      setWorkspaces(refreshed.workspaces);
+    try {
+      const refreshed = await refreshStoredDoctorWorkspaces();
+      if (refreshed) {
+        setUser(refreshed.user);
+        setWorkspaces(refreshed.workspaces);
+        setWorkspaceMembershipFresh(true);
+      } else {
+        setWorkspaceMembershipFresh(false);
+      }
+      return refreshed;
+    } catch (error) {
+      setWorkspaceMembershipFresh(false);
+      throw error;
     }
-    return refreshed;
   }, []);
 
   if (checking) return <SafeAreaView style={styles.safe}><ActivityIndicator size="large" color={C.blue} style={{marginTop:80}}/></SafeAreaView>;
@@ -1012,6 +1045,7 @@ export default function App(){
       token={token}
       user={user}
       workspaces={workspaces}
+      workspaceMembershipFresh={workspaceMembershipFresh}
       logout={logout}
       onSwitchWorkspace={requestWorkspaceSwitch}
       onRefreshWorkspaces={refreshWorkspaces}
