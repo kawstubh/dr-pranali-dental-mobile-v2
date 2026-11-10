@@ -130,7 +130,8 @@ function createSessionWriteCoordinator(writeSession, clearSession) {
           return null;
         }
         const result = await writeSession(session);
-        if (expectedGeneration === generation) mutationPending = false;
+        if (expectedGeneration !== generation) return null;
+        mutationPending = false;
         return result;
       });
     },
