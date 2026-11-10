@@ -212,7 +212,9 @@ test('serialized session writes leave the newest workspace session in storage', 
   });
   releaseOldWrite();
 
-  await Promise.all([oldWrite, newWrite]);
+  const [oldResult, newResult] = await Promise.all([oldWrite, newWrite]);
+  assert.equal(oldResult, null);
+  assert.equal(newResult.access_token, 'new-workspace-token');
   assert.equal(storedSession.access_token, 'new-workspace-token');
 });
 
