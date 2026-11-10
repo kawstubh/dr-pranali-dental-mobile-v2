@@ -218,6 +218,39 @@ test('serialized session writes leave the newest workspace session in storage', 
   assert.equal(storedSession.access_token, 'new-workspace-token');
 });
 
+test('a superseded in-flight refresh is cleared when the newer mutation fails', async () => {
+  let storedSession = { access_token: 'previous-token' };
+  let releaseOldWrite;
+  let markOldWriteStarted;
+  const oldWriteStarted = new Promise((resolve) => { markOldWriteStarted = resolve; });
+  const coordinator = createSessionWriteCoordinator(
+    async (session) => {
+      if (session.access_token === 'stale-refresh-token') {
+        markOldWriteStarted();
+        await new Promise((resolve) => { releaseOldWrite = resolve; });
+      }
+      storedSession = session;
+      return session;
+    },
+    async () => { storedSession = null; }
+  );
+
+  const refreshGeneration = coordinator.captureRead();
+  const staleWrite = coordinator.writeIfCurrent(refreshGeneration, {
+    access_token: 'stale-refresh-token',
+  });
+  await oldWriteStarted;
+
+  // Model a workspace switch/login that fails before it can queue a replacement
+  // session write. The old refresh must not survive that failed newer mutation.
+  const failedMutationGeneration = coordinator.beginMutation();
+  coordinator.finishMutation(failedMutationGeneration);
+  releaseOldWrite();
+
+  assert.equal(await staleWrite, null);
+  assert.equal(storedSession, null);
+});
+
 test('a delayed logout cannot clear a newer sign-in', async () => {
   let storedSession = { access_token: 'old-token' };
   const coordinator = createSessionWriteCoordinator(
