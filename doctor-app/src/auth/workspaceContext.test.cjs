@@ -7,6 +7,7 @@ const {
   selectDefaultWorkspace,
   persistWorkspaceSession,
   switchAndPersistWorkspaceSession,
+  createSessionWriteCoordinator,
 } = require('./workspaceContext.js');
 
 
@@ -146,4 +147,86 @@ test('failed workspace switch leaves the stored session unchanged', async () => 
 
   assert.equal(await storage.getItem('doctor_session'), beforeToken);
   assert.equal(await storage.getItem('doctor_user'), beforeUser);
+});
+
+
+test('stale workspace refresh cannot overwrite a newer workspace session', async () => {
+  let storedSession = null;
+  const coordinator = createSessionWriteCoordinator(
+    async (session) => { storedSession = session; return session; },
+    async () => { storedSession = null; }
+  );
+
+  const refreshGeneration = coordinator.captureRead();
+  const switchGeneration = coordinator.beginMutation();
+
+  assert.equal(
+    await coordinator.writeIfCurrent(refreshGeneration, { access_token: 'old-token' }),
+    null
+  );
+  const switched = await coordinator.writeIfCurrent(
+    switchGeneration,
+    { access_token: 'new-token', user: { clinic_id: 'clinic-b' } }
+  );
+
+  assert.equal(switched.access_token, 'new-token');
+  assert.equal(storedSession.access_token, 'new-token');
+});
+
+test('workspace refresh does not start while a session mutation is pending', () => {
+  const coordinator = createSessionWriteCoordinator(async (session) => session, async () => {});
+  const generation = coordinator.beginMutation();
+
+  assert.equal(coordinator.captureRead(), null);
+
+  coordinator.finishMutation(generation);
+  assert.equal(coordinator.captureRead(), generation);
+});
+
+test('serialized session writes leave the newest workspace session in storage', async () => {
+  let storedSession = null;
+  let releaseOldWrite;
+  let markOldWriteStarted;
+  const oldWriteStarted = new Promise((resolve) => { markOldWriteStarted = resolve; });
+  const coordinator = createSessionWriteCoordinator(
+    async (session) => {
+      if (session.access_token === 'old-refresh-token') {
+        markOldWriteStarted();
+        await new Promise((resolve) => { releaseOldWrite = resolve; });
+      }
+      storedSession = session;
+      return session;
+    },
+    async () => { storedSession = null; }
+  );
+
+  const refreshGeneration = coordinator.captureRead();
+  const oldWrite = coordinator.writeIfCurrent(refreshGeneration, {
+    access_token: 'old-refresh-token',
+  });
+  await oldWriteStarted;
+
+  const switchGeneration = coordinator.beginMutation();
+  const newWrite = coordinator.writeIfCurrent(switchGeneration, {
+    access_token: 'new-workspace-token',
+  });
+  releaseOldWrite();
+
+  await Promise.all([oldWrite, newWrite]);
+  assert.equal(storedSession.access_token, 'new-workspace-token');
+});
+
+test('a delayed logout cannot clear a newer sign-in', async () => {
+  let storedSession = { access_token: 'old-token' };
+  const coordinator = createSessionWriteCoordinator(
+    async (session) => { storedSession = session; return session; },
+    async () => { storedSession = null; }
+  );
+
+  const logoutGeneration = coordinator.beginMutation();
+  const loginGeneration = coordinator.beginMutation();
+
+  assert.equal(await coordinator.clearIfCurrent(logoutGeneration), false);
+  await coordinator.writeIfCurrent(loginGeneration, { access_token: 'new-token' });
+  assert.equal(storedSession.access_token, 'new-token');
 });
