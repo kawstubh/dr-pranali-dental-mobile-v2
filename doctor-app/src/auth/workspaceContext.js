@@ -146,3 +146,5 @@ function createSessionWriteCoordinator(writeSession, clearSession) {
     },
   };
 }
+
+module.exports.createSessionWriteCoordinator = createSessionWriteCoordinator;
