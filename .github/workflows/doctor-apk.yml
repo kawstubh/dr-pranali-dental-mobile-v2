@@ -68,7 +68,7 @@ jobs:
       - name: Verify selected API environment
         run: |
           case "$EXPO_PUBLIC_DENTAL_API_URL" in
-            https://oralyn-multitenant-staging.onrender.com|https://dr-pranali-dental-api.onrender.com) ;;
+            https://oralyn-multitenant-staging.onrender.com) ;;
             *) echo "::error::Unexpected Doctor API target."; exit 1 ;;
           esac
           echo "Doctor API target: $EXPO_PUBLIC_DENTAL_API_URL"
