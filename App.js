@@ -1,110 +1,138 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
+import { LanguageProvider, LanguageSwitch, useTranslation } from './src/i18n';
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Linking,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
+  Text as NativeText, TextInput as NativeTextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { Image as ExpoImage } from 'expo-image';
+import { BRAND } from './src/brandConstants';
+import { DENTAL_SERVICES, DENTAL_SERVICE_CATEGORIES } from './shared/dentalServices';
+import { signInWithGoogle } from './src/auth/googleAuth';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { requestPublicAppointment } from './src/api/dentalApi';
 
 // Production HTTPS API. The patient app does not require the phone and computer to share a Wi-Fi network.
 const API_URL = 'https://dr-pranali-dental-api.onrender.com';
-const PHONE = '9137007432';
-const WHATSAPP = '919137007432';
+
+function Text({ children, ...props }) { const { t } = useTranslation(); return <NativeText {...props}>{React.Children.map(children, child => typeof child === 'string' ? t(child) : child)}</NativeText>; }
+function TextInput(props) { const { t } = useTranslation(); return <NativeTextInput {...props} placeholder={t(props.placeholder)} />; }
 
 const COLORS = {
-  navy: '#0B2E4F',
-  blue: '#1677D2',
+  ...BRAND.colors,
   blue2: '#2B7DE9',
-  pale: '#EAF5FF',
-  bg: '#F5F9FC',
-  text: '#18334D',
-  muted: '#657789',
-  border: '#DCE8F4',
-  white: '#FFFFFF',
+  bg: BRAND.colors.background,
   green: '#20B96B',
 };
 
-const services = [
-  ['Dental Check-up', 'Regular oral examination', '🦷'],
-  ['Scaling & Polishing', 'Remove plaque & stains', '🪥'],
-  ['Tooth Whitening', 'Brighter & whiter smile', '✨'],
-  ['Dental Fillings', 'Tooth-coloured restorations', '🦷'],
-  ['Root Canal Treatment', 'Painless RCT care', '🩺'],
-  ['Dental Crowns', 'Protect damaged teeth', '👑'],
-  ['Dental Bridges', 'Replace missing teeth', '🌉'],
-  ['Dental Implants', 'Permanent tooth replacement', '🦷'],
-  ['Tooth Extraction', 'Safe & gentle extractions', '🩹'],
-  ['Wisdom Tooth Removal', 'Pain-free removal of wisdom teeth', '🦷'],
-  ['Dentures', 'Complete & partial dentures', '😁'],
-  ['Kids Dental Care', 'Specialized care for children', '👶'],
-  ['Orthodontic Braces', 'Straighten your teeth', '🔗'],
-  ['Clear Aligners (Invisalign)', 'Invisible teeth alignment', '😁'],
-  ['Gum Disease Treatment', 'Healthy gums, healthy smile', '🩺'],
-  ['Cosmetic Dentistry', 'Smile makeover solutions', '✨'],
-  ['Veneers', 'Perfect smile makeover', '😁'],
-  ['Full Mouth Rehabilitation', 'Complete dental restoration', '🦷'],
-  ['Dental Sealants', 'Protects from cavities', '🛡️'],
-  ['Emergency Dental Care', 'Immediate care when you need it', '🚑'],
-];
+const SERVICE_IMAGES = {
+  'checkup': require('./assets/services/checkup.png'),
+  'scaling': require('./assets/services/scaling.png'),
+  'whitening': require('./assets/services/whitening.png'),
+  'filling': require('./assets/services/filling.png'),
+  'rct': require('./assets/services/rct.png'),
+  'crowns': require('./assets/services/crowns.png'),
+  'implants': require('./assets/services/implants.png'),
+  'extraction': require('./assets/services/extraction.png'),
+  'braces': require('./assets/services/braces.png'),
+  'aligners': require('./assets/services/aligners.png'),
+  'dentures': require('./assets/services/dentures.png'),
+  'veneers': require('./assets/services/veneers.png'),
+  'gum-care': require('./assets/services/gum-care.png'),
+  'kids': require('./assets/services/kids.png'),
+  'emergency': require('./assets/services/emergency.png'),
+  'sensitivity': require('./assets/services/sensitivity.png'),
+  'sealants': require('./assets/services/sealants.png'),
+  'hygiene': require('./assets/services/hygiene.png'),
+  'smile-makeover': require('./assets/services/smile-makeover.png'),
+  'tmj': require('./assets/services/tmj.png')
+};
+
+const services = DENTAL_SERVICES.map(({ name, description, icon, image }) => [name, description, icon, SERVICE_IMAGES[image]]);
 
 const tabs = [
-  ['Home', '⌂'],
-  ['Services', '♢'],
-  ['Appointment', '▣'],
-  ['Gallery', '▧'],
-  ['Contact', '☎'],
+  ['Home', 'âŒ‚'],
+  ['Services', 'â™¢'],
+  ['Appointment', 'â–£'],
+  ['Gallery', 'â–§'],
+  ['Contact', 'â˜Ž'],
 ];
 
+function SafeImage({ source, style, resizeMode = 'cover', placeholder = 'ðŸ¦·' }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return <View style={[style, styles.imageFallback]}><Text style={styles.imageFallbackText}>{placeholder}</Text></View>;
+  }
+  return <ExpoImage source={source} placeholder={require('./assets/patient-icon.png')} style={style} contentFit={resizeMode} transition={150} onError={() => setFailed(true)} />;
+}
+
 function WelcomeScreen({ onStart }) {
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const [googleMessage, setGoogleMessage] = useState('');
+
+  const googleLogin = async () => {
+    setGoogleBusy(true);
+    setGoogleMessage('Connecting securely to your Google accountâ€¦');
+    fetch(`${API_URL}/health`).catch(() => null);
+    try {
+      await signInWithGoogle();
+      setGoogleMessage('Signed in successfully. Opening your dental care homeâ€¦');
+      onStart();
+    } catch (error) {
+      const code = error?.code || error?.errorCode || error?.name;
+      setGoogleMessage((code ? '[' + code + '] ' : '') + (error?.message || 'Google sign-in failed.'));
+    } finally {
+      setGoogleBusy(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.welcomeSafe}>
       <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={styles.welcomeContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.welcomeTop}>
-          <View style={styles.brandBadge}>
-            <Image source={require('./assets/universal-dental-icon.png')} style={styles.brandBadgeLogo} resizeMode="contain" />
-            <View>
-              <Text style={styles.welcomeBrand}>Dr. Pranali</Text>
-              <Text style={styles.welcomeClinic}>DENTAL CLINIC</Text>
-            </View>
-          </View>
-          <Pressable onPress={onStart} style={styles.skipButton}><Text style={styles.skipText}>Skip</Text></Pressable>
+      <ScrollView contentContainerStyle={styles.welcomeContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <LanguageSwitch />
+        <View style={styles.loginBrand}>
+          <SafeImage source={require('./assets/oralyn-logo.png')} style={styles.loginBrandLogo} resizeMode="contain" />
+          <Text style={styles.loginBrandName}>Oralyn</Text>
+          <Text style={styles.loginBrandClinic}>SMART DENTAL CARE FOR HEALTHIER SMILES</Text>
         </View>
-        <Text style={styles.welcomeTitle}>Beautiful Smile</Text>
-        <Text style={styles.welcomeTitleBlue}>Confident You</Text>
-        <Text style={styles.welcomeSub}>Expert dental care for a healthier, brighter smile</Text>
-        <View style={styles.logoStage}>
-          <View style={styles.logoGlow} />
-          <Image source={require('./assets/universal-dental-icon.png')} style={styles.hero3dLogo} resizeMode="contain" />
-          <View style={styles.logoPedestal}><View style={styles.logoPedestalGlow} /></View>
+
+        <Text style={styles.welcomeTitle}>Healthy Smiles</Text>
+        <Text style={styles.welcomeTitleBlue}>Happier Lives</Text>
+        <Text style={styles.welcomeSub}>Book appointments, follow your care and stay connected with your clinic.</Text>
+
+        <View style={styles.patientLoginCard}>
+          <Text style={styles.patientLoginHeading}>Welcome</Text>
+          <Text style={styles.patientLoginCopy}>Your family's dental care, all in one place.</Text>
+          <Pressable disabled={googleBusy} onPress={googleLogin} style={[styles.googleButton, googleBusy && { opacity: 0.6 }]}>
+            {googleBusy ? <ActivityIndicator color={COLORS.blue} /> : <><Text style={styles.googleMark}>G</Text><Text style={styles.googleButtonText}>Continue with Google</Text></>}
+          </Pressable>
+          {!!googleMessage && <Text accessibilityRole="alert" style={styles.googleMessage}>{googleMessage}</Text>}
+          <View style={styles.loginDivider}><View style={styles.loginDividerLine}/><Text style={styles.loginDividerText}>OR</Text><View style={styles.loginDividerLine}/></View>
+          <Pressable onPress={() => onStart()} style={styles.getStarted}>
+            <Text style={styles.getStartedText}>Explore as a guest</Text>
+            <View style={styles.arrowCircle}><Text style={styles.arrowText}>â†’</Text></View>
+          </Pressable>
+          <Text style={styles.guestHint}>You can browse services and request an appointment without signing in.</Text>
         </View>
-        <Pressable onPress={onStart} style={styles.getStarted}>
-          <Text style={styles.getStartedText}>Get Started</Text>
-          <View style={styles.arrowCircle}><Text style={styles.arrowText}>→</Text></View>
-        </Pressable>
+
+        <View style={styles.patientTrustRow}>
+          <View style={styles.patientTrustItem}><Text style={styles.patientTrustIcon}>â–£</Text><Text style={styles.patientTrustLabel}>Appointments</Text></View>
+          <View style={styles.patientTrustItem}><Text style={styles.patientTrustIcon}>â™¡</Text><Text style={styles.patientTrustLabel}>Care history</Text></View>
+          <View style={styles.patientTrustItem}><Text style={styles.patientTrustIcon}>âœ¦</Text><Text style={styles.patientTrustLabel}>Dental guidance</Text></View>
+        </View>
         <Pressable onPress={() => onStart('Services')} style={styles.exploreButton}>
-          <Text style={styles.exploreText}>Explore Services</Text><Text style={styles.exploreArrow}>→</Text>
+          <Text style={styles.exploreText}>Browse dental services</Text><Text style={styles.exploreArrow}>â†’</Text>
         </Pressable>
-        <View style={styles.welcomeTrust}>
-          <View><Text style={styles.trustNumber}>20+</Text><Text style={styles.trustLabel}>Dental services</Text></View>
-          <View style={styles.trustDivider} />
-          <View><Text style={styles.trustNumber}>BDS</Text><Text style={styles.trustLabel}>Dental surgeon</Text></View>
-          <View style={styles.trustDivider} />
-          <View><Text style={styles.trustNumber}>Family</Text><Text style={styles.trustLabel}>Friendly care</Text></View>
-        </View>
-        <Text style={styles.terms}>By continuing, you agree to our</Text>
-        <Text style={styles.termsBlue}>Terms & Privacy Policy</Text>
+        <Text style={styles.terms}>Secure sign-in â€¢ Your dental care journey, connected</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -136,49 +164,58 @@ function Feature({ icon, title, subtitle }) {
   );
 }
 
-function ServiceCard({ name, desc, icon }) {
+function ServiceCard({ name, desc, icon, image, onPress }) {
   return (
-    <View style={styles.serviceCard}>
-      <View style={styles.serviceIconWrap}>
-        <Text style={styles.serviceIcon}>{icon}</Text>
-      </View>
+    <Pressable onPress={onPress} disabled={!onPress} style={styles.serviceCard}>
+      <SafeImage source={image} style={styles.servicePhoto} resizeMode="cover" placeholder="Dental care" />
       <Text style={styles.serviceName}>{name}</Text>
       <Text style={styles.serviceDesc}>{desc}</Text>
-    </View>
+    </Pressable>
   );
 }
 
-function HomeScreen({ go }) {
+function HomeScreen({ go, clinic }) {
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
       <View style={styles.hero}>
         <View style={styles.profileColumn}>
-          <Image source={require('./assets/dr-pranali.jpg')} style={styles.profileImage} />
+          <SafeImage source={require('./assets/dr-pranali.jpg')} style={styles.profileImage} placeholder="ðŸ‘©â€âš•ï¸" />
           <View style={styles.bdsBadge}><Text style={styles.bdsText}>BDS</Text></View>
           <Text style={styles.doctorName}>Dr. Pranali</Text>
-          <Text style={styles.degree}>BDS – Dental Surgeon</Text>
+          <Text style={styles.degree}>BDS â€“ Dental Surgeon</Text>
           <View style={styles.divider} />
-          <Text style={styles.smallInfo}>⌖  Taloja, Navi Mumbai</Text>
-          <Text style={styles.smallInfo}>◷  Mon – Sun: 10:00 AM – 9:00 PM</Text>
+          <Text style={styles.smallInfo}>âŒ–  Taloja, Navi Mumbai</Text>
+          <Text style={styles.smallInfo}>â—·  Mon â€“ Sun: 10:00 AM â€“ 9:00 PM</Text>
           <Text style={styles.byAppointment}>By Appointment Only</Text>
         </View>
 
         <View style={styles.heroCopy}>
-          <View style={styles.brandLine}><Text style={styles.tooth}>♧</Text><Text style={styles.brand}>Dr. Pranali's</Text></View>
+          <View style={styles.brandLine}><SafeImage source={require('./assets/oralyn-logo.png')} style={styles.brandLineLogo} resizeMode="contain" /><Text style={styles.brand}>Oralyn</Text></View>
           <Text style={styles.heroTitle}>Healthy Smile,</Text>
           <Text style={[styles.heroTitle, styles.heroBlue]}>Happy You!</Text>
           <Text style={styles.heroSub}>Expert dental care for you and your family, with gentle treatment and modern technology.</Text>
-          <ActionButton label="Book Appointment" icon="▣" onPress={() => go('Appointment')} />
-          <ActionButton label="WhatsApp Clinic" icon="◉" variant="secondary" onPress={() => Linking.openURL(`https://wa.me/${WHATSAPP}`)} />
-          <ActionButton label={`Call Us   ${PHONE}`} icon="☎" variant="secondary" onPress={() => Linking.openURL(`tel:+${WHATSAPP}`)} />
+          <ActionButton label="Book Appointment" icon="â–£" onPress={() => go('Appointment')} />
         </View>
       </View>
 
+      <View style={styles.homeContactCard}>
+        <View style={{flex:1}}>
+          <Text style={styles.homeContactTitle}>Contact the clinic</Text>
+          <Text style={styles.homeContactSub}>{clinic?.phone || 'Request an appointment and the clinic will contact you.'}</Text>
+        </View>
+        <Pressable disabled={!clinic?.phone_e164} onPress={() => Linking.openURL('tel:' + clinic.phone_e164)} style={[styles.homeContactButton,!clinic?.phone_e164&&{opacity:0.45}]}>
+          <Text style={styles.homeContactButtonText}>Call</Text>
+        </Pressable>
+        <Pressable disabled={!clinic?.whatsapp_phone} onPress={() => Linking.openURL('https://wa.me/' + clinic.whatsapp_phone)} style={[styles.homeContactButton,styles.homeWhatsAppButton,!clinic?.whatsapp_phone&&{opacity:0.45}]}>
+          <Text style={styles.homeContactButtonText}>WhatsApp</Text>
+        </Pressable>
+      </View>
+
       <View style={styles.featureRow}>
-        <Feature icon="♧" title="Experienced" subtitle="Doctor" />
-        <Feature icon="✓" title="Safe & Hygienic" subtitle="Care" />
-        <Feature icon="♙" title="Patient First" subtitle="Approach" />
-        <Feature icon="☆" title="Modern" subtitle="Technology" />
+        <Feature icon="â™§" title="Experienced" subtitle="Doctor" />
+        <Feature icon="âœ“" title="Safe & Hygienic" subtitle="Care" />
+        <Feature icon="â™™" title="Patient First" subtitle="Approach" />
+        <Feature icon="â˜†" title="Modern" subtitle="Technology" />
       </View>
 
       <View style={styles.aboutCard}>
@@ -186,17 +223,17 @@ function HomeScreen({ go }) {
           <Text style={styles.sectionTitle}>About Dr. Pranali</Text>
           <Text style={styles.aboutText}>A patient-focused dental practice offering preventive, restorative and cosmetic dental care in a comfortable environment.</Text>
         </View>
-        <Text style={styles.aboutTooth}>♧</Text>
+        <Text style={styles.aboutTooth}>â™§</Text>
       </View>
 
       <View style={styles.sectionHeaderRow}>
-        <Text style={styles.sectionTooth}>♧</Text>
+        <Text style={styles.sectionTooth}>â™§</Text>
         <Text style={styles.sectionTitle}>Our Dental Services</Text>
       </View>
       <View style={styles.servicesGrid}>
-        {services.slice(0, 8).map(([name, desc, icon]) => <ServiceCard key={name} name={name} desc={desc} icon={icon} />)}
+        {services.slice(0, 8).map(([name, desc, icon, image]) => <ServiceCard key={name} name={name} desc={desc} icon={icon} image={image} />)}
       </View>
-      <Pressable onPress={() => go('Services')} style={styles.viewAll}><Text style={styles.viewAllText}>View All Dental Services →</Text></Pressable>
+      <Pressable onPress={() => go('Services')} style={styles.viewAll}><Text style={styles.viewAllText}>View All Dental Services â†’</Text></Pressable>
 
       <View style={styles.bottomSpacer} />
     </ScrollView>
@@ -257,27 +294,55 @@ function PatientDentalChart() {
   );
 }
 
-function ServicesScreen() {
+function ServicesScreen({ onBook }) {
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState('All');
+  const [selectedService, setSelectedService] = useState(null);
+  const visibleServices = DENTAL_SERVICES.map(service => ({ ...service, image: SERVICE_IMAGES[service.image] })).filter(service =>
+    (category === 'All' || service.category === category) &&
+    (service.name + ' ' + service.description + ' ' + service.category).toLowerCase().includes(query.trim().toLowerCase())
+  );
+  if (selectedService) {
+    return (
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Pressable onPress={() => setSelectedService(null)} style={styles.viewAll}><Text style={styles.viewAllText}>â€¹ All services</Text></Pressable>
+        <View style={styles.serviceDetailCard}>
+          <SafeImage source={selectedService.image} style={styles.serviceDetailPhoto} resizeMode="cover" placeholder="Dental service" />
+          <Text style={styles.pageTitle}>{selectedService.name}</Text>
+          <Text style={styles.pageSub}>{selectedService.description}</Text>
+          <Text style={styles.serviceCategoryLabel}>{selectedService.category}</Text>
+          <Text style={styles.serviceDetailNote}>Your dentist will confirm the appropriate treatment after an examination.</Text>
+          <Pressable onPress={() => onBook(selectedService.name)} style={styles.submitButton}><Text style={styles.submitText}>Book this service</Text></Pressable>
+        </View>
+      </ScrollView>
+    );
+  }
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
       <Text style={styles.pageTitle}>Dental Services</Text>
-      <Text style={styles.pageSub}>Comprehensive dental care for children and adults.</Text>
+      <Text style={styles.pageSub}>Explore care options and choose a reason for your visit.</Text>
+      <TextInput value={query} onChangeText={setQuery} placeholder="Search dental servicesâ€¦" placeholderTextColor="#91A1B0" style={styles.input} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap:8,paddingVertical:12}}>
+        {DENTAL_SERVICE_CATEGORIES.map(item => <Pressable key={item} onPress={() => setCategory(item)} style={[styles.chip,category===item&&styles.chipActive]}><Text style={[styles.chipText,category===item&&styles.chipTextActive]}>{item}</Text></Pressable>)}
+      </ScrollView>
       <View style={styles.servicesGrid}>
-        {services.map(([name, desc, icon]) => <ServiceCard key={name} name={name} desc={desc} icon={icon} />)}
+        {visibleServices.map(service => <ServiceCard key={service.id} name={service.name} desc={service.description} icon={service.icon} image={service.image} onPress={() => setSelectedService(service)} />)}
       </View>
+      {visibleServices.length===0 && <Text style={styles.pageSub}>No services match that search.</Text>}
       <View style={styles.bottomSpacer} />
     </ScrollView>
   );
 }
 
-function AppointmentScreen() {
+function AppointmentScreen({ initialReason, clinic }) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [reason, setReason] = useState('');
+  const [reason, setReason] = useState(initialReason || '');
+  useEffect(() => { if (initialReason) setReason(initialReason); }, [initialReason]);
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
 
@@ -308,14 +373,13 @@ function AppointmentScreen() {
         starts_at: startsAt,
         treatment_type: reason.trim() || 'Dental consultation',
         note: note.trim() || null,
-        intelligence_request: false,
       });
       Alert.alert('Appointment Requested', 'Your appointment request has been sent to the clinic.');
       setName(''); setPhone(''); setDate(''); setTime(''); setReason(''); setNote('');
     } catch {
       Alert.alert(
         'Connection problem',
-        `The clinic appointment service could not be reached right now. Please call ${PHONE} if you need immediate assistance.`
+        'The clinic appointment service could not be reached right now.' + (clinic?.phone ? ' Please call ' + clinic.phone + ' for assistance.' : ' Please try again later.')
       );
     } finally {
       setSending(false);
@@ -382,7 +446,7 @@ function AppointmentScreen() {
         )}
         <Text style={styles.fieldLabel}>Reason for Visit</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 10 }}>
-          {services.slice(0, 8).map(([service]) => (
+          {services.map(([service]) => (
             <Pressable key={service} onPress={() => setReason(service)} style={[styles.chip, reason === service && styles.chipActive]}>
               <Text style={[styles.chipText, reason === service && styles.chipTextActive]}>{service}</Text>
             </Pressable>
@@ -390,9 +454,9 @@ function AppointmentScreen() {
         </ScrollView>
         <Field label="Additional Message" value={note} onChangeText={setNote} placeholder="Tell us anything important" multiline />
         <Pressable disabled={sending} onPress={submit} style={({ pressed }) => [styles.submitButton, pressed && { opacity: 0.8 }, sending && { opacity: 0.55 }]}>
-          <Text style={styles.submitText}>{sending ? 'Sending…' : 'Submit Appointment Request'}</Text>
+          <Text style={styles.submitText}>{sending ? 'Sendingâ€¦' : 'Submit Appointment Request'}</Text>
         </Pressable>
-        <Text style={styles.formNote}>Or call {PHONE} for immediate assistance.</Text>
+        <Text style={styles.formNote}>{clinic?.phone ? 'Or call ' + clinic.phone + ' for immediate assistance.' : 'For assistance, use the Contact tab.'}</Text>
       </View>
       <View style={styles.bottomSpacer} />
     </ScrollView>
@@ -422,12 +486,12 @@ function GalleryScreen() {
       <Text style={styles.pageTitle}>Gallery</Text>
       <Text style={styles.pageSub}>A glimpse of Dr. Pranali and the clinic experience.</Text>
       <View style={styles.galleryCard}>
-        <Image source={require('./assets/dr-pranali.jpg')} style={styles.galleryImage} />
-        <Text style={styles.galleryTitle}>Dr. Pranali – BDS Dental Surgeon</Text>
+        <SafeImage source={require('./assets/dr-pranali.jpg')} style={styles.galleryImage} placeholder="ðŸ¥" />
+        <Text style={styles.galleryTitle}>Dr. Pranali â€“ BDS Dental Surgeon</Text>
         <Text style={styles.gallerySub}>Patient-focused dental care with a gentle approach.</Text>
       </View>
       <View style={styles.galleryPlaceholder}>
-        <Text style={styles.galleryPlaceholderIcon}>＋</Text>
+        <Text style={styles.galleryPlaceholderIcon}>ï¼‹</Text>
         <Text style={styles.galleryTitle}>Clinic photos can be added here</Text>
         <Text style={styles.gallerySub}>We can replace these cards with real clinic, treatment and before/after images.</Text>
       </View>
@@ -436,20 +500,19 @@ function GalleryScreen() {
   );
 }
 
-function ContactScreen() {
+function ContactScreen({ clinic }) {
   const openMaps = () => Linking.openURL('https://www.google.com/maps/search/?api=1&query=Taloja%20Navi%20Mumbai');
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
       <Text style={styles.pageTitle}>Contact Clinic</Text>
       <Text style={styles.pageSub}>We are here to help you with your dental care.</Text>
       <View style={styles.contactCard}>
-        <Text style={styles.contactLabel}>Dr. Pranali Dental</Text>
-        <Text style={styles.contactDegree}>BDS – Dental Surgeon</Text>
-        <View style={styles.contactLine}><Text style={styles.contactIcon}>⌖</Text><Text style={styles.contactText}>Taloja, Navi Mumbai</Text></View>
-        <View style={styles.contactLine}><Text style={styles.contactIcon}>◷</Text><Text style={styles.contactText}>Monday – Sunday{`\n`}10:00 AM – 9:00 PM{`\n`}By Appointment Only</Text></View>
-        <View style={styles.contactLine}><Text style={styles.contactIcon}>☎</Text><Text style={styles.contactText}>{PHONE}</Text></View>
-        <ActionButton label="Call Clinic" icon="☎" onPress={() => Linking.openURL(`tel:+${WHATSAPP}`)} />
-        <ActionButton label="WhatsApp Clinic" icon="◉" variant="secondary" onPress={() => Linking.openURL(`https://wa.me/${WHATSAPP}`)} />
+        <Text style={styles.contactLabel}>{clinic?.name || 'Dr. Pranali Dental Clinic'}</Text>
+        <Text style={styles.contactDegree}>BDS â€“ Dental Surgeon</Text>
+        <View style={styles.contactLine}><Text style={styles.contactIcon}>âŒ–</Text><Text style={styles.contactText}>{clinic?.address || 'Taloja, Navi Mumbai'}</Text></View>
+        <View style={styles.contactLine}><Text style={styles.contactIcon}>â—·</Text><Text style={styles.contactText}>Monday â€“ Sunday{`\n`}10:00 AM â€“ 9:00 PM{`\n`}By Appointment Only</Text></View>
+        <ActionButton label="Call Clinic" icon="?~Z" onPress={() => clinic?.phone_e164 && Linking.openURL('tel:' + clinic.phone_e164)} variant="primary" />
+        <ActionButton label="WhatsApp Clinic" icon="?-%" variant="secondary" onPress={() => clinic?.whatsapp_phone && Linking.openURL('https://wa.me/' + clinic.whatsapp_phone)} />
         <Pressable onPress={openMaps} style={styles.mapButton}><Text style={styles.mapButtonText}>Open Location in Google Maps</Text></Pressable>
       </View>
       <View style={styles.infoCard}><Text style={styles.infoTitle}>Emergency Dental Care</Text><Text style={styles.aboutText}>For urgent dental pain, swelling, bleeding or a dental injury, call the clinic directly so we can guide you on the next step.</Text></View>
@@ -458,27 +521,31 @@ function ContactScreen() {
   );
 }
 
-export default function App() {
+function AppContent() {
   const [started, setStarted] = useState(false);
   const [tab, setTab] = useState('Home');
-  if (!started) return <WelcomeScreen onStart={(nextTab) => { setStarted(true); if (nextTab) setTab(nextTab); }} />;
+  const [selectedServiceReason, setSelectedServiceReason] = useState('');
+  const [clinic] = useState({ name: 'Dr. Pranali Dental Clinic', address: 'Taloja, Navi Mumbai' });
+  // Hooks must run in the same order on every render, including the Welcome screen.
   const screen = useMemo(() => {
-    if (tab === 'Services') return <ServicesScreen />;
-    if (tab === 'Appointment') return <AppointmentScreen />;
+    if (tab === 'Services') return <ServicesScreen onBook={(name) => { setSelectedServiceReason(name); setTab('Appointment'); }} />;
+    if (tab === 'Appointment') return <AppointmentScreen initialReason={selectedServiceReason} clinic={clinic} />;
     if (tab === 'Gallery') return <GalleryScreen />;
-    if (tab === 'Contact') return <ContactScreen />;
-    return <HomeScreen go={setTab} />;
-  }, [tab]);
+    if (tab === 'Contact') return <ContactScreen clinic={clinic} />;
+    return <HomeScreen go={setTab} clinic={clinic} />;
+  }, [tab, selectedServiceReason, clinic]);
+
+  if (!started) return <WelcomeScreen onStart={(nextTab) => { setStarted(true); if (nextTab) setTab(nextTab); }} />;
 
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>Dr. Pranali Dental</Text>
-          <Text style={styles.headerSub}>Healthy Smile, Happy You!</Text>
+          <Text style={styles.headerTitle}>{BRAND.name}</Text>
+          <Text style={styles.headerSub}>{BRAND.tagline}</Text>
         </View>
-        <Pressable onPress={() => Alert.alert('Dr. Pranali Dental', `BDS – Dental Surgeon\n\nTaloja, Navi Mumbai\n${PHONE}`)} style={styles.settings}><Text style={styles.settingsText}>⚙</Text></Pressable>
+        <Pressable onPress={() => Alert.alert('Oralyn', 'BDS ? Dental Surgeon\n\n' + (clinic?.address || 'Taloja, Navi Mumbai') + '\n' + (clinic?.phone || 'Contact details unavailable'))} style={styles.settings}><Text style={styles.settingsText}>?</Text></Pressable>
       </View>
       <View style={styles.body}>{screen}</View>
       <View style={styles.bottomNav}>
@@ -497,8 +564,27 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  welcomeSafe:{flex:1,backgroundColor:'#F7FBFF'},
-  welcomeContent:{flexGrow:1,paddingHorizontal:22,paddingTop:18,paddingBottom:18,alignItems:'center'},
+  imageFallback:{backgroundColor:'#EAF5FF',alignItems:'center',justifyContent:'center',overflow:'hidden'},
+  imageFallbackText:{fontSize:30,color:'#0A84E8'},
+  loginBrand:{alignItems:'center',marginTop:10,marginBottom:8},
+  loginBrandLogo:{width:136,height:118},
+  loginBrandName:{fontSize:28,fontWeight:'900',letterSpacing:-0.8,color:'#0C3B82',marginTop:-2},
+  loginBrandClinic:{fontSize:9,fontWeight:'900',letterSpacing:2.4,color:'#0A84E8',marginTop:2},
+  patientLoginCard:{width:'100%',backgroundColor:'#FFFFFF',borderRadius:26,borderWidth:1,borderColor:'#DDEEF7',padding:20,marginTop:22,shadowColor:'#0C3B82',shadowOpacity:0.07,shadowRadius:16,elevation:3},
+  patientLoginHeading:{fontSize:23,fontWeight:'900',color:'#0C3B82',textAlign:'center'},
+  patientLoginCopy:{fontSize:12.5,color:'#657789',textAlign:'center',lineHeight:18,marginTop:5,marginBottom:16},
+  googleMark:{fontSize:22,fontWeight:'900',color:'#4285F4',marginRight:10},
+  loginDivider:{flexDirection:'row',alignItems:'center',gap:10,marginVertical:12},
+  loginDividerLine:{height:1,backgroundColor:'#E2EDF5',flex:1},
+  loginDividerText:{fontSize:10,fontWeight:'800',color:'#9AA9B7'},
+  guestHint:{fontSize:10.5,lineHeight:16,color:'#7C8B99',textAlign:'center',marginTop:10},
+  patientTrustRow:{width:'100%',flexDirection:'row',justifyContent:'space-between',marginTop:20,paddingVertical:14,paddingHorizontal:6,backgroundColor:'#EAF8FC',borderRadius:18,borderWidth:1,borderColor:'#D4F1F1'},
+  patientTrustItem:{flex:1,alignItems:'center',gap:5},
+  patientTrustIcon:{fontSize:22,color:'#0A84E8'},
+  patientTrustLabel:{fontSize:9.5,fontWeight:'800',color:'#0C3B82',textAlign:'center'},
+
+  welcomeSafe:{flex:1,backgroundColor:'#F4FBFF'},
+  welcomeContent:{flexGrow:1,paddingHorizontal:22,paddingTop:12,paddingBottom:24,alignItems:'center',justifyContent:'center'},
   welcomeTop:{width:'100%',flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
   brandBadge:{flexDirection:'row',alignItems:'center',gap:9},
   brandBadgeLogo:{width:42,height:42},
@@ -506,21 +592,21 @@ const styles = StyleSheet.create({
   welcomeClinic:{fontSize:8.5,fontWeight:'900',letterSpacing:2,color:COLORS.blue,marginTop:1},
   skipButton:{paddingHorizontal:13,paddingVertical:8,borderRadius:18,backgroundColor:'#FFFFFF',borderWidth:1,borderColor:'#DDEAF5'},
   skipText:{fontSize:12,fontWeight:'800',color:'#657789'},
-  welcomeTitle:{fontSize:34,lineHeight:38,fontWeight:'900',color:'#0B2E4F',marginTop:38,textAlign:'center',letterSpacing:-1},
-  welcomeTitleBlue:{fontSize:34,lineHeight:38,fontWeight:'900',color:'#1677D2',textAlign:'center',letterSpacing:-1},
+  welcomeTitle:{fontSize:31,lineHeight:36,fontWeight:'900',color:'#0C3B82',marginTop:18,textAlign:'center',letterSpacing:-0.8},
+  welcomeTitleBlue:{fontSize:31,lineHeight:36,fontWeight:'900',color:'#0A84E8',textAlign:'center',letterSpacing:-0.8},
   welcomeSub:{fontSize:14,color:'#657789',lineHeight:20,textAlign:'center',marginTop:10,maxWidth:290},
   logoStage:{width:'100%',height:300,alignItems:'center',justifyContent:'flex-end',marginTop:3,position:'relative'},
   logoGlow:{position:'absolute',width:245,height:245,borderRadius:125,backgroundColor:'#E4F2FF',top:30,opacity:0.8},
   hero3dLogo:{width:270,height:270,zIndex:2},
   logoPedestal:{position:'absolute',bottom:18,width:220,height:22,borderRadius:14,backgroundColor:'#D8EBFB',borderWidth:1,borderColor:'#BBDCF6',shadowOpacity:0.12,shadowRadius:12,elevation:5},
   logoPedestalGlow:{position:'absolute',left:18,right:18,top:5,height:5,borderRadius:4,backgroundColor:'#4EA5F5',opacity:0.75},
-  googleButton:{width:'100%',height:50,borderRadius:25,backgroundColor:'#FFFFFF',borderWidth:1,borderColor:'#D6E2EE',alignItems:'center',justifyContent:'center',marginBottom:8},
+  googleButton:{width:'100%',minHeight:52,borderRadius:15,backgroundColor:'#FFFFFF',borderWidth:1,borderColor:'#D6E2EE',alignItems:'center',justifyContent:'center',flexDirection:'row',marginBottom:8},
   googleButtonText:{color:'#18334D',fontSize:14,fontWeight:'900'},
-  googleMessage:{fontSize:11,color:'#6B7D8F',textAlign:'center',marginBottom:8},
-  getStarted:{width:'100%',height:58,borderRadius:29,backgroundColor:'#1677D2',flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingLeft:25,paddingRight:7,shadowOpacity:0.18,shadowRadius:12,elevation:4},
-  getStartedText:{color:'#FFFFFF',fontSize:16,fontWeight:'900',marginLeft:70},
-  arrowCircle:{width:44,height:44,borderRadius:22,backgroundColor:'#FFFFFF',alignItems:'center',justifyContent:'center'},
-  arrowText:{fontSize:22,fontWeight:'900',color:'#1677D2'},
+  googleMessage:{fontSize:11,color:'#6B7D8F',textAlign:'center',marginBottom:8,lineHeight:16},
+  getStarted:{width:'100%',height:54,borderRadius:15,backgroundColor:'#0A84E8',flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingLeft:18,paddingRight:6,shadowOpacity:0.12,shadowRadius:10,elevation:3},
+  getStartedText:{color:'#FFFFFF',fontSize:15,fontWeight:'900',marginLeft:0},
+  arrowCircle:{width:42,height:42,borderRadius:13,backgroundColor:'#00C6C8',alignItems:'center',justifyContent:'center'},
+  arrowText:{fontSize:22,fontWeight:'900',color:'#FFFFFF'},
   exploreButton:{flexDirection:'row',alignItems:'center',gap:7,paddingVertical:14},
   exploreText:{fontSize:13,fontWeight:'800',color:'#18334D'},
   exploreArrow:{fontSize:16,color:'#1677D2'},
@@ -576,12 +662,19 @@ const styles = StyleSheet.create({
   servicesGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   serviceCard: { width: '48.3%', backgroundColor: COLORS.white, borderRadius: 16, padding: 13, minHeight: 132, marginBottom: 10, borderWidth: 1, borderColor: '#E2EBF3', shadowOpacity: 0.025, shadowRadius: 7, elevation: 1 },
   serviceIconWrap: { width: 33, height: 33, borderRadius: 10, backgroundColor: '#F0F7FF', alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+  servicePhoto: { width: '100%', height: 112, borderRadius: 12, marginBottom: 10, backgroundColor: '#E8F6FF' },
   serviceIcon: { color: COLORS.blue, fontSize: 20 },
   serviceName: { color: COLORS.navy, fontSize: 13.5, fontWeight: '800', lineHeight: 18 },
   serviceDesc: { color: COLORS.muted, fontSize: 11.5, lineHeight: 16, marginTop: 5 },
   viewAll: { backgroundColor: '#E8F4FF', borderRadius: 14, padding: 14, alignItems: 'center', marginTop: 2, borderWidth: 1, borderColor: '#D6E9F8' },
   viewAllText: { color: COLORS.blue, fontWeight: '800' },
   pageTitle: { color: COLORS.navy, fontSize: 28, fontWeight: '900', marginTop: 4, letterSpacing: -0.3 },
+  serviceDetailCard:{backgroundColor:COLORS.white,borderRadius:22,padding:20,borderWidth:1,borderColor:COLORS.border,marginTop:14},
+  serviceDetailIcon:{width:76,height:76,borderRadius:22,backgroundColor:COLORS.pale,alignItems:'center',justifyContent:'center',marginBottom:12},
+  serviceDetailPhoto:{width:'100%',height:190,borderRadius:17,marginBottom:14,backgroundColor:'#E8F6FF'},
+  serviceDetailIconText:{fontSize:42},
+  serviceCategoryLabel:{alignSelf:'flex-start',backgroundColor:COLORS.pale,color:COLORS.navy,borderRadius:12,paddingHorizontal:12,paddingVertical:6,fontWeight:'800',overflow:'hidden'},
+  serviceDetailNote:{color:COLORS.muted,fontSize:13,lineHeight:19,marginTop:12},
   pageSub: { color: COLORS.muted, fontSize: 15, lineHeight: 22, marginTop: 5, marginBottom: 15 },
   formCard: { backgroundColor: COLORS.white, borderRadius: 20, padding: 17, borderWidth: 1, borderColor: '#E2EBF3', shadowOpacity: 0.03, shadowRadius: 8, elevation: 1 },
   fieldLabel: { color: COLORS.navy, fontSize: 13, fontWeight: '800', marginBottom: 6, marginTop: 10 },
@@ -619,36 +712,14 @@ const styles = StyleSheet.create({
   pArchSwitch:{flexDirection:'row',borderWidth:1,borderColor:'#E4D3A0',borderRadius:10,overflow:'hidden',marginTop:13},pArchOption:{flex:1,paddingVertical:8,alignItems:'center'},pArchActive:{backgroundColor:'#F4C24A'},pArchText:{fontSize:12,fontWeight:'800',color:'#D5A63A'},pArchTextActive:{color:COLORS.white},
   pMouth:{marginTop:14,paddingVertical:7,backgroundColor:'#FCFCFD',borderRadius:16,borderWidth:1,borderColor:'#EEF1F4',alignItems:'center'},pSide:{fontSize:7,fontWeight:'900',letterSpacing:1.2,color:'#B7C0C9',marginVertical:3},pTeethRow:{flexDirection:'row',alignItems:'center',justifyContent:'center'},pToothItem:{width:18,alignItems:'center',marginHorizontal:1},pToothShape:{width:17,height:28,borderWidth:1.2,borderColor:'#C8D0D8',backgroundColor:'#F4F6F8',borderRadius:10,alignItems:'center'},pToothSelected:{backgroundColor:'#EAF4FF',borderColor:COLORS.blue,borderWidth:1.7},pToothCusp:{width:5,height:5,borderRadius:3,backgroundColor:'#B9C3CC',marginTop:5},pToothRoot:{position:'absolute',width:5,height:7,top:21,borderLeftWidth:1,borderRightWidth:1,borderBottomWidth:1,borderColor:'#B9C3CC',borderBottomLeftRadius:4,borderBottomRightRadius:4},pToothNumber:{fontSize:7,color:'#A6AFB8',marginTop:3},pMouthCenter:{height:24,alignItems:'center',justifyContent:'center'},pMouthLine:{width:115,height:1,backgroundColor:'#EEF1F4'},pMouthHint:{fontSize:7,color:'#C2C9D0',letterSpacing:1,marginTop:2},
   pSelected:{flexDirection:'row',alignItems:'center',backgroundColor:'#F7FAFD',borderRadius:12,padding:9,marginTop:10,borderWidth:1,borderColor:'#E4EDF5'},pSelectedIcon:{width:36,height:36,borderRadius:10,backgroundColor:'#EAF4FF',alignItems:'center',justifyContent:'center'},pSelectedIconText:{fontSize:11,fontWeight:'900',color:COLORS.blue},pSelectedTitle:{fontSize:13,fontWeight:'900',color:COLORS.navy},pSelectedSub:{fontSize:10,color:COLORS.muted,marginTop:2},
-  aiHero: { backgroundColor: '#0B2E4F', borderRadius: 22, padding: 20, marginBottom: 14 },
-  aiEyebrow: { color: '#8FCBFF', fontSize: 10, fontWeight: '900', letterSpacing: 1.1 },
-  aiTitle: { color: '#FFFFFF', fontSize: 30, fontWeight: '900', marginTop: 5 },
-  aiSub: { color: '#D9EAF7', fontSize: 14, lineHeight: 21, marginTop: 8 },
-  scanoPill: { alignSelf: 'flex-start', backgroundColor: '#16476D', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 7, marginTop: 14 },
-  scanoPillText: { color: '#FFFFFF', fontSize: 9, fontWeight: '900' },
-  aiCard: { backgroundColor: COLORS.white, borderRadius: 17, padding: 15, flexDirection: 'row', alignItems: 'center', marginBottom: 10, borderWidth: 1, borderColor: '#E2EBF3' },
-  aiIcon: { width: 45, height: 45, borderRadius: 13, backgroundColor: '#EAF4FF', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  aiIconText: { color: COLORS.blue, fontSize: 23, fontWeight: '900' },
-  aiCardTitle: { color: COLORS.navy, fontSize: 15, fontWeight: '900' },
-  aiCardSub: { color: COLORS.muted, fontSize: 12.5, lineHeight: 18, marginTop: 3 },
-  safetyCard: { backgroundColor: '#FFF9E9', borderRadius: 17, padding: 16, marginTop: 4, borderWidth: 1, borderColor: '#F1E2AE' },
-  safetyTitle: { color: COLORS.navy, fontSize: 16, fontWeight: '900' },
-  safetyText: { color: COLORS.text, fontSize: 12.5, lineHeight: 19, marginTop: 6 },
-  commandLabel: { color: COLORS.muted, fontSize: 10, fontWeight: '900', letterSpacing: 1.1, marginBottom: 7 },
-  commandChip: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 18, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: COLORS.white },
-  commandChipActive: { backgroundColor: COLORS.blue, borderColor: COLORS.blue },
-  commandChipText: { color: COLORS.navy, fontSize: 11, fontWeight: '800' },
-  commandChipTextActive: { color: COLORS.white },
-  aiCardLarge: { backgroundColor: COLORS.white, borderRadius: 19, padding: 17, marginBottom: 12, borderWidth: 1, borderColor: '#DCE8F4' },
-  pipelineRow: { flexDirection: 'row', alignItems: 'center', marginTop: 16, flexWrap: 'wrap', gap: 5 },
-  pipelineItem: { color: COLORS.blue, backgroundColor: '#EAF4FF', fontSize: 9, fontWeight: '900', paddingHorizontal: 7, paddingVertical: 5, borderRadius: 7 },
-  pipelineArrow: { color: COLORS.muted, fontSize: 12 },
-  statusRow: { flexDirection: 'row', alignItems: 'center', marginTop: 13 },
-  statusDot: { color: COLORS.green, fontSize: 10, marginRight: 6 },
-  statusText: { color: COLORS.muted, fontSize: 11.5, fontWeight: '700' },
-  scanFlow: { backgroundColor: '#EEF7FF', borderRadius: 17, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#D6E9F8' },
-  scanFlowTitle: { color: COLORS.navy, fontSize: 16, fontWeight: '900' },
-  scanFlowText: { color: COLORS.text, fontSize: 12.5, lineHeight: 19, marginTop: 6 },
-  aiConsentCard:{backgroundColor:COLORS.white,borderRadius:22,padding:20,borderWidth:1,borderColor:'#DCE8F4',marginTop:8},aiConsentTitle:{fontSize:27,fontWeight:'900',color:COLORS.navy,marginTop:5},aiConsentText:{fontSize:13.5,color:COLORS.text,lineHeight:20,marginTop:8},aiSafetyList:{backgroundColor:'#F7FAFD',borderRadius:14,padding:14,marginTop:14},aiSafetyItem:{fontSize:12.5,color:COLORS.text,lineHeight:22},aiError:{color:'#C53E3E',fontSize:12,marginTop:10},
-  aiLoading:{paddingTop:60,alignItems:'center'},patientNotDiagnosis:{alignSelf:'flex-start',backgroundColor:'#16476D',borderRadius:12,paddingHorizontal:10,paddingVertical:7,marginTop:13},patientNotDiagnosisText:{color:'#FFF',fontSize:10,fontWeight:'900'},emergencyBanner:{backgroundColor:'#FFF0F0',borderWidth:1,borderColor:'#E6A0A0',borderRadius:18,padding:15,marginBottom:12},emergencyTitle:{color:'#A52828',fontSize:11,fontWeight:'900',letterSpacing:1},emergencyText:{color:'#6D2525',fontSize:13,lineHeight:19,marginTop:5},quickReplyRow:{gap:8,paddingBottom:12},aiQuickChip:{borderWidth:1,borderColor:'#D5E3EF',borderRadius:18,paddingHorizontal:12,paddingVertical:9,backgroundColor:COLORS.white},aiQuickChipText:{color:COLORS.navy,fontSize:11,fontWeight:'800'},chatCard:{backgroundColor:COLORS.white,borderRadius:19,padding:14,borderWidth:1,borderColor:'#DCE8F4'},chatEmpty:{color:COLORS.muted,fontSize:12.5,lineHeight:19,padding:8},chatBubble:{padding:11,borderRadius:15,marginBottom:8,maxWidth:'92%'},chatUser:{backgroundColor:'#EAF4FF',alignSelf:'flex-end'},chatAssistant:{backgroundColor:'#F5F7F9',alignSelf:'flex-start'},chatText:{color:COLORS.text,fontSize:13,lineHeight:19},chatComposer:{flexDirection:'row',alignItems:'flex-end',marginTop:6},chatSend:{backgroundColor:COLORS.blue,borderRadius:12,paddingHorizontal:14,paddingVertical:12},chatSendText:{color:'#FFF',fontWeight:'900'},aiUtilityCard:{backgroundColor:COLORS.white,borderRadius:18,padding:15,borderWidth:1,borderColor:'#E2EBF3',marginTop:12},aiUtilityLink:{color:COLORS.blue,fontSize:13,fontWeight:'900',paddingVertical:10},aiDeleteLink:{color:'#B33434',fontSize:12,fontWeight:'800',paddingVertical:10},linkCard:{backgroundColor:COLORS.white,borderRadius:18,padding:15,borderWidth:1,borderColor:'#E2EBF3',marginBottom:12},
+  homeContactCard:{backgroundColor:COLORS.white,borderRadius:18,padding:14,flexDirection:'row',alignItems:'center',gap:7,borderWidth:1,borderColor:'#D7E8F6',marginBottom:14},
+  homeContactTitle:{fontSize:14,fontWeight:'900',color:COLORS.navy},
+  homeContactSub:{fontSize:11.5,color:COLORS.muted,marginTop:3},
+  homeContactButton:{paddingHorizontal:11,paddingVertical:10,borderRadius:11,backgroundColor:COLORS.blue},
+  homeWhatsAppButton:{backgroundColor:'#25D366'},
+  homeContactButtonText:{fontSize:10.5,fontWeight:'900',color:COLORS.white},
   bottomSpacer: { height: 8 },
 });
+
+export default function App() { return <SafeAreaProvider><LanguageProvider><AppContent /></LanguageProvider></SafeAreaProvider>; }
+

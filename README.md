@@ -1,6 +1,6 @@
-# Dr. Pranali Dental — AI-Ready Dental Care Platform
+﻿# Dr. Pranali Dental â€” AI-Ready Dental Care Platform
 
-A React Native / Expo patient application for Dr. Pranali Dental Clinic, designed to connect with the Universal Intelligence Engine (UIE) for clinician-reviewed dental intelligence.
+Oralyn is a React Native / Expo patient application for Dr. Pranali Dental Clinic, designed to connect with the Universal Intelligence Engine (UIE) for clinician-reviewed dental intelligence.
 
 ## Public status
 
@@ -25,13 +25,13 @@ This repository is **public** and intended for demonstration, pilot evaluation, 
 
 ```
 Patient App
-    ↓
+    â†“
 Dental Domain Adapter
-    ↓
+    â†“
 Universal Intelligence Engine
-    ↓
+    â†“
 Research / Reasoning / Evidence / Verification
-    ↓
+    â†“
 Clinician Review
 ```
 
@@ -75,3 +75,4 @@ This repository is provided for software development, demonstration and pilot pu
 ## License
 
 License terms should be selected before external commercial redistribution.
+
