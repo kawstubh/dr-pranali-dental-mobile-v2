@@ -9,6 +9,15 @@ on:
     branches: [master, ui/brand-and-services]
   pull_request:
     branches: [master]
+    paths:
+      - 'App.js'
+      - 'app.json'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'src/**'
+      - 'shared/**'
+      - 'assets/**'
+      - 'docs/PATIENT_FONTS.md'
 
 jobs:
   build-apk:
