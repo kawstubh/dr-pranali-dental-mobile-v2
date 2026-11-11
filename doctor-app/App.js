@@ -1,10 +1,10 @@
-﻿
+
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator, Alert, Image, Linking, Pressable, RefreshControl,
   ScrollView, StyleSheet, Text, TextInput, View
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { DOCTOR_API_URL } from './src/api/apiConfig';
 import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry, listOrganisationWorkspaces, createOrganisationWorkspace, createDentalOrganisation, createDoctorAccount, createWorkspaceMembership } from './src/api/doctorApi';
@@ -899,7 +899,7 @@ function WorkspaceSelectionScreen({
   );
 }
 
-export default function App(){
+function AppContent(){
   const [token,setToken]=useState(null);
   const [user,setUser]=useState(null);
   const [workspaces,setWorkspaces]=useState([]);
@@ -1081,3 +1081,8 @@ const styles=StyleSheet.create({
 });
 
 
+
+
+export default function App() {
+  return <SafeAreaProvider><AppContent /></SafeAreaProvider>;
+}
