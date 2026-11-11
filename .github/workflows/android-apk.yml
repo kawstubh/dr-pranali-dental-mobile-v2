@@ -18,6 +18,7 @@ on:
       - 'shared/**'
       - 'assets/**'
       - 'docs/PATIENT_FONTS.md'
+      - '.github/workflows/android-apk.yml'
 
 jobs:
   build-apk:
@@ -136,6 +137,7 @@ jobs:
           ./gradlew assembleRelease --no-daemon
 
       - name: Verify signed STAGING APK
+        id: verify_apk
         env:
           DENTAL_PATIENT_STORE_PASSWORD: ${{ secrets.DENTAL_PATIENT_STORE_PASSWORD }}
         run: |
@@ -164,17 +166,13 @@ jobs:
             echo "::error::APK does not contain an embedded JavaScript bundle."
             exit 1
           }
-      - name: Upload STAGING APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: dr-pranali-dental-patient-staging-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
-          if-no-files-found: error
-          retention-days: 14
       - name: Export Patient desktop web build
+        id: export_web
+        if: ${{ always() && steps.verify_apk.outcome == 'success' }}
         run: npx expo export --platform web
 
       - name: Capture Patient desktop screens at laptop widths
+        if: ${{ always() && steps.export_web.outcome == 'success' }}
         run: |
           set -euo pipefail
           python3 -m http.server 19006 --directory dist >/tmp/oralyn-patient-web.log 2>&1 &
@@ -202,6 +200,7 @@ jobs:
           retention-days: 14
 
       - name: Install and smoke-test Patient APK on Android emulator
+        if: ${{ always() && steps.verify_apk.outcome == 'success' }}
         run: |
           set -euo pipefail
           mkdir -p build-evidence
@@ -323,4 +322,13 @@ jobs:
           name: oralyn-patient-android-evidence-${{ github.sha }}
           path: build-evidence/
           if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload STAGING APK
+        if: ${{ always() && steps.verify_apk.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: dr-pranali-dental-patient-staging-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
           retention-days: 14
