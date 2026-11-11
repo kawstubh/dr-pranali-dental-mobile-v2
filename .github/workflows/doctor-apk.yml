@@ -9,6 +9,7 @@ on:
     branches: [master]
     paths:
       - 'doctor-app/**'
+      - '.github/workflows/doctor-apk.yml'
   push:
     branches: [master]
 
@@ -179,6 +180,7 @@ jobs:
           ./gradlew assembleRelease --no-daemon
 
       - name: Verify signed STAGING APK
+        id: verify_apk
         env:
           DENTAL_DOCTOR_STORE_PASSWORD: ${{ secrets.DENTAL_DOCTOR_STORE_PASSWORD }}
         run: |
@@ -236,17 +238,13 @@ jobs:
           fi
           unzip -l "$APK" | grep -Eq 'assets/index[.]android[.]bundle([.]hbc)?'
           echo "Verified Doctor APK package and release certificate: $PACKAGE_NAME"
-      - name: Upload STAGING APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: dr-pranali-dental-doctor-staging-apk
-          path: doctor-app/android/app/build/outputs/apk/release/app-release.apk
-          if-no-files-found: error
-          retention-days: 14
       - name: Export Doctor desktop web build
+        id: export_web
+        if: ${{ always() && steps.verify_apk.outcome == 'success' }}
         run: npx expo export --platform web
 
       - name: Capture Doctor desktop screens at laptop widths
+        if: ${{ always() && steps.export_web.outcome == 'success' }}
         env:
           DENTAL_STAGING_DOCTOR_EMAIL: ${{ secrets.DENTAL_STAGING_DOCTOR_EMAIL }}
           DENTAL_STAGING_DOCTOR_PASSWORD: ${{ secrets.DENTAL_STAGING_DOCTOR_PASSWORD }}
@@ -277,6 +275,7 @@ jobs:
           retention-days: 14
 
       - name: Install and smoke-test Doctor APK on Android emulator
+        if: ${{ always() && steps.verify_apk.outcome == 'success' }}
         env:
           DENTAL_STAGING_DOCTOR_EMAIL: ${{ secrets.DENTAL_STAGING_DOCTOR_EMAIL }}
           DENTAL_STAGING_DOCTOR_PASSWORD: ${{ secrets.DENTAL_STAGING_DOCTOR_PASSWORD }}
@@ -338,4 +337,13 @@ jobs:
           name: oralyn-doctor-android-evidence-${{ github.sha }}
           path: doctor-app/build-evidence/
           if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload STAGING APK
+        if: ${{ always() && steps.verify_apk.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: dr-pranali-dental-doctor-staging-apk
+          path: doctor-app/android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
           retention-days: 14
