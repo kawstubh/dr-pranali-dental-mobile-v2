@@ -61,7 +61,7 @@ jobs:
       - name: Generate Android project
         run: npx expo prebuild --platform android --non-interactive
 
-      - name: Verify production JavaScript bundle
+      - name: Verify staging JavaScript bundle
         run: npx expo export --platform android
 
       - name: Require fixed release signing secrets
@@ -170,4 +170,127 @@ jobs:
           name: dr-pranali-dental-patient-staging-apk
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
+          retention-days: 14
+      - name: Install and smoke-test Patient APK on Android emulator
+        run: |
+          set -euo pipefail
+          mkdir -p build-evidence
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager | sort | tail -n 1)"
+          AVDMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name avdmanager | sort | tail -n 1)"
+          ADB="$SDK_ROOT/platform-tools/adb"
+          test -x "$SDKMANAGER"
+          test -x "$AVDMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --install "emulator" "platform-tools" "system-images;android-35;google_apis;x86_64" >/tmp/patient-sdkmanager.log
+          echo no | "$AVDMANAGER" create avd --force --name oralyn-patient-ci --package "system-images;android-35;google_apis;x86_64" --device pixel_2
+          "$SDK_ROOT/emulator/emulator" -avd oralyn-patient-ci -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -wipe-data >build-evidence/emulator.log 2>&1 &
+          timeout 240 "$ADB" wait-for-device
+          boot=""
+          for attempt in $(seq 1 60); do
+            boot="$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
+            [ "$boot" = "1" ] && break
+            sleep 5
+          done
+          if [ "$boot" != "1" ]; then
+            cat build-evidence/emulator.log
+            echo "::error::Android emulator did not finish booting."
+            exit 1
+          fi
+          "$ADB" shell settings put global window_animation_scale 0
+          "$ADB" shell settings put global transition_animation_scale 0
+          "$ADB" shell settings put global animator_duration_scale 0
+          "$ADB" install -r android/app/build/outputs/apk/release/app-release.apk
+          "$ADB" logcat -c
+          "$ADB" shell monkey -p com.drprani.dental 1
+          sleep 18
+          "$ADB" shell uiautomator dump /sdcard/patient-welcome.xml >/dev/null
+          "$ADB" pull /sdcard/patient-welcome.xml build-evidence/patient-welcome.xml
+          "$ADB" shell screencap -p /sdcard/patient-welcome.png
+          "$ADB" pull /sdcard/patient-welcome.png build-evidence/patient-welcome.png
+          grep -Fq "Welcome to Oralyn" build-evidence/patient-welcome.xml || {
+            echo "::error::Patient welcome/login screen did not render after cold start."
+            exit 1
+          }
+          python3 - <<'PY'
+          import re
+          import xml.etree.ElementTree as ET
+          root = ET.parse('build-evidence/patient-welcome.xml').getroot()
+          for node in root.iter('node'):
+              if node.attrib.get('text') == 'Explore as a guest':
+                  match = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', node.attrib.get('bounds', ''))
+                  if match:
+                      x1, y1, x2, y2 = map(int, match.groups())
+                      print((x1 + x2) // 2, (y1 + y2) // 2)
+                      break
+          else:
+              raise SystemExit('Explore as a guest button was not accessible in the Android view hierarchy')
+          PY
+          read -r guest_x guest_y < <(python3 - <<'PY'
+          import re
+          import xml.etree.ElementTree as ET
+          root = ET.parse('build-evidence/patient-welcome.xml').getroot()
+          for node in root.iter('node'):
+              if node.attrib.get('text') == 'Explore as a guest':
+                  match = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', node.attrib.get('bounds', ''))
+                  if match:
+                      x1, y1, x2, y2 = map(int, match.groups())
+                      print((x1 + x2) // 2, (y1 + y2) // 2)
+                      break
+          else:
+              raise SystemExit('Explore as a guest button was not accessible')
+          PY
+          )
+          "$ADB" shell input tap "$guest_x" "$guest_y"
+          sleep 4
+          "$ADB" shell uiautomator dump /sdcard/patient-home.xml >/dev/null
+          "$ADB" pull /sdcard/patient-home.xml build-evidence/patient-home.xml
+          "$ADB" shell screencap -p /sdcard/patient-home.png
+          "$ADB" pull /sdcard/patient-home.png build-evidence/patient-home.png
+          grep -Fq "Book an appointment" build-evidence/patient-home.xml || {
+            echo "::error::Patient guest home did not render the booking action."
+            exit 1
+          }
+          python3 - <<'PY' > build-evidence/booking-tap.txt
+          import re
+          import xml.etree.ElementTree as ET
+          root = ET.parse('build-evidence/patient-home.xml').getroot()
+          for node in root.iter('node'):
+              if node.attrib.get('text') == 'Book an appointment':
+                  match = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', node.attrib.get('bounds', ''))
+                  if match:
+                      x1, y1, x2, y2 = map(int, match.groups())
+                      print((x1 + x2) // 2, (y1 + y2) // 2)
+                      break
+          else:
+              raise SystemExit('Book an appointment button was not accessible')
+          PY
+          read -r book_x book_y < build-evidence/booking-tap.txt
+          "$ADB" shell input tap "$book_x" "$book_y"
+          sleep 4
+          "$ADB" shell uiautomator dump /sdcard/patient-appointment.xml >/dev/null
+          "$ADB" pull /sdcard/patient-appointment.xml build-evidence/patient-appointment.xml
+          "$ADB" shell screencap -p /sdcard/patient-appointment.png
+          "$ADB" pull /sdcard/patient-appointment.png build-evidence/patient-appointment.png
+          for label in "Full name" "Phone number" "Preferred date" "Preferred time"; do
+            grep -Fq "$label" build-evidence/patient-appointment.xml || {
+              echo "::error::Appointment form is missing expected field: $label"
+              exit 1
+            }
+          done
+          "$ADB" logcat -d -v brief > build-evidence/patient-logcat.txt
+          if grep -E "FATAL EXCEPTION|No safe area value available|Invariant Violation" build-evidence/patient-logcat.txt; then
+            echo "::error::Fatal Patient Android startup or navigation error detected."
+            exit 1
+          fi
+          printf 'commit=%s\nenvironment=staging\napi=https://oralyn-multitenant-staging.onrender.com\npackage=com.drpranali.dental\n' "$GITHUB_SHA" > build-evidence/build-info.txt
+          echo "::warning::Patient cold start, guest navigation and booking form verified. OAuth login/session persistence requires a dedicated staging Google test account."
+
+      - name: Upload Patient Android runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oralyn-patient-android-evidence-${{ github.sha }}
+          path: build-evidence/
+          if-no-files-found: warn
           retention-days: 14
