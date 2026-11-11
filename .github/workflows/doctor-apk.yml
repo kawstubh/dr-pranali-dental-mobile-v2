@@ -1,7 +1,7 @@
 name: Doctor Android APK
 
 permissions:
-  contents: write
+  contents: read
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      EXPO_PUBLIC_DENTAL_API_URL: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && 'https://dr-pranali-dental-api.onrender.com' || 'https://oralyn-multitenant-staging.onrender.com' }}
+      EXPO_PUBLIC_DENTAL_API_URL: https://oralyn-multitenant-staging.onrender.com
     defaults:
       run:
         working-directory: doctor-app
@@ -68,7 +68,7 @@ jobs:
       - name: Verify selected API environment
         run: |
           case "$EXPO_PUBLIC_DENTAL_API_URL" in
-            https://oralyn-multitenant-staging.onrender.com|https://dr-pranali-dental-api.onrender.com) ;;
+            https://oralyn-multitenant-staging.onrender.com) ;;
             *) echo "::error::Unexpected Doctor API target."; exit 1 ;;
           esac
           echo "Doctor API target: $EXPO_PUBLIC_DENTAL_API_URL"
@@ -226,15 +226,3 @@ jobs:
           path: doctor-app/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
-
-      - name: Publish doctor-latest GitHub Release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          APK="android/app/build/outputs/apk/release/app-release.apk"
-          if gh release view doctor-latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload doctor-latest "$APK#dr-pranali-doctor.apk" --repo "$GITHUB_REPOSITORY" --clobber
-          else
-            gh release create doctor-latest "$APK#dr-pranali-doctor.apk" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Doctor APK latest" --notes "Latest signed doctor Android APK." --latest=false
-          fi
