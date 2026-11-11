@@ -1,7 +1,20 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  listDoctorWorkspaces,
+  switchDoctorWorkspace,
+} from '../api/doctorApi';
 
 const SESSION_KEY = 'doctor_session';
 const USER_KEY = 'doctor_user';
+const {
+  persistWorkspaceSession,
+  createSessionWriteCoordinator,
+} = require('./workspaceContext');
+
+const sessionWrites = createSessionWriteCoordinator(
+  (session) => persistWorkspaceSession(AsyncStorage, session),
+  () => AsyncStorage.multiRemove([SESSION_KEY, USER_KEY])
+);
 
 export class DoctorAuthError extends Error {
   constructor(message, code = '', status = null) {
@@ -30,6 +43,7 @@ async function parseResponse(response) {
 }
 
 export async function signInWithPassword(apiUrl, email, password) {
+  const generation = sessionWrites.beginMutation();
   try {
     const response = await fetch(apiUrl.replace(/\/$/, '') + '/v1/dental/auth/password/login', {
       method: 'POST',
@@ -40,10 +54,13 @@ export async function signInWithPassword(apiUrl, email, password) {
     if (!payload.access_token || !payload.user) {
       throw new DoctorAuthError('The clinic API returned an incomplete login session.', 'INVALID_SESSION_RESPONSE');
     }
-    await AsyncStorage.setItem(SESSION_KEY, payload.access_token);
-    await AsyncStorage.setItem(USER_KEY, JSON.stringify(payload.user));
-    return payload;
+    const saved = await sessionWrites.writeIfCurrent(generation, payload);
+    if (!saved) {
+      throw new DoctorAuthError('A newer session operation replaced this sign-in.', 'SESSION_SUPERSEDED');
+    }
+    return saved;
   } catch (error) {
+    sessionWrites.finishMutation(generation);
     if (error instanceof DoctorAuthError) throw error;
     throw new DoctorAuthError(
       error?.name === 'TypeError'
@@ -59,19 +76,69 @@ export async function getStoredDoctorSession() {
   return AsyncStorage.getItem(SESSION_KEY);
 }
 
-export async function signOutDoctor(apiUrl) {
-  const token = await AsyncStorage.getItem(SESSION_KEY);
+export async function getStoredDoctorUser() {
+  const raw = await AsyncStorage.getItem(USER_KEY);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+}
+
+export async function refreshStoredDoctorWorkspaces() {
+  // A refresh is a read, not a new session mutation. It must not begin while a
+  // login, logout or workspace switch is in flight.
+  const generation = sessionWrites.captureRead();
+  if (generation === null) return null;
+
+  const token = await getStoredDoctorSession();
+  const user = await getStoredDoctorUser();
+  if (!token || !user) return null;
+
+  const payload = await listDoctorWorkspaces(token);
+  // Ignore responses from an older workspace/session context. The coordinator
+  // serializes storage writes so a late response cannot restore an old token.
+  return sessionWrites.writeIfCurrent(generation, {
+    access_token: token,
+    user,
+    workspaces: payload?.workspaces || [],
+  });
+}
+
+export async function switchStoredDoctorWorkspace(clinicId) {
+  const generation = sessionWrites.beginMutation();
   try {
-    if (token) {
-      await fetch(apiUrl.replace(/\/$/, '') + '/v1/dental/auth/logout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + token,
-        },
-      }).catch(() => {});
+    const token = await getStoredDoctorSession();
+    if (!token) {
+      throw new DoctorAuthError('Sign in again before switching workspaces.', 'SESSION_REQUIRED');
     }
-  } finally {
-    await AsyncStorage.multiRemove([SESSION_KEY, USER_KEY]);
+    const session = await switchDoctorWorkspace(token, clinicId);
+    const saved = await sessionWrites.writeIfCurrent(generation, session);
+    if (!saved) {
+      throw new DoctorAuthError('A newer session operation replaced this workspace switch.', 'SESSION_SUPERSEDED');
+    }
+    return saved;
+  } catch (error) {
+    sessionWrites.finishMutation(generation);
+    throw error;
+  }
+}
+
+export async function signOutDoctor(apiUrl) {
+  const generation = sessionWrites.beginMutation();
+  let token = null;
+  try {
+    token = await AsyncStorage.getItem(SESSION_KEY);
+  } catch {
+    // Local sign-out must still clear credentials if the token read fails.
+  }
+  // Clear local credentials before the best-effort server logout. A later
+  // sign-in increments the generation and cannot be erased by this logout.
+  await sessionWrites.clearIfCurrent(generation);
+  if (token) {
+    await fetch(apiUrl.replace(/\/$/, '') + '/v1/dental/auth/logout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + token,
+      },
+    }).catch(() => {});
   }
 }

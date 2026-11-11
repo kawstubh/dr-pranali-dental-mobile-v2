@@ -6,11 +6,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry } from './src/api/doctorApi';
-import { getStoredDoctorSession, signInWithPassword, signOutDoctor } from './src/auth/passwordAuth';
+import { DOCTOR_API_URL } from './src/api/apiConfig';
+import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry, listOrganisationWorkspaces, createOrganisationWorkspace, createDentalOrganisation, createDoctorAccount, createWorkspaceMembership } from './src/api/doctorApi';
+import { getStoredDoctorSession, getStoredDoctorUser, refreshStoredDoctorWorkspaces, switchStoredDoctorWorkspace, signInWithPassword, signOutDoctor } from './src/auth/passwordAuth';
+const { canManageWorkspace } = require('./src/auth/workspaceContext');
 import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
 
-const clinicLogo = require('./assets/dr-pranali-branded-logo.png');
+const clinicLogo = require('./assets/oralyn-logo.png');
 
 const C = {
   navy:'#082B49', blue:'#1677D2', bg:'#F5F9FC', white:'#FFF',
@@ -21,6 +23,8 @@ const C = {
 const STATUSES = ['requested','confirmed','scheduled','completed','cancelled','rescheduled','no_show'];
 
 function statusLabel(s){ return (s || '').replace('_',' ').replace(/^./, x => x.toUpperCase()); }
+function organisationLabel(type){ return type === 'hospital' ? 'Hospital' : type === 'group' ? 'Healthcare group' : 'Clinic'; }
+function workspaceLabel(type){ return type === 'hospital_department' ? 'Department' : type === 'branch' ? 'Branch' : 'Clinic'; }
 
 function AppointmentCard({ item, token, onChanged }) {
   const [busy,setBusy]=useState(false);
@@ -266,7 +270,356 @@ function DoctorDailyAISummary({token}) {
   return <View style={styles.todayCard}><View style={{flex:1}}><Text style={styles.todayKicker}>AI DAILY SUMMARY</Text><Text style={styles.todayTitle}>Clinic workload insight</Text>{loading?<ActivityIndicator color={C.blue}/>:<Text style={styles.todaySub}>{result?.error|| (result?.result ? (typeof result.result==='string'?result.result:JSON.stringify(result.result)) : 'Run a secure AI summary using appointment status only.')}</Text>}</View><Pressable onPress={run} style={styles.refresh}><Text>Run</Text></Pressable></View>;
 }
 
-function Dashboard({ token, logout }) {
+function WorkspaceManagementCard({ token, user, activeWorkspace, workspaceMembershipFresh, onRefreshWorkspaces }) {
+  const canManage = canManageWorkspace(user, activeWorkspace, workspaceMembershipFresh);
+  const organisationId = activeWorkspace?.organisation_id;
+  const [workspaces, setWorkspaces] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [workspaceName, setWorkspaceName] = useState('');
+  const [workspaceType, setWorkspaceType] = useState(
+    activeWorkspace?.organisation_type === 'hospital' ? 'hospital_department' : 'branch'
+  );
+  const [organisationName, setOrganisationName] = useState('');
+  const [organisationType, setOrganisationType] = useState('hospital');
+  const [firstWorkspaceName, setFirstWorkspaceName] = useState('');
+  const [showCreateOrganisation, setShowCreateOrganisation] = useState(false);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [doctorEmail, setDoctorEmail] = useState('');
+  const [doctorPassword, setDoctorPassword] = useState('');
+  const [doctorRole, setDoctorRole] = useState('dentist');
+  const [createdDoctorId, setCreatedDoctorId] = useState('');
+  const [membershipDoctorId, setMembershipDoctorId] = useState('');
+  const [membershipWorkspaceId, setMembershipWorkspaceId] = useState('');
+  const [membershipRole, setMembershipRole] = useState('dentist');
+
+  useEffect(() => {
+    setWorkspaceType(activeWorkspace?.organisation_type === 'hospital' ? 'hospital_department' : 'branch');
+  }, [activeWorkspace?.organisation_type]);
+
+  useEffect(() => {
+    const available = workspaces.filter((workspace) => workspace.id !== activeWorkspace?.id);
+    if (!available.some((workspace) => workspace.id === membershipWorkspaceId)) {
+      setMembershipWorkspaceId(available[0]?.id || '');
+    }
+  }, [workspaces, activeWorkspace?.id, membershipWorkspaceId]);
+
+  const refresh = useCallback(async () => {
+    if (!canManage || !organisationId) return;
+    setLoading(true);
+    try {
+      const payload = await listOrganisationWorkspaces(token, organisationId);
+      setWorkspaces(payload?.workspaces || []);
+      setError('');
+    } catch (e) {
+      setError(e?.message || 'Could not load organisation workspaces.');
+    } finally {
+      setLoading(false);
+    }
+  }, [token, organisationId, canManage]);
+
+  useEffect(() => {
+    if (canManage) refresh();
+  }, [canManage, refresh]);
+
+  // Do not render organisation controls to doctors without an owner/admin role
+  // in an active organisation. The API remains the authoritative access guard.
+  if (!canManage) return null;
+
+  const addWorkspace = async () => {
+    if (!workspaceName.trim()) {
+      setError('Enter a name for the new workspace.');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      await createOrganisationWorkspace(token, organisationId, {
+        name: workspaceName.trim(),
+        clinic_type: workspaceType,
+      });
+      setWorkspaceName('');
+      await refresh();
+      await onRefreshWorkspaces?.();
+      setNotice('Workspace created and added to your authorised workspace list.');
+    } catch (e) {
+      setError(e?.message || 'Could not create the workspace.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const addOrganisation = async () => {
+    if (!organisationName.trim()) {
+      setError('Enter the clinic or hospital name.');
+      return;
+    }
+    const firstWorkspace = firstWorkspaceName.trim() || organisationName.trim();
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      await createDentalOrganisation(token, {
+        name: organisationName.trim(),
+        organisation_type: organisationType,
+        workspace_name: firstWorkspace,
+        clinic_type: organisationType === 'hospital' ? 'hospital_department' : 'clinic',
+      });
+      setOrganisationName('');
+      setFirstWorkspaceName('');
+      setShowCreateOrganisation(false);
+      await onRefreshWorkspaces?.();
+      setNotice('Organisation created. Use Switch workspace to open its first workspace.');
+    } catch (e) {
+      setError(e?.message || 'Could not create the organisation.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const addDoctorAccount = async () => {
+    if (!doctorEmail.trim() || doctorPassword.length < 12) {
+      setError('Enter a valid email and a password of at least 12 characters.');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      const created = await createDoctorAccount(token, {
+        email: doctorEmail.trim().toLowerCase(),
+        password: doctorPassword,
+        role: doctorRole,
+      });
+      setCreatedDoctorId(created.id);
+      setMembershipDoctorId(created.id);
+      setDoctorEmail('');
+      setDoctorPassword('');
+      await refresh();
+      setNotice('Doctor account created and assigned to this workspace. Its ID is shown below for adding it to another workspace.');
+    } catch (e) {
+      setError(e?.message || 'Could not create the doctor account.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const assignDoctorToWorkspace = async () => {
+    if (!membershipDoctorId.trim() || !membershipWorkspaceId) {
+      setError('Enter a doctor ID and choose another workspace.');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      await createWorkspaceMembership(token, membershipWorkspaceId, {
+        doctor_id: membershipDoctorId.trim(),
+        role: membershipRole,
+      });
+      const target = workspaces.find((workspace) => workspace.id === membershipWorkspaceId);
+      setNotice('Doctor added to ' + (target?.name || 'the selected workspace') + '.');
+      await refresh();
+    } catch (e) {
+      setError(e?.message || 'Could not add the doctor to this workspace.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!canManage) return null;
+
+  const workspaceOptions = activeWorkspace?.organisation_type === 'hospital'
+    ? [{ value: 'hospital_department', label: 'Department' }, { value: 'branch', label: 'Branch' }]
+    : [{ value: 'branch', label: 'Branch' }, { value: 'clinic', label: 'Clinic' }];
+  const targetWorkspaces = workspaces.filter((workspace) => workspace.id !== activeWorkspace?.id);
+
+  return (
+    <View style={[styles.card, { marginTop: 12 }]}>
+      <View style={styles.sectionRow}>
+        <Text style={styles.sectionTitle}>Workspace management</Text>
+        <Pressable disabled={loading} onPress={refresh}><Text style={styles.refresh}>Refresh</Text></Pressable>
+      </View>
+      <Text style={styles.help}>
+        Manage {activeWorkspace?.organisation_name || 'your organisation'} · {organisationLabel(activeWorkspace?.organisation_type)}.
+      </Text>
+      {loading ? <ActivityIndicator color={C.blue} style={{ marginTop: 10 }} /> : workspaces.map((workspace) => (
+        <View key={workspace.id} style={[styles.patientCard, { marginTop: 7 }]}>
+          <Text style={styles.patient}>{workspace.name}</Text>
+          <Text style={styles.phone}>
+            {workspaceLabel(workspace.clinic_type)} · {Number(workspace.active_doctors || 0)} active doctor(s)
+          </Text>
+        </View>
+      ))}
+
+      <Text style={[styles.label, { marginTop: 14 }]}>Add a workspace</Text>
+      <TextInput
+        value={workspaceName}
+        onChangeText={setWorkspaceName}
+        placeholder={activeWorkspace?.organisation_type === 'hospital' ? 'e.g. Dental Department' : 'e.g. Seawoods Branch'}
+        placeholderTextColor="#91A0AE"
+        editable={!busy}
+        style={styles.input}
+      />
+      <View style={{ flexDirection: 'row', gap: 7, flexWrap: 'wrap', marginTop: 8 }}>
+        {workspaceOptions.map((option) => (
+          <Pressable
+            key={option.value}
+            onPress={() => setWorkspaceType(option.value)}
+            style={[styles.action, workspaceType === option.value && styles.patientCardActive]}
+          >
+            <Text style={styles.actionText}>{option.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+      <Pressable disabled={busy || !organisationId} onPress={addWorkspace} style={[styles.primary, busy && { opacity: 0.6 }]}>
+        <Text style={styles.primaryText}>{busy ? 'Saving…' : 'Create workspace'}</Text>
+      </Pressable>
+
+      <Pressable
+        onPress={() => setShowCreateOrganisation((value) => !value)}
+        style={[styles.action, { alignSelf: 'flex-start', marginTop: 12 }]}
+      >
+        <Text style={styles.actionText}>{showCreateOrganisation ? 'Cancel' : 'Create another clinic or hospital'}</Text>
+      </Pressable>
+      {showCreateOrganisation && (
+        <View style={{ marginTop: 10 }}>
+          <Text style={styles.label}>Organisation name</Text>
+          <TextInput
+            value={organisationName}
+            onChangeText={setOrganisationName}
+            placeholder="e.g. New Dental Hospital"
+            placeholderTextColor="#91A0AE"
+            editable={!busy}
+            style={styles.input}
+          />
+          <View style={{ flexDirection: 'row', gap: 7, marginTop: 8 }}>
+            {['clinic', 'hospital'].map((type) => (
+              <Pressable
+                key={type}
+                onPress={() => setOrganisationType(type)}
+                style={[styles.action, organisationType === type && styles.patientCardActive]}
+              >
+                <Text style={styles.actionText}>{organisationLabel(type)}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text style={[styles.label, { marginTop: 10 }]}>
+            First {organisationType === 'hospital' ? 'department' : 'clinic workspace'} name
+          </Text>
+          <TextInput
+            value={firstWorkspaceName}
+            onChangeText={setFirstWorkspaceName}
+            placeholder={organisationType === 'hospital' ? 'e.g. Dental Department' : 'e.g. Main Clinic'}
+            placeholderTextColor="#91A0AE"
+            editable={!busy}
+            style={styles.input}
+          />
+          <Pressable disabled={busy} onPress={addOrganisation} style={[styles.primary, busy && { opacity: 0.6 }]}>
+            <Text style={styles.primaryText}>{busy ? 'Creating…' : 'Create organisation'}</Text>
+          </Pressable>
+        </View>
+      )}
+      <View style={{ marginTop: 16, borderTopWidth: 1, borderTopColor: C.border, paddingTop: 14 }}>
+        <Text style={styles.sectionTitle}>Doctor access</Text>
+        <Text style={styles.help}>Create a clinic-issued account. The new doctor is automatically assigned to the current workspace.</Text>
+        <Text style={[styles.label, { marginTop: 10 }]}>Doctor email</Text>
+        <TextInput
+          value={doctorEmail}
+          onChangeText={setDoctorEmail}
+          placeholder="doctor@clinic.com"
+          placeholderTextColor="#91A0AE"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          editable={!busy}
+          style={styles.input}
+        />
+        <Text style={[styles.label, { marginTop: 9 }]}>Temporary password (minimum 12 characters)</Text>
+        <TextInput
+          value={doctorPassword}
+          onChangeText={setDoctorPassword}
+          placeholder="Set a strong temporary password"
+          placeholderTextColor="#91A0AE"
+          secureTextEntry
+          autoCapitalize="none"
+          editable={!busy}
+          style={styles.input}
+        />
+        <View style={{ flexDirection: 'row', gap: 7, marginTop: 8 }}>
+          {['dentist', 'doctor', 'admin'].map((role) => (
+            <Pressable
+              key={role}
+              onPress={() => setDoctorRole(role)}
+              style={[styles.action, doctorRole === role && styles.patientCardActive]}
+            >
+              <Text style={styles.actionText}>{role === 'admin' ? 'Administrator' : role === 'dentist' ? 'Dentist' : 'Doctor'}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Pressable disabled={busy} onPress={addDoctorAccount} style={[styles.primary, busy && { opacity: 0.6 }]}>
+          <Text style={styles.primaryText}>{busy ? 'Creating…' : 'Create doctor account'}</Text>
+        </Pressable>
+        {!!createdDoctorId && <Text style={styles.help}>New doctor ID: {createdDoctorId}</Text>}
+      </View>
+
+      <View style={{ marginTop: 14, borderTopWidth: 1, borderTopColor: C.border, paddingTop: 14 }}>
+        <Text style={styles.sectionTitle}>Assign doctor to another workspace</Text>
+        <Text style={styles.help}>Use the doctor ID shown after account creation, or enter an existing doctor ID.</Text>
+        <TextInput
+          value={membershipDoctorId}
+          onChangeText={setMembershipDoctorId}
+          placeholder="Doctor account ID"
+          placeholderTextColor="#91A0AE"
+          autoCapitalize="none"
+          editable={!busy}
+          style={styles.input}
+        />
+        {targetWorkspaces.length ? (
+          <View style={{ marginTop: 9 }}>
+            <Text style={styles.label}>Choose destination workspace</Text>
+            {targetWorkspaces.map((workspace) => (
+              <Pressable
+                key={workspace.id}
+                onPress={() => setMembershipWorkspaceId(workspace.id)}
+                style={[styles.patientCard, membershipWorkspaceId === workspace.id && styles.patientCardActive]}
+              >
+                <Text style={styles.patient}>{workspace.name}</Text>
+                <Text style={styles.phone}>{workspaceLabel(workspace.clinic_type)}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.help}>Create another workspace first to assign a doctor to it.</Text>
+        )}
+        <View style={{ flexDirection: 'row', gap: 7, marginTop: 8 }}>
+          {['dentist', 'doctor', 'admin'].map((role) => (
+            <Pressable
+              key={role}
+              onPress={() => setMembershipRole(role)}
+              style={[styles.action, membershipRole === role && styles.patientCardActive]}
+            >
+              <Text style={styles.actionText}>{role === 'admin' ? 'Administrator' : role === 'dentist' ? 'Dentist' : 'Doctor'}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Pressable
+          disabled={busy || !membershipWorkspaceId || !membershipDoctorId.trim()}
+          onPress={assignDoctorToWorkspace}
+          style={[styles.primary, (busy || !membershipWorkspaceId || !membershipDoctorId.trim()) && { opacity: 0.5 }]}
+        >
+          <Text style={styles.primaryText}>{busy ? 'Saving…' : 'Assign doctor to workspace'}</Text>
+        </Pressable>
+      </View>
+      {!!error && <View style={styles.loginError}><Text style={styles.loginErrorTitle}>Workspace management</Text><Text style={styles.loginErrorText}>{error}</Text></View>}
+      {!!notice && <Text style={styles.help}>{notice}</Text>}
+    </View>
+  );
+}
+
+function Dashboard({ token, logout, user, workspaces, workspaceMembershipFresh, onSwitchWorkspace, onRefreshWorkspaces }) {
   const [appointments,setAppointments]=useState([]);
   const [patients,setPatients]=useState([]);
   const [tab,setTab]=useState('Home');
@@ -281,12 +634,24 @@ function Dashboard({ token, logout }) {
       setAppointments(a||[]); setPatients(p||[]); setApiOk(h?.status==='ok');
     } catch(e) {
       setApiOk(false);
+      if (e?.status === 401) {
+        await logout();
+        return;
+      }
       Alert.alert('Clinic connection', e.message || 'Could not reach the dental backend.');
     } finally {setLoading(false);setRefreshing(false);}
-  },[token]);
+  },[token,logout]);
 
-  useEffect(()=>{load();},[load]);
+  useEffect(()=>{
+    setLoading(true);
+    setAppointments([]);
+    setPatients([]);
+    setSelectedPatient(null);
+    setTab('Home');
+    load();
+  },[load]);
 
+  const activeWorkspace = (workspaces || []).find(w => w.id === user?.clinic_id || w.clinic_id === user?.clinic_id);
   const requested=appointments.filter(a=>a.status==='requested').length;
   const confirmed=appointments.filter(a=>['confirmed','scheduled'].includes(a.status)).length;
 
@@ -297,12 +662,18 @@ function Dashboard({ token, logout }) {
     <View style={styles.header}>
       <View style={styles.headerBrand}>
         <Image source={clinicLogo} style={styles.headerLogo} resizeMode="contain" />
-        <View><Text style={styles.headerTitle}>Dr. Pranali</Text><Text style={styles.headerSub}>Dental Clinic â€¢ Taloja</Text></View>
+        <View style={{flex:1}}>
+          <Text style={styles.headerTitle} numberOfLines={1}>{'Oralyn'}</Text>
+          <Text style={styles.headerSub} numberOfLines={1}>{activeWorkspace?.name || 'Dental Clinic - Taloja'}{activeWorkspace?.role ? ' - ' + activeWorkspace.role : ''}</Text>
+        </View>
       </View>
-      <Pressable onPress={()=>{logout();}} style={styles.headerAction}><Text style={styles.headerActionText}>Sign out</Text></Pressable>
+      <View style={{flexDirection:'row',gap:6,alignItems:'center'}}>
+        {(workspaces || []).length > 1 && <Pressable onPress={onSwitchWorkspace} style={styles.headerAction}><Text style={styles.headerActionText}>Switch workspace</Text></Pressable>}
+        <Pressable onPress={logout} style={styles.headerAction}><Text style={styles.headerActionText}>Sign out</Text></Pressable>
+      </View>
     </View>
     <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={()=>{setRefreshing(true);load();}}/>} contentContainerStyle={styles.content}>
-      <View style={styles.hero}><View><Text style={styles.heroKicker}>CLINIC CONTROL CENTER</Text><Text style={styles.heroTitle}>Good day, Doctor</Text><Text style={styles.heroSub}>Manage today's patient flow from one place.</Text></View><View style={[styles.dot,{backgroundColor:apiOk?C.green:C.red}]}/></View>
+      <View style={styles.hero}><View><Text style={styles.heroKicker}>WORKSPACE CONTROL CENTER</Text><Text style={styles.heroTitle}>Good day, Doctor</Text><Text style={styles.heroSub}>Manage today's patient flow from one place.</Text></View><View style={[styles.dot,{backgroundColor:apiOk?C.green:C.red}]}/></View>
       <View style={styles.stats}>
         <Stat n={appointments.length} t="Appointments"/><Stat n={requested} t="New Requests"/><Stat n={confirmed} t="Confirmed"/><Stat n={patients.length} t="Patients"/>
       </View>
@@ -319,6 +690,23 @@ function Dashboard({ token, logout }) {
           <View style={[styles.statusPill,{backgroundColor:apiOk?'#DDF7EA':'#FCEAEA'}]}><Text style={[styles.statusPillText,{color:apiOk?C.green:C.red}]}>{apiOk?'ONLINE':'OFFLINE'}</Text></View>
         </View>
         <DoctorDailyAISummary token={token}/>
+        {!workspaceMembershipFresh && <View style={styles.loginError}>
+          <Text style={styles.loginErrorTitle}>Workspace access needs verification</Text>
+          <Text style={styles.loginErrorText}>Organisation and doctor-management controls stay hidden until the clinic service confirms your current workspace membership.</Text>
+          <Pressable
+            onPress={async () => {
+              try {
+                await onRefreshWorkspaces?.();
+              } catch (error) {
+                Alert.alert('Workspace access', error?.message || 'Could not verify your current workspace permissions.');
+              }
+            }}
+            style={styles.action}
+          >
+            <Text style={styles.actionText}>Retry workspace verification</Text>
+          </Pressable>
+        </View>}
+        <WorkspaceManagementCard token={token} user={user} activeWorkspace={activeWorkspace} workspaceMembershipFresh={workspaceMembershipFresh} onRefreshWorkspaces={onRefreshWorkspaces}/>
       </View>}
       {tab==='Appointments' && <View>
         <View style={styles.sectionRow}><Text style={styles.sectionTitle}>Appointment Queue</Text><Pressable onPress={load}><Text style={styles.refresh}>Refresh</Text></Pressable></View>
@@ -387,11 +775,11 @@ function DoctorLoginScreen({ onSignedIn }) {
     setError('');
     try {
       const session = await signInWithPassword(
-        'https://dr-pranali-dental-api.onrender.com',
+        DOCTOR_API_URL,
         email.trim(),
         password
       );
-      onSignedIn(session.access_token);
+      onSignedIn(session);
     } catch (e) {
       setError(e?.message || 'Sign-in failed. Check your clinic email and password.');
     } finally {
@@ -405,7 +793,7 @@ function DoctorLoginScreen({ onSignedIn }) {
       <ScrollView contentContainerStyle={styles.loginWrap} keyboardShouldPersistTaps="handled">
         <Image source={clinicLogo} style={styles.loginLogo} resizeMode="contain" />
         <Text style={styles.kicker}>DOCTOR PORTAL</Text>
-        <Text style={styles.loginTitle}>Dr. Pranali Dental Clinic</Text>
+        <Text style={styles.loginTitle}>Oralyn Doctor</Text>
         <Text style={styles.loginSub}>Sign in with your clinic-issued email and password.</Text>
         <View style={styles.card}>
           <Text style={styles.label}>Clinic email</Text>
@@ -450,22 +838,223 @@ function DoctorLoginScreen({ onSignedIn }) {
   );
 }
 
+function WorkspaceSelectionScreen({
+  workspaces,
+  activeClinicId,
+  busy,
+  error,
+  allowCancel,
+  onSelect,
+  onCancel,
+  onExit,
+}) {
+  return (
+    <SafeAreaView style={styles.safe}>
+      <StatusBar style="dark" />
+      <ScrollView contentContainerStyle={styles.loginWrap}>
+        <Image source={clinicLogo} style={styles.loginLogo} resizeMode="contain" />
+        <Text style={styles.kicker}>DOCTOR WORKSPACE</Text>
+        <Text style={styles.loginTitle}>Choose a workspace</Text>
+        <Text style={styles.loginSub}>
+          Your account can access multiple clinics, hospital departments or branches. Choose the workspace whose records you are authorised to manage.
+        </Text>
+        <View style={styles.card}>
+          {(workspaces || []).map((workspace) => {
+            const current = workspace.id === activeClinicId || workspace.clinic_id === activeClinicId;
+            return (
+              <Pressable
+                key={workspace.id}
+                disabled={busy}
+                onPress={() => onSelect(workspace.id)}
+                style={[
+                  styles.patientCard,
+                  current && styles.patientCardActive,
+                  { marginTop: 0, marginBottom: 9 },
+                  busy && { opacity: 0.6 },
+                ]}
+              >
+                <View style={styles.patientTop}>
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>{(workspace.name || 'C').slice(0, 1).toUpperCase()}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.patient}>{workspace.name || workspace.id}</Text>
+                    <Text style={styles.phone}>{workspace.organisation_name || 'Healthcare organisation'} · {organisationLabel(workspace.organisation_type)}</Text>
+                    <Text style={styles.phone}>{workspaceLabel(workspace.clinic_type)} · Role: {workspace.role || 'doctor'}{current ? ' · Current workspace' : ''}</Text>
+                  </View>
+                  <Text style={styles.chevron}>{current ? '✓' : '›'}</Text>
+                </View>
+              </Pressable>
+            );
+          })}
+          {!workspaces?.length && <Empty text="No active workspaces were returned. Sign out and contact your organisation administrator." />}
+          {!!error && <View style={styles.loginError}><Text style={styles.loginErrorTitle}>Workspace switch</Text><Text style={styles.loginErrorText}>{error}</Text></View>}
+          <Text style={styles.help}>Only the selected workspace is active in this session. Patient and clinical records remain separated by workspace.</Text>
+          {busy && <ActivityIndicator color={C.blue} style={{ marginTop: 12 }} />}
+          {allowCancel && <Pressable disabled={busy} onPress={onCancel} style={styles.action}><Text style={styles.actionText}>Return to current workspace</Text></Pressable>}
+          <Pressable disabled={busy} onPress={onExit} style={[styles.primary, { backgroundColor: '#EAF0F6' }]}><Text style={[styles.primaryText, { color: C.navy }]}>Sign out</Text></Pressable>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
 export default function App(){
   const [token,setToken]=useState(null);
+  const [user,setUser]=useState(null);
+  const [workspaces,setWorkspaces]=useState([]);
+  const [workspaceMembershipFresh,setWorkspaceMembershipFresh]=useState(false);
   const [checking,setChecking]=useState(true);
+  const [selectingWorkspace,setSelectingWorkspace]=useState(false);
+  const [workspaceBusy,setWorkspaceBusy]=useState(false);
+  const [workspaceError,setWorkspaceError]=useState('');
+  const [allowWorkspaceCancel,setAllowWorkspaceCancel]=useState(false);
 
   useEffect(() => {
-    getStoredDoctorSession().then(value => setToken(value || null)).finally(() => setChecking(false));
+    let mounted = true;
+    (async () => {
+      try {
+        const storedToken = await getStoredDoctorSession();
+        const storedUser = await getStoredDoctorUser();
+        if (!storedToken || !storedUser) {
+          if (storedToken) await signOutDoctor(DOCTOR_API_URL);
+          return;
+        }
+        if (mounted) {
+          setToken(storedToken);
+          setUser(storedUser);
+          setWorkspaces(storedUser.workspaces || []);
+        }
+        try {
+          const refreshed = await refreshStoredDoctorWorkspaces();
+          if (mounted && refreshed) {
+            setUser(refreshed.user);
+            setWorkspaces(refreshed.workspaces);
+            setWorkspaceMembershipFresh(true);
+          }
+        } catch (error) {
+          if (mounted) setWorkspaceMembershipFresh(false);
+          if (error?.status === 401 || error?.status === 403) {
+            await signOutDoctor(DOCTOR_API_URL);
+            if (mounted) {
+              setToken(null);
+              setUser(null);
+              setWorkspaces([]);
+              setWorkspaceMembershipFresh(false);
+            }
+          }
+          // Cached workspaces remain available for navigation, but never grant
+          // management UI permission until a live membership refresh succeeds.
+        }
+      } catch (error) {
+        if (mounted) setWorkspaceError(error?.message || 'Could not restore the doctor session.');
+      } finally {
+        if (mounted) setChecking(false);
+      }
+    })();
+    return () => { mounted = false; };
   }, []);
 
-  const logout = async () => {
-    await signOutDoctor('https://dr-pranali-dental-api.onrender.com');
-    setToken(null);
+  const handleSignedIn = (session) => {
+    const nextWorkspaces = session.workspaces || session.user?.workspaces || [];
+    setToken(session.access_token);
+    setUser(session.user);
+    setWorkspaces(nextWorkspaces);
+    setWorkspaceMembershipFresh(true);
+    setWorkspaceError('');
+    setAllowWorkspaceCancel(false);
+    setSelectingWorkspace(nextWorkspaces.length > 1);
   };
 
+  const logout = useCallback(async () => {
+    await signOutDoctor(DOCTOR_API_URL);
+    setToken(null);
+    setUser(null);
+    setWorkspaces([]);
+    setWorkspaceMembershipFresh(false);
+    setSelectingWorkspace(false);
+    setWorkspaceError('');
+  }, []);
+
+  const chooseWorkspace = async (clinicId) => {
+    setWorkspaceError('');
+    if (clinicId === user?.clinic_id) {
+      setSelectingWorkspace(false);
+      setAllowWorkspaceCancel(false);
+      return;
+    }
+    // Fail closed while the server revalidates the target workspace membership.
+    setWorkspaceMembershipFresh(false);
+    setWorkspaceBusy(true);
+    try {
+      const session = await switchStoredDoctorWorkspace(clinicId);
+      setToken(session.access_token);
+      setUser(session.user);
+      setWorkspaces(session.workspaces || []);
+      setWorkspaceMembershipFresh(true);
+      setSelectingWorkspace(false);
+      setAllowWorkspaceCancel(false);
+    } catch (error) {
+      setWorkspaceMembershipFresh(false);
+      setWorkspaceError(error?.message || 'Could not switch clinic workspace.');
+      if (error?.status === 401) await logout();
+    } finally {
+      setWorkspaceBusy(false);
+    }
+  };
+
+  const requestWorkspaceSwitch = () => {
+    setWorkspaceError('');
+    setAllowWorkspaceCancel(true);
+    setSelectingWorkspace(true);
+  };
+
+  const refreshWorkspaces = useCallback(async () => {
+    // Do not leave stale owner/admin controls visible while membership is pending.
+    setWorkspaceMembershipFresh(false);
+    try {
+      const refreshed = await refreshStoredDoctorWorkspaces();
+      if (refreshed) {
+        setUser(refreshed.user);
+        setWorkspaces(refreshed.workspaces);
+        setWorkspaceMembershipFresh(true);
+      } else {
+        setWorkspaceMembershipFresh(false);
+      }
+      return refreshed;
+    } catch (error) {
+      setWorkspaceMembershipFresh(false);
+      throw error;
+    }
+  }, []);
+
   if (checking) return <SafeAreaView style={styles.safe}><ActivityIndicator size="large" color={C.blue} style={{marginTop:80}}/></SafeAreaView>;
-  if (!token) return <DoctorLoginScreen onSignedIn={setToken}/>;
-  return <Dashboard token={token} logout={logout}/>;
+  if (!token) return <DoctorLoginScreen onSignedIn={handleSignedIn}/>;
+  if (selectingWorkspace) {
+    return (
+      <WorkspaceSelectionScreen
+        workspaces={workspaces}
+        activeClinicId={user?.clinic_id}
+        busy={workspaceBusy}
+        error={workspaceError}
+        allowCancel={allowWorkspaceCancel}
+        onSelect={chooseWorkspace}
+        onCancel={() => { setSelectingWorkspace(false); setAllowWorkspaceCancel(false); setWorkspaceError(''); }}
+        onExit={logout}
+      />
+    );
+  }
+  return (
+    <Dashboard
+      token={token}
+      user={user}
+      workspaces={workspaces}
+      workspaceMembershipFresh={workspaceMembershipFresh}
+      logout={logout}
+      onSwitchWorkspace={requestWorkspaceSwitch}
+      onRefreshWorkspaces={refreshWorkspaces}
+    />
+  );
 }
 
 const styles=StyleSheet.create({
@@ -490,4 +1079,5 @@ const styles=StyleSheet.create({
  chartLegend:{flexDirection:'row',flexWrap:'wrap',gap:9,marginTop:11},legendItem:{flexDirection:'row',alignItems:'center',gap:4},legendItemText:{fontSize:9,color:C.muted},legendDot:{width:8,height:8,borderRadius:4},perioTooth:{paddingHorizontal:10,paddingVertical:7,borderRadius:9,backgroundColor:'#F2F5F8',borderWidth:1,borderColor:C.border},perioToothActive:{backgroundColor:'#FFF3D8',borderColor:'#E7B54A'},perioToothText:{fontSize:10,fontWeight:'900',color:C.muted},perioToothTextActive:{color:'#B87908'},perioSelected:{backgroundColor:'#F7FAFD',padding:11,borderRadius:12,borderWidth:1,borderColor:'#E4EDF5'},perioGrid:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:10},perioCell:{width:'15.4%',minWidth:42,alignItems:'center'},perioPoint:{fontSize:9,fontWeight:'900',color:C.blue,marginBottom:4},perioInput:{width:42,height:38,borderWidth:1,borderColor:C.border,borderRadius:9,textAlign:'center',fontSize:14,fontWeight:'900',color:C.navy,backgroundColor:'#FFF'},perioMeta:{flexDirection:'row',flexWrap:'wrap',gap:7,marginTop:10},metaField:{width:'31%'},metaLabel:{fontSize:8,fontWeight:'800',color:C.muted,marginBottom:3},metaInput:{height:36,borderWidth:1,borderColor:C.border,borderRadius:8,textAlign:'center',backgroundColor:'#FFF',color:C.navy,fontWeight:'800'},perioFlag:{paddingHorizontal:8,paddingVertical:8,borderRadius:9,backgroundColor:'#F2F5F8',borderWidth:1,borderColor:C.border},perioFlagActive:{backgroundColor:'#E5F8EE',borderColor:'#BDE8D0'},perioFlagText:{fontSize:9,fontWeight:'800',color:C.muted},perioFlagTextActive:{color:'#147A4B'},
  bottomNav:{position:'absolute',left:0,right:0,bottom:0,backgroundColor:C.white,borderTopWidth:1,borderTopColor:C.border,height:76,flexDirection:'row',paddingTop:7,paddingBottom:5},navItem:{flex:1,alignItems:'center',justifyContent:'center'},navIcon:{width:36,height:30,borderRadius:10,alignItems:'center',justifyContent:'center'},navIconActive:{backgroundColor:'#EAF4FF'},navIconText:{fontSize:18,color:'#9AA9B7'},navIconTextActive:{color:C.blue},navLabel:{fontSize:9,fontWeight:'800',color:'#9AA9B7',marginTop:2},navLabelActive:{color:C.blue},intelCardLarge:{backgroundColor:C.white,borderRadius:16,padding:14,borderWidth:1,borderColor:C.border,marginBottom:10},intelCardHead:{flexDirection:'row',alignItems:'flex-start',gap:10},aiBadge:{fontSize:9,fontWeight:'900',color:C.blue,backgroundColor:'#EAF4FF',paddingHorizontal:7,paddingVertical:5,borderRadius:8},intelPatient:{fontSize:10,fontWeight:'800',color:C.muted,marginTop:9},intelRunButton:{backgroundColor:C.blue,borderRadius:11,paddingVertical:11,alignItems:'center',marginTop:11},intelRunText:{fontSize:11,fontWeight:'900',color:C.white},intelSkeleton:{marginTop:11,padding:12,borderRadius:12,backgroundColor:'#F5F8FB'},skeletonLineWide:{height:9,width:'92%',backgroundColor:'#E4EBF2',borderRadius:5},skeletonLine:{height:9,width:'72%',backgroundColor:'#E4EBF2',borderRadius:5,marginTop:8},skeletonLineShort:{height:9,width:'48%',backgroundColor:'#E4EBF2',borderRadius:5,marginTop:8},intelLoading:{fontSize:10,color:C.muted,marginTop:10},intelError:{marginTop:11,padding:12,borderRadius:12,backgroundColor:'#FCEAEA',borderWidth:1,borderColor:'#F2C3C3'},intelErrorTitle:{fontSize:12,fontWeight:'900',color:C.red},intelErrorText:{fontSize:11,color:'#7A2E2E',lineHeight:16,marginTop:4},intelRetry:{alignSelf:'flex-start',marginTop:8,paddingHorizontal:11,paddingVertical:7,borderRadius:8,backgroundColor:C.white},intelRetryText:{fontSize:10,fontWeight:'900',color:C.red},intelResult:{marginTop:11},aiVerify:{backgroundColor:'#FFF4D8',borderRadius:8,padding:7,alignSelf:'flex-start'},aiVerifyText:{fontSize:9,fontWeight:'900',color:'#8C6200'},intelAnswer:{fontSize:12.5,color:C.text,lineHeight:19,marginTop:10},intelEditInput:{minHeight:130,borderWidth:1,borderColor:C.border,borderRadius:10,padding:10,color:C.text,fontSize:12,lineHeight:18,marginTop:10,textAlignVertical:'top'},sourceBox:{marginTop:12,borderTopWidth:1,borderTopColor:C.border,paddingTop:10},sourceTitle:{fontSize:10,fontWeight:'900',color:C.navy},sourceItem:{marginTop:8,padding:9,borderRadius:9,backgroundColor:'#F7FAFD'},sourceName:{fontSize:10,fontWeight:'900',color:C.navy},sourceUrl:{fontSize:8,color:C.blue,marginTop:2},sourceContent:{fontSize:9.5,color:C.muted,lineHeight:14,marginTop:3},intelSafety:{fontSize:9,color:C.muted,lineHeight:13,marginTop:10},intelActions:{flexDirection:'row',gap:7,marginTop:11},acceptButton:{paddingHorizontal:11,paddingVertical:8,borderRadius:9,backgroundColor:'#E5F8EE'},acceptText:{fontSize:10,fontWeight:'900',color:'#147A4B'},editButton:{paddingHorizontal:11,paddingVertical:8,borderRadius:9,backgroundColor:'#EAF4FF'},editText:{fontSize:10,fontWeight:'900',color:C.blue},dismissButton:{paddingHorizontal:11,paddingVertical:8,borderRadius:9,backgroundColor:'#F2F5F8'},dismissText:{fontSize:10,fontWeight:'900',color:C.muted},intelAgain:{marginTop:8},intelAgainText:{fontSize:9,fontWeight:'800',color:C.blue},intelPatientPicker:{backgroundColor:C.white,borderRadius:16,padding:14,borderWidth:1,borderColor:C.border,marginBottom:10},intelPickerTitle:{fontSize:11,fontWeight:'900',color:C.navy},intelPickerHint:{fontSize:10,color:C.muted,lineHeight:15,marginTop:5},intelSelectedPatient:{marginTop:7},intelSelectedName:{fontSize:14,fontWeight:'900',color:C.navy},intelSelectedMeta:{fontSize:10,color:C.muted,marginTop:2},patientChip:{paddingHorizontal:10,paddingVertical:7,borderRadius:12,backgroundColor:'#F2F5F8',borderWidth:1,borderColor:C.border},patientChipActive:{backgroundColor:'#EAF4FF',borderColor:'#86BDF0'},patientChipText:{fontSize:9,fontWeight:'800',color:C.muted},patientChipTextActive:{color:C.blue},intelQuestionInput:{minHeight:72,borderWidth:1,borderColor:C.border,borderRadius:11,padding:10,color:C.text,fontSize:12,lineHeight:17,marginTop:11,textAlignVertical:'top'},comingSoon:{fontSize:10,fontWeight:'900',color:C.amber,marginTop:3},intelHero:{backgroundColor:'#0B2E4F',borderRadius:18,padding:18,marginBottom:10},intelKicker:{fontSize:9,color:'#8FCBFF',fontWeight:'900',letterSpacing:1},intelTitle:{fontSize:21,color:C.white,fontWeight:'900',marginTop:4},intelText:{fontSize:12,color:'#D9EAF7',lineHeight:18,marginTop:6},intelCard:{backgroundColor:C.white,borderRadius:15,padding:14,borderWidth:1,borderColor:C.border,marginBottom:8,flexDirection:'row',gap:12},intelNum:{fontSize:12,fontWeight:'900',color:C.blue},intelName:{fontSize:14,fontWeight:'900',color:C.navy},intelSub:{fontSize:11,color:C.muted,marginTop:3}
 });
+
 

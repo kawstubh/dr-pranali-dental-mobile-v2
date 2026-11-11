@@ -1,12 +1,13 @@
 {
-  "name": "dr-pranali-dental-doctor",
+  "name": "oralyn-doctor",
   "version": "1.0.0",
   "private": true,
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
-    "export": "expo export --platform android"
+    "export": "expo export --platform android",
+    "test": "node --test src/auth/workspaceContext.test.cjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^3.1.1",
@@ -19,5 +20,10 @@
   },
   "devDependencies": {
     "typescript": "^7.0.2"
+  },
+  "overrides": {
+    "glob": "^14.0.4",
+    "minimatch": "^11.0.5",
+    "image-size": "^2.0.3"
   }
 }

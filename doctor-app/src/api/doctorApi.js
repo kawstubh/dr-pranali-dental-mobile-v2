@@ -1,4 +1,6 @@
-const API_URL = 'https://dr-pranali-dental-api.onrender.com';
+import { DOCTOR_API_URL } from './apiConfig';
+
+const API_URL = DOCTOR_API_URL;
 
 export async function request(path, token, options = {}) {
   const { timeoutMs = 15000, ...fetchOptions } = options;
@@ -20,9 +22,15 @@ export async function request(path, token, options = {}) {
     if (!response.ok) {
       const detail = data?.detail;
       const message = typeof detail === 'string' ? detail : detail?.message;
-      const code = detail?.google_code || detail?.code || ('HTTP_' + response.status);
-      const status = detail?.google_status || detail?.status || response.status;
-      throw new Error((message || data?.message || 'API request failed') + ' (HTTP ' + status + ', code ' + code + ')');
+      const code = detail?.code || ('HTTP_' + response.status);
+      const status = detail?.status || response.status;
+      const apiError = new Error(
+        (message || data?.message || 'API request failed') +
+          ' (HTTP ' + status + ', code ' + code + ')'
+      );
+      apiError.status = status;
+      apiError.code = code;
+      throw apiError;
     }
     return data;
   } catch (error) {
@@ -36,6 +44,43 @@ export async function request(path, token, options = {}) {
 }
 
 export const listAppointments = (token) => request('/v1/dental/appointments', token);
+
+export const listDoctorWorkspaces = (token) =>
+  request('/v1/dental/auth/workspaces', token);
+
+export const switchDoctorWorkspace = (token, clinicId) =>
+  request('/v1/dental/auth/workspace/switch', token, {
+    method: 'POST',
+    body: JSON.stringify({ clinic_id: clinicId }),
+  });
+
+export const listOrganisationWorkspaces = (token, organisationId) =>
+  request('/v1/dental/organisations/' + encodeURIComponent(organisationId) + '/workspaces', token);
+
+export const createOrganisationWorkspace = (token, organisationId, payload) =>
+  request('/v1/dental/organisations/' + encodeURIComponent(organisationId) + '/workspaces', token, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
+export const createDentalOrganisation = (token, payload) =>
+  request('/v1/dental/organisations', token, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
+export const createDoctorAccount = (token, payload) =>
+  request('/v1/dental/auth/doctors', token, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
+export const createWorkspaceMembership = (token, clinicId, payload) =>
+  request('/v1/dental/workspaces/' + encodeURIComponent(clinicId) + '/memberships', token, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
 export const listPatients = (token) => request('/v1/dental/patients', token);
 
 export const updateAppointment = (token, id, payload) =>
