@@ -232,7 +232,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          APK="doctor-app/android/app/build/outputs/apk/release/app-release.apk"
+          APK="android/app/build/outputs/apk/release/app-release.apk"
           if gh release view doctor-latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload doctor-latest "$APK#dr-pranali-doctor.apk" --repo "$GITHUB_REPOSITORY" --clobber
           else
