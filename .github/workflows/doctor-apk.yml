@@ -49,7 +49,7 @@ jobs:
           const versions = Object.entries(lock.packages || {})
             .filter(([path]) => path.endsWith('node_modules/expo-font'))
             .map(([, entry]) => entry.version);
-          if (!versions.length || versions.some(version => !/^57\\./.test(version))) {
+          if (!versions.length || versions.some(version => version.split('.')[0] !== '57')) {
             console.error('Expo SDK 57 requires expo-font 57.x; resolved versions:', versions);
             process.exit(1);
           }
