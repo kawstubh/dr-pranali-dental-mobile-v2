@@ -11,7 +11,7 @@ import { DOCTOR_API_URL } from './src/api/apiConfig';
 import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry, listOrganisationWorkspaces, createOrganisationWorkspace, createDentalOrganisation, createDoctorAccount, createWorkspaceMembership } from './src/api/doctorApi';
 import { getStoredDoctorSession, getStoredDoctorUser, refreshStoredDoctorWorkspaces, switchStoredDoctorWorkspace, signInWithPassword, signOutDoctor } from './src/auth/passwordAuth';
 const { canManageWorkspace } = require('./src/auth/workspaceContext');
-const { normalizeApiList } = require('./src/api/responseNormalization.cjs');
+const { normalizeApiList, normalizeDentalChart } = require('./src/api/responseNormalization.cjs');
 import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
 
 const clinicLogo = require('./assets/oralyn-logo.png');
@@ -85,7 +85,9 @@ function Tooth({ number, state, onPress, upper, index, total }) {
       ? { fill:'#FFF3D8', edge:'#E7B54A', mark:'#D99118' }
       : state === 'treated'
         ? { fill:'#E8F1FF', edge:'#76A8E8', mark:'#3978C7' }
-        : { fill:'#F2F4F7', edge:'#C9D1DA', mark:'#A8B2BD' };
+        : state === 'missing'
+          ? { fill:'#F2F4F7', edge:'#C9D1DA', mark:'#A8B2BD' }
+          : { fill:'#FBFCFE', edge:'#CBD7E3', mark:'#B5C3D0' };
 
   return (
     <Pressable
@@ -115,38 +117,62 @@ function Tooth({ number, state, onPress, upper, index, total }) {
 function DentalChart({ token, patientId, patientName='Patient' }) {
   const [arch, setArch] = useState('adult');
   const [selected, setSelected] = useState('46');
-  const [states, setStates] = useState({46:'attention', 21:'treated', 11:'healthy', 36:'treated'});
+  const [states, setStates] = useState({});
   const [saving, setSaving] = useState(false);
-  const [loaded, setLoaded] = useState(false);
+  const [loaded, setLoaded] = useState(!patientId);
+  const [loadError, setLoadError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
-    if (!patientId) return undefined;
+    setStates({});
+    setLoadError('');
+    if (!patientId) {
+      setLoaded(true);
+      return () => { active = false; };
+    }
     setLoaded(false);
-    getDentalChart(token, patientId).then(entries => {
-      if (!active) return;
-      const next = {};
-      (entries || []).forEach(entry => { next[entry.tooth_fdi] = entry.status; });
-      setStates(prev => ({ ...prev, ...next }));
-    }).catch(() => {}).finally(() => { if (active) setLoaded(true); });
+    getDentalChart(token, patientId)
+      .then(entries => {
+        if (!active) return;
+        // Replace the map for each patient; never retain another patient's findings.
+        setStates(normalizeDentalChart(entries));
+      })
+      .catch(error => {
+        if (!active) return;
+        setLoadError(error?.message || 'Could not load the clinical chart. Retry when the connection is available.');
+      })
+      .finally(() => { if (active) setLoaded(true); });
     return () => { active = false; };
-  }, [patientId, token]);
+  }, [patientId, token, reloadKey]);
+
   const upper = arch === 'adult' ? ADULT_UPPER : CHILD_UPPER;
   const lower = arch === 'adult' ? ADULT_LOWER : CHILD_LOWER;
-  const currentState = states[selected] || 'healthy';
+  const currentState = states[selected] || 'unrecorded';
+  const statusText = currentState === 'attention'
+    ? 'Needs attention'
+    : currentState === 'treated'
+      ? 'Treatment completed'
+      : currentState === 'missing'
+        ? 'Missing / extracted'
+        : currentState === 'healthy'
+          ? 'Healthy (recorded)'
+          : 'Not recorded';
 
   const cycleState = async () => {
-    if (!patientId || saving) return;
-    const order=['healthy','attention','treated','missing'];
-    const next=order[(order.indexOf(currentState)+1)%order.length];
-    setStates(prev=>({...prev,[selected]:next}));
+    if (!patientId || saving || !loaded || loadError) return;
+    const order = ['healthy','attention','treated','missing'];
+    const next = order[(order.indexOf(currentState) + 1) % order.length];
+    setStates(prev => ({ ...prev, [selected]: next }));
     setSaving(true);
     try {
-      await saveDentalChartEntry(token, patientId, { tooth_fdi:selected, status:next, note:'' });
-    } catch (e) {
-      setStates(prev=>({...prev,[selected]:currentState}));
-      Alert.alert('Dental chart', e.message || 'Could not save tooth status.');
-    } finally { setSaving(false); }
+      await saveDentalChartEntry(token, patientId, { tooth_fdi: selected, status: next, note: '' });
+    } catch (error) {
+      setStates(prev => ({ ...prev, [selected]: currentState }));
+      Alert.alert('Dental chart', error.message || 'Could not save tooth status.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -155,10 +181,26 @@ function DentalChart({ token, patientId, patientName='Patient' }) {
         <View style={{flex:1}}>
           <Text style={styles.chartEyebrow}>CLINICAL ODONTOGRAM</Text>
           <Text style={styles.chartTitle}>Dental chart</Text>
-          <Text style={styles.chartPatient}>{patientName} · {loaded ? 'Synced clinical record' : 'Loading clinical record'}</Text>
+          <Text style={styles.chartPatient}>
+            {loadError ? 'Clinical record unavailable' : !patientId ? 'Select a patient to view their chart' : loaded ? 'Clinical record loaded' : 'Loading clinical record'}
+          </Text>
         </View>
         <View style={styles.chartLegendDot}/>
       </View>
+
+      {!!loadError && (
+        <View style={styles.intelError}>
+          <Text style={styles.intelErrorTitle}>Chart could not be loaded</Text>
+          <Text style={styles.intelErrorText}>{loadError}</Text>
+          <Pressable onPress={() => setReloadKey(value => value + 1)} style={styles.intelRetry}>
+            <Text style={styles.intelRetryText}>Retry</Text>
+          </Pressable>
+        </View>
+      )}
+      {!patientId && <Text style={styles.help}>Select a patient before recording clinical chart findings.</Text>}
+      {!!patientId && loaded && !loadError && Object.keys(states).length === 0 && (
+        <Text style={styles.help}>No dental chart findings are recorded yet. Record findings only after clinical assessment.</Text>
+      )}
 
       <View style={styles.archSwitch}>
         <Pressable onPress={()=>setArch('adult')} style={[styles.archOption, arch==='adult'&&styles.archOptionActive]}>
@@ -172,11 +214,11 @@ function DentalChart({ token, patientId, patientName='Patient' }) {
       <View style={styles.mouthFrame}>
         <Text style={styles.sideLabel}>RIGHT</Text>
         <View style={styles.teethArc}>
-          {upper.map((n,i)=><Tooth key={n} number={n} state={states[n]||'healthy'} upper index={i} total={upper.length} onPress={()=>setSelected(n)}/>)}
+          {upper.map((n,i)=><Tooth key={n} number={n} state={states[n]||'unrecorded'} upper index={i} total={upper.length} onPress={()=>setSelected(n)}/>)}
         </View>
         <View style={styles.mouthCenter}><View style={styles.mouthLine}/><Text style={styles.mouthHint}>UPPER</Text></View>
         <View style={styles.teethArc}>
-          {lower.map((n,i)=><Tooth key={n} number={n} state={states[n]||'healthy'} index={i} total={lower.length} onPress={()=>setSelected(n)}/>)}
+          {lower.map((n,i)=><Tooth key={n} number={n} state={states[n]||'unrecorded'} index={i} total={lower.length} onPress={()=>setSelected(n)}/>)}
         </View>
         <Text style={styles.sideLabel}>LEFT</Text>
       </View>
@@ -185,9 +227,11 @@ function DentalChart({ token, patientId, patientName='Patient' }) {
         <View style={styles.selectedToothIcon}><Text style={styles.selectedToothIconText}>{selected}</Text></View>
         <View style={{flex:1}}>
           <Text style={styles.selectedLabel}>Tooth {selected}</Text>
-          <Text style={styles.selectedStatus}>Status: {currentState === 'attention' ? 'Needs attention' : currentState === 'treated' ? 'Treatment completed' : currentState === 'missing' ? 'Missing / extracted' : 'Healthy'}</Text>
+          <Text style={styles.selectedStatus}>Status: {statusText}</Text>
         </View>
-        <Pressable disabled={!patientId || saving} onPress={cycleState} style={[styles.changeStatus, saving && {opacity:0.5}]}><Text style={styles.changeStatusText}>{saving ? 'Saving...' : 'Update'}</Text></Pressable>
+        <Pressable disabled={!patientId || saving || !loaded || !!loadError} onPress={cycleState} style={[styles.changeStatus, (saving || !loaded || !!loadError) && {opacity:0.5}]}>
+          <Text style={styles.changeStatusText}>{saving ? 'Saving...' : 'Update'}</Text>
+        </Pressable>
       </View>
 
       <View style={styles.chartLegend}>
@@ -195,11 +239,11 @@ function DentalChart({ token, patientId, patientName='Patient' }) {
         <View style={styles.legendItem}><View style={[styles.legendDot,{backgroundColor:'#E7B54A'}]}/><Text>Attention</Text></View>
         <View style={styles.legendItem}><View style={[styles.legendDot,{backgroundColor:'#76A8E8'}]}/><Text>Treated</Text></View>
         <View style={styles.legendItem}><View style={[styles.legendDot,{backgroundColor:'#C9D1DA'}]}/><Text>Missing</Text></View>
+        <View style={styles.legendItem}><View style={[styles.legendDot,{backgroundColor:'#CBD7E3'}]}/><Text>Not recorded</Text></View>
       </View>
     </View>
   );
 }
-
 
 function Periodontogram({ token, patientId, patientName='Patient' }) {
   const teeth = ADULT_UPPER.concat(ADULT_LOWER);

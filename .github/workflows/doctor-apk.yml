@@ -2,6 +2,7 @@ name: Doctor Android APK
 
 permissions:
   contents: read
+  actions: read
 
 on:
   workflow_dispatch:
@@ -274,6 +275,16 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+      # Reproduce the user-reported blank staging APK before validating the fixed build.
+      - name: Download user-reported blank Doctor APK
+        if: ${{ steps.verify_apk.outcome == 'success' }}
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: dr-pranali-dental-doctor-release-apk
+          run-id: 43052128200
+          path: doctor-app/build-evidence/previous-apk
+          github-token: ${{ github.token }}
       - name: Install and smoke-test Doctor APK on Android emulator
         if: ${{ always() && steps.verify_apk.outcome == 'success' }}
         env:
@@ -282,7 +293,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p build-evidence
-          SDK_ROOT="\${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
           SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager | sort | tail -n 1)"
           AVDMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name avdmanager | sort | tail -n 1)"
           ADB="$SDK_ROOT/platform-tools/adb"
@@ -305,7 +316,7 @@ jobs:
             echo "::error::Android 35 Google APIs system image was not installed."
             exit 1
           }
-          if ! printf 'no\n' | "$AVDMANAGER" create avd --force --name oralyn-doctor-ci --package "system-images;android-35;google_apis;x86_64" --device pixel_2 >build-evidence/avdmanager.log 2>&1; then
+          if ! printf 'no\n' | "$AVDMANAGER" create avd --force --name oralyn-doctor-ci --package "system-images;android-35;google_apis;x86_64" --device pixel_2 --path "$ANDROID_AVD_HOME/oralyn-doctor-ci.avd" >build-evidence/avdmanager.log 2>&1; then
             cat build-evidence/avdmanager.log
             echo "::error::Android virtual device creation failed."
             exit 1
@@ -336,6 +347,31 @@ jobs:
           "$ADB" shell settings put global window_animation_scale 0
           "$ADB" shell settings put global transition_animation_scale 0
           "$ADB" shell settings put global animator_duration_scale 0
+          PREVIOUS_APK="build-evidence/previous-apk/app-release.apk"
+          if [ -f "$PREVIOUS_APK" ]; then
+            if "$ADB" install -r "$PREVIOUS_APK"; then
+              "$ADB" logcat -c
+              "$ADB" shell monkey -p com.drpranali.dental.doctor 1 || true
+              sleep 18
+              timeout 30 "$ADB" shell uiautomator dump /sdcard/doctor-previous-window.xml >/dev/null 2>&1 || true
+              "$ADB" pull /sdcard/doctor-previous-window.xml build-evidence/doctor-previous-window.xml >/dev/null 2>&1 || true
+              "$ADB" shell screencap -p /sdcard/doctor-previous.png >/dev/null 2>&1 || true
+              "$ADB" pull /sdcard/doctor-previous.png build-evidence/doctor-previous.png >/dev/null 2>&1 || true
+              "$ADB" logcat -d -v brief >build-evidence/doctor-previous-logcat.txt
+              grep -Ei "No safe area value|ReactNativeJS|FATAL EXCEPTION|AndroidRuntime|Invariant Violation|Unhandled" build-evidence/doctor-previous-logcat.txt >build-evidence/doctor-previous-runtime-errors.txt || true
+              if grep -Fq "Sign in with your clinic-issued email and password." build-evidence/doctor-previous-window.xml; then
+                echo "previous_apk_login_rendered=true" >build-evidence/previous-apk-result.txt
+              else
+                echo "previous_apk_login_rendered=false" >build-evidence/previous-apk-result.txt
+              fi
+              "$ADB" uninstall com.drprani.dental.doctor >/dev/null 2>&1 || true
+            else
+              echo "previous_apk_install_failed=true" >build-evidence/previous-apk-result.txt
+            fi
+          else
+            echo "previous_apk_available=false" >build-evidence/previous-apk-result.txt
+          fi
+          rm -rf build-evidence/previous-apk
           "$ADB" install -r android/app/build/outputs/apk/release/app-release.apk
           "$ADB" logcat -c
           "$ADB" shell monkey -p com.drpranali.dental.doctor 1

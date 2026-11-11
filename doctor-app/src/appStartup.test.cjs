@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const app = fs.readFileSync(path.join(__dirname, '..', 'App.js'), 'utf8');
+const workflow = fs.readFileSync(path.join(__dirname, '..', '..', '.github', 'workflows', 'doctor-apk.yml'), 'utf8');
 
 test('Doctor app provides safe-area context before any SafeAreaView can render', () => {
   assert.match(app, /import\s*\{\s*SafeAreaProvider,\s*SafeAreaView\s*\}\s*from\s*'react-native-safe-area-context'/);
@@ -32,7 +33,7 @@ test('desktop Doctor workspace has persistent navigation and global patient sear
 });
 
 test('Doctor UI source contains no mojibake or control-character icons', () => {
-  assert.doesNotMatch(app, /\uFFFD|ðŸ|â€|Â·/);
+  assert.doesNotMatch(app, /\uFFFD|ÃƒÂ°Ã…Â¸|ÃƒÂ¢Ã¢â€šÂ¬|Ãƒâ€šÃ‚Â·/);
   assert.doesNotMatch(app, /\u0007/);
 });
 
@@ -63,4 +64,18 @@ test('Doctor desktop and mobile navigation use Feather iconography and clinic br
   assert.match(app, /navy:'#0C3B82', blue:'#0A84E8', teal:'#00C6C8', bg:'#F4FBFF'/);
   assert.match(app, /formatAppointmentDate/);
   assert.doesNotMatch(app, /<Text style=\{styles\.desktopSearchGlyph\}>Search<\/Text>/);
+});
+test('empty chart state is explicitly unrecorded and never carries another patient chart', () => {
+  assert.match(app, /const \[states, setStates\] = useState\(\{\}\)/);
+  assert.match(app, /const currentState = states\[selected\] \|\| 'unrecorded'/);
+  assert.match(app, /setStates\(normalizeDentalChart\(entries\)\)/);
+  assert.match(app, /No dental chart findings are recorded yet/);
+  assert.match(app, /Chart could not be loaded/);
+  assert.doesNotMatch(app, /46:'attention'|21:'treated'|36:'treated'/);
+});
+test('Android smoke test launches the exact Doctor package and captures previous runtime errors', () => {
+  assert.match(workflow, /export ANDROID_AVD_HOME="\$HOME\/\.android\/avd"/);
+  assert.match(workflow, /monkey -p com\.drpranali\.dental\.doctor 1/);
+  assert.doesNotMatch(workflow, /monkey -p com\.drprani\.dental\.doctor/);
+  assert.match(workflow, /doctor-previous-runtime-errors\.txt/);
 });
