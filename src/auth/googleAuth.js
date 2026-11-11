@@ -1,4 +1,5 @@
 import { GoogleSignin, isSuccessResponse } from '@react-native-google-signin/google-signin';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import 'react-native-url-polyfill/auto';
@@ -7,13 +8,23 @@ export const GOOGLE_WEB_CLIENT_ID = '56124766906-7qlnhr7b3l1iri981i6p984n12nma9j
 export const SUPABASE_URL = 'https://jzxbeldubkhwnznrathu.supabase.co';
 export const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_85yIYbM2TMw4TyeJ9OWmRg_rwQDswtf';
 
-GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID, scopes: ['email', 'profile'] });
+if (Platform.OS !== 'web') {
+  GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID, scopes: ['email', 'profile'] });
+}
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: { storage: AsyncStorage, autoRefreshToken: true, persistSession: true, detectSessionInUrl: false },
 });
 
 export async function signInWithGoogle() {
+  if (Platform.OS === 'web') {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) throw new Error('Supabase could not start Google sign-in: ' + error.message);
+    return null;
+  }
   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
   const response = await GoogleSignin.signIn();
   if (!isSuccessResponse(response)) throw new Error('Google sign-in was cancelled.');

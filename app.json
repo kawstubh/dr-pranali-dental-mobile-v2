@@ -1,4 +1,4 @@
-﻿{
+{
   "expo": {
     "name": "Oralyn",
     "slug": "dr-pranali-dental",
@@ -32,7 +32,8 @@
           "color": "#1677D2"
         }
       ],
-      "expo-image"
+      "expo-image",
+      "expo-font"
     ],
     "extra": {
       "eas": {
@@ -44,4 +45,3 @@
     }
   }
 }
-
