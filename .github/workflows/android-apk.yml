@@ -171,6 +171,36 @@ jobs:
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
+      - name: Export Patient desktop web build
+        run: npx expo export --platform web
+
+      - name: Capture Patient desktop screens at laptop widths
+        run: |
+          set -euo pipefail
+          python3 -m http.server 19006 --directory dist >/tmp/oralyn-patient-web.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:19006/ >/dev/null; then break; fi
+            sleep 1
+          done
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$CHROME_BIN" ]; then
+            echo "::error::No headless Chrome/Chromium is installed on this runner."
+            exit 1
+          fi
+          export CHROME_BIN
+          node scripts/capture-web.cjs
+
+      - name: Upload Patient desktop screenshot evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oralyn-patient-desktop-evidence-${{ github.sha }}
+          path: build-evidence/patient-web/
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Install and smoke-test Patient APK on Android emulator
         run: |
           set -euo pipefail
