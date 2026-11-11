@@ -282,22 +282,51 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p build-evidence
-          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          SDK_ROOT="\${ANDROID_HOME:-/usr/local/lib/android/sdk}"
           SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager | sort | tail -n 1)"
           AVDMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name avdmanager | sort | tail -n 1)"
           ADB="$SDK_ROOT/platform-tools/adb"
+          export ANDROID_HOME="$SDK_ROOT"
+          export ANDROID_SDK_ROOT="$SDK_ROOT"
+          export ANDROID_SDK_HOME="$HOME/.android"
+          export ANDROID_AVD_HOME="$HOME/.android/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
           test -x "$SDKMANAGER"
           test -x "$AVDMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
-          "$SDKMANAGER" --install "emulator" "platform-tools" "system-images;android-35;google_apis;x86_64" >/tmp/doctor-sdkmanager.log
-          echo no | "$AVDMANAGER" create avd --force --name oralyn-doctor-ci --package "system-images;android-35;google_apis;x86_64" --device pixel_2
+          if ! timeout 360 "$SDKMANAGER" --install "emulator" "platform-tools" "system-images;android-35;google_apis;x86_64" >build-evidence/sdkmanager.log 2>&1; then
+            cat build-evidence/sdkmanager.log
+            echo "::error::Android SDK package installation failed."
+            exit 1
+          fi
+          "$SDKMANAGER" --list_installed >build-evidence/sdkmanager-installed.txt 2>&1
+          grep -Fq "system-images;android-35;google_apis;x86_64" build-evidence/sdkmanager-installed.txt || {
+            cat build-evidence/sdkmanager-installed.txt
+            echo "::error::Android 35 Google APIs system image was not installed."
+            exit 1
+          }
+          if ! printf 'no\n' | "$AVDMANAGER" create avd --force --name oralyn-doctor-ci --package "system-images;android-35;google_apis;x86_64" --device pixel_2 >build-evidence/avdmanager.log 2>&1; then
+            cat build-evidence/avdmanager.log
+            echo "::error::Android virtual device creation failed."
+            exit 1
+          fi
+          "$AVDMANAGER" list avd >build-evidence/avdmanager-list.txt 2>&1
+          if [ ! -f "$ANDROID_AVD_HOME/oralyn-doctor-ci.ini" ]; then
+            find "$HOME/.android" "$SDK_ROOT" -maxdepth 6 -name oralyn-doctor-ci.ini -print >build-evidence/avd-locations.txt 2>&1 || true
+            cat build-evidence/avdmanager.log
+            cat build-evidence/avdmanager-list.txt
+            echo "::error::AVD manager did not create the expected AVD in ANDROID_AVD_HOME."
+            exit 1
+          fi
+          test -x "$SDK_ROOT/emulator/emulator"
+          "$ADB" start-server
           "$SDK_ROOT/emulator/emulator" -avd oralyn-doctor-ci -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -wipe-data >build-evidence/emulator.log 2>&1 &
           timeout 240 "$ADB" wait-for-device
           boot=""
-          for attempt in $(seq 1 60); do
+          for attempt in $(seq 1 90); do
             boot="$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
             [ "$boot" = "1" ] && break
-            sleep 5
+            sleep 2
           done
           if [ "$boot" != "1" ]; then
             cat build-evidence/emulator.log
@@ -311,23 +340,23 @@ jobs:
           "$ADB" logcat -c
           "$ADB" shell monkey -p com.drpranali.dental.doctor 1
           sleep 20
-          "$ADB" shell uiautomator dump /sdcard/doctor-window.xml >/dev/null
+          timeout 30 "$ADB" shell uiautomator dump /sdcard/doctor-window.xml >/dev/null
           "$ADB" pull /sdcard/doctor-window.xml build-evidence/doctor-window.xml
           "$ADB" shell screencap -p /sdcard/doctor-login.png
           "$ADB" pull /sdcard/doctor-login.png build-evidence/doctor-login.png
-          "$ADB" logcat -d -v brief > build-evidence/doctor-logcat.txt
-          "$ADB" shell dumpsys activity activities > build-evidence/doctor-activities.txt
+          "$ADB" logcat -d -v brief >build-evidence/doctor-logcat.txt
+          "$ADB" shell dumpsys activity activities >build-evidence/doctor-activities.txt
           grep -Fq "Sign in with your clinic-issued email and password." build-evidence/doctor-window.xml || {
             echo "::error::Doctor login UI did not render after cold start; inspect screenshot and logcat."
             exit 1
           }
-          if grep -E "FATAL EXCEPTION|No safe area value available|Invariant Violation" build-evidence/doctor-logcat.txt; then
+          if grep -E "FATAL EXCEPTION|No safe area value available|Invariant Violation|ReactNativeJS.*(Error|TypeError)" build-evidence/doctor-logcat.txt; then
             echo "::error::Fatal Android or React Native startup error detected."
             exit 1
           fi
-          printf 'commit=%s\nenvironment=staging\napi=https://oralyn-multitenant-staging.onrender.com\npackage=com.drpranali.dental.doctor\n' "$GITHUB_SHA" > build-evidence/build-info.txt
+          printf 'commit=%s\nenvironment=staging\napi=https://oralyn-multitenant-staging.onrender.com\npackage=com.drpranali.dental.doctor\n' "$GITHUB_SHA" >build-evidence/build-info.txt
           if [ -z "$DENTAL_STAGING_DOCTOR_EMAIL" ] || [ -z "$DENTAL_STAGING_DOCTOR_PASSWORD" ]; then
-            echo "::warning::Cold start and login screen verified. Authenticated dashboard, empty-account and session-persistence checks require DENTAL_STAGING_DOCTOR_EMAIL and DENTAL_STAGING_DOCTOR_PASSWORD GitHub secrets."
+            echo "::warning::Cold start and login screen can be verified. Authenticated dashboard, empty-account and session-persistence checks still require DENTAL_STAGING_DOCTOR_EMAIL and DENTAL_STAGING_DOCTOR_PASSWORD GitHub secrets."
           fi
 
       - name: Upload Doctor Android runtime evidence
