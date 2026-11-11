@@ -41,6 +41,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify Expo SDK native package compatibility
+        run: |
+          npx expo install --check
+          node - <<'NODE'
+          const lock = require('./package-lock.json');
+          const versions = Object.entries(lock.packages || {})
+            .filter(([path]) => path.endsWith('node_modules/expo-font'))
+            .map(([, entry]) => entry.version);
+          if (!versions.length || versions.some(version => !/^57\\./.test(version))) {
+            console.error('Expo SDK 57 requires expo-font 57.x; resolved versions:', versions);
+            process.exit(1);
+          }
+          console.log('Compatible expo-font versions:', versions.join(', '));
+          NODE
+
       - name: Reject vulnerable dependency tree
         run: npm audit --audit-level=low
 
@@ -90,7 +105,7 @@ jobs:
       - name: Generate Android project
         run: npx expo prebuild --platform android --non-interactive
 
-      - name: Verify production JavaScript bundle
+      - name: Verify staging JavaScript bundle
         run: npx expo export --platform android
 
       - name: Require fixed release signing secrets
@@ -154,7 +169,7 @@ jobs:
           }
           EOF
 
-      - name: Build RELEASE APK with fixed signing
+      - name: Build signed STAGING APK with fixed signing
         working-directory: doctor-app/android
         env:
           DENTAL_DOCTOR_STORE_PASSWORD: ${{ secrets.DENTAL_DOCTOR_STORE_PASSWORD }}
@@ -163,7 +178,7 @@ jobs:
           printf '\napply from: "./release-signing.gradle"\n' >> app/build.gradle
           ./gradlew assembleRelease --no-daemon
 
-      - name: Verify signed RELEASE APK
+      - name: Verify signed STAGING APK
         env:
           DENTAL_DOCTOR_STORE_PASSWORD: ${{ secrets.DENTAL_DOCTOR_STORE_PASSWORD }}
         run: |
@@ -221,10 +236,10 @@ jobs:
           fi
           unzip -l "$APK" | grep -Eq 'assets/index[.]android[.]bundle([.]hbc)?'
           echo "Verified Doctor APK package and release certificate: $PACKAGE_NAME"
-      - name: Upload RELEASE APK
+      - name: Upload STAGING APK
         uses: actions/upload-artifact@v4
         with:
-          name: dr-pranali-dental-doctor-release-apk
+          name: dr-pranali-dental-doctor-staging-apk
           path: doctor-app/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
