@@ -346,7 +346,7 @@ function ContactScreen({ clinic, desktop = false }) {
         <View style={styles.contactBrand}><SafeImage source={LOGO} style={styles.contactLogo} contentFit="contain" /><View style={{ flex: 1 }}><Text style={styles.contactName}>{clinic.name}</Text><Text style={styles.contactDoctor}>Dr. Pranali · BDS Dental Surgeon</Text></View></View>
         <View style={styles.contactDivider} />
         <View style={styles.contactLine}><View style={styles.contactIcon}><Icon name="map-pin" size={18} color={C.blue} /></View><View style={{ flex: 1 }}><Text style={styles.contactLabel}>Clinic location</Text><Text style={styles.contactValue}>{clinic.address}</Text></View></View>
-        <View style={styles.contactLine}><View style={styles.contactIcon}><Icon name="clock" size={18} color={C.blue} /></View><View style={{ flex: 1 }}><Text style={styles.contactLabel}>Clinic hours</Text><Text style={styles.contactValue}>Monday – Sunday, 10:00 AM – 9:00 PM</Text><Text style={styles.contactMuted}>By appointment only</Text></View></View>
+        <View style={styles.contactLine}><View style={styles.contactIcon}><Icon name="clock" size={18} color={C.blue} /></View><View style={{ flex: 1 }}><Text style={styles.contactLabel}>Clinic hours</Text><Text style={styles.contactValue}>10:00 AM – 2:00 PM and 5:00 PM – 9:00 PM</Text><Text style={styles.contactMuted}>By appointment only</Text></View></View>
         <ActionButton label="Open directions in Google Maps" icon="navigation" onPress={openMaps} />
         <Text style={styles.contactFootnote}>For urgent dental pain, swelling, bleeding or injury, seek prompt professional advice. Appointment requests are not an emergency service.</Text>
       </View>
