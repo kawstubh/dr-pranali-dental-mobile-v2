@@ -19,3 +19,8 @@ export async function requestPublicAppointment(payload) {
 export async function getDentalHealth() {
   return request('/v1/dental/health');
 }
+
+
+export async function getPublicClinic() {
+  return request('/v1/dental/public/clinic');
+}
