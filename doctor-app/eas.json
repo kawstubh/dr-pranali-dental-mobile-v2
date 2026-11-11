@@ -1,7 +1,13 @@
 {
-  "build": {
-    "preview": {
-      "distribution": "internal"
-    }
-  }
+    "build":  {
+                  "preview":  {
+                                  "distribution":  "internal"
+                              },
+                  "production":  {
+                                     "autoIncrement":  true
+                                 }
+              },
+    "cli":  {
+                "appVersionSource":  "remote"
+            }
 }

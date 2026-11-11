@@ -1,47 +1,50 @@
-﻿{
-  "expo": {
-    "name": "Oralyn",
-    "slug": "dr-pranali-dental",
-    "version": "1.0.3",
-    "orientation": "portrait",
-    "icon": "./assets/oralyn-icon.png",
-    "splash": {
-      "image": "./assets/oralyn-splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#F4FBFF"
-    },
-    "android": {
-      "package": "com.drpranali.dental",
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/oralyn-icon.png",
-        "backgroundColor": "#F4FBFF",
-        "monochromeImage": "./assets/patient-monochrome.png"
-      }
-    },
-    "ios": {
-      "bundleIdentifier": "com.drpranali.dental"
-    },
-    "plugins": [
-      "expo-status-bar",
-      "@react-native-community/datetimepicker",
-      "@react-native-google-signin/google-signin",
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/patient-notification.png",
-          "color": "#1677D2"
-        }
-      ],
-      "expo-image"
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "7237b92a-a286-4f47-b519-caf145a88d7d"
-      }
-    },
-    "web": {
-      "favicon": "./assets/patient-favicon.png"
-    }
-  }
+{
+    "expo":  {
+                 "name":  "Oralyn",
+                 "slug":  "dr-pranali-dental",
+                 "version":  "1.0.3",
+                 "orientation":  "portrait",
+                 "icon":  "./assets/oralyn-icon.png",
+                 "splash":  {
+                                "image":  "./assets/oralyn-splash.png",
+                                "resizeMode":  "contain",
+                                "backgroundColor":  "#F4FBFF"
+                            },
+                 "android":  {
+                                 "package":  "com.drpranali.dental",
+                                 "adaptiveIcon":  {
+                                                      "foregroundImage":  "./assets/oralyn-icon.png",
+                                                      "backgroundColor":  "#F4FBFF",
+                                                      "monochromeImage":  "./assets/patient-monochrome.png"
+                                                  }
+                             },
+                 "ios":  {
+                             "bundleIdentifier":  "com.drpranali.dental",
+                             "infoPlist":  {
+                                               "ITSAppUsesNonExemptEncryption":  false
+                                           }
+                         },
+                 "plugins":  [
+                                 "expo-status-bar",
+                                 "@react-native-community/datetimepicker",
+                                 "@react-native-google-signin/google-signin",
+                                 [
+                                     "expo-notifications",
+                                     {
+                                         "icon":  "./assets/patient-notification.png",
+                                         "color":  "#1677D2"
+                                     }
+                                 ],
+                                 "expo-image"
+                             ],
+                 "extra":  {
+                               "eas":  {
+                                           "projectId":  "7237b92a-a286-4f47-b519-caf145a88d7d"
+                                       }
+                           },
+                 "web":  {
+                             "favicon":  "./assets/patient-favicon.png",
+                             "bundler":  "metro"
+                         }
+             }
 }
-
