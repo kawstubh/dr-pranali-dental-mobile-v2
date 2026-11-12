@@ -1167,6 +1167,77 @@ function Doctor({
   onSignOut,
 }) {
   const [selectedPatientId, setSelectedPatientId] = useState("");
+  const [inviteState, setInviteState] = useState({ patientId: "", code: "", busy: false });
+  const [appointmentEdits, setAppointmentEdits] = useState({});
+  const [appointmentBusyId, setAppointmentBusyId] = useState("");
+  const [appointmentError, setAppointmentError] = useState("");
+  const localDateTimeValue = (value) => {
+    const date = new Date(value || "");
+    if (!Number.isFinite(date.getTime())) return "";
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  };
+  useEffect(() => {
+    setAppointmentEdits({});
+  }, [appointments]);
+  const createPatientInvite = async (patientId) => {
+    setInviteState({ patientId, code: "", busy: true });
+    try {
+      const response = await dentalApi.createPatientInvite(token, patientId);
+      const code = response?.result?.invite_code || response?.invite_code || "";
+      if (!code) throw new Error("The clinic service did not return an invite code.");
+      setInviteState({ patientId, code, busy: false });
+      ping("One-time patient invite created. Share it only with the intended patient.");
+    } catch (error) {
+      setInviteState({ patientId: "", code: "", busy: false });
+      ping(error?.message || "Patient invite could not be created.");
+    }
+  };
+  const copyPatientInvite = async (code) => {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard access is unavailable.");
+      await navigator.clipboard.writeText(code);
+      ping("Patient invite code copied.");
+    } catch {
+      ping("Select the displayed invite code and copy it manually.");
+    }
+  };
+  const saveAppointment = async (appointment) => {
+    const draft = appointmentEdits[appointment.id] || {};
+    const startValue = draft.starts_at ?? localDateTimeValue(appointment.starts_at);
+    const parsedStart = new Date(startValue);
+    if (!startValue || !Number.isFinite(parsedStart.getTime())) {
+      setAppointmentError("Choose a valid clinic-local appointment date and time.");
+      return;
+    }
+    const changes = {};
+    const currentStart = new Date(appointment.starts_at || "");
+    if (!Number.isFinite(currentStart.getTime()) || parsedStart.getTime() !== currentStart.getTime()) {
+      changes.starts_at = parsedStart.toISOString();
+    }
+    const nextStatus = draft.status ?? appointment.status ?? "scheduled";
+    if (nextStatus !== appointment.status) changes.status = nextStatus;
+    if (!Object.keys(changes).length) {
+      ping("There are no appointment changes to save.");
+      return;
+    }
+    setAppointmentBusyId(String(appointment.id));
+    setAppointmentError("");
+    try {
+      await dentalApi.updateAppointment(token, appointment.id, changes);
+      setAppointmentEdits((current) => {
+        const next = { ...current };
+        delete next[appointment.id];
+        return next;
+      });
+      await refresh();
+      ping("Appointment updated successfully.");
+    } catch (error) {
+      setAppointmentError(error?.message || "Appointment could not be updated.");
+    } finally {
+      setAppointmentBusyId("");
+    }
+  };
   useEffect(() => {
     if (!patients.length) {
       if (selectedPatientId) setSelectedPatientId("");
@@ -1485,9 +1556,22 @@ function Doctor({
                     <td>{p[2]}</td>
                     <td>{p[3]}</td>
                     <td>
-                      <button className="link" onClick={() => { setSelectedPatientId(String(p[2])); P("clinical"); }}>
-                        Open ›
-                      </button>
+                      <div className="patient-row-actions">
+                        <button className="link" onClick={() => { setSelectedPatientId(String(p[2])); P("clinical"); }}>
+                          Open ›
+                        </button>
+                        <button className="link" disabled={inviteState.busy} onClick={() => createPatientInvite(String(p[2]))}>
+                          {inviteState.busy && inviteState.patientId === String(p[2]) ? "Creating…" : "Create invite"}
+                        </button>
+                      </div>
+                      {inviteState.patientId === String(p[2]) && inviteState.code && (
+                        <div className="invite-code-card">
+                          <small>One-time clinic invite · expires in 24 hours</small>
+                          <code>{inviteState.code}</code>
+                          <button className="outline" onClick={() => copyPatientInvite(inviteState.code)}>Copy invite code</button>
+                          <small>Share this code only with the intended patient. It links their signed-in account to this clinic record.</small>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -1511,7 +1595,7 @@ function Doctor({
         <Title
           eyebrow="SCHEDULE"
           title="Appointments"
-          desc="Keep the day moving with a clear view of the clinic schedule."
+          desc="Review, reschedule and update visits in the active clinic workspace."
           action="New appointment"
           M={M}
         />
@@ -1524,21 +1608,59 @@ function Doctor({
               year: "numeric",
             })}
           </b>
-          <span className="muted">All scheduled visits</span>
+          <span className="muted">All scheduled visits · clinic-local time</span>
         </div>
+        {appointmentError && <div className="autherror" role="alert">{appointmentError}</div>}
         <div className="schedule">
-          {appts.length ? appts.map((a) => (
-            <div className="schedrow">
-              <time>{a[0]}</time>
-              <div className={"schedcard " + a[4]}>
-                <div>
-                  <b>{a[1]}</b>
-                  <p>{a[2]}</p>
+          {orderedAppointments.length ? orderedAppointments.map((appointment) => {
+            const draft = appointmentEdits[appointment.id] || {};
+            const startsAt = draft.starts_at ?? localDateTimeValue(appointment.starts_at);
+            const status = draft.status ?? appointment.status ?? "scheduled";
+            const changed = startsAt !== localDateTimeValue(appointment.starts_at) || status !== (appointment.status || "scheduled");
+            const patient = patients.find((item) => String(item.id) === String(appointment.patient_id));
+            return (
+              <div className="schedrow appointment-row" key={appointment.id}>
+                <time>{formatTime(appointment.starts_at)}</time>
+                <div className="appointment-main">
+                  <div className="schedcard teal">
+                    <div>
+                      <b>{appointment.patient_name || patient?.name || "Patient"}</b>
+                      <p>{appointment.treatment_type || "Dental visit"}</p>
+                    </div>
+                    <span>{appointment.status || "scheduled"}</span>
+                  </div>
+                  <div className="appointment-editor">
+                    <label>Reschedule
+                      <input
+                        type="datetime-local"
+                        value={startsAt}
+                        onChange={(event) => {
+                          setAppointmentEdits((current) => ({ ...current, [appointment.id]: { ...current[appointment.id], starts_at: event.target.value } }));
+                          setAppointmentError("");
+                        }}
+                      />
+                    </label>
+                    <label>Status
+                      <select
+                        value={status}
+                        onChange={(event) => {
+                          setAppointmentEdits((current) => ({ ...current, [appointment.id]: { ...current[appointment.id], status: event.target.value } }));
+                          setAppointmentError("");
+                        }}
+                      >
+                        {["requested", "confirmed", "scheduled", "completed", "cancelled", "rescheduled", "no_show"].map((value) => (
+                          <option key={value} value={value}>{value.replaceAll("_", " ")}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <button className="outline" disabled={!changed || appointmentBusyId === String(appointment.id)} onClick={() => saveAppointment(appointment)}>
+                      {appointmentBusyId === String(appointment.id) ? "Saving…" : "Save changes"}
+                    </button>
+                  </div>
                 </div>
-                <span>{a[3]}</span>
               </div>
-            </div>
-          )) : <div className="empty-state">No appointments are available for this clinic account yet.</div>}
+            );
+          }) : <div className="empty-state">No appointments are available for this clinic account yet.</div>}
         </div>
       </>
     );
@@ -1723,6 +1845,9 @@ function WorkspaceManagement({ token, user, workspaces, activeWorkspace, workspa
   const [orgType, setOrgType] = useState("clinic");
   const [firstWorkspaceName, setFirstWorkspaceName] = useState("");
   const [doctorId, setDoctorId] = useState("");
+  const [newDoctorEmail, setNewDoctorEmail] = useState("");
+  const [newDoctorPassword, setNewDoctorPassword] = useState("");
+  const [newDoctorRole, setNewDoctorRole] = useState("doctor");
   const [targetWorkspace, setTargetWorkspace] = useState("");
   const [membershipRole, setMembershipRole] = useState("doctor");
   const orgId = activeWorkspace?.organisation_id || user?.organisation_id || "";
@@ -1802,6 +1927,34 @@ function WorkspaceManagement({ token, user, workspaces, activeWorkspace, workspa
     finally { setBusy(false); }
   };
 
+  const createDoctorAccount = async (event) => {
+    event.preventDefault();
+    const email = newDoctorEmail.trim().toLowerCase();
+    if (!email || newDoctorPassword.length < 12) {
+      setError("Enter a valid doctor email and an initial password of at least 12 characters.");
+      return;
+    }
+    setBusy(true); setError(""); setNotice("");
+    try {
+      const response = await dentalApi.createDoctorAccount(token, {
+        email,
+        password: newDoctorPassword,
+        role: newDoctorRole,
+      });
+      const doctor = response?.result || response;
+      const createdId = doctor?.id || doctor?.doctor_id;
+      if (!createdId) throw new Error("The clinic service did not return the new doctor ID.");
+      setDoctorId(String(createdId));
+      setNewDoctorEmail("");
+      setNewDoctorPassword("");
+      setNewDoctorRole("doctor");
+      await onRefreshWorkspaces();
+      await refreshOrg();
+      setNotice("Doctor account created in the active workspace. Its ID is ready in the cross-workspace membership form. Share the initial password through an approved secure channel.");
+    } catch (err) { setError(err?.message || "Doctor account creation failed."); }
+    finally { setBusy(false); }
+  };
+
   const visible = canManage && orgWorkspaces.length ? orgWorkspaces : workspaces;
   return (
     <>
@@ -1842,9 +1995,18 @@ function WorkspaceManagement({ token, user, workspaces, activeWorkspace, workspa
             <button className="primary" disabled={busy}>Create organisation</button>
           </form> : <div className="empty-state">Organisation creation is restricted to an owner or administrator.</div>}
         </Panel>
+        <Panel title="Create doctor account" sub="Create a clinic-issued email/password account in the active workspace.">
+          {canManage ? <form className="workspace-form" onSubmit={createDoctorAccount}>
+            <label>Doctor email<input type="email" autoComplete="off" value={newDoctorEmail} onChange={(event) => setNewDoctorEmail(event.target.value)} required maxLength={320} /></label>
+            <label>Initial password (12+ characters)<input type="password" autoComplete="new-password" value={newDoctorPassword} onChange={(event) => setNewDoctorPassword(event.target.value)} required minLength={12} maxLength={256} /></label>
+            <label>Account role<select value={newDoctorRole} onChange={(event) => setNewDoctorRole(event.target.value)}><option value="doctor">Doctor</option><option value="dentist">Dentist</option>{role === "owner" && <option value="admin">Administrator</option>}</select></label>
+            <button className="primary" disabled={busy || newDoctorPassword.length < 12}>Create doctor account</button>
+            <small className="form-note">The initial password is sent only to the clinic API and is not retained by this portal. Share it with the doctor through an approved secure channel.</small>
+          </form> : <div className="empty-state">Only an organisation owner or administrator can create doctor accounts.</div>}
+        </Panel>
         <Panel title="Cross-workspace membership" sub="Assign an existing doctor to another workspace in this same organisation.">
           {canManage ? <form className="workspace-form" onSubmit={assignMembership}>
-            <label>Doctor ID<input value={doctorId} onChange={(event) => setDoctorId(event.target.value)} required maxLength={64} placeholder="Paste the doctor ID" /></label>
+            <label>Doctor ID<input value={doctorId} onChange={(event) => setDoctorId(event.target.value)} required maxLength={64} placeholder="Created above or paste an existing doctor ID" /></label>
             <label>Destination workspace<select value={targetWorkspace} onChange={(event) => setTargetWorkspace(event.target.value)} disabled={!targets.length}><option value="">Select workspace</option>{targets.map((item) => <option key={item.id || item.clinic_id} value={item.id || item.clinic_id}>{item.name}</option>)}</select></label>
             <label>Membership role<select value={membershipRole} onChange={(event) => setMembershipRole(event.target.value)}><option value="doctor">Doctor</option><option value="dentist">Dentist</option><option value="admin">Administrator</option>{role === "owner" && <option value="owner">Owner</option>}</select></label>
             <button className="primary" disabled={busy || !targets.length}>Assign membership</button>
@@ -1852,7 +2014,6 @@ function WorkspaceManagement({ token, user, workspaces, activeWorkspace, workspa
           </form> : <div className="empty-state">Cross-workspace membership is restricted to an owner or administrator.</div>}
         </Panel>
       </div>
-      <Panel title="Doctor account provisioning" sub="Doctor accounts are created in the owner/admin Doctor app flow. Use the returned doctor ID in the membership form above to grant access to another workspace." />
       <div className="workspace-footnote">All organisation and membership permissions are enforced by the authenticated staging API. This interface does not bypass tenant isolation.</div>
     </>
   );
