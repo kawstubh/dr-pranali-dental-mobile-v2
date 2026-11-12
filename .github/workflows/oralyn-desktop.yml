@@ -98,7 +98,7 @@ jobs:
         if: github.event.pull_request.head.ref == 'feat/oralyn-assistant-ui-20261113' || github.ref_name == 'feat/oralyn-assistant-ui-20261113'
         env:
           CHROME_BIN: ${{ steps.setup_chrome.outputs.chrome-path }}
-          ORALYN_PREVIEW_URL: http://127.0.0.1:4177
+          ORALYN_PREVIEW_URL: http://127.0.0.1:4176
           ORALYN_CAPTURE_OUTPUT: evidence/synthetic-assistant
         run: |
           test -x "$CHROME_BIN" || { echo "::error::Configured Chrome path is not executable: $CHROME_BIN"; exit 1; }
