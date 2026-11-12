@@ -331,8 +331,7 @@ function App() {
         loading={booting}
         error={authError}
         onPatient={() => {
-          navigateRole("patient", "home");
-          setAuthError("");
+          window.location.assign("/patient/home/");
         }}
         onLogin={async (email, password) => {
           setAuthError("");
