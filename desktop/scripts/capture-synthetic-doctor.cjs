@@ -224,14 +224,14 @@ async function main() {
   await capture("doctor-appointments-1440x1000.png");
   await capture("doctor-appointments-390x844.png", 390, 844, true);
 
-  const switched = await evaluate("(() => { const select = document.querySelector('select[aria-label=\\"Switch clinic workspace\\"]'); if (!select) return false; select.value = 'clinic-synthetic-two'; select.dispatchEvent(new Event('change', { bubbles: true })); return true; })()");
+  const switched = await evaluate(`(() => { const select = document.querySelector('select[aria-label="Switch clinic workspace"]'); if (!select) return false; select.value = 'clinic-synthetic-two'; select.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`);
   if (!switched) throw new Error("Synthetic clinic workspace switcher was not found.");
   await waitFor(() => evaluate('document.body.innerText.includes("Bharat Synthetic")'));
   const isolation = await evaluate('({newClinicVisible:document.body.innerText.includes("Bharat Synthetic"),oldClinicHidden:!document.body.innerText.includes("Ananya Synthetic")})');
   if (!isolation.newClinicVisible || !isolation.oldClinicHidden) throw new Error("Synthetic clinic switch did not clear the previous clinic data: " + JSON.stringify(isolation));
   await capture("doctor-workspace-switch-1440x1000.png");
 
-  const switchedBack = await evaluate("(() => { const select = document.querySelector('select[aria-label=\\"Switch clinic workspace\\"]'); if (!select) return false; select.value = 'clinic-synthetic-one'; select.dispatchEvent(new Event('change', { bubbles: true })); return true; })()");
+  const switchedBack = await evaluate(`(() => { const select = document.querySelector('select[aria-label="Switch clinic workspace"]'); if (!select) return false; select.value = 'clinic-synthetic-one'; select.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`);
   if (!switchedBack) throw new Error("Could not select the original synthetic clinic.");
   await waitFor(() => evaluate('document.body.innerText.includes("Ananya Synthetic")'));
 
