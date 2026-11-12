@@ -232,3 +232,34 @@ The Doctor portal now targets `POST /v1/dental/doctor/patients/{patient_id}/invi
 **Not release-ready.** Authenticated Doctor and Patient sessions, tenant switching/denial, backend feature APIs on an isolated staging database, private storage plus ClamAV, exact-origin CORS/auth redirects, security headers, backup/restore, monitoring, rollback and the eight authenticated screenshots remain unverified.
 
 No PR was merged, no production deployment or migration was performed, no secret/CORS/auth redirect was changed, no paid resource was created/resumed, and no patient data was modified. Native APKs remain out of release scope.
+
+
+## Security integration follow-up — 13 Nov 2026, 00:55 IST
+
+### Malware scanning stack
+
+- Draft PR #53 adds fail-closed ClamAV INSTREAM scanning over a private-only endpoint before quarantined documents are promoted to the verified private-object prefix. It has no schema migration and does not publish documents when the scanner is missing, unreachable, or reports a finding.
+- Draft PR #54 fixes the scanner's IPv6 transport path. Its latest head `00b71230df62e1b6c853372061c21e1e8c0edeb8` passed PostgreSQL CI [#43290536395](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43290536395): **215 passed**; Engine Tests [#43290536384](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43290536384): **214 passed, 1 expected PostgreSQL-only skip**.
+- The scanner remains unconfigured in staging. A private ClamAV service with current signatures/definitions and a private object bucket must be provisioned and attested before enabling document publication. Doctor review does not replace malware scanning.
+
+### Public guest-intake rate-limit proxy identity
+
+- Review found that PR #51 keyed its in-process limiter on `request.client.host`. Render documents that public requests reach the app through Cloudflare and Render load balancers, so this is the proxy address, not the visitor. This can cause unrelated visitors to share one rate-limit bucket.
+- Draft PR #55 fixes this by validating and preferring Cloudflare's single-IP `CF-Connecting-IP` header; malformed/absent values fall back to the socket peer. It intentionally does not trust a caller-supplied X-Forwarded-For chain.
+- Latest head `cc1b4b091eec497d5dc6f5a3254be955b5d78e91` passed PostgreSQL CI [#43291390674](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43291390674): **201 passed**; Engine Tests [#43291390563](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43291390563): **200 passed, 1 expected PostgreSQL-only skip**.
+- Render's [true-client-IP guidance](https://render.com/articles/how-render-handles-ddos-attacks) and Cloudflare's [CF-Connecting-IP documentation](https://developers.cloudflare.com/fundamentals/reference/http-headers/) support this deployment assumption. The limiter is still process-local (8 requests per client per 5 minutes); use a shared limiter or edge/WAF control before horizontal scaling.
+
+### Latest portal verification
+
+- PR #18 head `752eb16a0cc95e67d391ba71ebcdd47c0fcb762a` passed [CI #43291034939](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43291034939): **72 tests**, zero npm audit vulnerabilities, production build and actual browser/PWA capture passed.
+- [Actual screenshot artifact #13975344814](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43291034939/artifacts/13975344814) contains 13 genuine public-route captures. The build metadata says `authenticated_screens=false` and `synthetic_patient_data=none`; it is not authenticated acceptance evidence.
+- [Static staging-targeted bundle #13976194066](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43291034939/artifacts/13976194066) was generated. Release status remains `BLOCKED` with all 17 gates false.
+
+### Infrastructure and workstation
+
+- Render's portal API service remains on `feat/multi-tenant-dental-saas-impl` at deployed commit `7f52c0e7d4e69c92bd167c71392a5c756db54b30`; the backend feature stack is not deployed. No service configuration was changed.
+- The only Render Postgres instance named `dr-pranali-dental-db` remains suspended due to billing. No paid resource was resumed or created.
+- The connected Supabase project has no development branches. No production project was used for synthetic Patient authentication.
+- Desktop Commander remains offline, so local port ownership and free disk space cannot be freshly verified. No cache, user file, project asset, screenshot or evidence was deleted.
+
+The portal remains **not release-ready**. Authenticated Doctor/Patient staging sessions, clinic/tenant isolation, the deployed backend feature stack, private object storage and scanning, exact-origin CORS/auth redirects, database identity, security headers, backup/restore, monitoring, rollback, mobile authenticated flows and eight authenticated screenshots remain outstanding. No PR was merged and no production action was taken.
