@@ -415,6 +415,11 @@ jobs:
           printf 'commit=%s\nenvironment=staging\napi=https://oralyn-multitenant-staging.onrender.com\npackage=com.drpranali.dental.doctor\n' "$GITHUB_SHA" >build-evidence/build-info.txt
           python3 scripts/smoke-doctor-android.py
           cat build-evidence/doctor-authenticated-result.txt >>build-evidence/build-info.txt
+          if grep -q '^authenticated_runtime=partial' build-evidence/doctor-authenticated-result.txt; then
+            echo "::warning::A second synthetic empty-workspace Doctor account is still required before release."
+          elif grep -q '^authenticated_runtime=skipped' build-evidence/doctor-authenticated-result.txt; then
+            echo "::warning::Authenticated Doctor runtime checks are not release-verified; configure synthetic staging test-account secrets."
+          fi
 
       - name: Upload Doctor Android runtime evidence
         if: always()
