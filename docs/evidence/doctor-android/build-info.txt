@@ -1,0 +1,14 @@
+commit=bf70ff89e816f2fa7af90efa9e0a1009e1720778
+environment=staging
+api=https://oralyn-multitenant-staging.onrender.com
+package=com.drpranali.dental.doctor
+authenticated_runtime=skipped
+reason=synthetic_staging_doctor_credentials_and_dataset_marker_required
+empty_account=not_run
+session_persistence=not_verified
+api_error_state=not_verified
+workflow_run=43131921056
+apk_artifact_id=13905867561
+android_evidence_artifact_id=13906057161
+apk_sha256=bff5df83b0991edbaa6847ec7ae587a7cf4fe2978138bb8e7d0a70aeba14f136
+signer_sha256=9b62445f6e92c88e22cb9aa4f653203f78e7628050c9678c8925077cbbd79c16
