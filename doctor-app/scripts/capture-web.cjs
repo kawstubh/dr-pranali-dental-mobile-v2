@@ -349,6 +349,9 @@ async function signOut() {
     const api = process.env.EXPO_PUBLIC_DENTAL_API_URL || 'https://oralyn-multitenant-staging.onrender.com';
     const info = [
       'commit=' + commit,
+      'build_sha=' + commit,
+      'pr_head_sha=' + (process.env.GITHUB_PR_HEAD_SHA || commit),
+      'pr_base_sha=' + (process.env.GITHUB_PR_BASE_SHA || ''),
       'environment=staging',
       'api=' + api,
       'package=com.drpranali.dental.doctor',
