@@ -108,11 +108,13 @@ async function verifyPwa() {
 
   let controlled = await evaluate("Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)");
   if (!controlled) {
-    await send("Page.reload", { ignoreCache: true });
-    await waitFor(() => evaluate('document.readyState === "complete"'), 15000);
+    const currentUrl = await evaluate("location.href");
+    // Page.reload can acknowledge before the new document has committed.
+    // An explicit same-origin navigation gives CDP a fresh document/client.
+    await send("Page.navigate", { url: currentUrl });
     controlled = await waitFor(() => evaluate(
-      "Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)"
-    ), 15000).catch(() => false);
+      'document.readyState === "complete" && Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)'
+    ), 20000).catch(() => false);
   }
   if (!controlled) {
     throw new Error("Oralyn service worker activated but did not take control after a clean reload.");
