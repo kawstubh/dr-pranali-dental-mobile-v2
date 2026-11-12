@@ -137,3 +137,8 @@ test("private clinical documents require a doctor review before patient sharing"
   assert.match(careSource, /document\.status === "available" && document\.reviewed_at &&/);
   assert.match(careSource, /A doctor must review each file before patient sharing is enabled/);
 });
+
+test("doctor patient invitations use a clinic-scoped non-AI management route", () => {
+  assert.match(apiSource, /createPatientInvite:[\\s\\S]*?\\/v1\\/dental\\/doctor\\/patients\\/.*?\\/invite/);
+  assert.doesNotMatch(apiSource, /\\/v1\\/dental\\/ai\\/doctor\\/patients\\/.*?\\/invite/);
+});
