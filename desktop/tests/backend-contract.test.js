@@ -1,0 +1,124 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+
+import { dentalApi } from "../src/api.js";
+
+async function captureRequests(run) {
+  const originalFetch = globalThis.fetch;
+  const requests = [];
+  globalThis.fetch = async (url, init = {}) => {
+    requests.push({ url: String(url), init });
+    return new Response(JSON.stringify({ result: { accepted: true } }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+  try {
+    await run(requests);
+    return requests;
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+}
+
+function assertBearer(requests, token) {
+  for (const request of requests) {
+    assert.equal(request.init.headers.Authorization, `Bearer ${token}`);
+  }
+}
+
+test("doctor treatment-plan and invoice calls match the tenant-scoped billing API", async () => {
+  const token = "synthetic-doctor-token";
+  const requests = await captureRequests(async () => {
+    await dentalApi.doctorTreatmentPlans(token, "patient-1");
+    await dentalApi.createTreatmentPlan(token, "patient-1", {
+      title: "Preventive care",
+      summary: "Clinic-authored plan",
+      items: [{ description: "Professional cleaning" }],
+    });
+    await dentalApi.updateTreatmentPlan(token, "plan-1", {
+      expected_version: 1,
+      patient_visible: true,
+      status: "proposed",
+    });
+    await dentalApi.doctorInvoices(token, "patient-1");
+    await dentalApi.createInvoice(token, "patient-1", {
+      idempotency_key: "oralyn-invoice-test-0001",
+      discount_paise: 0,
+      patient_note: "",
+      items: [{ description: "Cleaning", quantity_milli: 1000, unit_price_paise: 125000, tax_rate_bps: 0 }],
+    });
+    await dentalApi.issueInvoice(token, "invoice-1", {});
+    await dentalApi.recordInvoiceReceipt(token, "invoice-1", {
+      amount_paise: 125000,
+      method: "upi",
+      reference: "synthetic-reference",
+      idempotency_key: "oralyn-receipt-test-0001",
+    });
+    await dentalApi.voidInvoice(token, "invoice-2");
+  });
+
+  assert.deepEqual(requests.map(({ url, init }) => [url, init.method || "GET"]), [
+    ["/v1/dental/doctor/patients/patient-1/treatment-plans", "GET"],
+    ["/v1/dental/doctor/patients/patient-1/treatment-plans", "POST"],
+    ["/v1/dental/doctor/treatment-plans/plan-1", "PATCH"],
+    ["/v1/dental/doctor/patients/patient-1/invoices", "GET"],
+    ["/v1/dental/doctor/patients/patient-1/invoices", "POST"],
+    ["/v1/dental/doctor/invoices/invoice-1/issue", "POST"],
+    ["/v1/dental/doctor/invoices/invoice-1/receipts", "POST"],
+    ["/v1/dental/doctor/invoices/invoice-2/void", "POST"],
+  ]);
+  assertBearer(requests, token);
+  assert.equal(JSON.parse(requests[4].init.body).items[0].unit_price_paise, 125000);
+  assert.ok(JSON.parse(requests[4].init.body).idempotency_key);
+  assert.ok(JSON.parse(requests[6].init.body).idempotency_key);
+});
+
+test("patient billing and document reads are scoped to the authenticated linked record", async () => {
+  const token = "synthetic-patient-token";
+  const requests = await captureRequests(async () => {
+    await dentalApi.patientTreatmentPlans(token, "linked-patient-1");
+    await dentalApi.patientInvoices(token, "linked-patient-1");
+    await dentalApi.patientReceipts(token, "linked-patient-1");
+    await dentalApi.patientDocuments(token, "linked-patient-1");
+    await dentalApi.patientDocumentDownloadIntent(token, "document-1", "linked-patient-1");
+  });
+
+  assert.deepEqual(requests.map(({ url, init }) => [url, init.method || "GET"]), [
+    ["/v1/dental/patient/treatment-plans?patient_id=linked-patient-1", "GET"],
+    ["/v1/dental/patient/invoices?patient_id=linked-patient-1", "GET"],
+    ["/v1/dental/patient/receipts?patient_id=linked-patient-1", "GET"],
+    ["/v1/dental/patient/documents?patient_id=linked-patient-1", "GET"],
+    ["/v1/dental/patient/documents/document-1/download-intent?patient_id=linked-patient-1", "POST"],
+  ]);
+  assertBearer(requests, token);
+  assert.ok(requests.every(({ url }) => !url.includes("/ai/patient/")));
+});
+
+test("private document upload, completion, clinical review and sharing use separate doctor actions", async () => {
+  const token = "synthetic-doctor-token";
+  const requests = await captureRequests(async () => {
+    await dentalApi.createDocumentUploadIntent(token, "patient-1", {
+      file_name: "synthetic-report.pdf",
+      content_type: "application/pdf",
+      size_bytes: 1024,
+      checksum_sha256: "a".repeat(64),
+    });
+    await dentalApi.completeDocumentUpload(token, "document-1");
+    await dentalApi.reviewDocument(token, "document-1");
+    await dentalApi.setDocumentVisibility(token, "document-1", true);
+    await dentalApi.doctorDocumentDownloadIntent(token, "document-1");
+  });
+
+  assert.deepEqual(requests.map(({ url, init }) => [url, init.method || "GET"]), [
+    ["/v1/dental/doctor/patients/patient-1/documents/upload-intent", "POST"],
+    ["/v1/dental/doctor/documents/document-1/complete", "POST"],
+    ["/v1/dental/doctor/documents/document-1/review", "POST"],
+    ["/v1/dental/doctor/documents/document-1", "PATCH"],
+    ["/v1/dental/doctor/documents/document-1/download-intent", "POST"],
+  ]);
+  assertBearer(requests, token);
+  assert.equal(JSON.parse(requests[0].init.body).checksum_sha256, "a".repeat(64));
+  assert.deepEqual(JSON.parse(requests[3].init.body), { patient_visible: true });
+  assert.equal(requests[2].init.body, undefined);
+});
