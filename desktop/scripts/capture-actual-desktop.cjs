@@ -1,6 +1,7 @@
 const { spawn, execFileSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
+const os = require("node:os");
 const crypto = require("node:crypto");
 
 const root = process.cwd();
@@ -15,7 +16,7 @@ const baseUrl = process.env.ORALYN_PREVIEW_URL || "http://127.0.0.1:4176";
 const environment = process.env.ORALYN_ENVIRONMENT || "staging";
 const apiBase = process.env.VITE_DENTAL_API_URL || "https://oralyn-multitenant-staging.onrender.com";
 const commit = process.env.GITHUB_SHA || execFileSync("git", ["rev-parse", "HEAD"], { cwd: root }).toString().trim();
-const profile = path.join(output, ".chrome-profile-" + process.pid);
+const profile = path.join(os.tmpdir(), "oralyn-capture-profile-" + process.pid);
 
 fs.mkdirSync(output, { recursive: true });
 const assetsDir = path.join(root, "dist", "assets");
