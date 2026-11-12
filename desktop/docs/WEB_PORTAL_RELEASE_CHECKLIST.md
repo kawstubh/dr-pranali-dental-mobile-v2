@@ -285,7 +285,7 @@ The portal remains **not release-ready**. Authenticated Doctor/Patient staging s
 
 - Desktop Commander is offline; no fresh Windows disk-space or port-owner reading is available. No local files/caches/evidence were removed.
 - Render staging remains on PR #35 base commit `7f52c0e7d4e69c92bd167c71392a5c756db54b30`; no feature-stack deployment occurred. Render DB identity is not verified.
-- Supabase organisation `kaustubh` is on the Free plan; `supabase-lime-flower` is the only active project and has no development branches. The separate `cuescene-production` project is inactive and was not restored or reused.
+- The connected Supabase organisation is on the Free plan; the active Dental project has no development branches, and a second inactive project was not restored or reused.
 - No new Supabase project, paid service, private bucket or ClamAV scanner was created. The connected Supabase create-project workflow requires explicit organisation selection; the existing active project was not used for synthetic staging accounts.
 
 The final release remains blocked on isolated authenticated staging, actual Doctor/Patient end-to-end flows, private storage/scanning, exact-origin CORS/auth redirects, database identity, security headers, backups/restore, monitoring/rollback and the eight authenticated clinical screenshots. No PR merge, production deploy, production migration, secret change, spend or patient-data mutation was performed.
