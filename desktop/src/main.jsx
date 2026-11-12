@@ -1012,7 +1012,6 @@ function Doctor({
   onSignOut,
 }) {
   const [selectedPatientId, setSelectedPatientId] = useState("");
-  const [inviteState, setInviteState] = useState({ patientId: "", code: "", busy: false });
   const [appointmentEdits, setAppointmentEdits] = useState({});
   const [appointmentBusyId, setAppointmentBusyId] = useState("");
   const [appointmentError, setAppointmentError] = useState("");
@@ -1025,28 +1024,6 @@ function Doctor({
   useEffect(() => {
     setAppointmentEdits({});
   }, [appointments]);
-  const createPatientInvite = async (patientId) => {
-    setInviteState({ patientId, code: "", busy: true });
-    try {
-      const response = await dentalApi.createPatientInvite(token, patientId);
-      const code = response?.result?.invite_code || response?.invite_code || "";
-      if (!code) throw new Error("The clinic service did not return an invite code.");
-      setInviteState({ patientId, code, busy: false });
-      ping("One-time patient invite created. Share it only with the intended patient.");
-    } catch (error) {
-      setInviteState({ patientId: "", code: "", busy: false });
-      ping(error?.message || "Patient invite could not be created.");
-    }
-  };
-  const copyPatientInvite = async (code) => {
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error("Clipboard access is unavailable.");
-      await navigator.clipboard.writeText(code);
-      ping("Patient invite code copied.");
-    } catch {
-      ping("Select the displayed invite code and copy it manually.");
-    }
-  };
   const saveAppointment = async (appointment) => {
     const draft = appointmentEdits[appointment.id] || {};
     const startValue = draft.starts_at ?? localDateTimeValue(appointment.starts_at);
@@ -1426,22 +1403,9 @@ function Doctor({
                     <td>{p[2]}</td>
                     <td>{p[3]}</td>
                     <td className="patient-actions-cell">
-                      <div className="patient-row-actions">
-                        <button className="link" onClick={() => { setSelectedPatientId(String(p[2])); P("clinical"); }}>
-                          Open ›
-                        </button>
-                        <button className="link" disabled={inviteState.busy} onClick={() => createPatientInvite(String(p[2]))}>
-                          {inviteState.busy && inviteState.patientId === String(p[2]) ? "Creating…" : "Create invite"}
-                        </button>
-                      </div>
-                      {inviteState.patientId === String(p[2]) && inviteState.code && (
-                        <div className="invite-code-card">
-                          <small>One-time clinic invite · expires in 24 hours</small>
-                          <code>{inviteState.code}</code>
-                          <button className="outline" onClick={() => copyPatientInvite(inviteState.code)}>Copy invite code</button>
-                          <small>Share this code only with the intended patient. It links their signed-in account to this clinic record.</small>
-                        </div>
-                      )}
+                      <button className="link" onClick={() => { setSelectedPatientId(String(p[2])); P("clinical"); }}>
+                        Open ›
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -2340,9 +2304,25 @@ function Patient({
     </>
   );
 }
-const isAssistantRoute = /^\/assistant(?:\/|$)/.test(window.location.pathname);
+const currentPath = window.location.pathname;
+const normalizedPath = currentPath.replace(/\/+$/, "") || "/";
+const publicPatientPaths = new Set(["/patient/home", "/patient/booking"]);
+const isAssistantRoute = /^\/assistant(?:\/|$)/.test(currentPath);
+const isPublicPatientAlias = publicPatientPaths.has(normalizedPath) && !currentPath.endsWith("/");
+const isDisabledPatientRoute =
+  /^\/patient(?:\/|$)/.test(currentPath) && !publicPatientPaths.has(normalizedPath);
+const redirectPatientRoute = isPublicPatientAlias || isDisabledPatientRoute;
+if (redirectPatientRoute) {
+  window.location.replace(isPublicPatientAlias ? normalizedPath + "/" : "/patient/home/");
+}
 createRoot(document.getElementById("root")).render(
   <ErrorBoundary>
-    {isAssistantRoute ? <AssistantApp /> : <App />}
+    {isAssistantRoute ? (
+      <AssistantApp />
+    ) : redirectPatientRoute ? (
+      <main className="redirect-screen" role="status">Opening the public clinic page…</main>
+    ) : (
+      <App />
+    )}
   </ErrorBoundary>,
 );
