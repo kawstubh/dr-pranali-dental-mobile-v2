@@ -289,3 +289,14 @@ The portal remains **not release-ready**. Authenticated Doctor/Patient staging s
 - No new Supabase project, paid service, private bucket or ClamAV scanner was created. The connected Supabase create-project workflow requires explicit organisation selection; the existing active project was not used for synthetic staging accounts.
 
 The final release remains blocked on isolated authenticated staging, actual Doctor/Patient end-to-end flows, private storage/scanning, exact-origin CORS/auth redirects, database identity, security headers, backups/restore, monitoring/rollback and the eight authenticated clinical screenshots. No PR merge, production deploy, production migration, secret change, spend or patient-data mutation was performed.
+
+
+## Neon recovery database — fresh read-only check, 13 Nov 2026
+
+- Project `dr-pranali-dental-recovery` is in AWS `ap-southeast-1`, PostgreSQL **17.12**, Free plan. It has only the `main` branch; no isolated staging branch exists.
+- Database `dental_recovery` still reports Alembic `0007_dental_audit_workspace`. Read-only aggregate checks found existing doctor, patient and appointment rows. No row contents or identifiers were read or copied.
+- Because main contains existing clinical records, I did **not** create a child staging branch: Neon branching would clone the parent's data and would risk copying real patient data into staging.
+- Project network settings currently have an empty IP allow-list, public connections are not blocked, and the HIPAA setting is false. These settings were only inspected; none were changed. Treat this recovery database as **not approved for production or synthetic staging** until its access/compliance posture is reviewed.
+- No migration, write query, branch creation, connection-string retrieval or secret change was performed.
+
+This strengthens the isolated-database blocker: a clean staging database must be separately provisioned without cloning existing clinical rows. The existing Neon main remains untouched at migration 0007.
