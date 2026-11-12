@@ -1,4 +1,4 @@
-const CACHE_NAME = "oralyn-portal-shell-v1";
+const CACHE_NAME = "oralyn-portal-shell-__ORALYN_BUILD_ID__";
 const SHELL = [
   "/",
   "/manifest.webmanifest",
