@@ -46,11 +46,56 @@ test("staging build manifest records checksums without embedding Supabase creden
     assert.ok(manifest.blockers.includes("supabase_auth_configured"));
     assert.ok(manifest.blockers.includes("isolated_portal_origin_assigned"));
     assert.ok(manifest.blockers.includes("cors_verified_for_portal_origin"));
+    for (const gate of [
+      "document_malware_scanning_verified",
+      "https_security_headers_verified",
+      "database_identity_verified",
+      "backup_restore_verified",
+      "error_monitoring_verified",
+      "rollback_plan_verified",
+      "authenticated_role_e2e_verified",
+      "cross_tenant_e2e_verified",
+      "authenticated_screenshots_verified",
+      "mobile_browser_e2e_verified",
+      "patient_ai_denial_verified",
+    ]) {
+      assert.equal(manifest.checks[gate], false, gate);
+      assert.ok(manifest.blockers.includes(gate), gate);
+    }
     assert.equal(
       manifest.files.find((file) => file.path === "assets/app.js")?.sha256,
       crypto.createHash("sha256").update(asset).digest("hex"),
     );
     assert.ok(!JSON.stringify(manifest).includes("must-not-be-copied-into-the-manifest"));
+  } finally {
+    fs.rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("staging manifests reject insecure or non-canonical API origins", () => {
+  const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "oralyn-build-manifest-insecure-"));
+  fs.writeFileSync(path.join(outputDir, "index.html"), "<!doctype html>");
+  try {
+    assert.throws(() => execFileSync(process.execPath, [scriptPath], {
+      cwd: desktopRoot,
+      env: {
+        ...process.env,
+        ORALYN_BUILD_DIR: outputDir,
+        ORALYN_ENVIRONMENT: "staging",
+        VITE_DENTAL_API_URL: "http://oralyn-api.example.test",
+      },
+      stdio: "pipe",
+    }));
+    assert.throws(() => execFileSync(process.execPath, [scriptPath], {
+      cwd: desktopRoot,
+      env: {
+        ...process.env,
+        ORALYN_BUILD_DIR: outputDir,
+        ORALYN_ENVIRONMENT: "staging",
+        VITE_DENTAL_API_URL: "https://oralyn-api.example.test/v1",
+      },
+      stdio: "pipe",
+    }));
   } finally {
     fs.rmSync(outputDir, { recursive: true, force: true });
   }
