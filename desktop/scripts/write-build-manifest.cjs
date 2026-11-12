@@ -13,11 +13,23 @@ function flag(value) {
   return ["1", "true", "yes"].includes(String(value || "").trim().toLowerCase());
 }
 
-function originOf(value) {
+function originOf(value, { requireHttps = false, label = "origin" } = {}) {
   if (!value) return null;
   const parsed = new URL(value);
-  if (!["https:", "http:"].includes(parsed.protocol)) {
-    throw new Error("Portal API origin must use HTTP or HTTPS.");
+  if (
+    !["https:", "http:"].includes(parsed.protocol) ||
+    !parsed.hostname ||
+    parsed.username ||
+    parsed.password ||
+    parsed.pathname !== "/" ||
+    parsed.search ||
+    parsed.hash ||
+    (requireHttps && parsed.protocol !== "https:")
+  ) {
+    throw new Error(
+      label + " must be a canonical " + (requireHttps ? "HTTPS" : "HTTP(S)") +
+      " origin without credentials, path, query or fragment.",
+    );
   }
   return parsed.origin;
 }
@@ -39,11 +51,19 @@ function walk(directory, prefix = "") {
     });
 }
 
+const environment = process.env.ORALYN_ENVIRONMENT || "local";
+const requireHttpsOrigins = ["staging", "production"].includes(environment.toLowerCase());
 const supabaseAuthConfigured = Boolean(
   process.env.VITE_SUPABASE_URL && process.env.VITE_SUPABASE_PUBLISHABLE_KEY,
 );
-const portalOrigin = originOf(process.env.ORALYN_PORTAL_ORIGIN || "");
-const apiOrigin = originOf(process.env.VITE_DENTAL_API_URL || "");
+const portalOrigin = originOf(process.env.ORALYN_PORTAL_ORIGIN || "", {
+  requireHttps: requireHttpsOrigins,
+  label: "Portal origin",
+});
+const apiOrigin = originOf(process.env.VITE_DENTAL_API_URL || "", {
+  requireHttps: requireHttpsOrigins,
+  label: "Portal API origin",
+});
 
 const checks = {
   supabase_auth_configured: supabaseAuthConfigured,
@@ -52,6 +72,17 @@ const checks = {
   cors_verified_for_portal_origin: flag(process.env.ORALYN_CORS_VERIFIED),
   auth_redirects_verified_for_portal_origin: flag(process.env.ORALYN_AUTH_REDIRECTS_VERIFIED),
   private_document_storage_verified: flag(process.env.ORALYN_PRIVATE_STORAGE_VERIFIED),
+  document_malware_scanning_verified: flag(process.env.ORALYN_DOCUMENT_SCAN_VERIFIED),
+  https_security_headers_verified: flag(process.env.ORALYN_SECURITY_HEADERS_VERIFIED),
+  database_identity_verified: flag(process.env.ORALYN_DATABASE_IDENTITY_VERIFIED),
+  backup_restore_verified: flag(process.env.ORALYN_BACKUP_RESTORE_VERIFIED),
+  error_monitoring_verified: flag(process.env.ORALYN_ERROR_MONITORING_VERIFIED),
+  rollback_plan_verified: flag(process.env.ORALYN_ROLLBACK_VERIFIED),
+  authenticated_role_e2e_verified: flag(process.env.ORALYN_AUTHENTICATED_ROLE_E2E_VERIFIED),
+  cross_tenant_e2e_verified: flag(process.env.ORALYN_CROSS_TENANT_E2E_VERIFIED),
+  authenticated_screenshots_verified: flag(process.env.ORALYN_AUTHENTICATED_SCREENSHOTS_VERIFIED),
+  mobile_browser_e2e_verified: flag(process.env.ORALYN_MOBILE_BROWSER_E2E_VERIFIED),
+  patient_ai_denial_verified: flag(process.env.ORALYN_PATIENT_AI_DENIAL_VERIFIED),
 };
 const blockers = Object.entries(checks)
   .filter(([, passed]) => !passed)
@@ -59,7 +90,7 @@ const blockers = Object.entries(checks)
 
 const manifest = {
   product: "Oralyn responsive Doctor and Patient web portal",
-  environment: process.env.ORALYN_ENVIRONMENT || "local",
+  environment,
   commit_sha: process.env.GITHUB_SHA || process.env.ORALYN_COMMIT_SHA || "unknown",
   branch: process.env.GITHUB_REF_NAME || process.env.ORALYN_BRANCH || "unknown",
   built_at: new Date().toISOString(),
