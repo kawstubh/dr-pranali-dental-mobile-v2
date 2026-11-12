@@ -192,3 +192,43 @@ All gates default to false. Never set a flag to make a build appear ready; set i
 ## Non-AI patient invitation route
 
 The Doctor portal now targets `POST /v1/dental/doctor/patients/{patient_id}/invite` from Draft backend PR #52. It is a clinic-scoped account-linking action, not an AI action. The legacy AI-prefixed route remains for compatibility until the backend stack is reviewed and deployed.
+
+
+## Latest autonomous release watch — 13 Nov 2026, 00:55 IST
+
+### Portal PR #18 — current verified head
+
+- PR #18 remains Draft and unmerged. Current head: `915a13b5c68c04b30fccc3a5c53706d5dfafd38f`.
+- [Latest CI run #43284471276](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43284471276) completed successfully. The job ran **72 frontend tests**, `npm audit` found **0 vulnerabilities**, the Vite production build passed, and the real-browser capture/PWA checks passed.
+- The browser capture used merge-build commit `1b3b0a8f169b540fcb7a51dc6b0063444ec11c67`, which contains the PR head. The JS bundle SHA-256 is `cdd8e15faf57f0c927a240274f110d4e4c3f56c3a64d357bb9f00b0278431ac3`.
+- [Actual browser screenshots artifact #13974471916](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43284471276/artifacts/13974471916), SHA-256 `658169d57091221ecf7cc697572cc5307ea6c6058bcec0d181e3a872d9a4bffc`. [Staging-targeted static bundle #13974985271](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43284471276/artifacts/13974985271), SHA-256 `b1cfacd090a7444881b127423562fdc5ebe3de66fa1dd57373ad99910edb8160`.
+- The actual artifact contains 13 captures at 1440×1000, 1280×800 and 390×844. Its build metadata verifies both bundled fonts loaded, PWA service worker activated and controlled the preview, exactly one versioned shell cache exists, no API/auth/storage cache entries were found, role-route refresh/back/forward passed, and no runtime errors were observed.
+- The metadata explicitly says `authenticated_screens=false` and `synthetic_patient_data=none`. The captures are signed-out Doctor/Patient login, Patient sign-up, guest booking and the Patient records authentication gate. They are **not** authenticated clinical acceptance screenshots.
+- The build manifest remains `release_status=BLOCKED`; all 17 release checks remain false. Build success is not a release gate pass.
+
+### Backend PR #53 — private malware scanning
+
+- [PR #53](https://github.com/kawstubh/universal-intelligence-engine/pull/53) remains Draft and unmerged at `aaed4e08ebe1fa4f796473761bd92b9068946709`.
+- It adds fail-closed private-network ClamAV INSTREAM scanning before a document is promoted from quarantine to the verified private-object prefix. Public, reserved, link-local, multicast and unspecified scanner targets are rejected; no file bytes are sent to a public scanning vendor.
+- PostgreSQL 16 CI [#43282171888](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43282171888): **214 passed**. Engine Tests [#43282176439](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43282176439): **213 passed, 1 expected PostgreSQL-only skip**. No migration was added; one Alembic head remains `0011_document_clinical_review`.
+- The scanner is intentionally unconfigured. Document finalization fails closed until a private ClamAV service with current definitions is independently provisioned and attested.
+
+### Backend PR #54 — IPv6 scanner transport follow-up
+
+- [PR #54](https://github.com/kawstubh/universal-intelligence-engine/pull/54) is a new Draft stacked directly on PR #53. Current head: `00b71230df62e1b6c853372061c21e1e8c0edeb8`.
+- Review found that the scanner accepted private IPv6 ULA addresses but passed a four-field IPv6 sockaddr to `socket.create_connection()`, which expects a two-field address and performs another resolution. The follow-up preserves family/type/protocol/full sockaddr and connects directly to the resolved private address, avoiding a second DNS lookup.
+- IPv4 and IPv6 ULA connection tests plus public/link-local rejection tests were updated. The Engine Tests workflow has completed successfully; the PostgreSQL CI job was still in progress at the last check. No migration or infrastructure change is included.
+
+### Fresh infrastructure and workstation findings
+
+- Render service `oralyn-multitenant-staging` still tracks `feat/multi-tenant-dental-saas-impl`; its latest live deploy is commit `7f52c0e7d4e69c92bd167c71392a5c756db54b30`, deployed 11 Nov 2026. No backend feature-stack deployment was triggered.
+- The separate Render-managed `dr-pranali-dental-db` remains suspended due to billing. It was not resumed.
+- Connected Supabase project `supabase-lime-flower` is active, but its development-branch list is empty. No synthetic Patient account or new project/branch was created.
+- The Desktop Commander device is currently offline (last seen 42 minutes before this check). A fresh C: free-space reading, local preview-port verification and local cleanup could not be performed. No local files, caches, screenshots or evidence were deleted.
+- Render staging health endpoints were not re-probed in this cycle. The latest deployment metadata confirms the service remains on the old base commit; database identity is still unverified. Do not assume it points to Neon.
+
+### Current release decision
+
+**Not release-ready.** Authenticated Doctor and Patient sessions, tenant switching/denial, backend feature APIs on an isolated staging database, private storage plus ClamAV, exact-origin CORS/auth redirects, security headers, backup/restore, monitoring, rollback and the eight authenticated screenshots remain unverified.
+
+No PR was merged, no production deployment or migration was performed, no secret/CORS/auth redirect was changed, no paid resource was created/resumed, and no patient data was modified. Native APKs remain out of release scope.
