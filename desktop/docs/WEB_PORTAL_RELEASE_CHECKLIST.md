@@ -5,7 +5,7 @@
 ## Canonical worktrees and current heads
 
 - Frontend repository: `kawstubh/dr-pranali-dental-mobile-v2`, branch `feat/oralyn-desktop-app`, portal under `desktop/`.
-- Current frontend head checked 12 Nov 2026: `024b6784e036be09e6d5ea3b5803444ea390e298`.
+- Current frontend branch head checked 12 Nov 2026: `357fb81c725c872d7133ed4adfe20b3cd6c1e3ae` (release-checklist documentation update only). The last code-bearing portal commit `024b6784e036be09e6d5ea3b5803444ea390e298` passed the web CI run below.
 - Backend repository: `kawstubh/universal-intelligence-engine`.
 - Local backend checkout was on `feat/dental-document-content-validation` at `6aed180f4dcb699fd8d05f09eb0ba8ef9570ad16` (PR #48); PR #49 is the next review-gate stack head.
 
@@ -23,7 +23,7 @@ All of these PRs are Draft and remain unmerged. Each latest observed CI pair pas
 | #47 | Patient-authenticated booking and linked records | `37e11aacf274e922ca536fe15387ea67d4c75c95` | CI #43217749675 and Engine #43217749639 passed |
 | #48 | Quarantine upload and verified immutable object key; file-signature checks | `6aed180f4dcb699fd8d05f09eb0ba8ef9570ad16` | CI #43219206335 and Engine #43219206215 passed |
 | #49 | Explicit clinician review before patient sharing | `2c75a31677874e9a4ea4e6f623cb75eecb3f3434` | CI #43229823588 and Engine #43229823390 passed |
-| #50 | Fail-closed exact-origin CORS defaults | `749ad3fcab00a8173a8573a6b0ac8771a10713e2` | CI #43248821384 and Engine #43248821754 were in progress at last check |
+| #50 | Fail-closed exact-origin CORS defaults | `749ad3fcab00a8173a8573a6b0ac8771a10713e2` | PostgreSQL 16.15 CI #43248821384: **194 passed, 1 warning**; Engine #43248821754: **193 passed, 1 skipped, 1 warning** |
 
 The dependency chain is now sequential: PR #35 → #43 → #44 → #45 → #46 → #47 → #48 → #49 → #50. PR #46 is based on #45, not a parallel branch.
 
