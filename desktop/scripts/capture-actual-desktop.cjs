@@ -170,6 +170,12 @@ async function navigate(route, expectedText, screenshotName) {
       if (message.method === "Log.entryAdded" && message.params.entry?.level === "error") {
         runtimeErrors.push(message.params.entry.text);
       }
+      if (message.method === "Network.responseReceived") {
+        const response = message.params.response;
+        if (response && response.status >= 400 && response.url?.startsWith(baseUrl)) {
+          runtimeErrors.push("HTTP " + response.status + " " + response.url);
+        }
+      }
       if (message.id && pending.has(message.id)) {
         const request = pending.get(message.id);
         pending.delete(message.id);
@@ -185,6 +191,7 @@ async function navigate(route, expectedText, screenshotName) {
     await send("Page.enable");
     await send("Runtime.enable");
     await send("Log.enable");
+    await send("Network.enable");
 
     const fontResults = {};
     fontResults.doctorLogin = await captureCurrent(
