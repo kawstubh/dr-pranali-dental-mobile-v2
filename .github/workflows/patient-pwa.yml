@@ -1,0 +1,55 @@
+name: Oralyn Patient PWA
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'App.js'
+      - 'app.json'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'src/**'
+      - 'public/**'
+      - '.github/workflows/patient-pwa.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-pwa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      EXPO_PUBLIC_DENTAL_API_URL: https://oralyn-multitenant-staging.onrender.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Verify patient UI and dependencies
+        run: |
+          npm test
+          npm audit --audit-level=low
+          npx tsc --noEmit
+      - name: Export static Patient portal
+        run: npx expo export --platform web
+      - name: Verify installable PWA output
+        run: |
+          test -s dist/index.html
+          test -s dist/manifest.json
+          test -s dist/sw.js
+          test -s dist/oralyn-icon.svg
+          node -e "const m=require('./dist/manifest.json'); if(m.name!=='Oralyn Patient Portal'||m.display!=='standalone'||!m.icons?.length) process.exit(1)"
+          grep -q "register('/sw.js')" App.js
+      - name: Upload staging-ready Patient PWA
+        uses: actions/upload-artifact@v4
+        with:
+          name: oralyn-patient-pwa-staging
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
