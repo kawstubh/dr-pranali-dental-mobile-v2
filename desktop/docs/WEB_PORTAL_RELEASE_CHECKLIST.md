@@ -5,7 +5,7 @@
 ## Canonical worktrees and current heads
 
 - Frontend repository: `kawstubh/dr-pranali-dental-mobile-v2`, branch `feat/oralyn-desktop-app`, portal under `desktop/`.
-- Current frontend branch head checked 12 Nov 2026: `c25cceefb630f637285a2df0e5fcd4368b9b84dd`. This head adds Doctor patient-invite generation, appointment rescheduling/status updates, owner/admin doctor-account provisioning, and regression tests. The latest code-bearing CI run below is for the earlier commit `024b6784e036be09e6d5ea3b5803444ea390e298`; no CI result or screenshot artifact has yet been surfaced for the new Doctor workflow commits.
+- Current frontend branch head checked 12 Nov 2026: `4c342b7bd3f948056445396f3c1542d409a58d7b` (test-only Vite SSR shutdown-race mitigation; CI not yet surfaced for this final test-only commit). Doctor workflow implementation commit: `c25cceefb630f637285a2df0e5fcd4368b9b84dd`.
 - Backend repository: `kawstubh/universal-intelligence-engine`.
 - Local backend checkout was on `feat/dental-document-content-validation` at `6aed180f4dcb699fd8d05f09eb0ba8ef9570ad16` (PR #48); PR #49 is the next review-gate stack head.
 
@@ -63,6 +63,16 @@ The current portal branch now includes:
 - API contract tests for appointment PATCH, patient invite generation and Doctor account creation, plus UI regression assertions.
 
 These changes are committed on the current Draft PR #18 branch. They are not yet CI-verified, and no new authenticated browser screenshots have been captured for them. Do not treat them as accepted until a fresh run and browser smoke tests pass.
+
+## Doctor workflow implementation
+
+The portal now exposes:
+- Doctor-generated 24-hour patient invite codes in the directory, with copy/manual-copy fallback.
+- Appointment rescheduling using clinic-local `datetime-local` values and updates for the backend's allowed statuses. Concurrent appointment edits are serialized.
+- Owner/admin doctor-account creation using clinic-issued email/password accounts with a minimum 12-character initial password; the created doctor ID is prefilled for cross-workspace membership assignment.
+- Regression coverage for the invite, appointment PATCH and doctor account API contracts and the visible Doctor UI actions.
+
+The feature commit passed the 55-test CI run above. The subsequent test-only Vite shutdown-race mitigation is not yet CI-verified. No actual authenticated Doctor/Patient staging account was used.
 
 ## Live staging checks — 12 Nov 2026
 
