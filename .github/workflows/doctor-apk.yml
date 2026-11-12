@@ -253,6 +253,8 @@ jobs:
           DENTAL_STAGING_DOCTOR_EMPTY_EMAIL: ${{ secrets.DENTAL_STAGING_DOCTOR_EMPTY_EMAIL }}
           DENTAL_STAGING_DOCTOR_EMPTY_PASSWORD: ${{ secrets.DENTAL_STAGING_DOCTOR_EMPTY_PASSWORD }}
           DENTAL_STAGING_DOCTOR_EMPTY_DATASET: ${{ secrets.DENTAL_STAGING_DOCTOR_EMPTY_DATASET }}
+          GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          GITHUB_PR_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
         run: |
           set -euo pipefail
           python3 -m http.server 19007 --directory dist >/tmp/oralyn-doctor-web.log 2>&1 &
@@ -295,6 +297,8 @@ jobs:
         env:
           DENTAL_STAGING_DOCTOR_EMAIL: ${{ secrets.DENTAL_STAGING_DOCTOR_EMAIL }}
           DENTAL_STAGING_DOCTOR_PASSWORD: ${{ secrets.DENTAL_STAGING_DOCTOR_PASSWORD }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
         run: |
           set -euo pipefail
           mkdir -p build-evidence
@@ -412,7 +416,7 @@ jobs:
             echo "::error::Fatal Android or React Native startup error detected."
             exit 1
           fi
-          printf 'commit=%s\nenvironment=staging\napi=https://oralyn-multitenant-staging.onrender.com\npackage=com.drpranali.dental.doctor\n' "$GITHUB_SHA" >build-evidence/build-info.txt
+          printf 'commit=%s\nbuild_sha=%s\npr_head_sha=%s\npr_base_sha=%s\nenvironment=staging\napi=https://oralyn-multitenant-staging.onrender.com\npackage=com.drpranali.dental.doctor\n' "$GITHUB_SHA" "$GITHUB_SHA" "$PR_HEAD_SHA" "$PR_BASE_SHA" >build-evidence/build-info.txt
           python3 scripts/smoke-doctor-android.py
           cat build-evidence/doctor-authenticated-result.txt >>build-evidence/build-info.txt
           if grep -q '^authenticated_runtime=partial' build-evidence/doctor-authenticated-result.txt; then
