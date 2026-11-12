@@ -184,6 +184,8 @@ jobs:
         if: ${{ always() && steps.export_web.outcome == 'success' }}
         env:
           CHROME_BIN: ${{ steps.setup_chrome.outputs.chrome-path }}
+          GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          GITHUB_PR_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
         run: |
           set -euo pipefail
           test -x "$CHROME_BIN" || { echo "::error::Configured Chromium path is not executable: $CHROME_BIN"; exit 1; }
@@ -572,7 +574,7 @@ jobs:
             echo "::error::The installed Patient APK did not confirm successful local Inter font loading."
             exit 1
           fi
-          printf 'commit=%s\nenvironment=staging\napi=https://oralyn-multitenant-staging.onrender.com\npackage=com.drpranali.dental\nfonts=Inter-v20-OFL-1.1;Feather-MIT\n' "$GITHUB_SHA" > build-evidence/build-info.txt
+          printf 'commit=%s\nbuild_sha=%s\npr_head_sha=%s\npr_base_sha=%s\nenvironment=staging\napi=https://oralyn-multitenant-staging.onrender.com\npackage=com.drpranali.dental\nfonts=Inter-v20-OFL-1.1;Feather-MIT\n' "$GITHUB_SHA" "$GITHUB_SHA" "$PR_HEAD_SHA" "$PR_BASE_SHA" > build-evidence/build-info.txt
           if grep -E "FATAL EXCEPTION|No safe area value available|Invariant Violation" build-evidence/patient-logcat.txt; then
             echo "::error::Fatal Patient Android startup or navigation error detected."
             exit 1
