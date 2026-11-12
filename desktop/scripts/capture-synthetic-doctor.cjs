@@ -187,10 +187,16 @@ async function main() {
   await send("Page.navigate", { url: baseUrl + "/doctor/dashboard" });
   await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Dr Synthetic")'));
   await waitFor(() => evaluate('document.body.innerText.includes("Ananya Synthetic")'));
+  await waitFor(() => evaluate("(async () => { const registration = await navigator.serviceWorker?.getRegistration('/'); return Boolean(registration?.active && registration.active.state === 'activated'); })()"), 30000);
+  let pwaControlled = await evaluate("Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)");
+  if (!pwaControlled) {
+    await send("Page.navigate", { url: baseUrl + "/doctor/dashboard" });
+    await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Dr Synthetic") && Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)'), 20000);
+    pwaControlled = await evaluate("Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)");
+  }
+  if (!pwaControlled) throw new Error("Synthetic Doctor capture is not controlled by the Oralyn PWA service worker.");
   const fontStatus = await evaluate('({plusJakartaSans:document.fonts.check("400 16px \\"Plus Jakarta Sans\\""),playfairDisplay:document.fonts.check("600 32px \\"Playfair Display\\"")})');
   if (!fontStatus.plusJakartaSans || !fontStatus.playfairDisplay) throw new Error("Bundled Oralyn fonts failed in synthetic Doctor session: " + JSON.stringify(fontStatus));
-  const pwaControlled = await evaluate("Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)");
-  if (!pwaControlled) throw new Error("Synthetic Doctor capture is not controlled by the Oralyn PWA service worker.");
 
   await capture("doctor-dashboard-1440x1000.png");
   await capture("doctor-dashboard-390x844.png", 390, 844, true);
