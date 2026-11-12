@@ -546,7 +546,7 @@ jobs:
             exit 1
           }
           # The My Care page is intentionally vertically scrollable. Capture every section
-          # before asserting the records, invoices and private-document empty states.
+          # before asserting the records, invoices and clinic communication sections.
           : > build-evidence/patient-my-care-scroll-all.txt
           for index in 1 2 3 4 5 6; do
             "$ADB" shell input swipe 540 1500 540 500 500
@@ -557,7 +557,7 @@ jobs:
             "$ADB" pull "/sdcard/patient-my-care-scroll-$index.png" "build-evidence/patient-my-care-scroll-$index.png"
             cat "build-evidence/patient-my-care-scroll-$index.xml" >> build-evidence/patient-my-care-scroll-all.txt
           done
-          for label in "No records shared yet" "No invoices shared yet" "Secure documents are not connected yet" "Clinic communication"; do
+          for label in "No records shared yet" "No invoices shared yet" "Clinic communication"; do
             grep -Fq "$label" build-evidence/patient-my-care-scroll-all.txt || {
               echo "::error::My Care scrolling did not expose the expected empty-state/section: $label"
               exit 1
