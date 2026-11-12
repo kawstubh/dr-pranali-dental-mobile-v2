@@ -140,7 +140,7 @@ test("doctor appointment updates, patient invites and doctor provisioning use au
 
   assert.deepEqual(requests.map(({ url, init }) => [url, init.method || "GET"]), [
     ["/v1/dental/appointments/appointment-1", "PATCH"],
-    ["/v1/dental/ai/doctor/patients/patient-1/invite", "POST"],
+    ["/v1/dental/doctor/patients/patient-1/invite", "POST"],
     ["/v1/dental/auth/doctors", "POST"],
   ]);
   assertBearer(requests, token);
