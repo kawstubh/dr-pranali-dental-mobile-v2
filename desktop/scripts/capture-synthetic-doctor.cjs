@@ -95,7 +95,7 @@ const fixtureSource = [
   "  const workspaceOne = { id: clinicOne, clinic_id: clinicOne, name: 'Dr Pranali Dental Clinic', clinic_name: 'Dr Pranali Dental Clinic', organisation_id: 'org-synthetic', organisation_name: 'Synthetic Organisation', role: 'owner', active_doctors: 1 };",
   "  const workspaceTwo = { id: clinicTwo, clinic_id: clinicTwo, name: 'Dr Pranali — Branch', clinic_name: 'Dr Pranali — Branch', organisation_id: 'org-synthetic', organisation_name: 'Synthetic Organisation', role: 'doctor', active_doctors: 1 };",
   "  const workspaces = [workspaceOne, workspaceTwo];",
-  "  const userFor = (clinicId) => ({ id: 'doctor-synthetic-001', doctor_id: 'doctor-synthetic-001', email: 'doctor.synthetic@example.test', name: 'Dr Synthetic', role: clinicId === clinicOne ? 'owner' : 'doctor', clinic_id: clinicId, organisation_id: 'org-synthetic', organisation_name: 'Synthetic Organisation' });",
+  "  const userFor = (clinicId) => ({ id: 'doctor-synthetic-001', doctor_id: 'doctor-synthetic-001', email: 'doctor.synthetic@example.test', name: 'Dr Pranali Dental Clinic', role: clinicId === clinicOne ? 'owner' : 'doctor', clinic_id: clinicId, organisation_id: 'org-synthetic', organisation_name: 'Synthetic Organisation' });",
   "  const summaryFor = (clinicId) => ({ patient_count: 1, appointment_count: clinicId === clinicOne ? 1 : 0, issued_invoice_count: 0, active_treatment_plan_count: 0, pending_appointment_requests: 0, invoiced_total_paise: 0, collected_total_paise: 0, outstanding_balance_paise: 0 });",
   "  const appointmentFor = (patient) => ({ id: 'appointment-' + patient.id, patient_id: patient.id, patient_name: patient.name, starts_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(), treatment_type: 'Dental check-up', status: 'confirmed', note: 'Synthetic CI fixture' });",
   "  if (!localStorage.getItem('oralyn_synthetic_bootstrapped')) {",
@@ -185,13 +185,13 @@ async function main() {
   await send("Log.enable");
   await send("Page.addScriptToEvaluateOnNewDocument", { source: fixtureSource });
   await send("Page.navigate", { url: baseUrl + "/doctor/dashboard" });
-  await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Dr Synthetic")'));
+  await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Dr Pranali Dental Clinic")'));
   await waitFor(() => evaluate('document.body.innerText.includes("Ananya Synthetic")'));
   await waitFor(() => evaluate("(async () => { const registration = await navigator.serviceWorker?.getRegistration('/'); return Boolean(registration?.active && registration.active.state === 'activated'); })()"), 30000);
   let pwaControlled = await evaluate("Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)");
   if (!pwaControlled) {
     await send("Page.navigate", { url: baseUrl + "/doctor/dashboard" });
-    await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Dr Synthetic") && Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)'), 20000);
+    await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Dr Pranali Dental Clinic") && Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)'), 20000);
     pwaControlled = await evaluate("Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)");
   }
   if (!pwaControlled) throw new Error("Synthetic Doctor capture is not controlled by the Oralyn PWA service worker.");
@@ -236,7 +236,7 @@ async function main() {
   await waitFor(() => evaluate('document.body.innerText.includes("Ananya Synthetic")'));
 
   await send("Page.reload", { ignoreCache: true });
-  await waitFor(() => evaluate('document.body.innerText.includes("Dr Synthetic") && document.body.innerText.includes("Ananya Synthetic")'));
+  await waitFor(() => evaluate('document.body.innerText.includes("Dr Pranali Dental Clinic") && document.body.innerText.includes("Ananya Synthetic")'));
   const restore = await evaluate('localStorage.getItem("oralyn_doctor_token") === "synthetic-doctor-token"');
   if (!restore) throw new Error("Doctor session was not restored from localStorage after reload.");
 
