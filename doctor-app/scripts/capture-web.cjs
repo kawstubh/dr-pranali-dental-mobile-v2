@@ -151,6 +151,49 @@ async function reloadAndVerifySession() {
   return workspaceSelected;
 }
 
+async function activeWorkspaceLabel() {
+  return evaluate(`(() => {
+    const node = [...document.querySelectorAll('body *')].find(item => item.children.length === 0 && (item.textContent || '').trim() === 'ACTIVE WORKSPACE');
+    return node && node.parentElement ? (node.parentElement.innerText || '').split('\\n')[1]?.trim() || '' : '';
+  })()`);
+}
+
+async function switchToAnotherWorkspaceIfAvailable() {
+  const before = await activeWorkspaceLabel();
+  const count = await evaluate(`[...document.querySelectorAll('button,[role="button"]')].filter(item => (item.innerText || item.textContent || '').includes('Role:')).length`);
+  if (count < 2 || !before) return false;
+  await clickText('Switch workspace');
+  await waitFor(() => evaluate('document.body.innerText.includes("Choose a workspace")'));
+  await capture('doctor-workspace-switch-selection-1440x1000.png');
+  const selected = await evaluate(`(() => {
+    const nodes = [...document.querySelectorAll('button,[role="button"]')].filter(item => {
+      const text = item.innerText || item.textContent || '';
+      return text.includes('Role:') && !text.includes('Current workspace');
+    });
+    if (!nodes.length) return false;
+    nodes[0].click();
+    return true;
+  })()`);
+  if (!selected) return false;
+  await waitFor(() => evaluate('document.body.innerText.includes("Good day, Doctor")'), 30000);
+  const after = await activeWorkspaceLabel();
+  if (!after || after === before) throw new Error('Workspace switch did not change the active workspace');
+  await capture('doctor-workspace-switched-1440x1000.png');
+  await clickText('Switch workspace');
+  await waitFor(() => evaluate('document.body.innerText.includes("Choose a workspace")'));
+  const restored = await evaluate(`(() => {
+    const nodes = [...document.querySelectorAll('button,[role="button"]')];
+    const node = nodes.find(item => (item.innerText || item.textContent || '').includes(${JSON.stringify(before)}));
+    if (!node) return false;
+    node.click();
+    return true;
+  })()`);
+  if (!restored) throw new Error('Could not restore the original Doctor workspace after the switch test');
+  await waitFor(() => evaluate('document.body.innerText.includes("Good day, Doctor")'), 30000);
+  if (await activeWorkspaceLabel() !== before) throw new Error('Original Doctor workspace did not persist after switching back');
+  return true;
+}
+
 async function signOut() {
   await clickText('Sign out');
   await waitFor(() => evaluate('document.body.innerText.includes("Sign in with your clinic-issued email and password.")'), 20000);
@@ -167,6 +210,7 @@ async function signOut() {
     periodontogramCaptured: false,
     clinicalIntelligenceCaptured: false,
     workspaceSelectionCaptured: false,
+    workspaceSwitchVerified: false,
     workspaceManagementVisible: false,
     organisationCreateFormCaptured: false,
     doctorAccessFormCaptured: false,
@@ -218,6 +262,7 @@ async function signOut() {
       flags.authenticatedDashboard = true;
       await capture('doctor-dashboard-populated-1440x1000.png');
       await capture('doctor-dashboard-populated-1280x800.png', 1280, 800);
+      flags.workspaceSwitchVerified = await switchToAnotherWorkspaceIfAvailable();
 
       flags.workspaceManagementVisible = await evaluate('document.body.innerText.includes("Workspace management")');
       if (flags.workspaceManagementVisible) {
@@ -298,7 +343,7 @@ async function signOut() {
     const authenticated = flags.authenticatedDashboard && flags.populatedDatasetVerified &&
       flags.patientChartCaptured && flags.clinicalIntelligenceCaptured && flags.sessionRestored &&
       flags.emptyDashboardVerified && flags.emptyPatientsVerified && flags.emptyAppointmentsVerified &&
-      flags.emptySessionRestored && flags.workspaceManagementVisible &&
+      flags.emptySessionRestored && flags.workspaceSwitchVerified && flags.workspaceManagementVisible &&
       flags.organisationCreateFormCaptured && flags.doctorAccessFormCaptured &&
       flags.crossWorkspaceFormCaptured;
     const api = process.env.EXPO_PUBLIC_DENTAL_API_URL || 'https://oralyn-multitenant-staging.onrender.com';
