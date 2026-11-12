@@ -2,10 +2,52 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { dentalApi } from "../src/api.js";
+import { dentalApi, resolveApiBase } from "../src/api.js";
 
 const apiSource = readFileSync(new URL("../src/api.js", import.meta.url), "utf8");
 const captureSource = readFileSync(new URL("../scripts/capture-actual-desktop.cjs", import.meta.url), "utf8");
+
+test("production API configuration accepts only a canonical HTTPS origin", () => {
+  assert.deepEqual(resolveApiBase({ VITE_DENTAL_API_URL: "https://api.oralyn.example" }), {
+    base: "https://api.oralyn.example",
+    error: null,
+  });
+  assert.deepEqual(resolveApiBase({ VITE_DENTAL_API_URL: "https://api.oralyn.example/" }), {
+    base: "https://api.oralyn.example",
+    error: null,
+  });
+});
+
+test("production API configuration rejects insecure, credentialed and path-based URLs", () => {
+  for (const value of [
+    "http://api.oralyn.example",
+    "https://user:secret@api.oralyn.example",
+    "https://api.oralyn.example/v1",
+    "https://api.oralyn.example?tenant=clinic",
+    "https://api.oralyn.example#token",
+    "//api.oralyn.example",
+    "not-a-url",
+  ]) {
+    assert.deepEqual(resolveApiBase({ VITE_DENTAL_API_URL: value }), {
+      base: "",
+      error: "API_BASE_INVALID",
+    }, value);
+  }
+});
+
+test("development keeps the same-origin Vite proxy instead of an arbitrary configured API URL", () => {
+  assert.deepEqual(resolveApiBase({
+    DEV: true,
+    VITE_DENTAL_API_URL: "http://untrusted.example",
+  }), { base: "", error: null });
+});
+
+test("production API configuration fails closed when the API origin is missing", () => {
+  assert.deepEqual(resolveApiBase({}), {
+    base: "",
+    error: "API_BASE_NOT_CONFIGURED",
+  });
+});
 
 test("production portal builds require an explicit API origin instead of silently falling back to staging", () => {
   assert.match(apiSource, /ENV\.VITE_DENTAL_API_URL \|\| ""/);
