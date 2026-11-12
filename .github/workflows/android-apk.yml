@@ -373,12 +373,42 @@ jobs:
           "$ADB" pull /sdcard/patient-appointment.xml build-evidence/patient-appointment.xml
           "$ADB" shell screencap -p /sdcard/patient-appointment.png
           "$ADB" pull /sdcard/patient-appointment.png build-evidence/patient-appointment.png
-          for label in "Full name" "Phone number" "Preferred date" "Preferred time" "10:00 AM" "5:00 PM" "8:30 PM"; do
+          for label in "Full name" "Phone number" "Preferred date" "Preferred time" "10:00 AM"; do
             grep -Fq "$label" build-evidence/patient-appointment.xml || {
-              echo "::error::Appointment form is missing expected field or clinic time slot: $label"
+              echo "::error::Appointment form is missing expected field or first clinic time slot: $label"
               exit 1
             }
           done
+          # Later clinic slots are below the initial viewport in the vertical booking form.
+          # Scroll the installed APK and retain each real UI hierarchy before checking them.
+          : > build-evidence/patient-appointment-scroll-index.txt
+          for index in 1 2 3 4; do
+            "$ADB" shell input swipe 540 1500 540 500 500
+            sleep 1
+            "$ADB" shell uiautomator dump "/sdcard/patient-appointment-scroll-$index.xml" >/dev/null
+            "$ADB" pull "/sdcard/patient-appointment-scroll-$index.xml" "build-evidence/patient-appointment-scroll-$index.xml"
+            printf '%s\n' "patient-appointment-scroll-$index.xml" >> build-evidence/patient-appointment-scroll-index.txt
+          done
+          cat build-evidence/patient-appointment-scroll-*.xml > build-evidence/patient-appointment-scroll-all.txt
+          for label in "5:00 PM" "8:30 PM"; do
+            grep -Fq "$label" build-evidence/patient-appointment-scroll-all.txt || {
+              echo "::error::Scrolled appointment form did not expose expected clinic slot: $label"
+              exit 1
+            }
+          done
+          "$ADB" shell screencap -p /sdcard/patient-appointment-scrolled.png
+          "$ADB" pull /sdcard/patient-appointment-scrolled.png build-evidence/patient-appointment-scrolled.png
+          # Return to the first rows before tapping the 10:00 AM option.
+          for index in 1 2 3 4; do
+            "$ADB" shell input swipe 540 500 540 1500 500
+            sleep 1
+          done
+          "$ADB" shell uiautomator dump /sdcard/patient-appointment-restored.xml >/dev/null
+          "$ADB" pull /sdcard/patient-appointment-restored.xml build-evidence/patient-appointment-restored.xml
+          grep -Fq "10:00 AM" build-evidence/patient-appointment-restored.xml || {
+            echo "::error::Appointment form did not return to its first clinic slots after scrolling."
+            exit 1
+          }
           python3 - <<'PY' > build-evidence/time-slot-tap.txt
           import re
           import xml.etree.ElementTree as ET
