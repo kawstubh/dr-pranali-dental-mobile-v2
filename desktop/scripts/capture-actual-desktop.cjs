@@ -14,7 +14,7 @@ const chromePath = process.env.CHROME_BIN || (
 const port = Number(process.env.CDP_PORT || 19310);
 const baseUrl = process.env.ORALYN_PREVIEW_URL || "http://127.0.0.1:4176";
 const environment = process.env.ORALYN_ENVIRONMENT || "staging";
-const apiBase = process.env.VITE_DENTAL_API_URL || "https://oralyn-multitenant-staging.onrender.com";
+const apiBase = process.env.VITE_DENTAL_API_URL || "not-configured";
 const commit = process.env.GITHUB_SHA || execFileSync("git", ["rev-parse", "HEAD"], { cwd: root }).toString().trim();
 const profile = path.join(os.tmpdir(), "oralyn-capture-profile-" + process.pid);
 

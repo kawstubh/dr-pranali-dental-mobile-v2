@@ -16,6 +16,13 @@ test("global patient search is rendered only in the doctor workspace", () => {
   assert.match(source, /\{role === "doctor" && \(\s*<div className="search">/);
 });
 
+test("authenticated users cannot switch into another role without signing out", () => {
+  assert.match(source, /className="workspace-chip" aria-label=\{role === "doctor" \? "Doctor portal" : "Patient portal"\}/);
+  assert.doesNotMatch(source, /<select\s+value=\{role\}/);
+  assert.match(source, /onPatient=\{\(\) => \{\s*R\("patient"\)/);
+  assert.match(source, /onDoctor=\{\(\) => \{\s*R\("doctor"\)/);
+});
+
 test("patient billing and documents use authenticated, patient-scoped APIs", () => {
   assert.match(patientSource, /PatientCareManagement page=\{page\}/);
   assert.match(careSource, /patientInvoices\(session\.access_token, patientId\)/);
@@ -65,6 +72,14 @@ test("doctor API session expiry clears the saved doctor identity without touchin
   assert.match(source, /localStorage\.removeItem\("oralyn_doctor_token"\)/);
   assert.match(source, /Your clinic session has expired\. Please sign in again\./);
   assert.match(apiSource, /isPatientApi/);
+});
+
+test("patient API expiry clears only the patient Supabase session and linked clinic context", () => {
+  assert.match(apiSource, /oralyn:patient-session-expired/);
+  assert.match(source, /window\.addEventListener\("oralyn:patient-session-expired"/);
+  assert.match(source, /supabase\?\.auth\.signOut\(\{ scope: "local" \}\)/);
+  assert.match(source, /localStorage\.removeItem\("oralyn_patient_record_id"\)/);
+  assert.match(source, /Your patient session has expired\. Please sign in again\./);
 });
 
 test("patient-facing application contains no AI diagnosis or self-diagnosis actions", () => {

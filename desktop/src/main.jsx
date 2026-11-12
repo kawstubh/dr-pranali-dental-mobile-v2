@@ -145,6 +145,23 @@ function App() {
     return () => window.removeEventListener("oralyn:doctor-session-expired", expireDoctorSession);
   }, []);
   useEffect(() => {
+    const expirePatientSession = () => {
+      try {
+        supabase?.auth.signOut({ scope: "local" }).catch(() => {});
+      } catch {}
+      localStorage.removeItem("oralyn_patient_record_id");
+      setPatientSession(null);
+      setPatientLinks([]);
+      setSelectedPatientRecordId("");
+      setPatientAppointments([]);
+      setPatientChart([]);
+      setPatientBoot(false);
+      setPatientError("Your patient session has expired. Please sign in again.");
+    };
+    window.addEventListener("oralyn:patient-session-expired", expirePatientSession);
+    return () => window.removeEventListener("oralyn:patient-session-expired", expirePatientSession);
+  }, []);
+  useEffect(() => {
     let live = true;
     if (!token) {
       setUser(null);
@@ -619,16 +636,9 @@ function App() {
               <i />
             </button>
             <span className="userpic">{role === "doctor" ? "DP" : "G"}</span>
-            <select
-              value={role}
-              onChange={(e) => {
-                R(e.target.value);
-                P(e.target.value === "doctor" ? "dashboard" : "home");
-              }}
-            >
-              <option value="doctor">Doctor</option>
-              <option value="patient">Patient</option>
-            </select>
+            <span className="workspace-chip" aria-label={role === "doctor" ? "Doctor portal" : "Patient portal"}>
+              {role === "doctor" ? "Doctor portal" : "Patient portal"}
+            </span>
             {role === "doctor" ? (
               <button className="logoutbtn" onClick={signOut}>
                 Sign out

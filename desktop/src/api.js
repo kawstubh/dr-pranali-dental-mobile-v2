@@ -2,8 +2,7 @@ const ENV = import.meta.env || {};
 const API_BASE = (
   ENV.DEV
     ? ""
-    : ENV.VITE_DENTAL_API_URL ||
-      "https://oralyn-multitenant-staging.onrender.com"
+    : ENV.VITE_DENTAL_API_URL || ""
 ).replace(/\/$/, "");
 
 function query(values = {}) {
@@ -18,6 +17,11 @@ function query(values = {}) {
 }
 
 async function request(path, { token, method = "GET", body, headers = {} } = {}) {
+  if (typeof window !== "undefined" && window.location && !ENV.DEV && !API_BASE) {
+    const error = new Error("The portal API URL is not configured for this deployment. Contact the clinic administrator.");
+    error.code = "API_BASE_NOT_CONFIGURED";
+    throw error;
+  }
   let response;
   try {
     response = await fetch(`${API_BASE}${path}`, {
@@ -41,8 +45,10 @@ async function request(path, { token, method = "GET", body, headers = {} } = {})
     response.status === 204 ? null : await response.json().catch(() => null);
   if (!response.ok) {
     const isPatientApi = /^\/v1\/dental\/(?:patient\/|ai\/patient\/)/i.test(path);
-    if (response.status === 401 && token && !isPatientApi && typeof window !== "undefined") {
-      window.dispatchEvent(new Event("oralyn:doctor-session-expired"));
+    if (response.status === 401 && token && typeof window !== "undefined") {
+      window.dispatchEvent(new Event(isPatientApi
+        ? "oralyn:patient-session-expired"
+        : "oralyn:doctor-session-expired"));
     }
     const detail = data?.detail;
     const message =

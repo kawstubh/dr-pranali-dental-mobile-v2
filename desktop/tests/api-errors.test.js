@@ -1,7 +1,18 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import { dentalApi } from "../src/api.js";
+
+const apiSource = readFileSync(new URL("../src/api.js", import.meta.url), "utf8");
+const captureSource = readFileSync(new URL("../scripts/capture-actual-desktop.cjs", import.meta.url), "utf8");
+
+test("production portal builds require an explicit API origin instead of silently falling back to staging", () => {
+  assert.match(apiSource, /ENV\.VITE_DENTAL_API_URL \|\| ""/);
+  assert.match(apiSource, /API_BASE_NOT_CONFIGURED/);
+  assert.doesNotMatch(apiSource, /https:\/\/oralyn-multitenant-staging\.onrender\.com/);
+  assert.match(captureSource, /process\.env\.VITE_DENTAL_API_URL \|\| "not-configured"/);
+});
 
 test("API network and CORS failures produce a clinic-safe recovery message", async () => {
   const originalFetch = globalThis.fetch;
@@ -66,7 +77,7 @@ test("expired doctor API tokens trigger the portal session-expiry handler", asyn
   }
 });
 
-test("patient API 401 responses do not clear the separate doctor session", async () => {
+test("patient API 401 responses expire only the patient session", async () => {
   const originalFetch = globalThis.fetch;
   const originalWindow = globalThis.window;
   const events = [];
@@ -86,7 +97,7 @@ test("patient API 401 responses do not clear the separate doctor session", async
       assert.equal(error.code, "PATIENT_SESSION_INVALID");
       return true;
     });
-    assert.deepEqual(events, []);
+    assert.deepEqual(events, ["oralyn:patient-session-expired"]);
   } finally {
     globalThis.fetch = originalFetch;
     if (originalWindow === undefined) delete globalThis.window;
