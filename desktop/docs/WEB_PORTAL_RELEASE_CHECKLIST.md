@@ -168,3 +168,27 @@ The portal client now resolves `VITE_DENTAL_API_URL` through a fail-closed valid
 Regression coverage includes valid HTTPS origins, trailing slash normalization, HTTP rejection, credential rejection, path/query/fragment rejection, malformed values, missing configuration and development proxy behavior.
 
 This client-side guard is defense in depth only. It does not replace server-side authentication, exact-origin CORS, CSP/security headers, tenant authorization or staging-origin verification.
+
+## Release-manifest gates — 12 Nov 2026
+
+The staging build manifest now fails closed unless every release acceptance item has been explicitly verified. Staging and production API/portal origins must be canonical HTTPS origins (no credentials, path, query or fragment); local development may use HTTP.
+
+The manifest tracks these environment-backed gates separately from build success:
+
+- `ORALYN_DOCUMENT_SCAN_VERIFIED` — malware/content-disarm scanning is active and tested.
+- `ORALYN_SECURITY_HEADERS_VERIFIED` — HTTPS, CSP, HSTS, frame, MIME and cache headers are verified at the deployed origin.
+- `ORALYN_DATABASE_IDENTITY_VERIFIED` — staging service database identity is safely confirmed.
+- `ORALYN_BACKUP_RESTORE_VERIFIED` — backup and restore rehearsal has passed.
+- `ORALYN_ERROR_MONITORING_VERIFIED` — client/server error monitoring is configured and tested.
+- `ORALYN_ROLLBACK_VERIFIED` — staging rollback has been rehearsed.
+- `ORALYN_AUTHENTICATED_ROLE_E2E_VERIFIED` — Doctor and Patient login, logout, session restore and expiry pass.
+- `ORALYN_CROSS_TENANT_E2E_VERIFIED` — cross-clinic and cross-patient denial tests pass.
+- `ORALYN_AUTHENTICATED_SCREENSHOTS_VERIFIED` — all eight required authenticated screens are captured from the tested build.
+- `ORALYN_MOBILE_BROWSER_E2E_VERIFIED` — authenticated mobile-browser flows pass.
+- `ORALYN_PATIENT_AI_DENIAL_VERIFIED` — every patient AI/clinical-decision route is denied by both UI and API.
+
+All gates default to false. Never set a flag to make a build appear ready; set it only after retaining the corresponding staging evidence. A green build, clean dependency audit or public-route screenshot does not satisfy an authenticated release gate.
+
+## Non-AI patient invitation route
+
+The Doctor portal now targets `POST /v1/dental/doctor/patients/{patient_id}/invite` from Draft backend PR #52. It is a clinic-scoped account-linking action, not an AI action. The legacy AI-prefixed route remains for compatibility until the backend stack is reviewed and deployed.
