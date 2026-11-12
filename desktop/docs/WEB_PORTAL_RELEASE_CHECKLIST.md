@@ -5,7 +5,7 @@
 ## Canonical worktrees and current heads
 
 - Frontend repository: `kawstubh/dr-pranali-dental-mobile-v2`, branch `feat/oralyn-desktop-app`, portal under `desktop/`.
-- Current frontend branch head checked 12 Nov 2026: `4c342b7bd3f948056445396f3c1542d409a58d7b` (test-only Vite SSR shutdown-race mitigation; CI not yet surfaced for this final test-only commit). Doctor workflow implementation commit: `c25cceefb630f637285a2df0e5fcd4368b9b84dd`.
+- Current frontend branch head checked 12 Nov 2026: `f5e91db7180b948167278320e2c176ca3ccc3390` (release-checklist documentation update). Doctor workflow implementation commit: `c25cceefb630f637285a2df0e5fcd4368b9b84dd`; Vite SSR test shutdown-race mitigation commit: `4c342b7bd3f948056445396f3c1542d409a58d7b`.
 - Backend repository: `kawstubh/universal-intelligence-engine`.
 - Local backend checkout was on `feat/dental-document-content-validation` at `6aed180f4dcb699fd8d05f09eb0ba8ef9570ad16` (PR #48); PR #49 is the next review-gate stack head.
 
@@ -72,7 +72,7 @@ The portal now exposes:
 - Owner/admin doctor-account creation using clinic-issued email/password accounts with a minimum 12-character initial password; the created doctor ID is prefilled for cross-workspace membership assignment.
 - Regression coverage for the invite, appointment PATCH and doctor account API contracts and the visible Doctor UI actions.
 
-The feature commit passed the 55-test CI run above. The subsequent test-only Vite shutdown-race mitigation is not yet CI-verified. No actual authenticated Doctor/Patient staging account was used.
+The feature commit and subsequent Vite SSR test mitigation passed CI run [#43250659956](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43250659956): **55 tests passed, 0 failed; 0 npm vulnerabilities; Vite production build and real browser capture passed**. The prior Vite dependency-scan shutdown race no longer appeared in this run. No actual authenticated Doctor/Patient staging account was used.
 
 ## Live staging checks — 12 Nov 2026
 
