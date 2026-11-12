@@ -418,6 +418,8 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
 
 export function PatientCareManagement({ page, session, patientId, patientChart = [] }) {
   const [plans, setPlans] = useState([]);
+  const [clinicalNotes, setClinicalNotes] = useState([]);
+  const [notesError, setNotesError] = useState("");
   const [invoices, setInvoices] = useState([]);
   const [receipts, setReceipts] = useState([]);
   const [documents, setDocuments] = useState([]);
@@ -429,6 +431,8 @@ export function PatientCareManagement({ page, session, patientId, patientChart =
     let live = true;
     if (!session?.access_token || !patientId) {
       setPlans([]);
+      setClinicalNotes([]);
+      setNotesError("");
       setInvoices([]);
       setReceipts([]);
       setDocuments([]);
@@ -438,6 +442,10 @@ export function PatientCareManagement({ page, session, patientId, patientChart =
     }
     setLoading(true);
     setError("");
+    if (page === "journey") {
+      setClinicalNotes([]);
+      setNotesError("");
+    }
     const load = async () => {
       try {
         if (page === "journey") {

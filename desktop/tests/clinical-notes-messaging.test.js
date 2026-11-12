@@ -45,3 +45,16 @@ test("patient messaging does not add diagnosis or clinical decision-support acti
   assert.ok(!/patient.*(diagnos|triage|clinical recommendation)/i.test(care));
   assert.ok(main.includes("Patient-facing AI diagnosis and self-diagnosis are not available."));
 });
+
+test("patient treatment journey owns and resets its shared clinical-note state", () => {
+  const start = care.indexOf("export function PatientCareManagement");
+  const end = care.indexOf("export function DoctorClinicalNotes", start);
+  assert.ok(start >= 0 && end > start, "PatientCareManagement component must exist");
+  const patientCare = care.slice(start, end);
+  assert.match(patientCare, /const \[clinicalNotes, setClinicalNotes\] = useState\(\[\]\)/);
+  assert.match(patientCare, /const \[notesError, setNotesError\] = useState\("?"?\)/);
+  assert.match(patientCare, /setClinicalNotes\(\[\]\)/);
+  assert.match(patientCare, /setNotesError\(/);
+  assert.match(patientCare, /clinicalNotes\.length/);
+  assert.match(patientCare, /notesError \|\|/);
+});
