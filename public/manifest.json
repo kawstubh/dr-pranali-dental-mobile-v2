@@ -1,0 +1,21 @@
+{
+  "id": "/",
+  "name": "Oralyn Patient Portal",
+  "short_name": "Oralyn",
+  "description": "Appointments and clinic information from Dr. Pranali Dental Clinic.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F4FBFF",
+  "theme_color": "#0C3B82",
+  "lang": "en-IN",
+  "icons": [
+    {
+      "src": "/oralyn-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
