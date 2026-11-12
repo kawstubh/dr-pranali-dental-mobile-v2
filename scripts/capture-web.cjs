@@ -129,7 +129,7 @@ async function assertText(label) {
     await waitFor(() => evaluate('document.body.innerText.includes("No records shared yet") && document.body.innerText.includes("No invoices shared yet")'));
     await screenshot('patient-my-care-1440x1000.png');
     fs.writeFileSync(path.join(outDir, 'build-info.txt'),
-      'commit=' + commit + '\\nenvironment=staging\\napi=' + process.env.EXPO_PUBLIC_DENTAL_API_URL + '\\nfonts=Inter-v20-OFL-1.1 ' + JSON.stringify(fonts) + '\\n');
+      'commit=' + commit + '\nenvironment=staging\napi=' + (process.env.EXPO_PUBLIC_DENTAL_API_URL || 'https://oralyn-multitenant-staging.onrender.com') + '\nfonts=Inter-v20-OFL-1.1 ' + JSON.stringify(fonts) + '\n');
     console.log(JSON.stringify({ commit, fonts, screenshots: fs.readdirSync(outDir) }));
   } finally {
     if (ws) ws.close();
