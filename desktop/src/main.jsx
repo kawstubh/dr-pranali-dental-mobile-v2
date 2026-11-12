@@ -37,7 +37,6 @@ import {
 } from "lucide-react";
 import "./styles.css";
 import { dentalApi } from "./api.js";
-import { supabase } from "./supabase.js";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import { normaliseList, normaliseUser, localDateISO, localDateTimeFromParts, formatTime, isSameLocalDay } from "./data.js";
 import { DoctorCareManagement, PatientCareManagement, DoctorClinicalNotes, PatientCommunication } from "./careScreens.jsx";
@@ -176,23 +175,7 @@ function App() {
     window.addEventListener("oralyn:doctor-session-expired", expireDoctorSession);
     return () => window.removeEventListener("oralyn:doctor-session-expired", expireDoctorSession);
   }, []);
-  useEffect(() => {
-    const expirePatientSession = () => {
-      try {
-        supabase?.auth.signOut({ scope: "local" }).catch(() => {});
-      } catch {}
-      localStorage.removeItem("oralyn_patient_record_id");
-      setPatientSession(null);
-      setPatientLinks([]);
-      setSelectedPatientRecordId("");
-      setPatientAppointments([]);
-      setPatientChart([]);
-      setPatientBoot(false);
-      setPatientError("Your patient session has expired. Please sign in again.");
-    };
-    window.addEventListener("oralyn:patient-session-expired", expirePatientSession);
-    return () => window.removeEventListener("oralyn:patient-session-expired", expirePatientSession);
-  }, []);
+
   useEffect(() => {
     let live = true;
     if (!token) {
@@ -260,170 +243,18 @@ function App() {
     };
   }, [token]);
   useEffect(() => {
-    if (!supabase) {
-      setPatientBoot(false);
-      setPatientError("Patient sign-in is not configured.");
-      return;
-    }
-    let live = true;
-    supabase.auth.getSession()
-      .then(({ data, error }) => {
-        if (!live) return;
-        if (error) setPatientError(error.message);
-        setPatientSession(data?.session || null);
-      })
-      .catch((error) => {
-        if (live) setPatientError(error?.message || "Unable to verify the patient session.");
-      })
-      .finally(() => {
-        if (live) setPatientBoot(false);
-      });
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (live) {
-        setPatientSession(session);
-        setPatientBoot(false);
-      }
-    });
-    return () => {
-      live = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-  useEffect(() => {
-    if (patientBoot) return;
-    const patientUserId = patientSession?.user?.id || "";
-    if (!patientUserId || !patientSession?.access_token) {
-      setPatientLinks([]);
-      setPatientAppointments([]);
-      setPatientChart([]);
-      setPatientError("");
-      setSelectedPatientRecordId("");
-      localStorage.removeItem("oralyn_patient_record_id");
-      localStorage.removeItem("oralyn_patient_record_user_id");
-      return;
-    }
-    const storedOwnerId = localStorage.getItem("oralyn_patient_record_user_id");
-    if (storedOwnerId !== patientUserId) {
-      localStorage.removeItem("oralyn_patient_record_id");
-      setSelectedPatientRecordId("");
-      localStorage.setItem("oralyn_patient_record_user_id", patientUserId);
-    }
+    // Patient access is intentionally account-free. Public booking is the
+    // patient-facing workflow; private clinical records stay in the Doctor workspace.
+    setPatientBoot(false);
+    setPatientSession(null);
     setPatientLinks([]);
+    setSelectedPatientRecordId("");
     setPatientAppointments([]);
     setPatientChart([]);
-    setPatientError("");
-    let live = true;
-    dentalApi.patientLinkedRecords(patientSession.access_token)
-      .then((response) => {
-        if (!live) return;
-        const records = normaliseList(response);
-        setPatientLinks(records);
-        setSelectedPatientRecordId((current) => {
-          const selected = records.find((item) => String(item.patient_id) === String(current));
-          const next = selected?.patient_id || records[0]?.patient_id || "";
-          if (next) localStorage.setItem("oralyn_patient_record_id", String(next));
-          else localStorage.removeItem("oralyn_patient_record_id");
-          return String(next);
-        });
-        setPatientError("");
-      })
-      .catch((error) => {
-        if (live) setPatientError(error.message || "Your linked clinic records could not be loaded.");
-      });
-    return () => { live = false; };
-  }, [patientSession, patientBoot]);
-
-  useEffect(() => {
-    const selected = patientLinks.find((item) => String(item.patient_id) === String(selectedPatientRecordId));
-    if (role !== "patient" || !patientSession?.access_token || !selected) {
-      setPatientAppointments([]);
-      setPatientChart([]);
-      return;
-    }
-    let live = true;
-    Promise.all([
-      dentalApi.patientAppointments(patientSession.access_token, selectedPatientRecordId),
-      dentalApi.patientChart(patientSession.access_token, selectedPatientRecordId),
-    ])
-      .then(([a, c]) => {
-        if (!live) return;
-        setPatientAppointments(normaliseList(a, ["appointments"]));
-        setPatientChart(normaliseList(c, ["chart", "entries", "records"]));
-        setPatientError("");
-      })
-      .catch((e) => {
-        if (live) setPatientError(e.message);
-      });
-    return () => { live = false; };
-  }, [role, patientSession, patientLinks, selectedPatientRecordId]);
-  const patientAccess = async ({ mode, email, password, inviteCode }) => {
-    if (!supabase) throw new Error("Patient sign-in is not configured.");
-    const result =
-      mode === "signup"
-        ? await supabase.auth.signUp({ email, password })
-        : await supabase.auth.signInWithPassword({ email, password });
-    if (result.error) throw result.error;
-    if (result.data.session && inviteCode.trim())
-      await dentalApi.patientLink(
-        result.data.session.access_token,
-        inviteCode.trim(),
-      );
-    if (!result.data.session && mode === "signup")
-      setPatientError(
-        "Check your email to confirm your patient account, then sign in. If you entered a clinic invite code, enter it again from your home page after signing in.",
-      );
-  };
-  const patientSignOut = async () => {
-    try {
-      if (supabase) {
-        const result = await supabase.auth.signOut();
-        if (result.error) {
-          await supabase.auth.signOut({ scope: "local" }).catch(() => {});
-        }
-      }
-    } catch {
-      try {
-        await supabase?.auth.signOut({ scope: "local" });
-      } catch {}
-    } finally {
-      setPatientSession(null);
-      localStorage.removeItem("oralyn_patient_record_id");
-      localStorage.removeItem("oralyn_patient_record_user_id");
-      setPatientLinks([]);
-      setSelectedPatientRecordId("");
-      setPatientAppointments([]);
-      setPatientChart([]);
-      setPatientError("");
-      P("home");
-    }
-  };
-  const selectPatientRecord = (patientId) => {
-    setPatientAppointments([]);
-    setPatientChart([]);
-    setPatientError("");
-    setSelectedPatientRecordId(String(patientId || ""));
-    if (patientId) localStorage.setItem("oralyn_patient_record_id", String(patientId));
-    else localStorage.removeItem("oralyn_patient_record_id");
-    if (patientSession?.user?.id) localStorage.setItem("oralyn_patient_record_user_id", patientSession.user.id);
-    P("home");
-  };
-  const linkPatient = async (code) => {
-    if (!patientSession) throw new Error("Sign in first.");
-    const linked = await dentalApi.patientLink(patientSession.access_token, code.trim());
-    if (patientSession.user?.id) localStorage.setItem("oralyn_patient_record_user_id", patientSession.user.id);
-    setPatientAppointments([]);
-    setPatientChart([]);
-    setPatientError("");
-    const linkedPatientId = linked?.result?.patient_id;
-    const response = await dentalApi.patientLinkedRecords(patientSession.access_token);
-    const records = normaliseList(response);
-    setPatientLinks(records);
-    const next = linkedPatientId || records[0]?.patient_id || "";
-    setSelectedPatientRecordId(String(next));
-    if (next) localStorage.setItem("oralyn_patient_record_id", String(next));
-    setPatientError("");
+  }, []);
+  const patientSignOut = async () => {};
+  const linkPatient = async () => {
+    throw new Error("Patient accounts are not required. Please contact the clinic for private records.");
   };
   const refreshDoctorData = async () => {
     if (!token) return;
@@ -494,20 +325,6 @@ function App() {
     setDashboardSummaryLoading(false);
     navigateRole("doctor", "dashboard");
   };
-  if (
-    role === "patient" &&
-    page !== "booking" &&
-    (!patientSession || patientBoot)
-  )
-    return (
-      <PatientAccessScreen
-        loading={patientBoot}
-        error={patientError}
-        onAccess={patientAccess}
-        onBooking={() => P("booking")}
-        onDoctor={() => navigateRole("doctor", "dashboard")}
-      />
-    );
   if (role === "doctor" && (!user || booting))
     return (
       <LoginScreen
@@ -561,15 +378,10 @@ function App() {
   ];
   const patientNav = [
     [
-      "My care",
+      "Visit the clinic",
       [
         ["home", "Home", LayoutDashboard],
-        ["appointments", "Appointments", CalendarDays],
-        ["journey", "Treatment journey", Activity],
-        ["records", "Records & prescriptions", FileHeart],
-        ["invoices", "Invoices & payments", Receipt],
-        ["messages", "Clinic messages", MessageCircle],
-        ["settings", "Account settings", Settings],
+        ["booking", "Book appointment", CalendarDays],
       ],
     ],
   ];
@@ -2102,6 +1914,28 @@ function Patient({
   onSignOut,
 }) {
   const selectedPatientLink = patientLinks.find((item) => String(item.patient_id) === String(selectedPatientRecordId));
+  if (page !== "booking") {
+    return (
+      <>
+        <Title
+          eyebrow="PATIENT PORTAL"
+          title="Your smile, your care"
+          desc="Book your visit with Dr. Pranali Dental Clinic. No patient account or password is needed."
+        />
+        <div className="care-grid">
+          <Panel title="Book an appointment" sub="Choose a dental service and request a convenient clinic time.">
+            <p className="care-hint">Tell us your name and mobile number, select a preferred time, and the clinic team will contact you to confirm.</p>
+            <button className="primary" onClick={() => P("booking")}>
+              <CalendarDays /> Book an appointment
+            </button>
+          </Panel>
+          <Panel title="Your privacy matters" sub="No account creation or patient login is required for appointment requests.">
+            <p className="care-hint">Your clinical records, prescriptions and invoices remain private in the clinic's protected Doctor workspace. Contact the clinic directly when you need a copy of your records.</p>
+          </Panel>
+        </div>
+      </>
+    );
+  }
   if (page === "booking")
     return (
       <>
