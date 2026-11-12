@@ -33,6 +33,12 @@ test("service worker caches only the application shell and static assets, never 
   assert.ok(!serviceWorker.includes('cache.put("/v1'));
 });
 
+test("real browser evidence includes a common 390 by 844 mobile viewport", () => {
+  const captureScript = fs.readFileSync(path.join(root, "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.match(captureScript, /capture\(screenshotName \+ "-390x844\.png", 390, 844, true\)/);
+  assert.match(captureScript, /deviceScaleFactor: 1, mobile/);
+});
+
 test("PWA update flow waits for a user refresh before activating a waiting worker", () => {
   assert.ok(app.includes('navigator.serviceWorker.register("/sw.js"'));
   assert.ok(app.includes('pwaRegistration.waiting.postMessage({ type: "SKIP_WAITING" })'));

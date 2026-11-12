@@ -59,6 +59,14 @@ test("patient clinic switching selects a linked patient record and never trusts 
   assert.match(apiSource, /patientAppointments: \(token, patientId\)/);
 });
 
+test("doctor API session expiry clears the saved doctor identity without touching patient auth", () => {
+  assert.match(apiSource, /oralyn:doctor-session-expired/);
+  assert.match(source, /window\.addEventListener\("oralyn:doctor-session-expired"/);
+  assert.match(source, /localStorage\.removeItem\("oralyn_doctor_token"\)/);
+  assert.match(source, /Your clinic session has expired\. Please sign in again\./);
+  assert.match(apiSource, /isPatientApi/);
+});
+
 test("patient-facing application contains no AI diagnosis or self-diagnosis actions", () => {
   assert.doesNotMatch(patientSource, /AI diagnosis|self-diagnosis|diagnose yourself/i);
   assert.doesNotMatch(patientSource, /DoctorAIActionCard|IntelligenceCard/);

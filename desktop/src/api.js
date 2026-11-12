@@ -40,6 +40,10 @@ async function request(path, { token, method = "GET", body, headers = {} } = {})
   const data =
     response.status === 204 ? null : await response.json().catch(() => null);
   if (!response.ok) {
+    const isPatientApi = /^\/v1\/dental\/(?:patient\/|ai\/patient\/)/i.test(path);
+    if (response.status === 401 && token && !isPatientApi && typeof window !== "undefined") {
+      window.dispatchEvent(new Event("oralyn:doctor-session-expired"));
+    }
     const detail = data?.detail;
     const message =
       typeof detail === "string"

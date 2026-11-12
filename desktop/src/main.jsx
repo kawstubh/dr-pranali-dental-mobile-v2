@@ -127,6 +127,24 @@ function App() {
     }
   };
   useEffect(() => {
+    const expireDoctorSession = () => {
+      localStorage.removeItem("oralyn_doctor_token");
+      setToken("");
+      setUser(null);
+      setPatients([]);
+      setAppointments([]);
+      setWorkspaces([]);
+      setWorkspaceError("");
+      setDataError("");
+      setDashboardSummary(null);
+      setDashboardSummaryLoading(false);
+      setDashboardSummaryError("");
+      setAuthError("Your clinic session has expired. Please sign in again.");
+    };
+    window.addEventListener("oralyn:doctor-session-expired", expireDoctorSession);
+    return () => window.removeEventListener("oralyn:doctor-session-expired", expireDoctorSession);
+  }, []);
+  useEffect(() => {
     let live = true;
     if (!token) {
       setUser(null);

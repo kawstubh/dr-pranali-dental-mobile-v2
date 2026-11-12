@@ -38,6 +38,62 @@ test("API authentication failures preserve the server's stable error code", asyn
   }
 });
 
+test("expired doctor API tokens trigger the portal session-expiry handler", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalWindow = globalThis.window;
+  const events = [];
+  globalThis.window = {
+    dispatchEvent(event) {
+      events.push(event.type);
+      return true;
+    },
+  };
+  globalThis.fetch = async () => new Response(
+    JSON.stringify({ detail: { code: "SESSION_EXPIRED", message: "Please sign in again." } }),
+    { status: 401, headers: { "Content-Type": "application/json" } },
+  );
+  try {
+    await assert.rejects(dentalApi.patients("expired-doctor-token"), (error) => {
+      assert.equal(error.status, 401);
+      assert.equal(error.code, "SESSION_EXPIRED");
+      return true;
+    });
+    assert.deepEqual(events, ["oralyn:doctor-session-expired"]);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalWindow === undefined) delete globalThis.window;
+    else globalThis.window = originalWindow;
+  }
+});
+
+test("patient API 401 responses do not clear the separate doctor session", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalWindow = globalThis.window;
+  const events = [];
+  globalThis.window = {
+    dispatchEvent(event) {
+      events.push(event.type);
+      return true;
+    },
+  };
+  globalThis.fetch = async () => new Response(
+    JSON.stringify({ detail: { code: "PATIENT_SESSION_INVALID", message: "Patient sign-in needs refreshing." } }),
+    { status: 401, headers: { "Content-Type": "application/json" } },
+  );
+  try {
+    await assert.rejects(dentalApi.patientAppointments("expired-patient-token", "synthetic-patient-1"), (error) => {
+      assert.equal(error.status, 401);
+      assert.equal(error.code, "PATIENT_SESSION_INVALID");
+      return true;
+    });
+    assert.deepEqual(events, []);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalWindow === undefined) delete globalThis.window;
+    else globalThis.window = originalWindow;
+  }
+});
+
 test("doctor dashboard summary uses the authenticated active-workspace endpoint", async () => {
   const originalFetch = globalThis.fetch;
   let requestUrl = "";

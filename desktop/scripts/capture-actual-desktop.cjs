@@ -75,9 +75,9 @@ async function evaluate(expression) {
   return result.result && result.result.value;
 }
 
-async function capture(name, width, height) {
+async function capture(name, width, height, mobile = false) {
   await send("Emulation.setDeviceMetricsOverride", {
-    width, height, deviceScaleFactor: 1, mobile: false,
+    width, height, deviceScaleFactor: 1, mobile,
   });
   await sleep(450);
   const screenshot = await send("Page.captureScreenshot", {
@@ -104,6 +104,7 @@ async function captureCurrent(expectedText, screenshotName) {
   const fonts = await verifyFonts();
   await capture(screenshotName + "-1440x1000.png", 1440, 1000);
   await capture(screenshotName + "-1280x800.png", 1280, 800);
+  await capture(screenshotName + "-390x844.png", 390, 844, true);
   return fonts;
 }
 
@@ -197,6 +198,7 @@ async function navigate(route, expectedText, screenshotName) {
       "font_playfair_display_loaded=" + fontResults.doctorLogin.playfairDisplay,
       "synthetic_patient_data=none",
       "authenticated_screens=false",
+      "mobile_viewport=390x844",
       "runtime_errors=none",
     ].join("\n") + "\n";
     fs.writeFileSync(path.join(output, "build-info.txt"), metadata);
