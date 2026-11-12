@@ -1,7 +1,7 @@
 name: Android APK
 
 permissions:
-  contents: write
+  contents: read
 
 on:
   workflow_dispatch:
@@ -9,11 +9,23 @@ on:
     branches: [master, ui/brand-and-services]
   pull_request:
     branches: [master]
+    paths:
+      - 'App.js'
+      - 'app.json'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'src/**'
+      - 'shared/**'
+      - 'assets/**'
+      - 'docs/PATIENT_FONTS.md'
+      - '.github/workflows/android-apk.yml'
 
 jobs:
   build-apk:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
+    env:
+      EXPO_PUBLIC_DENTAL_API_URL: https://oralyn-multitenant-staging.onrender.com
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -34,13 +46,23 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify staging-only API target
+        run: |
+          test "$EXPO_PUBLIC_DENTAL_API_URL" = "https://oralyn-multitenant-staging.onrender.com"
+          grep -q "process.env.EXPO_PUBLIC_DENTAL_API_URL" src/api/dentalApi.js
+
+      - name: Test patient navigation, booking contract and licensed fonts
+        run: npm test
+
+      - name: Reject vulnerable dependency tree
+        run: npm audit --audit-level=low
       - name: TypeScript compiler check
         run: npx tsc --noEmit
 
       - name: Generate Android project
         run: npx expo prebuild --platform android --non-interactive
 
-      - name: Verify production JavaScript bundle
+      - name: Verify staging JavaScript bundle
         run: npx expo export --platform android
 
       - name: Require fixed release signing secrets
@@ -105,7 +127,7 @@ jobs:
           }
           EOF
 
-      - name: Build RELEASE APK with fixed signing
+      - name: Build signed STAGING APK with fixed signing
         working-directory: android
         env:
           DENTAL_PATIENT_STORE_PASSWORD: ${{ secrets.DENTAL_PATIENT_STORE_PASSWORD }}
@@ -114,39 +136,546 @@ jobs:
           printf '\napply from: "./release-signing.gradle"\n' >> app/build.gradle
           ./gradlew assembleRelease --no-daemon
 
-      - name: Verify signed RELEASE APK
+      - name: Verify signed STAGING APK
+        id: verify_apk
+        env:
+          DENTAL_PATIENT_STORE_PASSWORD: ${{ secrets.DENTAL_PATIENT_STORE_PASSWORD }}
         run: |
           APK="android/app/build/outputs/apk/release/app-release.apk"
           test -s "$APK"
           unzip -t "$APK" >/dev/null
           APKSIGNER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -type f -name apksigner 2>/dev/null | sort -V | tail -n 1)"
+          AAPT="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -type f -name aapt 2>/dev/null | sort -V | tail -n 1)"
           test -n "$APKSIGNER" || { echo "::error::Android SDK apksigner not found"; exit 1; }
+          test -n "$AAPT" || { echo "::error::Android SDK aapt not found"; exit 1; }
           "$APKSIGNER" verify --print-certs "$APK" | tee /tmp/patient-certs.txt
           if grep -qi "Android Debug" /tmp/patient-certs.txt; then
             echo "::error::Release APK is debug-signed. Fixed release signing was not applied."
             exit 1
           fi
+          KEYSTORE_CERT="$(keytool -list -v -keystore android/app/release.keystore -storepass "$DENTAL_PATIENT_STORE_PASSWORD" | sed -n 's/.*SHA256:[[:space:]]*//p' | head -n 1 | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')"
+          APK_CERT="$("$APKSIGNER" verify --print-certs "$APK" | sed -n 's/.*certificate SHA-256 digest:[[:space:]]*//p' | head -n 1 | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')"
+          test -n "$KEYSTORE_CERT" || { echo "::error::Could not read the fixed patient keystore certificate fingerprint."; exit 1; }
+          test -n "$APK_CERT" || { echo "::error::Could not read the APK signer certificate fingerprint."; exit 1; }
+          test "$KEYSTORE_CERT" = "$APK_CERT" || { echo "::error::APK signer does not match the fixed patient release keystore."; exit 1; }
+          "$AAPT" dump badging "$APK" | grep -F "package: name='com.drpranali.dental'" || {
+            echo "::error::Patient APK package ID does not match com.drpranali.dental."
+            exit 1
+          }
           unzip -l "$APK" | grep -E 'assets/(index|.*\.bundle)|index.android.bundle' || {
             echo "::error::APK does not contain an embedded JavaScript bundle."
             exit 1
           }
+      - name: Verify licensed fonts inside the signed Patient APK
+        if: ${{ always() && steps.verify_apk.outcome == 'success' }}
+        run: python3 scripts/verify-patient-apk-fonts.py android/app/build/outputs/apk/release/app-release.apk
 
-      - name: Upload RELEASE APK
+      - name: Export Patient desktop web build
+        id: export_web
+        if: ${{ always() && steps.verify_apk.outcome == 'success' }}
+        run: npx expo export --platform web
+
+      - name: Setup Chrome for desktop screenshot capture
+        id: setup_chrome
+        if: ${{ always() && steps.export_web.outcome == 'success' }}
+        uses: browser-actions/setup-chrome@v1
+      - name: Capture Patient desktop screens at laptop widths
+        timeout-minutes: 10
+        if: ${{ always() && steps.export_web.outcome == 'success' }}
+        env:
+          CHROME_BIN: ${{ steps.setup_chrome.outputs.chrome-path }}
+          GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          GITHUB_PR_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test -x "$CHROME_BIN" || { echo "::error::Configured Chromium path is not executable: $CHROME_BIN"; exit 1; }
+          "$CHROME_BIN" --version
+          python3 -m http.server 19006 --bind 127.0.0.1 --directory dist >/tmp/oralyn-patient-web.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          server_ready=0
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:19006/ >/dev/null 2>&1; then
+              server_ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$server_ready" != "1" ]; then
+            cat /tmp/oralyn-patient-web.log || true
+            echo "::error::Patient web export did not start its local preview server."
+            exit 1
+          fi
+          PATIENT_WEB_BASE_URL=http://127.0.0.1:19006 node scripts/capture-web.cjs
+
+      - name: Upload Patient desktop screenshot evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: dr-pranali-dental-patient-release-apk
+          name: oralyn-patient-desktop-evidence-${{ github.sha }}
+          path: build-evidence/patient-web/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Install and smoke-test Patient APK on Android emulator
+        timeout-minutes: 30
+        if: ${{ always() && steps.verify_apk.outcome == 'success' }}
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p build-evidence
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager | sort | tail -n 1)"
+          AVDMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name avdmanager | sort | tail -n 1)"
+          ADB="$SDK_ROOT/platform-tools/adb"
+          export ANDROID_HOME="$SDK_ROOT"
+          export ANDROID_SDK_ROOT="$SDK_ROOT"
+          export ANDROID_SDK_HOME="$HOME/.android"
+          export ANDROID_AVD_HOME="$HOME/.android/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          printf 'sdk_root=%s\nsdkmanager=%s\navdmanager=%s\n' "$SDK_ROOT" "$SDKMANAGER" "$AVDMANAGER" >build-evidence/android-sdk-info.txt
+          if [ -z "$SDKMANAGER" ] || [ ! -x "$SDKMANAGER" ]; then
+            find "$SDK_ROOT/cmdline-tools" -maxdepth 5 -type f -name sdkmanager -print >build-evidence/sdkmanager-locations.txt 2>&1 || true
+            echo "::error::Android SDK sdkmanager is unavailable at $SDK_ROOT."
+            exit 1
+          fi
+          if [ -z "$AVDMANAGER" ] || [ ! -x "$AVDMANAGER" ]; then
+            find "$SDK_ROOT/cmdline-tools" -maxdepth 5 -type f -name avdmanager -print >build-evidence/avdmanager-locations.txt 2>&1 || true
+            echo "::error::Android SDK avdmanager is unavailable at $SDK_ROOT."
+            exit 1
+          fi
+          yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --licenses >/dev/null 2>&1 || true
+          if ! timeout 360 "$SDKMANAGER" --sdk_root="$SDK_ROOT" --install "emulator" "platform-tools" "system-images;android-35;google_apis;x86_64" >build-evidence/sdkmanager.log 2>&1; then
+            cat build-evidence/sdkmanager.log
+            echo "::error::Android SDK package installation failed."
+            exit 1
+          fi
+          if [ ! -x "$SDK_ROOT/emulator/emulator" ]; then
+            cat build-evidence/sdkmanager.log
+            ls -la "$SDK_ROOT" "$SDK_ROOT/emulator" >build-evidence/emulator-install-state.txt 2>&1 || true
+            echo "::error::Android emulator binary was not installed at $SDK_ROOT/emulator/emulator."
+            exit 1
+          fi
+          if [ ! -x "$ADB" ]; then
+            echo "::error::Android platform-tools adb is unavailable at $ADB."
+            exit 1
+          fi
+          printf 'no\n' | "$AVDMANAGER" create avd --force --name oralyn-patient-ci --package "system-images;android-35;google_apis;x86_64" --device pixel_2 --path "$ANDROID_AVD_HOME/oralyn-patient-ci.avd" >build-evidence/avdmanager.log 2>&1
+          "$AVDMANAGER" list avd >build-evidence/avdmanager-list.txt 2>&1
+          if [ ! -f "$ANDROID_AVD_HOME/oralyn-patient-ci.ini" ]; then
+            find "$HOME/.android" "$SDK_ROOT" -maxdepth 6 -name oralyn-patient-ci.ini -print >build-evidence/avd-locations.txt 2>&1 || true
+            cat build-evidence/avdmanager.log build-evidence/avdmanager-list.txt
+            echo "::error::AVD manager did not create the expected AVD in ANDROID_AVD_HOME."
+            exit 1
+          fi
+          "$SDK_ROOT/emulator/emulator" -list-avds >build-evidence/emulator-list.txt 2>&1
+          grep -Fxq "oralyn-patient-ci" build-evidence/emulator-list.txt
+          ACCEL_ARGS=()
+          if [ -e /dev/kvm ]; then
+            sudo chmod 666 /dev/kvm
+            if [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
+              ls -l /dev/kvm > build-evidence/kvm-permissions.txt
+            else
+              echo "::warning::KVM exists but is not accessible; trying software acceleration."
+              ACCEL_ARGS=(-accel off)
+            fi
+          else
+            echo "::warning::This hosted runner has no /dev/kvm; trying software acceleration."
+            ACCEL_ARGS=(-accel off)
+          fi
+          "$SDK_ROOT/emulator/emulator" -avd oralyn-patient-ci -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -wipe-data "${ACCEL_ARGS[@]}" >build-evidence/emulator.log 2>&1 &
+          if ! timeout 360 "$ADB" wait-for-device; then
+            "$ADB" devices -l > build-evidence/adb-devices.txt 2>&1 || true
+            cat build-evidence/emulator.log || true
+            echo "::error::Android emulator did not connect to ADB."
+            exit 1
+          fi
+          boot=""
+          for attempt in $(seq 1 120); do
+            boot="$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
+            [ "$boot" = "1" ] && break
+            sleep 5
+          done
+          if [ "$boot" != "1" ]; then
+            cat build-evidence/emulator.log
+            echo "::error::Android emulator did not finish booting."
+            exit 1
+          fi
+          "$ADB" shell settings put global window_animation_scale 0
+          "$ADB" shell settings put global transition_animation_scale 0
+          "$ADB" shell settings put global animator_duration_scale 0
+          "$ADB" install -r android/app/build/outputs/apk/release/app-release.apk
+          "$ADB" logcat -c
+          "$ADB" shell monkey -p com.drpranali.dental 1
+          # Expo font assets and the first native React render can take longer on cold CI emulators.
+          # Wait for the actual welcome CTA instead of assuming a fixed 18-second startup budget.
+          welcome_ready=0
+          for attempt in $(seq 1 12); do
+            "$ADB" shell uiautomator dump /sdcard/patient-welcome.xml >/dev/null 2>&1 || true
+            "$ADB" pull /sdcard/patient-welcome.xml build-evidence/patient-welcome.xml >/dev/null 2>&1 || true
+            if grep -Fq "Welcome to Oralyn" build-evidence/patient-welcome.xml 2>/dev/null \
+              && grep -Fq "Explore as a guest" build-evidence/patient-welcome.xml 2>/dev/null; then
+              welcome_ready=1
+              break
+            fi
+            sleep 5
+          done
+          "$ADB" shell screencap -p /sdcard/patient-welcome.png
+          "$ADB" pull /sdcard/patient-welcome.png build-evidence/patient-welcome.png
+          if [ "$welcome_ready" != "1" ]; then
+            "$ADB" logcat -d -v brief > build-evidence/patient-startup-logcat.txt || true
+            echo "---- Patient Android UI hierarchy (startup failure) ----"
+            cat build-evidence/patient-welcome.xml || true
+            echo "---- Patient Android startup logcat ----"
+            tail -n 250 build-evidence/patient-startup-logcat.txt || true
+            echo "::error::Patient welcome screen and guest entry did not render within 60 seconds after cold start."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import re
+          import xml.etree.ElementTree as ET
+          root = ET.parse('build-evidence/patient-welcome.xml').getroot()
+          for node in root.iter('node'):
+              if node.attrib.get('text') == 'Explore as a guest':
+                  match = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', node.attrib.get('bounds', ''))
+                  if match:
+                      x1, y1, x2, y2 = map(int, match.groups())
+                      print((x1 + x2) // 2, (y1 + y2) // 2)
+                      break
+          else:
+              raise SystemExit('Explore as a guest button was not accessible in the Android view hierarchy')
+          PY
+          read -r guest_x guest_y < <(python3 - <<'PY'
+          import re
+          import xml.etree.ElementTree as ET
+          root = ET.parse('build-evidence/patient-welcome.xml').getroot()
+          for node in root.iter('node'):
+              if node.attrib.get('text') == 'Explore as a guest':
+                  match = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', node.attrib.get('bounds', ''))
+                  if match:
+                      x1, y1, x2, y2 = map(int, match.groups())
+                      print((x1 + x2) // 2, (y1 + y2) // 2)
+                      break
+          else:
+              raise SystemExit('Explore as a guest button was not accessible')
+          PY
+          )
+          "$ADB" shell input tap "$guest_x" "$guest_y"
+          sleep 4
+          "$ADB" shell uiautomator dump /sdcard/patient-home.xml >/dev/null
+          "$ADB" pull /sdcard/patient-home.xml build-evidence/patient-home.xml
+          "$ADB" shell screencap -p /sdcard/patient-home.png
+          "$ADB" pull /sdcard/patient-home.png build-evidence/patient-home.png
+          grep -Fq "Book an appointment" build-evidence/patient-home.xml || {
+            echo "::error::Patient guest home did not render the booking action."
+            exit 1
+          }
+          python3 - <<'PY' > build-evidence/booking-tap.txt
+          import re
+          import xml.etree.ElementTree as ET
+          root = ET.parse('build-evidence/patient-home.xml').getroot()
+          for node in root.iter('node'):
+              if node.attrib.get('text') == 'Book an appointment':
+                  match = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', node.attrib.get('bounds', ''))
+                  if match:
+                      x1, y1, x2, y2 = map(int, match.groups())
+                      print((x1 + x2) // 2, (y1 + y2) // 2)
+                      break
+          else:
+              raise SystemExit('Book an appointment button was not accessible')
+          PY
+          read -r book_x book_y < build-evidence/booking-tap.txt
+          "$ADB" shell input tap "$book_x" "$book_y"
+          sleep 4
+          "$ADB" shell uiautomator dump /sdcard/patient-appointment.xml >/dev/null
+          "$ADB" pull /sdcard/patient-appointment.xml build-evidence/patient-appointment.xml
+          "$ADB" shell screencap -p /sdcard/patient-appointment.png
+          "$ADB" pull /sdcard/patient-appointment.png build-evidence/patient-appointment.png
+          for label in "Full name" "Phone number" "Preferred date" "Preferred time" "10:00 AM"; do
+            grep -Fq "$label" build-evidence/patient-appointment.xml || {
+              echo "::error::Appointment form is missing expected field or first clinic time slot: $label"
+              exit 1
+            }
+          done
+          # Later clinic slots are below the initial viewport in the vertical booking form.
+          # Scroll the installed APK and retain each real UI hierarchy before checking them.
+          : > build-evidence/patient-appointment-scroll-index.txt
+          for index in 1 2 3 4; do
+            "$ADB" shell input swipe 540 1500 540 500 500
+            sleep 1
+            "$ADB" shell uiautomator dump "/sdcard/patient-appointment-scroll-$index.xml" >/dev/null
+            "$ADB" pull "/sdcard/patient-appointment-scroll-$index.xml" "build-evidence/patient-appointment-scroll-$index.xml"
+            printf '%s\n' "patient-appointment-scroll-$index.xml" >> build-evidence/patient-appointment-scroll-index.txt
+          done
+          cat build-evidence/patient-appointment-scroll-*.xml > build-evidence/patient-appointment-scroll-all.txt
+          for label in "5:00 PM" "8:30 PM"; do
+            grep -Fq "$label" build-evidence/patient-appointment-scroll-all.txt || {
+              echo "::error::Scrolled appointment form did not expose expected clinic slot: $label"
+              exit 1
+            }
+          done
+          "$ADB" shell screencap -p /sdcard/patient-appointment-scrolled.png
+          "$ADB" pull /sdcard/patient-appointment-scrolled.png build-evidence/patient-appointment-scrolled.png
+          # Return to the first rows before tapping the 10:00 AM option.
+          for index in 1 2 3 4; do
+            "$ADB" shell input swipe 540 500 540 1500 500
+            sleep 1
+          done
+          "$ADB" shell uiautomator dump /sdcard/patient-appointment-restored.xml >/dev/null
+          "$ADB" pull /sdcard/patient-appointment-restored.xml build-evidence/patient-appointment-restored.xml
+          grep -Fq "10:00 AM" build-evidence/patient-appointment-restored.xml || {
+            echo "::error::Appointment form did not return to its first clinic slots after scrolling."
+            exit 1
+          }
+          python3 - <<'PY' > build-evidence/time-slot-tap.txt
+          import re
+          import xml.etree.ElementTree as ET
+          root = ET.parse('build-evidence/patient-appointment.xml').getroot()
+          for node in root.iter('node'):
+              if node.attrib.get('text') == '10:00 AM':
+                  match = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', node.attrib.get('bounds', ''))
+                  if match:
+                      x1, y1, x2, y2 = map(int, match.groups())
+                      print((x1 + x2) // 2, (y1 + y2) // 2)
+                      break
+          else: raise SystemExit('10:00 AM clinic slot was not accessible')
+          PY
+          read -r slot_x slot_y < build-evidence/time-slot-tap.txt
+          "$ADB" shell input tap "$slot_x" "$slot_y"
+          sleep 2
+          "$ADB" shell uiautomator dump /sdcard/patient-time-slots.xml >/dev/null
+          "$ADB" pull /sdcard/patient-time-slots.xml build-evidence/patient-time-slots.xml
+          "$ADB" shell screencap -p /sdcard/patient-time-slots.png
+          "$ADB" pull /sdcard/patient-time-slots.png build-evidence/patient-time-slots.png
+          # The send action is below the selected time row on smaller Android viewports.
+          # Scroll the installed APK, inspect each real UI hierarchy, and tap only when visible.
+          found_validation_action=0
+          for index in 1 2 3 4 5 6 7 8 9 10; do
+            python3 - <<'PY' > build-evidence/validation-tap.txt || true
+          import re
+          import xml.etree.ElementTree as ET
+          root = ET.parse('build-evidence/patient-time-slots.xml').getroot()
+          for node in root.iter('node'):
+              text = node.attrib.get('text', '').strip().casefold()
+              label = node.attrib.get('content-desc', '').strip().casefold()
+              if ('send appointment request' in text or 'send appointment request' in label) and node.attrib.get('clickable') == 'true':
+                  match = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', node.attrib.get('bounds', ''))
+                  if not match:
+                      continue
+                  x1, y1, x2, y2 = map(int, match.groups())
+                  # Ignore clipped/off-screen Android bounds; a partially hidden action can overlap the bottom tab bar.
+                  if x2 > x1 and y2 > y1 and x1 >= 0 and y1 >= 0 and x2 <= 1080 and y2 <= 1676:
+                      print((x1 + x2) // 2, (y1 + y2) // 2)
+                      break
+          PY
+            if [ -s build-evidence/validation-tap.txt ]; then
+              found_validation_action=1
+              break
+            fi
+            if [ "$index" -lt 10 ]; then
+              "$ADB" shell input swipe 540 1500 540 500 500
+              sleep 1
+              "$ADB" shell uiautomator dump "/sdcard/patient-time-slots-action-$index.xml" >/dev/null
+              "$ADB" pull "/sdcard/patient-time-slots-action-$index.xml" "build-evidence/patient-time-slots-action-$index.xml"
+              cp "build-evidence/patient-time-slots-action-$index.xml" build-evidence/patient-time-slots.xml
+              "$ADB" shell screencap -p /sdcard/patient-time-slots-action.png
+              "$ADB" pull /sdcard/patient-time-slots-action.png build-evidence/patient-time-slots-action.png
+            fi
+          done
+          if [ "$found_validation_action" != "1" ]; then
+            cat build-evidence/patient-time-slots.xml
+            echo "::error::Appointment request action was not visible after scrolling the installed booking screen."
+            exit 1
+          fi
+          read -r validate_x validate_y < build-evidence/validation-tap.txt
+          "$ADB" shell input tap "$validate_x" "$validate_y"
+          sleep 2
+          "$ADB" shell uiautomator dump /sdcard/patient-validation.xml >/dev/null
+          "$ADB" pull /sdcard/patient-validation.xml build-evidence/patient-validation.xml
+          grep -Fq "Please enter your name, phone number, preferred date and time." build-evidence/patient-validation.xml || {
+            echo "::error::Appointment form did not display its required-field validation state."
+            exit 1
+          }
+          python3 - <<'PY' > build-evidence/home-tab-tap.txt
+          import re
+          import xml.etree.ElementTree as ET
+          root = ET.parse('build-evidence/patient-validation.xml').getroot()
+          for node in root.iter('node'):
+              if node.attrib.get('text') == 'Home':
+                  match = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', node.attrib.get('bounds', ''))
+                  if match:
+                      x1, y1, x2, y2 = map(int, match.groups())
+                      print((x1 + x2) // 2, (y1 + y2) // 2)
+                      break
+          else: raise SystemExit('Home navigation tab was not accessible')
+          PY
+          read -r home_x home_y < build-evidence/home-tab-tap.txt
+          "$ADB" shell input tap "$home_x" "$home_y"
+          sleep 2
+          "$ADB" shell uiautomator dump /sdcard/patient-home-return.xml >/dev/null
+          "$ADB" pull /sdcard/patient-home-return.xml build-evidence/patient-home-return.xml
+          python3 - <<'PY' > build-evidence/my-care-tap.txt
+          import re
+          import xml.etree.ElementTree as ET
+          root = ET.parse('build-evidence/patient-home-return.xml').getroot()
+          for node in root.iter('node'):
+              text = node.attrib.get('text', '').strip().casefold()
+              label = node.attrib.get('content-desc', '').strip().casefold()
+              if text == 'View my care and shared records'.casefold() or label == 'My care and shared records'.casefold():
+                  match = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', node.attrib.get('bounds', ''))
+                  if match:
+                      x1, y1, x2, y2 = map(int, match.groups())
+                      print((x1 + x2) // 2, (y1 + y2) // 2)
+                      break
+          else: raise SystemExit('My Care entry point was not accessible from Patient home')
+          PY
+          read -r care_x care_y < build-evidence/my-care-tap.txt
+          "$ADB" shell input tap "$care_x" "$care_y"
+          sleep 3
+          "$ADB" shell uiautomator dump /sdcard/patient-my-care.xml >/dev/null
+          "$ADB" pull /sdcard/patient-my-care.xml build-evidence/patient-my-care.xml
+          "$ADB" shell screencap -p /sdcard/patient-my-care.png
+          "$ADB" pull /sdcard/patient-my-care.png build-evidence/patient-my-care.png
+          grep -Fq "My care" build-evidence/patient-my-care.xml || {
+            echo "::error::My Care screen title was not present after navigation."
+            exit 1
+          }
+          grep -Fq "Guest visitor" build-evidence/patient-my-care.xml || {
+            echo "::error::My Care guest profile state was not present."
+            exit 1
+          }
+          grep -Fq "No visit history yet" build-evidence/patient-my-care.xml || {
+            echo "::error::My Care visit-history empty state was not visible at the top of the page."
+            exit 1
+          }
+          # The My Care page is intentionally vertically scrollable. Capture every section
+          # before asserting the records, invoices and clinic communication sections.
+          : > build-evidence/patient-my-care-scroll-all.txt
+          for index in 1 2 3 4 5 6; do
+            "$ADB" shell input swipe 540 1500 540 500 500
+            sleep 1
+            "$ADB" shell uiautomator dump "/sdcard/patient-my-care-scroll-$index.xml" >/dev/null
+            "$ADB" pull "/sdcard/patient-my-care-scroll-$index.xml" "build-evidence/patient-my-care-scroll-$index.xml"
+            "$ADB" shell screencap -p "/sdcard/patient-my-care-scroll-$index.png"
+            "$ADB" pull "/sdcard/patient-my-care-scroll-$index.png" "build-evidence/patient-my-care-scroll-$index.png"
+            cat "build-evidence/patient-my-care-scroll-$index.xml" >> build-evidence/patient-my-care-scroll-all.txt
+          done
+          for label in "No records shared yet" "Reports and documents released by your clinic will appear here." "No invoices shared yet" "Clinic communication"; do
+            grep -Fq "$label" build-evidence/patient-my-care-scroll-all.txt || {
+              echo "::error::My Care scrolling did not expose the expected empty-state/section: $label"
+              exit 1
+            }
+          done
+          # Exercise every patient bottom-navigation destination on the installed APK.
+          # Coordinates are derived from the live Android accessibility hierarchy.
+          tap_text() {
+            local xml_file="$1"
+            local label="$2"
+            local tap_file="$3"
+            python3 - "$xml_file" "$label" <<'PY' > "$tap_file"
+          import re
+          import sys
+          import xml.etree.ElementTree as ET
+          root = ET.parse(sys.argv[1]).getroot()
+          target = sys.argv[2]
+          for node in root.iter('node'):
+              if node.attrib.get('text', '').strip() == target:
+                  match = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', node.attrib.get('bounds', ''))
+                  if match:
+                      x1, y1, x2, y2 = map(int, match.groups())
+                      if x2 > x1 and y2 > y1:
+                          print((x1 + x2) // 2, (y1 + y2) // 2)
+                          break
+          else:
+              raise SystemExit(f'Patient navigation label not visible: {target}')
+          PY
+            read -r tap_x tap_y < "$tap_file"
+            "$ADB" shell input tap "$tap_x" "$tap_y"
+            sleep 2
+          }
+
+          tap_text build-evidence/patient-my-care-scroll-6.xml "Home" build-evidence/home-nav-tap.txt
+          "$ADB" shell uiautomator dump /sdcard/patient-home-navigation.xml >/dev/null
+          "$ADB" pull /sdcard/patient-home-navigation.xml build-evidence/patient-home-navigation.xml
+          tap_text build-evidence/patient-home-navigation.xml "Services" build-evidence/services-nav-tap.txt
+          "$ADB" shell uiautomator dump /sdcard/patient-services.xml >/dev/null
+          "$ADB" pull /sdcard/patient-services.xml build-evidence/patient-services.xml
+          "$ADB" shell screencap -p /sdcard/patient-services.png
+          "$ADB" pull /sdcard/patient-services.png build-evidence/patient-services.png
+          for label in "Dental services" "Dental Check-up & Consultation" "Scaling & Cleaning"; do
+            grep -Fq "$label" build-evidence/patient-services.xml || {
+              echo "::error::Patient Services navigation did not expose expected service: $label"
+              exit 1
+            }
+          done
+          tap_text build-evidence/patient-services.xml "Dental Check-up & Consultation" build-evidence/service-detail-tap.txt
+          "$ADB" shell uiautomator dump /sdcard/patient-service-detail.xml >/dev/null
+          "$ADB" pull /sdcard/patient-service-detail.xml build-evidence/patient-service-detail.xml
+          "$ADB" shell screencap -p /sdcard/patient-service-detail.png
+          "$ADB" pull /sdcard/patient-service-detail.png build-evidence/patient-service-detail.png
+          grep -Fq "Book this service" build-evidence/patient-service-detail.xml || {
+            echo "::error::Patient service detail did not expose its booking action."
+            exit 1
+          }
+          tap_text build-evidence/patient-service-detail.xml "Services" build-evidence/services-return-tap.txt
+          "$ADB" shell uiautomator dump /sdcard/patient-services-return.xml >/dev/null
+          "$ADB" pull /sdcard/patient-services-return.xml build-evidence/patient-services-return.xml
+          tap_text build-evidence/patient-services-return.xml "Gallery" build-evidence/gallery-nav-tap.txt
+          "$ADB" shell uiautomator dump /sdcard/patient-gallery.xml >/dev/null
+          "$ADB" pull /sdcard/patient-gallery.xml build-evidence/patient-gallery.xml
+          "$ADB" shell screencap -p /sdcard/patient-gallery.png
+          "$ADB" pull /sdcard/patient-gallery.png build-evidence/patient-gallery.png
+          for label in "A familiar, friendly face" "Dr. Pranali"; do
+            grep -Fq "$label" build-evidence/patient-gallery.xml || {
+              echo "::error::Patient Gallery navigation did not expose expected content: $label"
+              exit 1
+            }
+          done
+          tap_text build-evidence/patient-gallery.xml "Contact" build-evidence/contact-nav-tap.txt
+          "$ADB" shell uiautomator dump /sdcard/patient-contact.xml >/dev/null
+          "$ADB" pull /sdcard/patient-contact.xml build-evidence/patient-contact.xml
+          "$ADB" shell screencap -p /sdcard/patient-contact.png
+          "$ADB" pull /sdcard/patient-contact.png build-evidence/patient-contact.png
+          for label in "Contact the clinic" "Clinic location" "Clinic hours"; do
+            grep -Fq "$label" build-evidence/patient-contact.xml || {
+              echo "::error::Patient Contact navigation did not expose expected content: $label"
+              exit 1
+            }
+          done
+
+          "$ADB" logcat -d -v brief > build-evidence/patient-logcat.txt
+          if grep -Ei "FATAL EXCEPTION|No safe area value available|Invariant Violation|Local Inter font load failed" build-evidence/patient-logcat.txt; then
+            echo "::error::Fatal Patient Android runtime or local font loading error detected."
+            exit 1
+          fi
+          if ! grep -Fq "Local Inter font assets loaded." build-evidence/patient-logcat.txt; then
+            echo "::error::The installed Patient APK did not confirm successful local Inter font loading."
+            exit 1
+          fi
+          printf 'commit=%s\nbuild_sha=%s\npr_head_sha=%s\npr_base_sha=%s\nenvironment=staging\napi=https://oralyn-multitenant-staging.onrender.com\npackage=com.drpranali.dental\nfonts=Inter-v20-OFL-1.1;Feather-MIT\n' "$GITHUB_SHA" "$GITHUB_SHA" "$PR_HEAD_SHA" "$PR_BASE_SHA" > build-evidence/build-info.txt
+          if grep -E "FATAL EXCEPTION|No safe area value available|Invariant Violation" build-evidence/patient-logcat.txt; then
+            echo "::error::Fatal Patient Android startup or navigation error detected."
+            exit 1
+          fi
+          printf 'android_smoke=passed\n' >> build-evidence/build-info.txt
+          echo "::warning::Patient cold start, guest navigation, services, gallery, contact and booking validation verified. OAuth login/session persistence requires a dedicated staging Google test account."
+
+      - name: Upload Patient Android runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oralyn-patient-android-evidence-${{ github.sha }}
+          path: build-evidence/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload STAGING APK
+        if: ${{ always() && steps.verify_apk.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: dr-pranali-dental-patient-staging-apk
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
-
-      - name: Publish patient-latest GitHub Release
-        if: github.ref == 'refs/heads/master'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          APK="android/app/build/outputs/apk/release/app-release.apk"
-          if gh release view patient-latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload patient-latest "$APK#dr-pranali-patient.apk" --repo "$GITHUB_REPOSITORY" --clobber
-          else
-            gh release create patient-latest "$APK#dr-pranali-patient.apk" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Patient APK latest" --notes "Latest signed patient Android APK." --latest=false
-          fi

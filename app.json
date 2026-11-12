@@ -1,4 +1,4 @@
-﻿{
+{
   "expo": {
     "name": "Oralyn",
     "slug": "dr-pranali-dental",
@@ -32,7 +32,8 @@
           "color": "#1677D2"
         }
       ],
-      "expo-image"
+      "expo-image",
+      "expo-font"
     ],
     "extra": {
       "eas": {
@@ -40,8 +41,14 @@
       }
     },
     "web": {
+      "name": "Oralyn Patient Portal",
+      "shortName": "Oralyn",
+      "themeColor": "#0C3B82",
+      "backgroundColor": "#F4FBFF",
+      "display": "standalone",
+      "orientation": "portrait",
+      "lang": "en-IN",
       "favicon": "./assets/patient-favicon.png"
     }
   }
 }
-

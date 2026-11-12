@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Pressable, Text as NativeText, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -47,7 +47,7 @@ export function LanguageSwitch() {
     {[['en','EN'],['mr','मराठी'],['hi','हिन्दी']].map(([code,label]) =>
       <Pressable key={code} accessibilityRole="button" accessibilityLabel={'Language '+label} onPress={()=>setLanguage(code)}
         style={{paddingHorizontal:9,paddingVertical:6,borderRadius:9,backgroundColor:language===code?'#00C6C8':'#EAF2F8',borderWidth:1,borderColor:language===code?'#00C6C8':'#D6E2EC'}}>
-        <NativeText style={{fontSize:11,fontWeight:'900',color:language===code?'#073B5C':'#23435E'}}>{label}</NativeText>
+        <NativeText style={{fontFamily:'PlusJakartaSans',fontSize:11,fontWeight:'900',color:language===code?'#073B5C':'#23435E'}}>{label}</NativeText>
       </Pressable>)}
   </View>;
 }
