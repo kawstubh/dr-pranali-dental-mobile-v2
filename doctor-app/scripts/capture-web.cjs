@@ -33,7 +33,7 @@ async function fillInput(placeholder,value){const e=`(()=>{const i=[...document.
   await clickText('Clinical AI');await waitFor(()=>evaluate('document.body.innerText.toLowerCase().includes("clinical")'));await capture('doctor-clinical-ai-1440x1000.png');
   await send('Page.reload');await waitFor(()=>evaluate('document.body.innerText.includes("Good day, Doctor")'),30000);await capture('doctor-session-restored-1440x1000.png');
  }
- fs.writeFileSync(path.join(outDir,'build-info.txt'),'commit='+commit+'\nenvironment=staging\napi='+process.env.EXPO_PUBLIC_DENTAL_API_URL+'\npackage=com.drpranali.dental.doctor\nauthenticatedDashboard='+authenticated+'\n');
+ fs.writeFileSync(path.join(outDir,'build-info.txt'),'commit='+commit+'\nenvironment=staging\napi='+(process.env.EXPO_PUBLIC_DENTAL_API_URL || 'https://oralyn-multitenant-staging.onrender.com')+'\npackage=com.drpranali.dental.doctor\nauthenticatedDashboard='+authenticated+'\n');
  if(!authenticated)console.warn('Authenticated dashboard, clinical screens and session persistence skipped: staging doctor test secrets are not configured.');
  console.log(JSON.stringify({commit,authenticated,screenshots:fs.readdirSync(outDir)}));
 }finally{if(ws)ws.close();if(process.platform==='win32'){try{execFileSync('taskkill',['/PID',String(chrome.pid),'/T','/F'],{stdio:'ignore'});}catch{chrome.kill();}}else chrome.kill('SIGTERM');}})().catch(e=>{console.error(e.stack||e);process.exit(1);});
