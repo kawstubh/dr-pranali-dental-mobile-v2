@@ -2,8 +2,8 @@
 
 const fs = require("node:fs");
 
-const apiBase = String(process.env.VITE_DENTAL_API_URL || "").replace(/\\/+$/, "");
-const portalOrigin = String(process.env.ORALYN_PORTAL_ORIGIN || "").replace(/\\/+$/, "");
+const apiBase = String(process.env.VITE_DENTAL_API_URL || "").replace(/\/+$/, "");
+const portalOrigin = String(process.env.ORALYN_PORTAL_ORIGIN || "").replace(/\/+$/, "");
 const timeoutMs = 90000;
 
 function assert(condition, message) {
