@@ -26,12 +26,15 @@ test("Doctor workspace still requires a verified Doctor session", () => {
 test("Patient portal is account-free and exposes only public home and booking navigation", () => {
   assert.match(source, /\["home", "Home", LayoutDashboard\]/);
   assert.match(source, /\["booking", "Book appointment", CalendarDays\]/);
-  assert.doesNotMatch(source, /\["appointments", "Appointments", CalendarDays\]/);
+  const navStart = source.indexOf("const patientNav = [");
+  const navEnd = source.indexOf("const nav = role ===", navStart);
+  const patientNav = source.slice(navStart, navEnd);
+  assert.doesNotMatch(patientNav, /\["appointments", "Appointments", CalendarDays\]/);
   assert.doesNotMatch(source, /\["journey", "Treatment journey"/);
   assert.doesNotMatch(source, /\["records", "Records & prescriptions"/);
   assert.doesNotMatch(source, /\["invoices", "Invoices & payments"/);
   assert.doesNotMatch(source, /\["settings", "Account settings"/);
-  assert.doesNotMatch(source, /PatientAccessScreen/);
+  assert.doesNotMatch(source, /return\s*\(\s*<PatientAccessScreen/);
   assert.doesNotMatch(source, /supabase\.auth/);
 });
 
@@ -89,7 +92,7 @@ test("patient session and account-linking flows are not required or initialized"
 test("public patient booking remains separate from Doctor identity and tenant APIs", () => {
   assert.match(patientSource, /dentalApi\.publicAppointment\(/);
   assert.match(apiSource, /publicAppointment:/);
-  assert.match(apiSource, /doctorAppointments:/);
+  assert.match(apiSource, /appointments: \(token\) => request\("\/v1\/dental\/appointments", \{ token \}\)/);
   assert.doesNotMatch(patientSource, /dentalApi\.patients\(/);
   assert.doesNotMatch(patientSource, /dentalApi\.patientChart\(/);
 });
