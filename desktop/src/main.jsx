@@ -38,6 +38,7 @@ import {
 import "./styles.css";
 import { dentalApi } from "./api.js";
 import ErrorBoundary from "./ErrorBoundary.jsx";
+import AssistantApp from "./assistant.jsx";
 import { normaliseList, normaliseUser, localDateISO, localDateTimeFromParts, formatTime, isSameLocalDay } from "./data.js";
 import { DoctorCareManagement, PatientCareManagement, DoctorClinicalNotes, PatientCommunication } from "./careScreens.jsx";
 import { createPortalNavigator, resolvePortalRoute } from "./routing.js";
@@ -333,6 +334,9 @@ function App() {
         onPatient={() => {
           window.location.assign("/patient/home/");
         }}
+        onAssistant={() => {
+          window.location.assign("/assistant/");
+        }}
         onLogin={async (email, password) => {
           setAuthError("");
           try {
@@ -605,7 +609,7 @@ function App() {
     </div>
   );
 }
-function LoginScreen({ loading, error, onLogin, onPatient }) {
+function LoginScreen({ loading, error, onLogin, onPatient, onAssistant }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -657,6 +661,9 @@ function LoginScreen({ loading, error, onLogin, onPatient }) {
         </form>
         <button className="patientlink" onClick={onPatient}>
           Continue to patient portal
+        </button>
+        <button className="patientlink" onClick={onAssistant}>
+          Clinic Assistant sign in
         </button>
         <small className="authfoot">
           Secure clinic access · Session verified by the Oralyn server
@@ -2328,8 +2335,9 @@ function Patient({
     </>
   );
 }
+const isAssistantRoute = /^\/assistant(?:\/|$)/.test(window.location.pathname);
 createRoot(document.getElementById("root")).render(
   <ErrorBoundary>
-    <App />
+    {isAssistantRoute ? <AssistantApp /> : <App />}
   </ErrorBoundary>,
 );
