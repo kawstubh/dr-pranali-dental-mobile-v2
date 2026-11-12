@@ -1,4 +1,1 @@
-commit=b9a7088657701e6b6a7772f6a37fbdea1388e845
-environment=staging
-api=https://oralyn-multitenant-staging.onrender.com
-fonts={"jakarta":true,"playfair":true}
+commit=84582d150383ecc075cee2167e03402454a80d99\nenvironment=staging\napi=undefined\nfonts=Inter-v20-OFL-1.1 {"interRegular":true,"interBold":true}\n
