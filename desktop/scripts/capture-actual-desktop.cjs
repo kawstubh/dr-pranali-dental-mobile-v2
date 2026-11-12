@@ -189,7 +189,6 @@ async function navigate(route, expectedText, screenshotName) {
     await waitFor(() => evaluate(
       'location.pathname === "/patient/home" && document.body.innerText.includes("PATIENT PORTAL")'
     ));
-    const routeHistoryPassed = true;
     fontResults.patientLogin = await captureCurrent("PATIENT PORTAL", "patient-login");
 
     const signupScript = "(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').includes('New here? Create an account')); if (button) button.click(); return !!button; })()";

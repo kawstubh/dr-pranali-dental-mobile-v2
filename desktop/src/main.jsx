@@ -42,6 +42,7 @@ import ErrorBoundary from "./ErrorBoundary.jsx";
 import { normaliseList, normaliseUser, localDateISO, localDateTimeFromParts, formatTime, isSameLocalDay } from "./data.js";
 import { DoctorCareManagement, PatientCareManagement, DoctorClinicalNotes, PatientCommunication } from "./careScreens.jsx";
 import { createPortalNavigator, resolvePortalRoute } from "./routing.js";
+import { createControllerChangeHandler } from "./serviceWorkerLifecycle.js";
 function App() {
   const initialRoute = resolvePortalRoute(window.location.pathname);
   const [role, R] = useState(initialRoute.role),
@@ -109,12 +110,10 @@ function App() {
   useEffect(() => {
     if (!("serviceWorker" in navigator) || !window.isSecureContext) return undefined;
     let live = true;
-    let reloading = false;
-    const onControllerChange = () => {
-      if (reloading) return;
-      reloading = true;
-      window.location.reload();
-    };
+    const onControllerChange = createControllerChangeHandler(
+      navigator.serviceWorker,
+      () => window.location.reload()
+    );
     navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
     navigator.serviceWorker.register("/sw.js", { scope: "/" })
       .then((registration) => {
