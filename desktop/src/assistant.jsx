@@ -96,6 +96,16 @@ function Notice({ children }) {
 }
 
 export default function AssistantApp() {
+  // The Assistant is a separate role surface, but it must share the same
+  // root-scoped Oralyn PWA shell as Doctor and public patient pages.
+  useEffect(() => {
+    if (!("serviceWorker" in navigator) || !window.isSecureContext) return undefined;
+    navigator.serviceWorker
+      .register("/sw.js", { scope: "/" })
+      .then((registration) => registration.update().catch(() => {}))
+      .catch((error) => console.warn("[Oralyn PWA] Assistant service worker registration failed.", error));
+    return undefined;
+  }, []);
   const [token, setToken] = useState(() => sessionStorage.getItem(TOKEN_KEY) || "");
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState("");
