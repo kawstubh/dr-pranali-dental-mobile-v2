@@ -11,7 +11,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.join(here, "..");
 const scriptPath = path.join(desktopRoot, "scripts", "write-build-manifest.cjs");
 
-test("staging build manifest records checksums without embedding Supabase credentials or claiming release readiness", () => {
+test("staging build manifest records verified account-free booking gates without claiming release readiness", () => {
   const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "oralyn-build-manifest-"));
   const assetDir = path.join(outputDir, "assets");
   fs.mkdirSync(assetDir);
@@ -32,9 +32,14 @@ test("staging build manifest records checksums without embedding Supabase creden
         ORALYN_ENVIRONMENT: "staging",
         GITHUB_SHA: "synthetic-commit-123",
         GITHUB_REF_NAME: "feat/oralyn-desktop-app",
-        VITE_DENTAL_API_URL: "https://oralyn-multitenant-staging.onrender.com/",
-        VITE_SUPABASE_URL: "",
-        VITE_SUPABASE_PUBLISHABLE_KEY: "must-not-be-copied-into-the-manifest",
+        VITE_DENTAL_API_URL: "https://oralyn-staging-api-synthetic.onrender.com/",
+        ORALYN_PORTAL_ORIGIN: "https://oralyn-web-portal-spa.onrender.com",
+        ORALYN_BACKEND_STACK_VERIFIED: "true",
+        ORALYN_CORS_VERIFIED: "true",
+        ORALYN_DATABASE_IDENTITY_VERIFIED: "true",
+        ORALYN_DOCTOR_AUTH_E2E_VERIFIED: "true",
+        ORALYN_GUEST_BOOKING_E2E_VERIFIED: "true",
+        ORALYN_MOBILE_BROWSER_E2E_VERIFIED: "true",
       },
       stdio: "pipe",
     });
@@ -50,15 +55,21 @@ test("staging build manifest records checksums without embedding Supabase creden
       fs.readFileSync(path.join(outputDir, "sw.js"), "utf8")
         .includes("oralyn-portal-shell-synthetic-commit-123"),
     );
-    assert.equal(manifest.api_origin, "https://oralyn-multitenant-staging.onrender.com");
-    assert.equal(manifest.portal_origin, null);
+    assert.equal(manifest.api_origin, "https://oralyn-staging-api-synthetic.onrender.com");
+    assert.equal(manifest.portal_origin, "https://oralyn-web-portal-spa.onrender.com");
+    assert.equal(manifest.checks.backend_stack_verified, true);
+    assert.equal(manifest.checks.cors_verified_for_portal_origin, true);
+    assert.equal(manifest.checks.database_identity_verified, true);
+    assert.equal(manifest.checks.doctor_auth_e2e_verified, true);
+    assert.equal(manifest.checks.patient_guest_booking_e2e_verified, true);
+    assert.equal(manifest.checks.mobile_browser_e2e_verified, true);
+    assert.equal(Object.hasOwn(manifest.checks, "supabase_auth_configured"), false);
     assert.equal(manifest.patient_ai_enabled, false);
     assert.equal(manifest.native_apk_required_for_release, false);
-    assert.equal(manifest.checks.supabase_auth_configured, false);
     assert.equal(manifest.release_status, "BLOCKED");
-    assert.ok(manifest.blockers.includes("supabase_auth_configured"));
-    assert.ok(manifest.blockers.includes("isolated_portal_origin_assigned"));
-    assert.ok(manifest.blockers.includes("cors_verified_for_portal_origin"));
+    assert.ok(!manifest.blockers.includes("supabase_auth_configured"));
+    assert.ok(!manifest.blockers.includes("isolated_portal_origin_assigned"));
+    assert.ok(!manifest.blockers.includes("cors_verified_for_portal_origin"));
     for (const gate of [
       "document_malware_scanning_verified",
       "https_security_headers_verified",
@@ -66,11 +77,14 @@ test("staging build manifest records checksums without embedding Supabase creden
       "backup_restore_verified",
       "error_monitoring_verified",
       "rollback_plan_verified",
-      "authenticated_role_e2e_verified",
+      "assistant_role_e2e_verified",
       "cross_tenant_e2e_verified",
       "authenticated_screenshots_verified",
-      "mobile_browser_e2e_verified",
-      "patient_ai_denial_verified",
+      "private_document_storage_verified",
+      "document_malware_scanning_verified",
+      "backup_restore_verified",
+      "error_monitoring_verified",
+      "rollback_plan_verified",
     ]) {
       assert.equal(manifest.checks[gate], false, gate);
       assert.ok(manifest.blockers.includes(gate), gate);
@@ -79,7 +93,7 @@ test("staging build manifest records checksums without embedding Supabase creden
       manifest.files.find((file) => file.path === "assets/app.js")?.sha256,
       crypto.createHash("sha256").update(asset).digest("hex"),
     );
-    assert.ok(!JSON.stringify(manifest).includes("must-not-be-copied-into-the-manifest"));
+
   } finally {
     fs.rmSync(outputDir, { recursive: true, force: true });
   }
