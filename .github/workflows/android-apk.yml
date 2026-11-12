@@ -304,15 +304,30 @@ jobs:
           "$ADB" install -r android/app/build/outputs/apk/release/app-release.apk
           "$ADB" logcat -c
           "$ADB" shell monkey -p com.drpranali.dental 1
-          sleep 18
-          "$ADB" shell uiautomator dump /sdcard/patient-welcome.xml >/dev/null
-          "$ADB" pull /sdcard/patient-welcome.xml build-evidence/patient-welcome.xml
+          # Expo font assets and the first native React render can take longer on cold CI emulators.
+          # Wait for the actual welcome CTA instead of assuming a fixed 18-second startup budget.
+          welcome_ready=0
+          for attempt in $(seq 1 12); do
+            "$ADB" shell uiautomator dump /sdcard/patient-welcome.xml >/dev/null 2>&1 || true
+            "$ADB" pull /sdcard/patient-welcome.xml build-evidence/patient-welcome.xml >/dev/null 2>&1 || true
+            if grep -Fq "Welcome to Oralyn" build-evidence/patient-welcome.xml 2>/dev/null \
+              && grep -Fq "Explore as a guest" build-evidence/patient-welcome.xml 2>/dev/null; then
+              welcome_ready=1
+              break
+            fi
+            sleep 5
+          done
           "$ADB" shell screencap -p /sdcard/patient-welcome.png
           "$ADB" pull /sdcard/patient-welcome.png build-evidence/patient-welcome.png
-          grep -Fq "Welcome to Oralyn" build-evidence/patient-welcome.xml || {
-            echo "::error::Patient welcome/login screen did not render after cold start."
+          if [ "$welcome_ready" != "1" ]; then
+            "$ADB" logcat -d -v brief > build-evidence/patient-startup-logcat.txt || true
+            echo "---- Patient Android UI hierarchy (startup failure) ----"
+            cat build-evidence/patient-welcome.xml || true
+            echo "---- Patient Android startup logcat ----"
+            tail -n 250 build-evidence/patient-startup-logcat.txt || true
+            echo "::error::Patient welcome screen and guest entry did not render within 60 seconds after cold start."
             exit 1
-          }
+          fi
           python3 - <<'PY'
           import re
           import xml.etree.ElementTree as ET
