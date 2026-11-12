@@ -1653,7 +1653,7 @@ function Doctor({
                         ))}
                       </select>
                     </label>
-                    <button className="outline" disabled={!changed || appointmentBusyId === String(appointment.id)} onClick={() => saveAppointment(appointment)}>
+                    <button className="outline" disabled={!changed || Boolean(appointmentBusyId)} onClick={() => saveAppointment(appointment)}>
                       {appointmentBusyId === String(appointment.id) ? "Saving…" : "Save changes"}
                     </button>
                   </div>
