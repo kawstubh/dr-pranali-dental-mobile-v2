@@ -19,8 +19,8 @@ test("global patient search is rendered only in the doctor workspace", () => {
 test("authenticated users cannot switch into another role without signing out", () => {
   assert.match(source, /className="workspace-chip" aria-label=\{role === "doctor" \? "Doctor portal" : "Patient portal"\}/);
   assert.doesNotMatch(source, /<select\s+value=\{role\}/);
-  assert.match(source, /onPatient=\{\(\) => \{\s*R\("patient"\)/);
-  assert.match(source, /onDoctor=\{\(\) => \{\s*R\("doctor"\)/);
+  assert.match(source, /onPatient=\{\(\) => \{\s*navigateRole\("patient", "home"\)/);
+  assert.match(source, /onDoctor=\{\(\) => navigateRole\("doctor", "dashboard"\)/);
 });
 
 test("patient billing and documents use authenticated, patient-scoped APIs", () => {

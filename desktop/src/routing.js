@@ -35,7 +35,11 @@ export function resolvePortalRoute(pathname = "/") {
     .split(/[?#]/, 1)[0]
     .split("/")
     .filter(Boolean);
-  const role = segments[0] === "patient" ? "patient" : "doctor";
+  const requestedRole = segments[0];
+  if (requestedRole && requestedRole !== "doctor" && requestedRole !== "patient") {
+    return { role: "doctor", page: DEFAULT_PAGES.doctor };
+  }
+  const role = requestedRole === "patient" ? "patient" : "doctor";
   const candidate = segments[1] || DEFAULT_PAGES[role];
   const page = ALLOWED_PAGES[role].has(candidate)
     ? candidate
