@@ -432,7 +432,7 @@ jobs:
           # The send action is below the selected time row on smaller Android viewports.
           # Scroll the installed APK, inspect each real UI hierarchy, and tap only when visible.
           found_validation_action=0
-          for index in 1 2 3 4 5 6; do
+          for index in 1 2 3 4 5 6 7 8 9 10; do
             python3 - <<'PY' > build-evidence/validation-tap.txt || true
           import re
           import xml.etree.ElementTree as ET
@@ -440,10 +440,13 @@ jobs:
           for node in root.iter('node'):
               text = node.attrib.get('text', '').strip().casefold()
               label = node.attrib.get('content-desc', '').strip().casefold()
-              if 'send appointment request' in text or 'send appointment request' in label:
+              if ('send appointment request' in text or 'send appointment request' in label) and node.attrib.get('clickable') == 'true':
                   match = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', node.attrib.get('bounds', ''))
-                  if match:
-                      x1, y1, x2, y2 = map(int, match.groups())
+                  if not match:
+                      continue
+                  x1, y1, x2, y2 = map(int, match.groups())
+                  # Ignore clipped/off-screen Android bounds; a partially hidden action can overlap the bottom tab bar.
+                  if x2 > x1 and y2 > y1 and x1 >= 0 and y1 >= 0 and x2 <= 1080 and y2 <= 1676:
                       print((x1 + x2) // 2, (y1 + y2) // 2)
                       break
           PY
@@ -451,7 +454,7 @@ jobs:
               found_validation_action=1
               break
             fi
-            if [ "$index" -lt 6 ]; then
+            if [ "$index" -lt 10 ]; then
               "$ADB" shell input swipe 540 1500 540 500 500
               sleep 1
               "$ADB" shell uiautomator dump "/sdcard/patient-time-slots-action-$index.xml" >/dev/null
