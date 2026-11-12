@@ -37,6 +37,10 @@ test("real browser evidence includes a common 390 by 844 mobile viewport", () =>
   const captureScript = fs.readFileSync(path.join(root, "scripts", "capture-actual-desktop.cjs"), "utf8");
   assert.match(captureScript, /capture\(screenshotName \+ "-390x844\.png", 390, 844, true\)/);
   assert.match(captureScript, /deviceScaleFactor: 1, mobile/);
+  assert.match(captureScript, /async function verifyPwa\(\)/);
+  assert.match(captureScript, /oralyn-portal-shell-v1/);
+  assert.match(captureScript, /pwa_service_worker_controlled=/);
+  assert.match(captureScript, /ORALYN_CAPTURE_OUTPUT/);
 });
 
 test("PWA update flow waits for a user refresh before activating a waiting worker", () => {
@@ -44,4 +48,17 @@ test("PWA update flow waits for a user refresh before activating a waiting worke
   assert.ok(app.includes('pwaRegistration.waiting.postMessage({ type: "SKIP_WAITING" })'));
   assert.ok(app.includes("A new Oralyn portal update is ready"));
   assert.ok(serviceWorker.includes('event.data?.type === "SKIP_WAITING"'));
+});
+
+test("mobile navigation backdrop is rendered without stray escaped newline text", () => {
+  const source = fs.readFileSync(path.join(root, "src", "main.jsx"), "utf8");
+  const styles = fs.readFileSync(path.join(root, "src", "styles.css"), "utf8");
+  const backdropIndex = source.indexOf('className="sidebar-backdrop"');
+  const mainIndex = source.indexOf("<main>", backdropIndex);
+  assert.ok(backdropIndex >= 0 && mainIndex > backdropIndex, "mobile backdrop must sit between the sidebar and main content");
+  const backdropMarkup = source.slice(backdropIndex, mainIndex);
+  assert.match(backdropMarkup, /onClick=\{\(\) => B\(false\)\}\s*\/>/);
+  assert.doesNotMatch(backdropMarkup, /\\\\r\\\\n/, "JSX must not contain literal escaped newline text");
+  assert.ok(styles.includes(".sidebar-backdrop { display: none; }"));
+  assert.ok(styles.includes(".sidebar.open { transform: translateX(0); }"));
 });

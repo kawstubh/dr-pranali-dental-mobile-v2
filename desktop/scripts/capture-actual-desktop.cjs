@@ -5,7 +5,7 @@ const os = require("node:os");
 const crypto = require("node:crypto");
 
 const root = process.cwd();
-const output = path.join(root, "evidence", "actual-desktop");
+const output = process.env.ORALYN_CAPTURE_OUTPUT ? path.resolve(process.env.ORALYN_CAPTURE_OUTPUT) : path.join(root, "evidence", "actual-desktop");
 const chromePath = process.env.CHROME_BIN || (
   process.platform === "win32"
     ? "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
@@ -96,16 +96,25 @@ async function verifyFonts() {
   return status;
 }
 
+async function verifyPwa() {
+  await waitFor(() => evaluate("Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)"), 30000);
+  const status = await evaluate("(async () => { const cacheName = 'oralyn-portal-shell-v1'; const registration = await navigator.serviceWorker.getRegistration('/'); const names = await caches.keys(); const cache = await caches.open(cacheName); const requests = await cache.keys(); const paths = requests.map((request) => new URL(request.url).pathname); const prefixes = ['/v1', '/auth/v1', '/rest/v1', '/storage/v1', '/functions/v1']; const forbidden = paths.filter((pathname) => prefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/'))); return { supported: 'serviceWorker' in navigator, registered: Boolean(registration), active: registration?.active?.state === 'activated', controlled: Boolean(navigator.serviceWorker.controller), cachePresent: names.includes(cacheName), paths, forbidden }; })()");
+  if (!status.supported || !status.registered || !status.active || !status.controlled || !status.cachePresent || status.forbidden.length) {
+    throw new Error("Oralyn PWA shell verification failed: " + JSON.stringify(status));
+  }
+  return status;
+}
 async function captureCurrent(expectedText, screenshotName) {
   await waitFor(() => evaluate('document.readyState === "complete"'));
   await waitFor(() => evaluate(
     "document.body && document.body.innerText.includes(" + JSON.stringify(expectedText) + ")"
   ));
   const fonts = await verifyFonts();
+  const pwa = await verifyPwa();
   await capture(screenshotName + "-1440x1000.png", 1440, 1000);
   await capture(screenshotName + "-1280x800.png", 1280, 800);
   await capture(screenshotName + "-390x844.png", 390, 844, true);
-  return fonts;
+  return { ...fonts, pwa };
 }
 
 async function navigate(route, expectedText, screenshotName) {
@@ -196,6 +205,9 @@ async function navigate(route, expectedText, screenshotName) {
       "bundle_sha256=" + bundleHash,
       "font_plus_jakarta_sans_loaded=" + fontResults.doctorLogin.plusJakartaSans,
       "font_playfair_display_loaded=" + fontResults.doctorLogin.playfairDisplay,
+      "pwa_service_worker_controlled=" + fontResults.doctorLogin.pwa.controlled,
+      "pwa_cache_name_present=" + fontResults.doctorLogin.pwa.cachePresent,
+      "pwa_api_cache_entries=" + fontResults.doctorLogin.pwa.forbidden.length,
       "synthetic_patient_data=none",
       "authenticated_screens=false",
       "mobile_viewport=390x844",
@@ -205,7 +217,7 @@ async function navigate(route, expectedText, screenshotName) {
     fs.writeFileSync(path.join(output, "runtime-errors.txt"), "none observed during signed-out public-route capture\n");
     console.log(JSON.stringify({
       commit, environment, baseUrl, apiBase, bundle: jsFile, bundleHash,
-      fontResults, runtimeErrors,
+      fontResults, pwa: fontResults.doctorLogin.pwa, runtimeErrors,
       screenshots: fs.readdirSync(output).filter((name) => name.endsWith(".png")),
     }));
   } finally {

@@ -566,6 +566,7 @@ function App() {
           </div>
         </div>
       </aside>
+      {mobile && <button className="sidebar-backdrop" aria-label="Close navigation menu" onClick={() => B(false)} />}
       <main>
         <header className="topbar">
           <button className="menu" onClick={() => B(true)}>
