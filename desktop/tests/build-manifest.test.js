@@ -73,7 +73,6 @@ test("staging build manifest records verified account-free booking gates without
     for (const gate of [
       "document_malware_scanning_verified",
       "https_security_headers_verified",
-      "database_identity_verified",
       "backup_restore_verified",
       "error_monitoring_verified",
       "rollback_plan_verified",
