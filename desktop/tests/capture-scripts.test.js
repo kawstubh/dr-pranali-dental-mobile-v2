@@ -16,5 +16,5 @@ test("synthetic Doctor capture uses a safely quoted clinic workspace selector", 
   const source = readFileSync(file, "utf8");
   const selector = "document.querySelector('select[aria-label=\"Switch clinic workspace\"]')";
 
-  assert.equal(source.split(selector).length - 1, 2);
+  assert.equal(source.split(selector).length - 1, 3);
 });
