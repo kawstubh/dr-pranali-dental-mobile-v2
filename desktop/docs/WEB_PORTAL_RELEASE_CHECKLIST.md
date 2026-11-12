@@ -308,3 +308,36 @@ This strengthens the isolated-database blocker: a clean staging database must be
 - **44 unique frontend API paths; zero unmatched paths** against the integrated backend routes after normalizing dynamic path parameters and query strings.
 - Nine backend routes are intentionally not currently called by the portal: membership billing/checkout/webhook, workspace membership update/deactivation, scan screening, WhatsApp template, and periodontogram routes.
 - This is a static path-contract check only. HTTP verb, payload/response shape, auth scope, tenant isolation, patient consent, persistence and browser session behaviour still require authenticated staging E2E tests. It does not close any release gate.
+
+
+## Latest automation verification — 13 Nov 2026
+
+### Canonical portal branch and CI evidence
+
+- Frontend PR [#18](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/pull/18) remains Draft and unmerged. Current PR head at this check: `32c38c4b994919db345f0449be78a77afaab988d` on `feat/oralyn-desktop-app`.
+- PR workflow [#43297783966](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43297783966) ran on that exact PR head and completed successfully. The browser/build job reports **79 tests passed, 0 failed**, npm audit **0 vulnerabilities**, production Vite build passed, public browser capture passed, CI-only Doctor fixture capture passed, and all artifacts uploaded.
+- The workflow's PR merge-build commit is `0c89913529dc6c4f1e7aebdfc3089f05c09af654`; the bundled JS SHA-256 is `d54f70bfbc1b31b154fe5112e473e9f7e3dfbcd113c3295283beced7cb57b3e7`.
+- Actual public browser screenshot artifact [#13980390999](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43297783966/artifacts/13980390999); CI-only synthetic Doctor UI artifact [#13980855610](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43297783966/artifacts/13980855610); staging-targeted static build [#13980820649](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43297783966/artifacts/13980820649).
+- The CI-only Doctor fixture uses synthetic records `Ananya Synthetic` and `Bharat Synthetic`. It verifies rendered Doctor dashboard, directory, odontogram save UI, appointments, Doctor-only intelligence, clinic-switch UI, empty-workspace UI, session restore/expiry/logout and responsive captures. Its own metadata explicitly says `staging_authenticated_e2e=false`, `doctor_password_login_verified=false`, and `cross_organisation_denial=fixture_403_not_backend`. Treat it as UI regression evidence only, not real authentication or backend tenant-isolation acceptance.
+- The public capture is guest/signed-out route evidence. Patient booking and records access screenshots do not establish an authenticated Patient session or patient-visible records.
+- Build manifest remains `release_status=BLOCKED`; all 17 environment/staging acceptance gates remain false. Patient AI remains disabled and native APKs are not release gates.
+
+### Backend integration stack
+
+- Backend integration PR [#56](https://github.com/kawstubh/universal-intelligence-engine/pull/56), head `1d9f4bd6c9f8588b19264ec74486b1a48ae22efb`, remains Draft and unmerged. It consolidates PRs #43–#55 in dependency order on PR #35.
+- Combined PostgreSQL 16.15 migration/security CI [#43292096317](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43292096317): **218 passed**. Engine Tests [#43292096351](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43292096351): **217 passed, 1 expected PostgreSQL-only skip**.
+- The single Alembic head remains `0011_document_clinical_review`, with a disposable CI migration rehearsal from `0005_password_auth` through head. No Neon main or production migration was run.
+- PRs #53/#54 add fail-closed private ClamAV scanning and IPv4/IPv6 socket handling; no scanner service is provisioned. PR #55 uses validated Cloudflare `CF-Connecting-IP` for Render guest-intake rate limiting; the current limiter remains process-local and is not suitable for horizontal scaling without a shared limiter/edge policy.
+- The static API path comparison reports 44 unique frontend paths and no unmatched backend route paths. This is path-level coverage only; methods, payloads, auth, tenant scoping, persistence and sharing still require authenticated staging E2E.
+
+### Fresh isolation and workstation findings
+
+- Render service `oralyn-multitenant-staging` remains on branch `feat/multi-tenant-dental-saas-impl`, last live deploy commit `7f52c0e7d4e69c92bd167c71392a5c756db54b30`, free plan, auto-deploy enabled. It is not running PR #56. Do not push the integration branch to this service before its database target is proven safe.
+- The separate `dr-pranali-dental-api-staging` Render service tracks `integration/uie-dental`; it is not the selected unified portal staging service. The four legacy Doctor/Patient web/test static sites still track `feat/oralyn-iphone-pwa`.
+- Neon project `dr-pranali-dental-recovery` (`jolly-hall-46131276`) has only the `main` branch, PostgreSQL 17.12 and object storage enabled but zero buckets. Read-only aggregate checks found existing clinical rows. It is Free tier, has no IP allow-list, permits public connections and has HIPAA disabled. Do not branch or deploy the portal there because branching would copy existing clinical data into staging.
+- Supabase project `supabase-lime-flower` remains the only active dental project exposed by the connector; it has no development branches. No synthetic Patient account was created in that project.
+- The registered Windows workstation `DESKTOP-OQR8I98` is currently offline (last seen about two hours before this check). Therefore local free space, duplicate preview listeners and the canonical local checkout could not be freshly inspected or repaired. No local files, caches, evidence, project assets or user data were deleted. GitHub-hosted CI is the verified build/test source for this cycle.
+
+### Release decision
+
+**Not release-ready.** Real isolated staging PostgreSQL and Patient auth, a dedicated private document bucket and ClamAV service, a unified HTTPS portal origin, exact CORS/auth redirects, database identity, deployed backend stack, authenticated Doctor/Patient E2E, backend cross-tenant denial, patient-visible sharing, mobile authenticated browser tests, monitoring, backup/restore and rollback remain unverified. Keep all PRs Draft. No merge, production deployment, production migration, secret change, spending or irreversible infrastructure action was performed.
