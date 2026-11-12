@@ -1,9 +1,36 @@
 const ENV = import.meta.env || {};
-const API_BASE = (
-  ENV.DEV
-    ? ""
-    : ENV.VITE_DENTAL_API_URL || ""
-).replace(/\/$/, "");
+
+/**
+ * Resolve the configured API origin without ever allowing a browser token to
+ * be sent to an insecure or malformed endpoint. Vite development uses the
+ * same-origin proxy; deployed builds must provide a canonical HTTPS origin.
+ */
+export function resolveApiBase(env = ENV) {
+  if (env.DEV) return { base: "", error: null };
+  const configured = String(env.VITE_DENTAL_API_URL || "").trim();
+  if (!configured) return { base: "", error: "API_BASE_NOT_CONFIGURED" };
+
+  try {
+    const url = new URL(configured);
+    if (
+      url.protocol !== "https:" ||
+      !url.hostname ||
+      url.username ||
+      url.password ||
+      url.pathname !== "/" ||
+      url.search ||
+      url.hash
+    ) {
+      return { base: "", error: "API_BASE_INVALID" };
+    }
+    return { base: url.origin, error: null };
+  } catch {
+    return { base: "", error: "API_BASE_INVALID" };
+  }
+}
+
+const API_CONFIG = resolveApiBase();
+const API_BASE = API_CONFIG.base;
 
 function query(values = {}) {
   const params = new URLSearchParams();
@@ -17,9 +44,11 @@ function query(values = {}) {
 }
 
 async function request(path, { token, method = "GET", body, headers = {} } = {}) {
-  if (typeof window !== "undefined" && window.location && !ENV.DEV && !API_BASE) {
-    const error = new Error("The portal API URL is not configured for this deployment. Contact the clinic administrator.");
-    error.code = "API_BASE_NOT_CONFIGURED";
+  if (typeof window !== "undefined" && window.location && !ENV.DEV && API_CONFIG.error) {
+    const error = API_CONFIG.error === "API_BASE_NOT_CONFIGURED"
+      ? new Error("The portal API URL is not configured for this deployment. Contact the clinic administrator.")
+      : new Error("The portal API URL must be a canonical HTTPS origin without credentials, path, query or fragment.");
+    error.code = API_CONFIG.error;
     throw error;
   }
   let response;
