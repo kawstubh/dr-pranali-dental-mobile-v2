@@ -168,11 +168,29 @@ async function navigate(route, expectedText, screenshotName) {
       "Sign in with your clinic doctor account",
       "doctor-login"
     );
-    fontResults.patientLogin = await navigate(
-      "/patient/home",
-      "PATIENT PORTAL",
-      "patient-login"
+    const switchedToPatient = await evaluate(
+      "(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').trim().includes('Continue to patient portal')); if (!button) return false; button.click(); return true; })()"
     );
+    if (!switchedToPatient) throw new Error("Doctor-to-Patient portal switch action was not found.");
+    await waitFor(() => evaluate(
+      'location.pathname === "/patient/home" && document.body.innerText.includes("PATIENT PORTAL")'
+    ));
+
+    // The role switch must survive a full reload and browser back/forward.
+    await send("Page.reload", { ignoreCache: true });
+    await waitFor(() => evaluate(
+      'location.pathname === "/patient/home" && document.body.innerText.includes("PATIENT PORTAL")'
+    ));
+    await evaluate("history.back()");
+    await waitFor(() => evaluate(
+      'location.pathname === "/doctor/dashboard" && document.body.innerText.includes("Sign in with your clinic doctor account")'
+    ));
+    await evaluate("history.forward()");
+    await waitFor(() => evaluate(
+      'location.pathname === "/patient/home" && document.body.innerText.includes("PATIENT PORTAL")'
+    ));
+    const routeHistoryPassed = true;
+    fontResults.patientLogin = await captureCurrent("PATIENT PORTAL", "patient-login");
 
     const signupScript = "(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').includes('New here? Create an account')); if (button) button.click(); return !!button; })()";
     const signupClicked = await evaluate(signupScript);
@@ -211,6 +229,7 @@ async function navigate(route, expectedText, screenshotName) {
       "synthetic_patient_data=none",
       "authenticated_screens=false",
       "mobile_viewport=390x844",
+      "role_route_refresh_back_forward=passed",
       "runtime_errors=none",
     ].join("\n") + "\n";
     fs.writeFileSync(path.join(output, "build-info.txt"), metadata);
