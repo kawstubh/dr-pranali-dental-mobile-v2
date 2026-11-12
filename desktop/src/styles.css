@@ -1863,19 +1863,76 @@ td {
   margin-top: 10px;
 }
 .airesult {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  background: #f6fafc;
-  border: 1px solid #dce9f2;
-  border-radius: 10px;
-  padding: 14px;
-  color: #234768;
-  font:
-    12px/1.6 ui-monospace,
-    monospace;
-  max-height: 260px;
-  overflow: auto;
+  display: grid;
+  gap: 14px;
   margin-top: 14px;
+  padding: 16px;
+  border: 1px solid #dce9f2;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f8fcff, #f1f8fd);
+  color: #234768;
+  max-height: 420px;
+  overflow: auto;
+}
+.airesult-summary {
+  margin: 0;
+  color: #163b60;
+  font-size: 15px;
+  line-height: 1.65;
+  font-weight: 650;
+}
+.airesult-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.airesult-section {
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid #e1ebf4;
+  border-radius: 12px;
+  background: #fff;
+}
+.airesult-section h3 {
+  margin: 0 0 8px;
+  color: #0c3b82;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.airesult-section ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.airesult-section li {
+  margin: 5px 0;
+  color: #28435d;
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.airesult-section p,
+.airesult-message {
+  margin: 0;
+  color: #71869b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.airesult-safety {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #bdece8;
+  border-radius: 10px;
+  background: #effbfb;
+  color: #116d70;
+  font-size: 13px;
+  line-height: 1.55;
+}
+@media (max-width: 900px) {
+  .airesult-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .airesult { padding: 13px; }
+  .airesult-grid { grid-template-columns: minmax(0, 1fr); }
 }
 .clinical > div {
   min-width: 0;
@@ -3399,17 +3456,27 @@ table { max-width: 100%; }
 
 
 /* Doctor workflow actions: secure patient linking and editable appointments. */
+.patient-actions-cell {
+  min-width: 300px;
+  vertical-align: top;
+  white-space: normal;
+}
 .patient-row-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  white-space: normal;
 }
 .invite-code-card {
   display: grid;
   gap: 7px;
   margin-top: 9px;
+  width: 100%;
   max-width: 280px;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 11px;
   border: 1px solid var(--line);
   border-radius: 11px;
@@ -3417,19 +3484,28 @@ table { max-width: 100%; }
 }
 .invite-code-card small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.45;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .invite-code-card code {
   display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 8px 10px;
   border: 1px dashed #8eb6d8;
   border-radius: 8px;
   background: #fff;
   color: var(--navy);
-  font-size: 15px;
+  font-size: clamp(12px, 1vw, 14px);
   font-weight: 800;
-  letter-spacing: 1.8px;
+  letter-spacing: 1.2px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   user-select: all;
 }
 .appointment-main {

@@ -205,6 +205,24 @@ async function main() {
   const inviteClicked = await evaluate("(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').includes('Create invite')); if (!button) return false; button.click(); return true; })()");
   if (!inviteClicked) throw new Error("Synthetic patient invite action was not found.");
   await waitFor(() => evaluate('document.body.innerText.includes("SYNTHETIC-INVITE-001")'));
+  const inviteLayout = await evaluate(`(() => {
+    const cell = document.querySelector(".patient-actions-cell");
+    const card = document.querySelector(".invite-code-card");
+    const code = card?.querySelector("code");
+    if (!cell || !card || !code) return null;
+    const cellRect = cell.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+    const codeRect = code.getBoundingClientRect();
+    return {
+      cardWithinCell: cardRect.left >= cellRect.left - 1 && cardRect.right <= cellRect.right + 1,
+      codeWithinCard: codeRect.left >= cardRect.left - 1 && codeRect.right <= cardRect.right + 1,
+      cardNoHorizontalOverflow: card.scrollWidth <= card.clientWidth + 1,
+      codeNoHorizontalOverflow: code.scrollWidth <= code.clientWidth + 1,
+    };
+  })()`);
+  if (!inviteLayout || Object.values(inviteLayout).some((value) => value !== true)) {
+    throw new Error("Synthetic patient invite card overflows its table cell: " + JSON.stringify(inviteLayout));
+  }
   await capture("doctor-patient-directory-1440x1000.png");
 
   await navigate("/doctor/clinical", "Clinical workspace");

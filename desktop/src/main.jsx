@@ -1386,7 +1386,7 @@ function Doctor({
                     recorded_chart_findings: findings,
                   },
                 });
-                setAiResult(JSON.stringify(r.result || r, null, 2));
+                setAiResult(r.result || r);
               } catch (e) {
                 setAiResult(
                   "Clinical intelligence is unavailable: " + e.message,
@@ -1398,7 +1398,32 @@ function Doctor({
           >
             {aiBusy ? "Preparing summary…" : "Generate clinician summary"}
           </button>
-          {aiResult && <pre className="airesult">{aiResult}</pre>}
+          {aiResult && (
+            <div className="airesult" aria-live="polite">
+              {typeof aiResult === "string" ? (
+                <p className="airesult-message" role="status">{aiResult}</p>
+              ) : (
+                <>
+                  {aiResult.summary && <p className="airesult-summary">{aiResult.summary}</p>}
+                  <div className="airesult-grid">
+                    {[
+                      ["Documented findings", aiResult.documented_findings],
+                      ["Missing information", aiResult.missing_information],
+                      ["Questions for clinician review", aiResult.clinician_questions],
+                    ].map(([heading, entries]) => (
+                      <section className="airesult-section" key={heading}>
+                        <h3>{heading}</h3>
+                        {Array.isArray(entries) && entries.length ? (
+                          <ul>{entries.map((entry, index) => <li key={index}>{String(entry)}</li>)}</ul>
+                        ) : <p>None recorded.</p>}
+                      </section>
+                    ))}
+                  </div>
+                  {aiResult.safety_note && <p className="airesult-safety">{aiResult.safety_note}</p>}
+                </>
+              )}
+            </div>
+          )}
         </Panel>
         <div className="clinical">
           <Panel
@@ -1567,7 +1592,7 @@ function Doctor({
                     </td>
                     <td>{p[2]}</td>
                     <td>{p[3]}</td>
-                    <td>
+                    <td className="patient-actions-cell">
                       <div className="patient-row-actions">
                         <button className="link" onClick={() => { setSelectedPatientId(String(p[2])); P("clinical"); }}>
                           Open ›
