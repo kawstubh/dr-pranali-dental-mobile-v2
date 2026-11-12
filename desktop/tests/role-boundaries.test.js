@@ -139,6 +139,11 @@ test("private clinical documents require a doctor review before patient sharing"
 });
 
 test("doctor patient invitations use a clinic-scoped non-AI management route", () => {
-  assert.match(apiSource, /createPatientInvite:[\\s\\S]*?\\/v1\\/dental\\/doctor\\/patients\\/.*?\\/invite/);
-  assert.doesNotMatch(apiSource, /\\/v1\\/dental\\/ai\\/doctor\\/patients\\/.*?\\/invite/);
+  const start = apiSource.indexOf("createPatientInvite:");
+  const end = apiSource.indexOf("doctorTreatmentPlans:", start);
+  assert.ok(start >= 0 && end > start);
+  const inviteMethod = apiSource.slice(start, end);
+  assert.ok(inviteMethod.includes("/v1/dental/doctor/patients/"));
+  assert.ok(inviteMethod.includes("/invite"));
+  assert.ok(!inviteMethod.includes("/v1/dental/ai/"));
 });
