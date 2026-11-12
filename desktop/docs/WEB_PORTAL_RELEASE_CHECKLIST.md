@@ -156,3 +156,15 @@ No PR was merged, no Render service or secret was changed, no Supabase branch/bu
 
 No staging service or environment was changed by this review.
 
+## Browser API-origin guard — 12 Nov 2026
+
+The portal client now resolves `VITE_DENTAL_API_URL` through a fail-closed validator before making authenticated requests:
+
+- Deployed builds accept only a canonical HTTPS origin.
+- Credentials, path prefixes, query strings, fragments, malformed and non-HTTPS URLs are rejected before any Bearer token is sent.
+- Vite development continues to use its same-origin `/v1` proxy and ignores arbitrary API URL overrides.
+- Missing or invalid production configuration returns a stable configuration error instead of attempting a relative or insecure request.
+
+Regression coverage includes valid HTTPS origins, trailing slash normalization, HTTP rejection, credential rejection, path/query/fragment rejection, malformed values, missing configuration and development proxy behavior.
+
+This client-side guard is defense in depth only. It does not replace server-side authentication, exact-origin CORS, CSP/security headers, tenant authorization or staging-origin verification.
