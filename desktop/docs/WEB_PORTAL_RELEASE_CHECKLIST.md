@@ -5,7 +5,7 @@
 ## Canonical worktrees and current heads
 
 - Frontend repository: `kawstubh/dr-pranali-dental-mobile-v2`, branch `feat/oralyn-desktop-app`, portal under `desktop/`.
-- Current frontend branch head checked 12 Nov 2026: `357fb81c725c872d7133ed4adfe20b3cd6c1e3ae` (release-checklist documentation update only). The last code-bearing portal commit `024b6784e036be09e6d5ea3b5803444ea390e298` passed the web CI run below.
+- Current frontend branch head checked 12 Nov 2026: `c25cceefb630f637285a2df0e5fcd4368b9b84dd`. This head adds Doctor patient-invite generation, appointment rescheduling/status updates, owner/admin doctor-account provisioning, and regression tests. The latest code-bearing CI run below is for the earlier commit `024b6784e036be09e6d5ea3b5803444ea390e298`; no CI result or screenshot artifact has yet been surfaced for the new Doctor workflow commits.
 - Backend repository: `kawstubh/universal-intelligence-engine`.
 - Local backend checkout was on `feat/dental-document-content-validation` at `6aed180f4dcb699fd8d05f09eb0ba8ef9570ad16` (PR #48); PR #49 is the next review-gate stack head.
 
@@ -52,7 +52,17 @@ Current web CI:
 - Frontend head `024b6784e036be09e6d5ea3b5803444ea390e298`.
 - Oralyn Desktop CI run [#43232473457](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43232473457) passed regression tests, dependency audit, Vite build, real responsive public-route captures and artifact uploads.
 - Screenshot artifact [#13951051934](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43232473457/artifacts/13951051934); static staging-targeted bundle [#13950788375](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43232473457/artifacts/13950788375).
-- Screenshots are genuine running-build public/authentication and guest-booking routes. They are not authenticated Doctor dashboard or Patient record acceptance evidence.
+- Screenshots are genuine running-build public/authentication and guest-booking routes from commit `024b6784e036be09e6d5ea3b5803444ea390`. They are stale relative to the current Doctor workflow changes and are not authenticated Doctor dashboard or Patient record acceptance evidence.
+
+## Latest Doctor workflow implementation — CI pending
+
+The current portal branch now includes:
+- Doctor-generated, 24-hour patient invite codes with copy/manual-copy fallback in the patient directory.
+- Doctor appointment rescheduling using clinic-local `datetime-local` inputs and status updates restricted to the backend's allowed status values. Updates are serialized to avoid concurrent edits.
+- Owner/admin Doctor account provisioning using clinic-issued email/password accounts (12+ character initial password), with the new doctor ID prefilled for cross-workspace membership assignment.
+- API contract tests for appointment PATCH, patient invite generation and Doctor account creation, plus UI regression assertions.
+
+These changes are committed on the current Draft PR #18 branch. They are not yet CI-verified, and no new authenticated browser screenshots have been captured for them. Do not treat them as accepted until a fresh run and browser smoke tests pass.
 
 ## Live staging checks — 12 Nov 2026
 
