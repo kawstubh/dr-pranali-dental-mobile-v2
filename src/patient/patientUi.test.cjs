@@ -189,3 +189,21 @@ test('Patient Android emulator smoke test supports hardware or software accelera
   assert.match(workflow, /Android emulator did not connect to ADB/);
   assert.match(workflow, /timeout-minutes: 30/);
 });
+test('Patient My Care navigation exposes an Android-accessible button label', () => {
+  assert.match(ui, /accessibilityRole="button" accessibilityLabel="My care and shared records"/);
+  assert.match(workflow, /label == 'My care and shared records'\.casefold\(\)/);
+});
+
+test('Patient Android smoke setup installs the emulator before checking its binary', () => {
+  const install = workflow.indexOf('--install "emulator"');
+  const verify = workflow.indexOf('if [ ! -x "$SDK_ROOT/emulator/emulator" ]');
+  assert.ok(install >= 0 && verify > install, 'emulator must be installed before its executable is required');
+  assert.match(workflow, /Android SDK sdkmanager is unavailable/);
+  assert.match(workflow, /Android emulator binary was not installed/);
+});
+
+test('built Patient APK is checked for the exact licensed local font files', () => {
+  assert.match(workflow, /verify-patient-apk-fonts\.py/);
+  assert.match(read('scripts/verify-patient-apk-fonts.py'), /Inter Regular\/Medium\/SemiBold\/Bold\/ExtraBold/);
+  assert.match(read('scripts/verify-patient-apk-fonts.py'), /Feather\.ttf/);
+});

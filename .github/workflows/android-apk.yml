@@ -166,6 +166,10 @@ jobs:
             echo "::error::APK does not contain an embedded JavaScript bundle."
             exit 1
           }
+      - name: Verify licensed fonts inside the signed Patient APK
+        if: ${{ always() && steps.verify_apk.outcome == 'success' }}
+        run: python3 scripts/verify-patient-apk-fonts.py android/app/build/outputs/apk/release/app-release.apk
+
       - name: Export Patient desktop web build
         id: export_web
         if: ${{ always() && steps.verify_apk.outcome == 'success' }}
@@ -226,13 +230,31 @@ jobs:
           export ANDROID_SDK_HOME="$HOME/.android"
           export ANDROID_AVD_HOME="$HOME/.android/avd"
           mkdir -p "$ANDROID_AVD_HOME"
-          test -x "$SDKMANAGER"
-          test -x "$AVDMANAGER"
-          test -x "$SDK_ROOT/emulator/emulator"
+          printf 'sdk_root=%s\nsdkmanager=%s\navdmanager=%s\n' "$SDK_ROOT" "$SDKMANAGER" "$AVDMANAGER" >build-evidence/android-sdk-info.txt
+          if [ -z "$SDKMANAGER" ] || [ ! -x "$SDKMANAGER" ]; then
+            find "$SDK_ROOT/cmdline-tools" -maxdepth 5 -type f -name sdkmanager -print >build-evidence/sdkmanager-locations.txt 2>&1 || true
+            echo "::error::Android SDK sdkmanager is unavailable at $SDK_ROOT."
+            exit 1
+          fi
+          if [ -z "$AVDMANAGER" ] || [ ! -x "$AVDMANAGER" ]; then
+            find "$SDK_ROOT/cmdline-tools" -maxdepth 5 -type f -name avdmanager -print >build-evidence/avdmanager-locations.txt 2>&1 || true
+            echo "::error::Android SDK avdmanager is unavailable at $SDK_ROOT."
+            exit 1
+          fi
           yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --licenses >/dev/null 2>&1 || true
           if ! timeout 360 "$SDKMANAGER" --sdk_root="$SDK_ROOT" --install "emulator" "platform-tools" "system-images;android-35;google_apis;x86_64" >build-evidence/sdkmanager.log 2>&1; then
             cat build-evidence/sdkmanager.log
             echo "::error::Android SDK package installation failed."
+            exit 1
+          fi
+          if [ ! -x "$SDK_ROOT/emulator/emulator" ]; then
+            cat build-evidence/sdkmanager.log
+            ls -la "$SDK_ROOT" "$SDK_ROOT/emulator" >build-evidence/emulator-install-state.txt 2>&1 || true
+            echo "::error::Android emulator binary was not installed at $SDK_ROOT/emulator/emulator."
+            exit 1
+          fi
+          if [ ! -x "$ADB" ]; then
+            echo "::error::Android platform-tools adb is unavailable at $ADB."
             exit 1
           fi
           printf 'no\n' | "$AVDMANAGER" create avd --force --name oralyn-patient-ci --package "system-images;android-35;google_apis;x86_64" --device pixel_2 --path "$ANDROID_AVD_HOME/oralyn-patient-ci.avd" >build-evidence/avdmanager.log 2>&1
@@ -422,7 +444,9 @@ jobs:
           import xml.etree.ElementTree as ET
           root = ET.parse('build-evidence/patient-home-return.xml').getroot()
           for node in root.iter('node'):
-              if node.attrib.get('text') == 'View my care and shared records':
+              text = node.attrib.get('text', '').strip().casefold()
+              label = node.attrib.get('content-desc', '').strip().casefold()
+              if text == 'View my care and shared records'.casefold() or label == 'My care and shared records'.casefold():
                   match = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', node.attrib.get('bounds', ''))
                   if match:
                       x1, y1, x2, y2 = map(int, match.groups())
@@ -444,7 +468,11 @@ jobs:
             echo "::error::Fatal Patient Android runtime or local font loading error detected."
             exit 1
           fi
-          printf 'commit=%s\nenvironment=staging\napi=https://oralyn-multitenant-staging.onrender.com\npackage=com.drpranali.dental\nfonts=Inter-v20-OFL-1.1\n' "$GITHUB_SHA" > build-evidence/build-info.txt
+          if ! grep -Fq "Local Inter font assets loaded." build-evidence/patient-logcat.txt; then
+            echo "::error::The installed Patient APK did not confirm successful local Inter font loading."
+            exit 1
+          fi
+          printf 'commit=%s\nenvironment=staging\napi=https://oralyn-multitenant-staging.onrender.com\npackage=com.drpranali.dental\nfonts=Inter-v20-OFL-1.1;Feather-MIT\n' "$GITHUB_SHA" > build-evidence/build-info.txt
           if grep -E "FATAL EXCEPTION|No safe area value available|Invariant Violation" build-evidence/patient-logcat.txt; then
             echo "::error::Fatal Patient Android startup or navigation error detected."
             exit 1
