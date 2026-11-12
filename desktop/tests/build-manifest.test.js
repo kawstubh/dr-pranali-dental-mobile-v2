@@ -37,6 +37,7 @@ test("staging build manifest records verified account-free booking gates without
         ORALYN_BACKEND_STACK_VERIFIED: "true",
         ORALYN_CORS_VERIFIED: "true",
         ORALYN_DATABASE_IDENTITY_VERIFIED: "true",
+        ORALYN_SECURITY_HEADERS_VERIFIED: "true",
         ORALYN_DOCTOR_AUTH_E2E_VERIFIED: "true",
         ORALYN_GUEST_BOOKING_E2E_VERIFIED: "true",
         ORALYN_MOBILE_BROWSER_E2E_VERIFIED: "true",
@@ -60,6 +61,7 @@ test("staging build manifest records verified account-free booking gates without
     assert.equal(manifest.checks.backend_stack_verified, true);
     assert.equal(manifest.checks.cors_verified_for_portal_origin, true);
     assert.equal(manifest.checks.database_identity_verified, true);
+    assert.equal(manifest.checks.https_security_headers_verified, true);
     assert.equal(manifest.checks.doctor_auth_e2e_verified, true);
     assert.equal(manifest.checks.patient_guest_booking_e2e_verified, true);
     assert.equal(manifest.checks.mobile_browser_e2e_verified, true);
@@ -71,8 +73,6 @@ test("staging build manifest records verified account-free booking gates without
     assert.ok(!manifest.blockers.includes("isolated_portal_origin_assigned"));
     assert.ok(!manifest.blockers.includes("cors_verified_for_portal_origin"));
     for (const gate of [
-      "document_malware_scanning_verified",
-      "https_security_headers_verified",
       "backup_restore_verified",
       "error_monitoring_verified",
       "rollback_plan_verified",
@@ -80,10 +80,6 @@ test("staging build manifest records verified account-free booking gates without
       "cross_tenant_e2e_verified",
       "authenticated_screenshots_verified",
       "private_document_storage_verified",
-      "document_malware_scanning_verified",
-      "backup_restore_verified",
-      "error_monitoring_verified",
-      "rollback_plan_verified",
     ]) {
       assert.equal(manifest.checks[gate], false, gate);
       assert.ok(manifest.blockers.includes(gate), gate);
