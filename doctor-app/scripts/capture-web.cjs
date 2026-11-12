@@ -2,11 +2,11 @@ const { spawn, execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const chromePath = process.env.CHROME_BIN || (process.platform === 'win32' ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : 'google-chrome');
-const port = 9223, baseUrl = 'http://127.0.0.1:19007';
+const port = Number(process.env.CDP_PORT || 9223), baseUrl = process.env.DOCTOR_WEB_BASE_URL || 'http://127.0.0.1:19007';
 const outDir = path.join(process.cwd(), 'build-evidence', 'doctor-web');
 fs.mkdirSync(outDir, { recursive: true });
 const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-const chrome = spawn(chromePath, ['--headless=new','--no-sandbox','--disable-gpu','--hide-scrollbars','--remote-debugging-port='+port,'--user-data-dir='+path.join(process.cwd(),'.chrome-doctor-profile-'+process.pid),'--window-size=1440,1000',baseUrl], {stdio:'ignore',windowsHide:true});
+const chrome = spawn(chromePath, ['--headless=new','--no-sandbox','--disable-gpu','--hide-scrollbars','--remote-debugging-port='+port,'--remote-allow-origins=*','--disable-dev-shm-usage','--user-data-dir='+path.join(process.cwd(),'.chrome-doctor-profile-'+process.pid),'--window-size=1440,1000',baseUrl], {stdio:'ignore',windowsHide:true});
 let ws, nextId=0;
 const pending=new Map(), sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function waitFor(fn,ms=20000){const end=Date.now()+ms;while(Date.now()<end){const v=await fn();if(v)return v;await sleep(250);}throw new Error('Timed out waiting for Doctor desktop UI');}

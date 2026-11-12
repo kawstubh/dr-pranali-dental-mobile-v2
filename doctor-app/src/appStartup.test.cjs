@@ -79,3 +79,10 @@ test('Android smoke test launches the exact Doctor package and captures previous
   assert.doesNotMatch(workflow, /monkey -p com\.drprani\.dental\.doctor/);
   assert.match(workflow, /doctor-previous-runtime-errors\.txt/);
 });
+
+test('Android emulator smoke test checks KVM permissions and retains failure diagnostics', () => {
+  assert.match(workflow, /sudo chmod 666 \/dev\/kvm/);
+  assert.match(workflow, /Android emulator requires \/dev\/kvm/);
+  assert.match(workflow, /devices -l/);
+  assert.match(workflow, /Android emulator did not connect to ADB/);
+});

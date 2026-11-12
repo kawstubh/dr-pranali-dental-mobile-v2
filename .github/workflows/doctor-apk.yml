@@ -286,6 +286,7 @@ jobs:
           path: doctor-app/build-evidence/previous-apk
           github-token: ${{ github.token }}
       - name: Install and smoke-test Doctor APK on Android emulator
+        timeout-minutes: 25
         if: ${{ always() && steps.verify_apk.outcome == 'success' }}
         env:
           DENTAL_STAGING_DOCTOR_EMAIL: ${{ secrets.DENTAL_STAGING_DOCTOR_EMAIL }}
@@ -331,8 +332,24 @@ jobs:
           fi
           test -x "$SDK_ROOT/emulator/emulator"
           "$ADB" start-server
+          if [ ! -e /dev/kvm ]; then
+            echo "::error::Android emulator requires /dev/kvm, but the runner does not expose it."
+            exit 1
+          fi
+          sudo chmod 666 /dev/kvm
+          if [ ! -r /dev/kvm ] || [ ! -w /dev/kvm ]; then
+            ls -l /dev/kvm || true
+            echo "::error::Android emulator KVM device is not readable and writable by the runner."
+            exit 1
+          fi
+          ls -l /dev/kvm > build-evidence/kvm-permissions.txt
           "$SDK_ROOT/emulator/emulator" -avd oralyn-doctor-ci -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -wipe-data >build-evidence/emulator.log 2>&1 &
-          timeout 240 "$ADB" wait-for-device
+          if ! timeout 240 "$ADB" wait-for-device; then
+            "$ADB" devices -l > build-evidence/adb-devices.txt 2>&1 || true
+            cat build-evidence/emulator.log || true
+            echo "::error::Android emulator did not connect to ADB."
+            exit 1
+          fi
           boot=""
           for attempt in $(seq 1 90); do
             boot="$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
