@@ -41,6 +41,13 @@
       }
     },
     "web": {
+      "name": "Oralyn Patient Portal",
+      "shortName": "Oralyn",
+      "themeColor": "#0C3B82",
+      "backgroundColor": "#F4FBFF",
+      "display": "standalone",
+      "orientation": "portrait",
+      "lang": "en-IN",
       "favicon": "./assets/patient-favicon.png"
     }
   }
