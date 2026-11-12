@@ -73,7 +73,7 @@ test("build manifest stamps a unique service-worker cache before checksumming ou
   try {
     fs.writeFileSync(
       path.join(outputDir, "sw.js"),
-      'const CACHE_NAME = "oralyn-portal-shell-__ORALYN_BUILD_ID__";\\n',
+      'const CACHE_NAME = "oralyn-portal-shell-__ORALYN_BUILD_ID__";\n',
       "utf8",
     );
     fs.writeFileSync(path.join(outputDir, "index.html"), "<!doctype html>", "utf8");
