@@ -1618,10 +1618,10 @@ function Doctor({
             <div className="empty-state">{dashboardSummaryLoading ? "Loading live workspace metrics…" : dashboardUnavailable}</div>
           )}
           <div className="listrow">
-            Patients in clinic <b>{patients.length}</b>
+            Patients in clinic <b>{dashboardSummary ? dashboardCount("patient_count") : patients.length}</b>
           </div>
           <div className="listrow">
-            Appointments loaded <b>{appointments.length}</b>
+            Appointments loaded <b>{dashboardSummary ? dashboardCount("appointment_count") : appointments.length}</b>
           </div>
         </Panel>
       </div>
