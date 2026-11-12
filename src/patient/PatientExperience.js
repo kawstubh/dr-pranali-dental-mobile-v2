@@ -12,7 +12,7 @@ import { useTranslation, LanguageSwitch } from '../i18n';
 import { BRAND } from '../brandConstants';
 import { DENTAL_SERVICES, DENTAL_SERVICE_CATEGORIES } from '../../shared/dentalServices';
 import { signInWithGoogle, supabase } from '../auth/googleAuth';
-import { DENTAL_API_URL, requestPublicAppointment } from '../api/dentalApi';
+import { DENTAL_API_URL, requestPublicAppointment, getPatientProfile, linkPatientRecord, getPatientAppointments, getPatientChart } from '../api/dentalApi';
 
 const C = {
   navy: '#0C3B82', blue: '#0A84E8', teal: '#00C6C8', ice: '#F4FBFF',
@@ -385,13 +385,63 @@ function ContactScreen({ clinic, desktop = false }) {
 }
 
 
-function MyCareScreen({ session, onContact, onBook, onConnectAccount, desktop = false }) {
+function formatPatientDate(value) {
+  if (!value) return 'Time to be confirmed';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+function patientDataErrorMessage(error) {
+  if (error?.code === 'PATIENT_AI_DISABLED' || error?.status === 404) {
+    return 'Patient record services are not enabled on this staging API yet. Your sign-in remains active; please try again after the clinic API update.';
+  }
+  if (error?.status === 401) {
+    return 'Your clinic session has expired. Please sign in again to view your shared records.';
+  }
+  return error?.message || 'We could not load your clinic record. Please try again.';
+}
+
+function MyCareScreen({
+  session,
+  profile,
+  appointments = [],
+  chart = [],
+  loading = false,
+  error = '',
+  linking = false,
+  onContact,
+  onBook,
+  onConnectAccount,
+  onLink,
+  onRetry,
+  desktop = false,
+}) {
   const user = session?.user || null;
-  const name = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || 'Patient';
   const signedIn = Boolean(user?.id);
+  const linked = Boolean(profile?.linked && profile?.patient);
+  const name = profile?.patient?.name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || 'Patient';
+  const [inviteCode, setInviteCode] = useState('');
+  const [linkError, setLinkError] = useState('');
   const panel = { flex: 1, minWidth: desktop ? 300 : '100%', padding: 16, borderRadius: 18, borderWidth: 1, borderColor: C.border, backgroundColor: C.white };
   const panelTitle = { fontSize: 14, fontWeight: '800', color: C.navy, marginBottom: 8 };
   const panelCopy = { fontSize: 11, lineHeight: 17, color: C.muted, marginTop: 5 };
+  const row = { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.border };
+  const submitLink = async () => {
+    const code = inviteCode.replace(/[^a-z0-9]/gi, '').toUpperCase();
+    if (code.length < 8 || code.length > 32) {
+      setLinkError('Enter the clinic invite code (8-32 letters or numbers).');
+      return;
+    }
+    setLinkError('');
+    try {
+      await onLink(code);
+      setInviteCode('');
+    } catch (linkFailure) {
+      setLinkError(linkFailure?.message || 'The clinic invite could not be linked. Please check the code with the clinic.');
+    }
+  };
+
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.pageContent, desktop && styles.desktopPageContent]}>
       <PageIntro eyebrow="YOUR CLINIC ACCOUNT" title="My care" subtitle="A calm place to keep track of your visits, shared records and clinic communication." />
@@ -403,27 +453,84 @@ function MyCareScreen({ session, onContact, onBook, onConnectAccount, desktop = 
           <Text style={{ fontSize: 15, fontWeight: '800', color: C.navy }}>{signedIn ? name : 'Guest visitor'}</Text>
           <Text style={{ fontSize: 11, color: C.muted, marginTop: 3 }}>{signedIn ? (user.email || 'Clinic account connected') : 'Connect your clinic account to associate this space with your profile.'}</Text>
         </View>
-        <View style={{ paddingHorizontal: 10, paddingVertical: 7, borderRadius: 10, backgroundColor: signedIn ? C.softTeal : C.softBlue }}>
-          <Text style={{ fontSize: 9, fontWeight: '800', color: signedIn ? C.green : C.blue }}>{signedIn ? 'ACCOUNT CONNECTED' : 'GUEST MODE'}</Text>
+        <View style={{ paddingHorizontal: 10, paddingVertical: 7, borderRadius: 10, backgroundColor: linked ? C.softTeal : C.softBlue }}>
+          <Text style={{ fontSize: 9, fontWeight: '800', color: linked ? C.green : C.blue }}>{linked ? 'CLINIC RECORD LINKED' : signedIn ? 'ACCOUNT CONNECTED' : 'GUEST MODE'}</Text>
         </View>
       </View>
       {!signedIn && <View style={{ padding: 15, borderRadius: 16, backgroundColor: C.softBlue, borderWidth: 1, borderColor: C.border, marginBottom: 14 }}>
         <Text style={{ fontSize: 13, fontWeight: '800', color: C.navy }}>Connect your clinic profile</Text>
-        <Text style={panelCopy}>Sign in with the clinic's existing Google account to associate your patient portal session. Your clinic must still share records separately.</Text>
+        <Text style={panelCopy}>Sign in with the clinic's existing Google account, then link the one-time invite code shared by your clinic.</Text>
         <ActionButton label="Continue with clinic sign-in" icon="log-in" variant="soft" onPress={onConnectAccount} />
+      </View>}
+      {signedIn && loading && <View style={{ ...panel, alignItems: 'center', paddingVertical: 24, marginBottom: 14 }}>
+        <ActivityIndicator size="small" color={C.blue} />
+        <Text style={{ fontSize: 13, fontWeight: '800', color: C.navy, marginTop: 10 }}>Loading your clinic record</Text>
+        <Text style={panelCopy}>Checking the information securely shared with your account.</Text>
+      </View>}
+      {signedIn && !loading && error ? <View style={{ ...panel, marginBottom: 14 }}>
+        <Text style={panelTitle}>Clinic records temporarily unavailable</Text>
+        <Text style={panelCopy}>{error}</Text>
+        <View style={{ marginTop: 12 }}>
+          <ActionButton label="Try again" icon="refresh-cw" variant="soft" onPress={onRetry} />
+        </View>
+      </View> : null}
+      {signedIn && !loading && !error && !linked && <View style={{ ...panel, marginBottom: 14 }}>
+        <Text style={panelTitle}>Link your clinic record</Text>
+        <Text style={panelCopy}>Enter the one-time invite code provided by Dr. Pranali Dental Clinic. The code links only the patient record assigned to your signed-in account.</Text>
+        <View style={{ marginTop: 12 }}>
+          <Text style={{ fontSize: 10, fontWeight: '800', color: C.navy, marginBottom: 6 }}>CLINIC INVITE CODE</Text>
+          <TextInput
+            style={styles.fieldInput}
+            value={inviteCode}
+            onChangeText={value => { setInviteCode(value); setLinkError(''); }}
+            placeholder="Enter invite code"
+            autoCapitalize="characters"
+            autoCorrect={false}
+            maxLength={32}
+            accessibilityLabel="Clinic invite code"
+          />
+        </View>
+        {linkError ? <Text style={styles.formMessage}>{linkError}</Text> : null}
+        <View style={{ marginTop: 10 }}>
+          <ActionButton label={linking ? 'Linking record...' : 'Link clinic record'} icon="link" onPress={submitLink} disabled={linking || !inviteCode.trim()} />
+        </View>
+        {linking ? <ActivityIndicator size="small" color={C.blue} style={{ marginTop: 10 }} /> : null}
+        <Text style={panelCopy}>If you do not have a code, ask the clinic team to create a patient invite from the Doctor app.</Text>
       </View>}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 13 }}>
         <View style={panel}>
           <Text style={panelTitle}>Treatment journey</Text>
-          <EmptyState icon="activity" title="No visit history yet" message="Visit summaries and treatment milestones shared by the clinic will appear here." />
+          {linked && !loading && !error && appointments.length > 0 ? appointments.map(item => (
+            <View key={item.id} style={row}>
+              <Icon name="calendar" size={17} color={C.blue} />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ fontSize: 12, fontWeight: '800', color: C.navy }}>{item.treatment_type || 'Dental appointment'}</Text>
+                <Text style={panelCopy}>{formatPatientDate(item.starts_at)}</Text>
+              </View>
+              <Text style={{ fontSize: 9, fontWeight: '800', color: C.green }}>{item.status || 'Requested'}</Text>
+            </View>
+          )) : <EmptyState icon="activity" title="No visit history yet" message={linked ? 'Appointments shared by your clinic will appear here.' : 'Visit summaries and treatment milestones shared by the clinic will appear here after your record is linked.'} />}
         </View>
         <View style={panel}>
           <Text style={panelTitle}>Clinical records</Text>
-          <EmptyState icon="file-text" title="No records shared yet" message="Reports and documents released by your clinic will appear here." />
+          {linked && !loading && !error && chart.length > 0 ? chart.map((entry, index) => (
+            <View key={entry.id || entry.tooth_fdi || index} style={row}>
+              <Icon name="grid" size={17} color={C.blue} />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ fontSize: 12, fontWeight: '800', color: C.navy }}>Tooth {entry.tooth_fdi || 'chart entry'}</Text>
+                <Text style={panelCopy}>{entry.status || 'Update shared by your clinic'}</Text>
+              </View>
+            </View>
+          )) : <EmptyState icon="file-text" title="No records shared yet" message="Reports and chart entries released by your clinic will appear here." />}
+          {linked && chart.length > 0 ? <Text style={panelCopy}>These are entries shared by your clinic. Ask your dentist to explain any clinical finding.</Text> : null}
         </View>
         <View style={panel}>
           <Text style={panelTitle}>Invoices</Text>
-          <EmptyState icon="credit-card" title="No invoices shared yet" message="Billing statements shared by the clinic will appear here." />
+          <EmptyState icon="credit-card" title="No invoices shared yet" message="Invoice and receipt services are not connected to this staging build. No balances or payment amounts are estimated." />
+        </View>
+        <View style={panel}>
+          <Text style={panelTitle}>Private documents</Text>
+          <EmptyState icon="lock" title="Secure documents are not connected yet" message="Private reports and files will appear here after the clinic's secure document service is available." />
         </View>
         <View style={panel}>
           <Text style={panelTitle}>Clinic communication</Text>
@@ -444,6 +551,9 @@ export default function PatientExperience() {
   const [tab, setTab] = useState('Home');
   const [selectedReason, setSelectedReason] = useState('');
   const [patientSession, setPatientSession] = useState(null);
+  const [patientData, setPatientData] = useState({ profile: null, appointments: [], chart: [], loading: false, error: '' });
+  const [patientDataRefresh, setPatientDataRefresh] = useState(0);
+  const [patientLinking, setPatientLinking] = useState(false);
   useEffect(() => {
     let active = true;
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -481,12 +591,63 @@ export default function PatientExperience() {
       subscription?.unsubscribe?.();
     };
   }, []);
+  useEffect(() => {
+    let active = true;
+    const accessToken = patientSession?.access_token;
+    if (!accessToken) {
+      setPatientData({ profile: null, appointments: [], chart: [], loading: false, error: '' });
+      return () => { active = false; };
+    }
+    setPatientData(current => ({ ...current, loading: true, error: '' }));
+    const loadPatientData = async () => {
+      const profileResponse = await getPatientProfile(accessToken);
+      const profile = profileResponse?.result || { linked: false, patient: null };
+      if (!profile.linked) {
+        if (active) setPatientData({ profile, appointments: [], chart: [], loading: false, error: '' });
+        return;
+      }
+      const [appointmentResponse, chartResponse] = await Promise.all([
+        getPatientAppointments(accessToken),
+        getPatientChart(accessToken),
+      ]);
+      if (!active) return;
+      setPatientData({
+        profile,
+        appointments: Array.isArray(appointmentResponse?.result) ? appointmentResponse.result : [],
+        chart: Array.isArray(chartResponse?.result) ? chartResponse.result : [],
+        loading: false,
+        error: '',
+      });
+    };
+    loadPatientData().catch(failure => {
+      if (active) setPatientData({
+        profile: null,
+        appointments: [],
+        chart: [],
+        loading: false,
+        error: patientDataErrorMessage(failure),
+      });
+    });
+    return () => { active = false; };
+  }, [patientSession?.access_token, patientDataRefresh]);
+
   const [globalSearch, setGlobalSearch] = useState('');
   const { width: viewportWidth } = useWindowDimensions();
   const desktop = Platform.OS === 'web' && viewportWidth >= 1100;
   const clinic = useMemo(() => ({ name: 'Dr. Pranali Dental Clinic', address: 'Taloja, Navi Mumbai' }), []);
   const start = (next, session = null) => { setPatientSession(session); setStarted(true); if (next) setTab(next); };
   const book = reason => { setSelectedReason(reason || ''); setTab('Appointment'); };
+  const linkPatient = async inviteCode => {
+    const accessToken = patientSession?.access_token;
+    if (!accessToken) throw new Error('Sign in to link your clinic record.');
+    setPatientLinking(true);
+    try {
+      await linkPatientRecord(accessToken, inviteCode);
+      setPatientDataRefresh(value => value + 1);
+    } finally {
+      setPatientLinking(false);
+    }
+  };
   const pageTitle = {
     Home: 'Your care home',
     Services: 'Dental services',
@@ -504,7 +665,7 @@ export default function PatientExperience() {
       {tab === 'Appointment' && <AppointmentScreen initialReason={selectedReason} clinic={clinic} desktop={desktop} />}
       {tab === 'Gallery' && <GalleryScreen desktop={desktop} />}
       {tab === 'Contact' && <ContactScreen clinic={clinic} desktop={desktop} />}
-      {tab === 'My Care' && <MyCareScreen session={patientSession} desktop={desktop} onContact={() => setTab('Contact')} onBook={() => book('')} onConnectAccount={() => setStarted(false)} />}
+      {tab === 'My Care' && <MyCareScreen session={patientSession} profile={patientData.profile} appointments={patientData.appointments} chart={patientData.chart} loading={patientData.loading} error={patientData.error} linking={patientLinking} onLink={linkPatient} onRetry={() => setPatientDataRefresh(value => value + 1)} desktop={desktop} onContact={() => setTab('Contact')} onBook={() => book('')} onConnectAccount={() => setStarted(false)} />}
     </>
   );
 

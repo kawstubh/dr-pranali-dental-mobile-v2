@@ -207,3 +207,47 @@ test('built Patient APK is checked for the exact licensed local font files', () 
   assert.match(read('scripts/verify-patient-apk-fonts.py'), /Inter Regular\/Medium\/SemiBold\/Bold\/ExtraBold/);
   assert.match(read('scripts/verify-patient-apk-fonts.py'), /Feather\.ttf/);
 });
+
+
+test('Patient record APIs use the Supabase bearer token and only patient data routes', () => {
+  for (const fn of ['getPatientProfile', 'linkPatientRecord', 'getPatientAppointments', 'getPatientChart']) {
+    assert.match(api, new RegExp('export async function ' + fn));
+  }
+  assert.match(api, /Authorization: 'Bearer ' \+ accessToken/);
+  for (const route of ['/patient/profile', '/patient/link', '/patient/appointments', '/patient/chart']) {
+    assert.ok(api.includes(route), 'Missing authenticated patient route ' + route);
+  }
+  assert.doesNotMatch(api, /\/patient\/(chat|triage|treatment-explanation|aftercare)/);
+});
+
+test('My Care links a one-time clinic invite and renders only clinic-shared appointment and chart data', () => {
+  assert.match(ui, /Link your clinic record/);
+  assert.match(ui, /one-time invite code/);
+  assert.match(ui, /linkPatientRecord/);
+  assert.match(ui, /getPatientProfile/);
+  assert.match(ui, /getPatientAppointments/);
+  assert.match(ui, /getPatientChart/);
+  assert.match(ui, /appointments\.map/);
+  assert.match(ui, /chart\.map/);
+  assert.match(ui, /item\.treatment_type/);
+  assert.match(ui, /entry\.tooth_fdi/);
+  assert.match(ui, /patientDataErrorMessage/);
+  assert.match(ui, /Try again/);
+});
+
+test('Patient My Care exposes loading, unlinked, empty and error states without fabricating records', () => {
+  assert.match(ui, /Loading your clinic record/);
+  assert.match(ui, /No visit history yet/);
+  assert.match(ui, /No records shared yet/);
+  assert.match(ui, /Clinic records temporarily unavailable/);
+  assert.match(ui, /Patient record services are not enabled on this staging API yet/);
+  assert.doesNotMatch(ui, /sample patient|fake appointment|demo invoice/i);
+});
+
+test('Patient billing, treatment-plan and private-document gaps remain explicit and honest', () => {
+  assert.match(ui, /Invoices/);
+  assert.match(ui, /Invoice and receipt services are not connected to this staging build/);
+  assert.match(ui, /No balances or payment amounts are estimated/);
+  assert.match(ui, /Secure documents are not connected yet/);
+  assert.doesNotMatch(ui, /₹\s?\d|\$\s?\d|invoiceTotal\s*=/);
+});
