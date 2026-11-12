@@ -263,3 +263,29 @@ No PR was merged, no production deployment or migration was performed, no secret
 - Desktop Commander remains offline, so local port ownership and free disk space cannot be freshly verified. No cache, user file, project asset, screenshot or evidence was deleted.
 
 The portal remains **not release-ready**. Authenticated Doctor/Patient staging sessions, clinic/tenant isolation, the deployed backend feature stack, private object storage and scanning, exact-origin CORS/auth redirects, database identity, security headers, backup/restore, monitoring, rollback, mobile authenticated flows and eight authenticated screenshots remain outstanding. No PR was merged and no production action was taken.
+
+
+## Unified backend integration branch — 13 Nov 2026
+
+- Created [Draft backend integration PR #56](https://github.com/kawstubh/universal-intelligence-engine/pull/56) on `feat/oralyn-backend-release-integration-20261113`, based on PR #35's multi-tenant implementation. It consolidates the dependency stack PRs #43–#55 without merging any component PRs.
+- Integration head: `1d9f4bd6c9f8588b19264ec74486b1a48ae22efb`; 70 commits, 33 changed files, 5,809 additions and 115 deletions relative to PR #35's branch.
+- Combined PostgreSQL 16.15 CI [#43292096317](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43292096317): **218 passed**. Engine Tests [#43292096351](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43292096351): **217 passed, 1 expected PostgreSQL-only skip**.
+- The migration rehearsal uses a disposable PostgreSQL schema, upgrades from `0005_password_auth` to head, asserts exactly one Alembic head (`0011_document_clinical_review`), verifies billing/document/notes/review schema and preserves synthetic legacy patient/appointment rows. It also checks workspace backfill, active-doctor counts, cross-organisation membership denial and rollback.
+- The verified migration chain is linear: `0007_dental_audit_workspace` → `0008_patient_billing_plans` → `0009_private_dental_documents` → `0010_clinical_notes_messaging` → `0011_document_clinical_review`.
+- The integration PR includes the PR #55 fix to use validated Cloudflare CF-Connecting-IP for Render guest-booking rate limits, and PR #54's complete IPv6 sockaddr handling for the private ClamAV scanner. Component CI passed: PR #54 (215 PostgreSQL; 214 Engine + 1 skip) and PR #55 (202 PostgreSQL; 201 Engine + 1 skip).
+- All backend PRs remain Draft/unmerged. The integration branch is CI-only; it has not been deployed to Render. No Neon main/production migration was run.
+
+## Latest portal artifact confirmation
+
+- Latest portal PR head remains `62a1914c4c09f46bd625bed2ee413b5edb1db3ba`; PR CI [#43291687488](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43291687488) passed **72 tests**, zero npm audit vulnerabilities, production build and PWA/browser checks.
+- [Latest actual screenshot artifact #13976509247](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43291687488/artifacts/13976509247) was downloaded and inspected in this run. It contains 13 genuine captures and build-info tied to merge-build commit `6786a4f5a9b101e9e71d3df35b8be6a8483824a6`, bundle SHA-256 `cdd8e15faf57f0c927a240274f110d4e4c3f56c3a64d357bb9f00b0278431ac3`. Both fonts loaded, the PWA worker controlled the preview, API/auth/storage caches were empty, role-route refresh/back/forward passed, and runtime errors were none.
+- The same metadata explicitly says `authenticated_screens=false` and `synthetic_patient_data=none`; screenshots are still public login/guest-booking/access-gate routes. All 17 release gates remain blocked.
+
+## Workstation and staging remain gated
+
+- Desktop Commander is offline; no fresh Windows disk-space or port-owner reading is available. No local files/caches/evidence were removed.
+- Render staging remains on PR #35 base commit `7f52c0e7d4e69c92bd167c71392a5c756db54b30`; no feature-stack deployment occurred. Render DB identity is not verified.
+- Supabase organisation `kaustubh` is on the Free plan; `supabase-lime-flower` is the only active project and has no development branches. The separate `cuescene-production` project is inactive and was not restored or reused.
+- No new Supabase project, paid service, private bucket or ClamAV scanner was created. The connected Supabase create-project workflow requires explicit organisation selection; the existing active project was not used for synthetic staging accounts.
+
+The final release remains blocked on isolated authenticated staging, actual Doctor/Patient end-to-end flows, private storage/scanning, exact-origin CORS/auth redirects, database identity, security headers, backups/restore, monitoring/rollback and the eight authenticated clinical screenshots. No PR merge, production deploy, production migration, secret change, spend or patient-data mutation was performed.
