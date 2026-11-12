@@ -97,13 +97,34 @@ async function verifyFonts() {
 }
 
 async function verifyPwa() {
-  await waitFor(() => evaluate("Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)"), 30000);
+  // A newly installed service worker may activate after the first document
+  // load. Wait for activation, then reload once so the page is controlled.
+  const active = await waitFor(() => evaluate(
+    "(async () => { const registration = await navigator.serviceWorker?.getRegistration('/'); return Boolean(registration?.active && registration.active.state === 'activated'); })()"
+  ), 30000).catch(() => false);
+  if (!active) {
+    throw new Error("Oralyn service worker did not reach the activated state.");
+  }
+
+  let controlled = await evaluate("Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)");
+  if (!controlled) {
+    await send("Page.reload", { ignoreCache: true });
+    await waitFor(() => evaluate('document.readyState === "complete"'), 15000);
+    controlled = await waitFor(() => evaluate(
+      "Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)"
+    ), 15000).catch(() => false);
+  }
+  if (!controlled) {
+    throw new Error("Oralyn service worker activated but did not take control after a clean reload.");
+  }
+
   const status = await evaluate("(async () => { const registration = await navigator.serviceWorker.getRegistration('/'); const names = await caches.keys(); const cacheNames = names.filter((name) => name.startsWith('oralyn-portal-shell-')); const cacheName = cacheNames[0]; const cache = cacheName ? await caches.open(cacheName) : null; const requests = cache ? await cache.keys() : []; const paths = requests.map((request) => new URL(request.url).pathname); const prefixes = ['/v1', '/auth/v1', '/rest/v1', '/storage/v1', '/functions/v1']; const forbidden = paths.filter((pathname) => prefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/'))); return { supported: 'serviceWorker' in navigator, registered: Boolean(registration), active: registration?.active?.state === 'activated', controlled: Boolean(navigator.serviceWorker.controller), cachePresent: cacheNames.length === 1, cacheCount: cacheNames.length, cacheName, paths, forbidden }; })()");
   if (!status.supported || !status.registered || !status.active || !status.controlled || !status.cachePresent || status.cacheCount !== 1 || status.forbidden.length) {
     throw new Error("Oralyn PWA shell verification failed: " + JSON.stringify(status));
   }
   return status;
 }
+
 async function captureCurrent(expectedText, screenshotName) {
   await waitFor(() => evaluate('document.readyState === "complete"'));
   await waitFor(() => evaluate(
