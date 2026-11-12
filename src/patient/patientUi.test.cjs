@@ -172,9 +172,20 @@ test('Patient Android smoke test launches the exact package and captures My Care
   assert.match(workflow, /No invoices shared yet/);
 });
 
-test('Patient Android emulator smoke test checks KVM permissions and retains failure diagnostics', () => {
+test('Patient desktop screenshot capture uses the installed Chromium path and verifies the local server', () => {
+  assert.match(workflow, /CHROME_BIN: \$\{\{ steps\.setup_chrome\.outputs\.chrome-path \}\}/);
+  assert.match(workflow, /server_ready=0/);
+  assert.match(workflow, /Patient web export did not start its local preview server/);
+  assert.match(workflow, /PATIENT_WEB_BASE_URL=http:\/\/127\.0\.0\.1:19006/);
+});
+
+test('Patient Android emulator smoke test supports hardware or software acceleration and retains failure diagnostics', () => {
+  assert.match(workflow, /runs-on: ubuntu-24\.04/);
   assert.match(workflow, /sudo chmod 666 \/dev\/kvm/);
-  assert.match(workflow, /Android emulator requires \/dev\/kvm/);
+  assert.match(workflow, /ACCEL_ARGS=\(\)/);
+  assert.match(workflow, /software acceleration/);
+  assert.match(workflow, /-accel off/);
   assert.match(workflow, /devices -l/);
   assert.match(workflow, /Android emulator did not connect to ADB/);
+  assert.match(workflow, /timeout-minutes: 30/);
 });
