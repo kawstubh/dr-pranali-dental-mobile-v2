@@ -46,7 +46,7 @@ test("Doctor clinical intelligence renders structured clinician-review sections"
 test("Doctor identity is taken from the signed-in account, not hardcoded clinic branding", () => {
   assert.match(source, /function doctorDisplayName\(user\)/);
   assert.match(source, /function doctorRoleLabel\(user\)/);
-  assert.match(source, /Good evening, \{doctorDisplayName\(user\)\}/);
+  assert.match(source, /\{greeting\}, \{doctorDisplayName\(user\)\}/);
   assert.match(source, /\? doctorDisplayName\(user\)/);
   assert.match(source, /\? doctorRoleLabel\(user\)/);
   assert.doesNotMatch(source, /Good evening, Dr\. Pranali/);
