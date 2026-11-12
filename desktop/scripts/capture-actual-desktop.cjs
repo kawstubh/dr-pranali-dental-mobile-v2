@@ -86,16 +86,16 @@ async function capture(name, width, height) {
 }
 
 async function verifyFonts() {
+  const loaded = await evaluate('Promise.all([document.fonts.load("400 16px \\"Plus Jakarta Sans\\""), document.fonts.load("600 32px \\"Playfair Display\\"")]).then((faces) => ({plusJakartaSans: faces[0].length > 0, playfairDisplay: faces[1].length > 0}))');
   await evaluate("document.fonts.ready.then(() => true)");
-  const status = await evaluate("({plusJakartaSans: document.fonts.check('16px \"Plus Jakarta Sans\"'), playfairDisplay: document.fonts.check('32px \"Playfair Display\"')})");
-  if (!status.plusJakartaSans || !status.playfairDisplay) {
-    throw new Error("Bundled Oralyn fonts did not both load: " + JSON.stringify(status));
+  const status = await evaluate('({plusJakartaSans: document.fonts.check("400 16px \\"Plus Jakarta Sans\\""), playfairDisplay: document.fonts.check("600 32px \\"Playfair Display\\"")})');
+  if (!loaded.plusJakartaSans || !loaded.playfairDisplay || !status.plusJakartaSans || !status.playfairDisplay) {
+    throw new Error("Bundled Oralyn fonts did not both load: " + JSON.stringify({loaded, status}));
   }
   return status;
 }
 
-async function navigate(route, expectedText, screenshotName) {
-  await send("Page.navigate", { url: baseUrl + route });
+async function captureCurrent(expectedText, screenshotName) {
   await waitFor(() => evaluate('document.readyState === "complete"'));
   await waitFor(() => evaluate(
     "document.body && document.body.innerText.includes(" + JSON.stringify(expectedText) + ")"
@@ -104,6 +104,11 @@ async function navigate(route, expectedText, screenshotName) {
   await capture(screenshotName + "-1440x1000.png", 1440, 1000);
   await capture(screenshotName + "-1280x800.png", 1280, 800);
   return fonts;
+}
+
+async function navigate(route, expectedText, screenshotName) {
+  await send("Page.navigate", { url: baseUrl + route });
+  return captureCurrent(expectedText, screenshotName);
 }
 
 (async () => {
@@ -148,8 +153,7 @@ async function navigate(route, expectedText, screenshotName) {
     await send("Log.enable");
 
     const fontResults = {};
-    fontResults.doctorLogin = await navigate(
-      "/doctor/dashboard",
+    fontResults.doctorLogin = await captureCurrent(
       "Sign in with your clinic doctor account",
       "doctor-login"
     );
