@@ -408,3 +408,104 @@ export default function AssistantApp() {
     </main>
   );
 }
+
+
+export function AssistantManagement({ token, user }) {
+  const allowed = ["owner", "admin"].includes(String(user?.role || "").toLowerCase());
+  const [assistants, setAssistants] = useState([]);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  const loadAssistants = async () => {
+    const result = await assistantRequest("/v1/dental/auth/assistants", { token });
+    setAssistants(Array.isArray(result?.assistants) ? result.assistants : []);
+  };
+
+  useEffect(() => {
+    if (!allowed || !token) return undefined;
+    let live = true;
+    setBusy(true);
+    assistantRequest("/v1/dental/auth/assistants", { token })
+      .then((result) => {
+        if (live) setAssistants(Array.isArray(result?.assistants) ? result.assistants : []);
+      })
+      .catch((cause) => {
+        if (live) setError(cause?.message || "Assistant directory could not be loaded.");
+      })
+      .finally(() => {
+        if (live) setBusy(false);
+      });
+    return () => { live = false; };
+  }, [allowed, token]);
+
+  if (!allowed) return null;
+
+  const createAssistant = async (event) => {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await assistantRequest("/v1/dental/auth/assistants", {
+        token,
+        method: "POST",
+        body: { email: email.trim(), password },
+      });
+      setEmail("");
+      setPassword("");
+      await loadAssistants();
+      setNotice("Separate Clinic Assistant account created. Share the initial password securely with the staff member.");
+    } catch (cause) {
+      setError(cause?.message || "Assistant account could not be created.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const deactivate = async (assistant) => {
+    if (!window.confirm("Deactivate " + assistant.email + " and revoke active sessions?")) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await assistantRequest(
+        "/v1/dental/auth/assistants/" + encodeURIComponent(assistant.id) + "/deactivate",
+        { token, method: "POST" }
+      );
+      await loadAssistants();
+      setNotice("Assistant access deactivated and sessions revoked.");
+    } catch (cause) {
+      setError(cause?.message || "Assistant access could not be deactivated.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="assistant-panel assistant-management-panel">
+      <div className="assistant-panel-heading">
+        <div><h2>Clinic assistants</h2><p>Create and revoke separate reception accounts for this clinic. Assistant access never inherits Doctor permissions.</p></div>
+        <Users size={20} />
+      </div>
+      {error && <ErrorMessage>{error}</ErrorMessage>}
+      {notice && <Notice>{notice}</Notice>}
+      <form className="assistant-management-form" onSubmit={createAssistant}>
+        <label>Assistant email<input type="email" required pattern="[^@\s]+@[^@\s]+\.[^@\s]+" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
+        <label>Initial password<input type="password" required minLength={12} maxLength={256} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} /><small>At least 12 characters. The password is not displayed again after account creation.</small></label>
+        <button className="assistant-primary" type="submit" disabled={busy}>{busy ? "Saving…" : "Create Clinic Assistant"}</button>
+      </form>
+      <div className="assistant-management-list">
+        {assistants.length ? assistants.map((assistant) => (
+          <article key={assistant.id} className="assistant-management-row">
+            <div><b>{assistant.email}</b><small>{assistant.active ? "Active · Assistant role" : "Inactive · Assistant role"}</small></div>
+            {assistant.active && <button type="button" className="assistant-danger-button" onClick={() => deactivate(assistant)} disabled={busy}>Deactivate</button>}
+          </article>
+        )) : <div className="assistant-empty"><Users size={22} /><b>No Clinic Assistants</b><span>Create a separate reception account when the clinic is ready.</span></div>}
+      </div>
+      <div className="assistant-security-note"><ShieldCheck size={17} /><span>Assistant access is limited to contact intake, appointment coordination and read-only billing summaries. Clinical notes, AI, prescriptions, private documents and owner settings remain Doctor-only.</span></div>
+    </section>
+  );
+}
