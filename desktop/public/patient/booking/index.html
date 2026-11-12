@@ -43,7 +43,9 @@ const form = document.getElementById("booking");
 const message = document.getElementById("message");
 const dateInput = document.getElementById("date");
 const today = new Date();
-const localToday = new Date(today.getTime()-today.getTimezoneOffset()*60000).toISOString().slice(0,10);
+const clinicParts = new Intl.DateTimeFormat("en-GB", {timeZone:"Asia/Kolkata",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(today);
+const clinicPart = (type) => clinicParts.find((part) => part.type === type)?.value || "";
+const localToday = clinicPart("year") + "-" + clinicPart("month") + "-" + clinicPart("day");
 dateInput.min = localToday;
 dateInput.value = localToday;
 form.addEventListener("submit", async (event) => {
@@ -54,7 +56,7 @@ form.addEventListener("submit", async (event) => {
   const data = new FormData(form);
   if (String(data.get("website") || "").trim()) return;
   const localDateTime = String(data.get("date")) + "T" + String(data.get("time")) + ":00";
-  const startsAt = new Date(localDateTime);
+  const startsAt = new Date(localDateTime + "+05:30");
   if (Number.isNaN(startsAt.getTime()) || startsAt <= new Date()) {
     message.className = "msg error";
     message.textContent = "Please choose a future date and time.";
