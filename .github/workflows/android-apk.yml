@@ -518,8 +518,36 @@ jobs:
           "$ADB" pull /sdcard/patient-my-care.xml build-evidence/patient-my-care.xml
           "$ADB" shell screencap -p /sdcard/patient-my-care.png
           "$ADB" pull /sdcard/patient-my-care.png build-evidence/patient-my-care.png
-          grep -Fq "No records shared yet" build-evidence/patient-my-care.xml
-          grep -Fq "No invoices shared yet" build-evidence/patient-my-care.xml
+          grep -Fq "My care" build-evidence/patient-my-care.xml || {
+            echo "::error::My Care screen title was not present after navigation."
+            exit 1
+          }
+          grep -Fq "Guest visitor" build-evidence/patient-my-care.xml || {
+            echo "::error::My Care guest profile state was not present."
+            exit 1
+          }
+          grep -Fq "No visit history yet" build-evidence/patient-my-care.xml || {
+            echo "::error::My Care visit-history empty state was not visible at the top of the page."
+            exit 1
+          }
+          # The My Care page is intentionally vertically scrollable. Capture every section
+          # before asserting the records, invoices and private-document empty states.
+          : > build-evidence/patient-my-care-scroll-all.txt
+          for index in 1 2 3 4 5 6; do
+            "$ADB" shell input swipe 540 1500 540 500 500
+            sleep 1
+            "$ADB" shell uiautomator dump "/sdcard/patient-my-care-scroll-$index.xml" >/dev/null
+            "$ADB" pull "/sdcard/patient-my-care-scroll-$index.xml" "build-evidence/patient-my-care-scroll-$index.xml"
+            "$ADB" shell screencap -p "/sdcard/patient-my-care-scroll-$index.png"
+            "$ADB" pull "/sdcard/patient-my-care-scroll-$index.png" "build-evidence/patient-my-care-scroll-$index.png"
+            cat "build-evidence/patient-my-care-scroll-$index.xml" >> build-evidence/patient-my-care-scroll-all.txt
+          done
+          for label in "No records shared yet" "No invoices shared yet" "Secure documents are not connected yet" "Clinic communication"; do
+            grep -Fq "$label" build-evidence/patient-my-care-scroll-all.txt || {
+              echo "::error::My Care scrolling did not expose the expected empty-state/section: $label"
+              exit 1
+            }
+          done
           "$ADB" logcat -d -v brief > build-evidence/patient-logcat.txt
           if grep -Ei "FATAL EXCEPTION|No safe area value available|Invariant Violation|Local Inter font load failed" build-evidence/patient-logcat.txt; then
             echo "::error::Fatal Patient Android runtime or local font loading error detected."
