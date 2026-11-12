@@ -1,29 +1,27 @@
-# Patient app typography and font licensing
+# Patient app font provenance
 
-The Patient app bundles both typefaces locally. No Google Fonts CSS, runtime CDN request, or remote font download is used.
+The Patient app uses Inter for all UI text. The previous Plus Jakarta Sans and Playfair Display variable-font files have been removed from the Patient asset tree and are no longer referenced by the app.
 
-| Family | Use | Pinned source version | Licence |
-|---|---|---|---|
-| Plus Jakarta Sans | Body copy, labels, buttons and form controls | Google Fonts snapshot c30b221beb0c1da59d563feb91ec8656a1fa972a; upstream Tokotype commit 18d1cd2f7ea10481919d2f05c1f7064b7307fc26 | SIL Open Font License 1.1 |
-| Playfair Display | Editorial page and section headings | Google Fonts snapshot c30b221beb0c1da59d563feb91ec8656a1fa972a; upstream commit 80a334101928546b04fa9e709ad4b2f11f8a9e10 | SIL Open Font License 1.1 |
+- Family: Inter
+- Locally bundled weights: Regular 400, Medium 500, SemiBold 600, Bold 700, ExtraBold 800
+- Upstream source: Google Fonts, https://github.com/google/fonts/tree/main/ofl/inter
+- Pinned upstream metadata: Google Fonts Inter metadata version v20, lastModified 2025-09-10; full snapshot committed as licenses/Inter-Google-Fonts-metadata-v20.json
+- Exact source files: static TTF URLs for the five weights are listed in the pinned metadata snapshot under files
+- Integrity: each local TTF was downloaded from its exact Google Fonts v20 CDN URL and SHA-256 matched byte-for-byte
+- Retrieval package: @expo-google-fonts/inter version 0.4.2 (used only to obtain static files; not required at runtime)
+- Font licence: SIL Open Font License 1.1; full text is committed as licenses/Inter-OFL.txt
+- Retrieval package licence: MIT; full text is committed as licenses/Expo-Google-Fonts-MIT.txt
+- Runtime: fonts are bundled locally under assets/fonts and loaded by expo-font. No Google Fonts CSS, CDN request or runtime font download is used.
+- Fallback: if any bundled font fails to load, the app continues with the Android/iOS platform system sans-serif font. The fallback path is explicit in FontReadyContext; it does not leave the app stuck on the font-loading screen.
 
-## Bundled files
+## Bundled file SHA-256
 
-- assets/fonts/PlusJakartaSans-Variable.ttf — variable weight axis 200–800; SHA-256 89b3fb38aa0d275d7a731d0d817a4f1622b316b4d7fbdedcf02ee9099ff68bc8.
-- assets/fonts/PlayfairDisplay-Variable.ttf — variable weight axis 400–900; SHA-256 c40f2293766a503bc70cce9e512ef844a4ccb7cbcde792fe2ea31d191917d8d6.
-- assets/fonts/OFL-Plus-Jakarta-Sans.txt and assets/fonts/OFL-Playfair-Display.txt contain the upstream licence texts.
-- The corresponding METADATA.pb files are retained beside the fonts for source and designer traceability.
+| File | Weight | SHA-256 |
+|---|---:|---|
+| Inter-Regular.ttf | 400 | A414B48AA577EF2C62EBB135341DDEEF33EE26A4F5DC9F787F93C1AAB08EBB50 |
+| Inter-Medium.ttf | 500 | F1738576525E86DB1D5CF63A6C1B56E0A7E2A2898B499AC93DB95F2E7A9F9CD5 |
+| Inter-SemiBold.ttf | 600 | F30E9D2574C3BEC5144347FF965F9841C8F06857F0B7383000F8C9489A161841 |
+| Inter-Bold.ttf | 700 | FBE825CBFC749317F57A1433D3905AA9D3F388732FD29B8E8A36F34845E3BC3E |
+| Inter-ExtraBold.ttf | 800 | 1B9FAB96FFC7BCA31A9D4CD4D660CCE80B94695908EC7613AFDECE2B8CF803C2 |
 
-Upstream source directories:
-
-- https://github.com/google/fonts/tree/c30b221beb0c1da59d563feb91ec8656a1fa972a/ofl/plusjakartasans
-- https://github.com/google/fonts/tree/c30b221beb0c1da59d563feb91ec8656a1fa972a/ofl/playfairdisplay
-
-The app loads the bundled TTF files through expo-font. If a font fails to load, the app continues with platform system fonts (Roboto on Android and native system sans/serif families on iOS). The app does not fetch fonts over the network.
-
-No other custom font files are included in the Patient app asset tree.
-
-## Iconography
-
-- The interface uses the Feather icon set through `@expo/vector-icons` version 15.1.1. The package bundles its icon assets locally; it does not request icon fonts from a CDN. The package is MIT-licensed (upstream Feather Icons are also MIT-licensed). These glyph assets are interface icons, not body or heading typefaces.
-
+Only these five Inter TTF files may remain in assets/fonts. The UI regression test checks the complete file list and every SHA-256 fingerprint.

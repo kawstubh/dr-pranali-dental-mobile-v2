@@ -19,6 +19,26 @@ const C = {
   white: '#FFFFFF', text: '#18334D', muted: '#657789', border: '#DCE8F4',
   softBlue: '#EAF4FF', softTeal: '#E8FAFA', green: '#16865D', red: '#B54747',
 };
+export const FontReadyContext = React.createContext(true);
+const FONT_BY_WEIGHT = {
+  '100': 'InterRegular', '200': 'InterRegular', '300': 'InterRegular',
+  '400': 'InterRegular', '500': 'InterMedium', '600': 'InterSemiBold',
+  '700': 'InterBold', '800': 'InterExtraBold', '900': 'InterExtraBold',
+  normal: 'InterRegular', bold: 'InterBold',
+};
+function resolveTextStyle(style, fontReady) {
+  const flattened = StyleSheet.flatten(style) || {};
+  const weight = String(flattened.fontWeight || '400');
+  const { fontWeight, fontFamily, ...rest } = flattened;
+  return [rest, fontReady ? { fontFamily: FONT_BY_WEIGHT[weight] || 'InterRegular' } : {}];
+}
+const CLINIC_HOURS_LABEL = '10:00 AM – 2:00 PM and 5:00 PM – 9:00 PM';
+const CLINIC_TIME_SLOTS = [
+  '10:00 AM','10:30 AM','11:00 AM','11:30 AM',
+  '12:00 PM','12:30 PM','1:00 PM','1:30 PM',
+  '5:00 PM','5:30 PM','6:00 PM','6:30 PM',
+  '7:00 PM','7:30 PM','8:00 PM','8:30 PM',
+];
 const LOGO = require('../../assets/oralyn-logo.png');
 const DOCTOR = require('../../assets/dr-pranali.jpg');
 const SERVICE_IMAGES = {
@@ -52,12 +72,14 @@ const DESKTOP_TABS = [...TABS, { name: 'My Care', icon: 'folder' }];
 
 function Text({ children, style, ...props }) {
   const { t } = useTranslation();
+  const fontReady = React.useContext(FontReadyContext);
   const translated = React.Children.map(children, child => typeof child === 'string' ? t(child) : child);
-  return <NativeText {...props} style={[styles.baseText, style]}>{translated}</NativeText>;
+  return <NativeText {...props} style={[styles.baseText, ...resolveTextStyle(style, fontReady)]}>{translated}</NativeText>;
 }
 function TextInput({ placeholder, style, ...props }) {
   const { t } = useTranslation();
-  return <NativeTextInput {...props} placeholder={placeholder ? t(placeholder) : undefined} style={[styles.inputText, style]} />;
+  const fontReady = React.useContext(FontReadyContext);
+  return <NativeTextInput {...props} placeholder={placeholder ? t(placeholder) : undefined} style={[styles.inputText, ...resolveTextStyle(style, fontReady)]} />;
 }
 function Icon({ name, size = 19, color = C.navy }) { return <Feather name={name} size={size} color={color} />; }
 function SafeImage({ source, style, contentFit = 'cover', accessibilityLabel }) {
@@ -183,7 +205,13 @@ function HomeScreen({ clinic, onBook, onServices, onContact, onCare, desktop = f
           </View>
         </View>
         <View style={styles.clinicDivider} />
-        <View style={styles.hoursRow}><Icon name="clock" size={16} color={C.teal} /><Text style={styles.hoursText}>Monday – Sunday · 10:00 AM – 9:00 PM</Text></View>
+        <View style={styles.hoursRow}>
+          <Icon name="clock" size={16} color={C.teal} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.hoursText}>10:00 AM – 2:00 PM</Text>
+            <Text style={styles.hoursText}>5:00 PM – 9:00 PM</Text>
+          </View>
+        </View>
         <Text style={styles.hoursNote}>By appointment only</Text>
       </View>
       <View style={styles.quickActions}>
@@ -247,7 +275,6 @@ function AppointmentScreen({ initialReason, clinic, desktop = false }) {
   const [reason, setReason] = useState(initialReason || '');
   const [note, setNote] = useState('');
   const [showDate, setShowDate] = useState(false);
-  const [showTime, setShowTime] = useState(false);
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
@@ -258,14 +285,6 @@ function AppointmentScreen({ initialReason, clinic, desktop = false }) {
     const p = date.split('/').map(Number);
     return p.length === 3 ? new Date(p[2], p[1] - 1, p[0]) : new Date();
   };
-  const timeValue = () => {
-    const m = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-    if (!m) return new Date();
-    let h = Number(m[1]); const min = Number(m[2]); const ap = m[3].toUpperCase();
-    if (ap === 'PM' && h !== 12) h += 12;
-    if (ap === 'AM' && h === 12) h = 0;
-    const d = new Date(); d.setHours(h, min, 0, 0); return d;
-  };
   const submit = async () => {
     setMessage(''); setMessageType('');
     if (!name.trim() || !phone.trim() || !date.trim() || !time.trim()) {
@@ -274,15 +293,19 @@ function AppointmentScreen({ initialReason, clinic, desktop = false }) {
     if (phone.replace(/\D/g, '').length < 10) {
       setMessage('Please enter a valid phone number with at least 10 digits.'); setMessageType('error'); return;
     }
+    if (!CLINIC_TIME_SLOTS.includes(time)) {
+      setMessage('Please choose one of the available clinic time slots.'); setMessageType('error'); return;
+    }
     setSending(true);
     try {
       const parts = date.split('/');
-      const t = time.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
-      if (parts.length !== 3 || !t) throw new Error('Please choose a valid date and time.');
-      let hour = Number(t[1]); const minute = Number(t[2] || '00'); const period = (t[3] || '').toUpperCase();
+      const t = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+      if (parts.length !== 3 || !t) throw new Error('Please choose a valid date and clinic time slot.');
+      let hour = Number(t[1]); const minute = Number(t[2]); const period = t[3].toUpperCase();
       if (period === 'PM' && hour !== 12) hour += 12;
       if (period === 'AM' && hour === 12) hour = 0;
-      if (hour > 23 || minute > 59) throw new Error('Please choose a valid time.');
+      const requestedDate = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]), hour, minute, 0, 0);
+      if (Number.isNaN(requestedDate.getTime()) || requestedDate.getTime() < Date.now()) throw new Error('Please choose a future appointment time.');
       const startsAt = parts[2] + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0') + 'T' + String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0') + ':00+05:30';
       await requestPublicAppointment({ name: name.trim(), phone: phone.trim(), starts_at: startsAt, treatment_type: reason.trim() || 'Dental consultation', note: note.trim() || null });
       setMessage('Your appointment request has been sent. The clinic will contact you to confirm the visit.');
@@ -308,8 +331,14 @@ function AppointmentScreen({ initialReason, clinic, desktop = false }) {
         </View>
         <View style={styles.fieldGroup}>
           <Text style={styles.fieldLabel}>Preferred time</Text>
-          <Pressable onPress={() => setShowTime(true)} style={styles.pickerButton}><Icon name="clock" size={17} color={C.blue} /><Text style={[styles.pickerText, !time && styles.placeholder]}>{time || 'Choose a time'}</Text><Icon name="chevron-down" size={16} color={C.muted} /></Pressable>
-          {showTime && <DateTimePicker value={timeValue()} mode="time" is24Hour={false} onChange={(event, value) => { setShowTime(false); if (value) { let h = value.getHours(); const m = String(value.getMinutes()).padStart(2, '0'); const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; setTime(h + ':' + m + ' ' + ap); } }} />}
+          <Text style={styles.timeSlotHint}>Choose a slot during clinic hours: {CLINIC_HOURS_LABEL}.</Text>
+          <View style={styles.timeSlotGrid}>
+            {CLINIC_TIME_SLOTS.map(slot => (
+              <Pressable key={slot} accessibilityRole="button" accessibilityLabel={slot} accessibilityState={{ selected: time === slot }} onPress={() => setTime(slot)} style={[styles.timeSlotChip, time === slot && styles.timeSlotChipActive]}>
+                <Text style={[styles.timeSlotText, time === slot && styles.timeSlotTextActive]}>{slot}</Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
         <View style={styles.fieldGroup}>
           <Text style={styles.fieldLabel}>Reason for visit</Text>
@@ -346,7 +375,7 @@ function ContactScreen({ clinic, desktop = false }) {
         <View style={styles.contactBrand}><SafeImage source={LOGO} style={styles.contactLogo} contentFit="contain" /><View style={{ flex: 1 }}><Text style={styles.contactName}>{clinic.name}</Text><Text style={styles.contactDoctor}>Dr. Pranali · BDS Dental Surgeon</Text></View></View>
         <View style={styles.contactDivider} />
         <View style={styles.contactLine}><View style={styles.contactIcon}><Icon name="map-pin" size={18} color={C.blue} /></View><View style={{ flex: 1 }}><Text style={styles.contactLabel}>Clinic location</Text><Text style={styles.contactValue}>{clinic.address}</Text></View></View>
-        <View style={styles.contactLine}><View style={styles.contactIcon}><Icon name="clock" size={18} color={C.blue} /></View><View style={{ flex: 1 }}><Text style={styles.contactLabel}>Clinic hours</Text><Text style={styles.contactValue}>10:00 AM – 2:00 PM and 5:00 PM – 9:00 PM</Text><Text style={styles.contactMuted}>By appointment only</Text></View></View>
+        <View style={styles.contactLine}><View style={styles.contactIcon}><Icon name="clock" size={18} color={C.blue} /></View><View style={{ flex: 1 }}><Text style={styles.contactLabel}>Clinic hours</Text><Text style={styles.contactValue}>{CLINIC_HOURS_LABEL}</Text><Text style={styles.contactMuted}>By appointment only</Text></View></View>
         <ActionButton label="Open directions in Google Maps" icon="navigation" onPress={openMaps} />
         <Text style={styles.contactFootnote}>For urgent dental pain, swelling, bleeding or injury, seek prompt professional advice. Appointment requests are not an emergency service.</Text>
       </View>
@@ -556,8 +585,8 @@ export default function PatientExperience() {
 }
 
 const styles = StyleSheet.create({
-  baseText: { fontFamily: 'PlusJakartaSans', color: C.text },
-  inputText: { fontFamily: 'PlusJakartaSans', color: C.text },
+  baseText: { color: C.text },
+  inputText: { color: C.text },
   safe: { flex: 1, backgroundColor: C.ice },
   body: { flex: 1, minHeight: 0 },
   welcomeSafe: { flex: 1, backgroundColor: C.ice },
@@ -571,13 +600,13 @@ const styles = StyleSheet.create({
   welcomeHero: { width: '100%', marginTop: 20, padding: 15, borderRadius: 23, backgroundColor: C.white, borderWidth: 1, borderColor: C.border, flexDirection: 'row', alignItems: 'center', gap: 11 },
   welcomeCopy: { flex: 1, minWidth: 0 },
   eyebrow: { fontSize: 9, fontWeight: '800', letterSpacing: 1.25, color: C.blue, textTransform: 'uppercase' },
-  welcomeTitle: { fontFamily: 'PlayfairDisplay', fontSize: 26, lineHeight: 32, fontWeight: '700', color: C.navy, marginTop: 8 },
+  welcomeTitle: { fontSize: 26, lineHeight: 32, fontWeight: '700', color: C.navy, marginTop: 8 },
   welcomeSubtitle: { fontSize: 11.5, lineHeight: 17, color: C.muted, marginTop: 7 },
   welcomeDoctor: { width: 96, height: 130, borderRadius: 16, backgroundColor: C.softBlue },
   textLink: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 13, alignSelf: 'flex-start' },
   textLinkText: { fontSize: 11.5, fontWeight: '800', color: C.blue },
   signInCard: { width: '100%', marginTop: 13, padding: 17, borderRadius: 21, backgroundColor: C.white, borderWidth: 1, borderColor: C.border },
-  signInTitle: { fontFamily: 'PlayfairDisplay', fontSize: 22, fontWeight: '700', color: C.navy },
+  signInTitle: { fontSize: 22, fontWeight: '700', color: C.navy },
   signInSubtitle: { fontSize: 11.5, lineHeight: 17, color: C.muted, marginTop: 5, marginBottom: 13 },
   googleButton: { width: '100%', minHeight: 49, borderRadius: 13, borderWidth: 1, borderColor: C.border, backgroundColor: C.white, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
   googleMark: { width: 25, height: 25, borderRadius: 13, backgroundColor: C.softBlue, alignItems: 'center', justifyContent: 'center' },
@@ -599,12 +628,12 @@ const styles = StyleSheet.create({
   headerSubtitle: { fontSize: 10, color: C.muted, marginTop: 1 },
   headerHelp: { width: 39, height: 39, borderRadius: 20, backgroundColor: C.softBlue, alignItems: 'center', justifyContent: 'center' },
   pageIntro: { marginBottom: 15 },
-  pageTitle: { fontFamily: 'PlayfairDisplay', fontSize: 28, lineHeight: 34, fontWeight: '700', color: C.navy, marginTop: 3 },
+  pageTitle: { fontSize: 28, lineHeight: 34, fontWeight: '700', color: C.navy, marginTop: 3 },
   pageSubtitle: { fontSize: 12, lineHeight: 19, color: C.muted, marginTop: 5 },
   homeHero: { width: '100%', padding: 16, borderRadius: 23, backgroundColor: C.navy, flexDirection: 'row', alignItems: 'center', gap: 10 },
   homeHeroCopy: { flex: 1, minWidth: 0 },
   homeEyebrow: { fontSize: 8.5, letterSpacing: 1.1, color: '#9ADFEA', fontWeight: '800' },
-  homeTitle: { fontFamily: 'PlayfairDisplay', fontSize: 24, lineHeight: 30, color: C.white, fontWeight: '700', marginTop: 7 },
+  homeTitle: { fontSize: 24, lineHeight: 30, color: C.white, fontWeight: '700', marginTop: 7 },
   homeSubtitle: { fontSize: 10.5, lineHeight: 16, color: '#D8E9F7', marginTop: 7, marginBottom: 7 },
   homeDoctor: { width: 91, height: 124, borderRadius: 15, backgroundColor: '#DDEBF6' },
   actionButton: { minHeight: 43, paddingHorizontal: 13, paddingVertical: 9, borderRadius: 12, backgroundColor: C.blue, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, alignSelf: 'flex-start', marginTop: 8 },
@@ -619,7 +648,7 @@ const styles = StyleSheet.create({
   clinicInfoAddress: { fontSize: 10.5, color: C.muted, marginTop: 3 },
   clinicDivider: { height: 1, backgroundColor: C.border, marginVertical: 11 },
   hoursRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  hoursText: { flex: 1, fontSize: 10.5, color: C.text },
+  hoursText: { fontSize: 10.5, lineHeight: 15, color: C.text },
   hoursNote: { fontSize: 9.5, color: C.muted, marginLeft: 24, marginTop: 3 },
   quickActions: { flexDirection: 'row', gap: 9, marginTop: 12 },
   quickCard: { flex: 1, minWidth: 0, padding: 12, borderRadius: 16, backgroundColor: C.white, borderWidth: 1, borderColor: C.border },
@@ -628,7 +657,7 @@ const styles = StyleSheet.create({
   quickTitle: { fontSize: 10.5, fontWeight: '800', color: C.navy },
   quickSub: { fontSize: 9, lineHeight: 14, color: C.muted, marginTop: 3 },
   sectionHeader: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 20, marginBottom: 11, gap: 8 },
-  sectionTitle: { fontFamily: 'PlayfairDisplay', fontSize: 21, lineHeight: 26, fontWeight: '700', color: C.navy, marginTop: 3 },
+  sectionTitle: { fontSize: 21, lineHeight: 26, fontWeight: '700', color: C.navy, marginTop: 3 },
   viewAll: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 4 },
   viewAllText: { fontSize: 10, fontWeight: '800', color: C.blue },
   servicesGrid: { width: '100%', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 11 },
@@ -655,7 +684,7 @@ const styles = StyleSheet.create({
   detailCard: { width: '100%', padding: 13, borderRadius: 21, backgroundColor: C.white, borderWidth: 1, borderColor: C.border },
   detailImage: { width: '100%', height: 185, borderRadius: 15, backgroundColor: C.ice },
   detailCategory: { alignSelf: 'flex-start', borderRadius: 11, backgroundColor: C.softBlue, color: C.blue, fontSize: 9, fontWeight: '800', paddingHorizontal: 10, paddingVertical: 6, marginTop: 12, overflow: 'hidden' },
-  detailTitle: { fontFamily: 'PlayfairDisplay', fontSize: 23, lineHeight: 29, fontWeight: '700', color: C.navy, marginTop: 8 },
+  detailTitle: { fontSize: 23, lineHeight: 29, fontWeight: '700', color: C.navy, marginTop: 8 },
   detailDescription: { fontSize: 11.5, lineHeight: 18, color: C.muted, marginTop: 6 },
   detailNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 11, borderRadius: 12, backgroundColor: C.ice, marginTop: 12, marginBottom: 5 },
   detailNoteText: { flex: 1, fontSize: 9.5, lineHeight: 15, color: C.text },
@@ -670,6 +699,12 @@ const styles = StyleSheet.create({
   fieldMultiline: { minHeight: 82, textAlignVertical: 'top' },
   pickerButton: { width: '100%', minHeight: 44, borderRadius: 11, borderWidth: 1, borderColor: C.border, backgroundColor: '#FAFCFE', paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', gap: 8 },
   pickerText: { flex: 1, fontSize: 11.5, color: C.text },
+  timeSlotHint: { fontSize: 9.5, lineHeight: 15, color: C.muted, marginTop: 2 },
+  timeSlotGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 8 },
+  timeSlotChip: { width: '23.7%', minHeight: 38, borderRadius: 10, borderWidth: 1, borderColor: C.border, backgroundColor: '#FAFCFE', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 2 },
+  timeSlotChipActive: { backgroundColor: C.blue, borderColor: C.blue },
+  timeSlotText: { fontSize: 9.5, fontWeight: '800', color: C.navy },
+  timeSlotTextActive: { color: C.white },
   placeholder: { color: C.muted },
   reasonList: { gap: 7, paddingVertical: 4 },
   reasonChip: { maxWidth: 185, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 17, backgroundColor: C.ice, borderWidth: 1, borderColor: C.border },
@@ -686,7 +721,7 @@ const styles = StyleSheet.create({
   galleryCard: { width: '100%', padding: 11, borderRadius: 20, backgroundColor: C.white, borderWidth: 1, borderColor: C.border },
   galleryImage: { width: '100%', height: 270, borderRadius: 14, backgroundColor: C.ice },
   galleryCopy: { padding: 5, paddingTop: 11 },
-  galleryName: { fontFamily: 'PlayfairDisplay', fontSize: 22, fontWeight: '700', color: C.navy },
+  galleryName: { fontSize: 22, fontWeight: '700', color: C.navy },
   galleryRole: { fontSize: 10.5, fontWeight: '800', color: C.blue, marginTop: 3 },
   galleryDescription: { fontSize: 10.5, lineHeight: 17, color: C.muted, marginTop: 7 },
   galleryNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, padding: 13, borderRadius: 16, backgroundColor: C.softBlue, marginTop: 12 },
@@ -708,7 +743,7 @@ const styles = StyleSheet.create({
   contactHelpText: { fontSize: 9.5, lineHeight: 15, color: C.muted, marginTop: 3 },
   emptyState: { alignItems: 'center', padding: 24, borderRadius: 17, backgroundColor: C.white, borderWidth: 1, borderColor: C.border },
   emptyIcon: { width: 44, height: 44, borderRadius: 14, backgroundColor: C.softBlue, alignItems: 'center', justifyContent: 'center' },
-  emptyTitle: { fontFamily: 'PlayfairDisplay', fontSize: 18, fontWeight: '700', color: C.navy, marginTop: 10 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: C.navy, marginTop: 10 },
   emptyMessage: { fontSize: 9.5, lineHeight: 15, color: C.muted, textAlign: 'center', marginTop: 5 },
   bottomNav: { minHeight: 69, backgroundColor: C.white, borderTopWidth: 1, borderTopColor: C.border, flexDirection: 'row', paddingHorizontal: 3, paddingTop: 5, paddingBottom: Platform.OS === 'ios' ? 9 : 5 },
   navItem: { flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'center', gap: 2 },

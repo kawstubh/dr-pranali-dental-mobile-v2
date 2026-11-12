@@ -171,7 +171,12 @@ jobs:
         if: ${{ always() && steps.verify_apk.outcome == 'success' }}
         run: npx expo export --platform web
 
+      - name: Setup Chrome for desktop screenshot capture
+        id: setup_chrome
+        if: ${{ always() && steps.export_web.outcome == 'success' }}
+        uses: browser-actions/setup-chrome@v1
       - name: Capture Patient desktop screens at laptop widths
+        timeout-minutes: 10
         if: ${{ always() && steps.export_web.outcome == 'success' }}
         run: |
           set -euo pipefail
@@ -200,6 +205,7 @@ jobs:
           retention-days: 14
 
       - name: Install and smoke-test Patient APK on Android emulator
+        timeout-minutes: 20
         if: ${{ always() && steps.verify_apk.outcome == 'success' }}
         run: |
           set -euo pipefail
@@ -208,13 +214,48 @@ jobs:
           SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager | sort | tail -n 1)"
           AVDMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name avdmanager | sort | tail -n 1)"
           ADB="$SDK_ROOT/platform-tools/adb"
+          export ANDROID_HOME="$SDK_ROOT"
+          export ANDROID_SDK_ROOT="$SDK_ROOT"
+          export ANDROID_SDK_HOME="$HOME/.android"
+          export ANDROID_AVD_HOME="$HOME/.android/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
           test -x "$SDKMANAGER"
           test -x "$AVDMANAGER"
-          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
-          "$SDKMANAGER" --install "emulator" "platform-tools" "system-images;android-35;google_apis;x86_64" >/tmp/patient-sdkmanager.log
-          echo no | "$AVDMANAGER" create avd --force --name oralyn-patient-ci --package "system-images;android-35;google_apis;x86_64" --device pixel_2
+          test -x "$SDK_ROOT/emulator/emulator"
+          yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --licenses >/dev/null 2>&1 || true
+          if ! timeout 360 "$SDKMANAGER" --sdk_root="$SDK_ROOT" --install "emulator" "platform-tools" "system-images;android-35;google_apis;x86_64" >build-evidence/sdkmanager.log 2>&1; then
+            cat build-evidence/sdkmanager.log
+            echo "::error::Android SDK package installation failed."
+            exit 1
+          fi
+          printf 'no\n' | "$AVDMANAGER" create avd --force --name oralyn-patient-ci --package "system-images;android-35;google_apis;x86_64" --device pixel_2 --path "$ANDROID_AVD_HOME/oralyn-patient-ci.avd" >build-evidence/avdmanager.log 2>&1
+          "$AVDMANAGER" list avd >build-evidence/avdmanager-list.txt 2>&1
+          if [ ! -f "$ANDROID_AVD_HOME/oralyn-patient-ci.ini" ]; then
+            find "$HOME/.android" "$SDK_ROOT" -maxdepth 6 -name oralyn-patient-ci.ini -print >build-evidence/avd-locations.txt 2>&1 || true
+            cat build-evidence/avdmanager.log build-evidence/avdmanager-list.txt
+            echo "::error::AVD manager did not create the expected AVD in ANDROID_AVD_HOME."
+            exit 1
+          fi
+          "$SDK_ROOT/emulator/emulator" -list-avds >build-evidence/emulator-list.txt 2>&1
+          grep -Fxq "oralyn-patient-ci" build-evidence/emulator-list.txt
+          if [ ! -e /dev/kvm ]; then
+            echo "::error::Android emulator requires /dev/kvm, but the runner does not expose it."
+            exit 1
+          fi
+          sudo chmod 666 /dev/kvm
+          if [ ! -r /dev/kvm ] || [ ! -w /dev/kvm ]; then
+            ls -l /dev/kvm || true
+            echo "::error::Android emulator KVM device is not readable and writable by the runner."
+            exit 1
+          fi
+          ls -l /dev/kvm > build-evidence/kvm-permissions.txt
           "$SDK_ROOT/emulator/emulator" -avd oralyn-patient-ci -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -wipe-data >build-evidence/emulator.log 2>&1 &
-          timeout 240 "$ADB" wait-for-device
+          if ! timeout 240 "$ADB" wait-for-device; then
+            "$ADB" devices -l > build-evidence/adb-devices.txt 2>&1 || true
+            cat build-evidence/emulator.log || true
+            echo "::error::Android emulator did not connect to ADB."
+            exit 1
+          fi
           boot=""
           for attempt in $(seq 1 60); do
             boot="$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
@@ -231,7 +272,7 @@ jobs:
           "$ADB" shell settings put global animator_duration_scale 0
           "$ADB" install -r android/app/build/outputs/apk/release/app-release.apk
           "$ADB" logcat -c
-          "$ADB" shell monkey -p com.drprani.dental 1
+          "$ADB" shell monkey -p com.drpranali.dental 1
           sleep 18
           "$ADB" shell uiautomator dump /sdcard/patient-welcome.xml >/dev/null
           "$ADB" pull /sdcard/patient-welcome.xml build-evidence/patient-welcome.xml
@@ -301,13 +342,100 @@ jobs:
           "$ADB" pull /sdcard/patient-appointment.xml build-evidence/patient-appointment.xml
           "$ADB" shell screencap -p /sdcard/patient-appointment.png
           "$ADB" pull /sdcard/patient-appointment.png build-evidence/patient-appointment.png
-          for label in "Full name" "Phone number" "Preferred date" "Preferred time"; do
+          for label in "Full name" "Phone number" "Preferred date" "Preferred time" "10:00 AM" "5:00 PM" "8:30 PM"; do
             grep -Fq "$label" build-evidence/patient-appointment.xml || {
-              echo "::error::Appointment form is missing expected field: $label"
+              echo "::error::Appointment form is missing expected field or clinic time slot: $label"
               exit 1
             }
           done
+          python3 - <<'PY' > build-evidence/time-slot-tap.txt
+          import re
+          import xml.etree.ElementTree as ET
+          root = ET.parse('build-evidence/patient-appointment.xml').getroot()
+          for node in root.iter('node'):
+              if node.attrib.get('text') == '10:00 AM':
+                  match = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', node.attrib.get('bounds', ''))
+                  if match:
+                      x1, y1, x2, y2 = map(int, match.groups())
+                      print((x1 + x2) // 2, (y1 + y2) // 2)
+                      break
+          else: raise SystemExit('10:00 AM clinic slot was not accessible')
+          PY
+          read -r slot_x slot_y < build-evidence/time-slot-tap.txt
+          "$ADB" shell input tap "$slot_x" "$slot_y"
+          sleep 2
+          "$ADB" shell uiautomator dump /sdcard/patient-time-slots.xml >/dev/null
+          "$ADB" pull /sdcard/patient-time-slots.xml build-evidence/patient-time-slots.xml
+          "$ADB" shell screencap -p /sdcard/patient-time-slots.png
+          "$ADB" pull /sdcard/patient-time-slots.png build-evidence/patient-time-slots.png
+          python3 - <<'PY' > build-evidence/validation-tap.txt
+          import re
+          import xml.etree.ElementTree as ET
+          root = ET.parse('build-evidence/patient-time-slots.xml').getroot()
+          for node in root.iter('node'):
+              if node.attrib.get('text') == 'Send appointment request':
+                  match = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', node.attrib.get('bounds', ''))
+                  if match:
+                      x1, y1, x2, y2 = map(int, match.groups())
+                      print((x1 + x2) // 2, (y1 + y2) // 2)
+                      break
+          else: raise SystemExit('Appointment request action was not accessible')
+          PY
+          read -r validate_x validate_y < build-evidence/validation-tap.txt
+          "$ADB" shell input tap "$validate_x" "$validate_y"
+          sleep 2
+          "$ADB" shell uiautomator dump /sdcard/patient-validation.xml >/dev/null
+          "$ADB" pull /sdcard/patient-validation.xml build-evidence/patient-validation.xml
+          grep -Fq "Please enter your name, phone number, preferred date and time." build-evidence/patient-validation.xml || {
+            echo "::error::Appointment form did not display its required-field validation state."
+            exit 1
+          }
+          python3 - <<'PY' > build-evidence/home-tab-tap.txt
+          import re
+          import xml.etree.ElementTree as ET
+          root = ET.parse('build-evidence/patient-validation.xml').getroot()
+          for node in root.iter('node'):
+              if node.attrib.get('text') == 'Home':
+                  match = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', node.attrib.get('bounds', ''))
+                  if match:
+                      x1, y1, x2, y2 = map(int, match.groups())
+                      print((x1 + x2) // 2, (y1 + y2) // 2)
+                      break
+          else: raise SystemExit('Home navigation tab was not accessible')
+          PY
+          read -r home_x home_y < build-evidence/home-tab-tap.txt
+          "$ADB" shell input tap "$home_x" "$home_y"
+          sleep 2
+          "$ADB" shell uiautomator dump /sdcard/patient-home-return.xml >/dev/null
+          "$ADB" pull /sdcard/patient-home-return.xml build-evidence/patient-home-return.xml
+          python3 - <<'PY' > build-evidence/my-care-tap.txt
+          import re
+          import xml.etree.ElementTree as ET
+          root = ET.parse('build-evidence/patient-home-return.xml').getroot()
+          for node in root.iter('node'):
+              if node.attrib.get('text') == 'View my care and shared records':
+                  match = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', node.attrib.get('bounds', ''))
+                  if match:
+                      x1, y1, x2, y2 = map(int, match.groups())
+                      print((x1 + x2) // 2, (y1 + y2) // 2)
+                      break
+          else: raise SystemExit('My Care entry point was not accessible from Patient home')
+          PY
+          read -r care_x care_y < build-evidence/my-care-tap.txt
+          "$ADB" shell input tap "$care_x" "$care_y"
+          sleep 3
+          "$ADB" shell uiautomator dump /sdcard/patient-my-care.xml >/dev/null
+          "$ADB" pull /sdcard/patient-my-care.xml build-evidence/patient-my-care.xml
+          "$ADB" shell screencap -p /sdcard/patient-my-care.png
+          "$ADB" pull /sdcard/patient-my-care.png build-evidence/patient-my-care.png
+          grep -Fq "No records shared yet" build-evidence/patient-my-care.xml
+          grep -Fq "No invoices shared yet" build-evidence/patient-my-care.xml
           "$ADB" logcat -d -v brief > build-evidence/patient-logcat.txt
+          if grep -Ei "FATAL EXCEPTION|No safe area value available|Invariant Violation|Local Inter font load failed" build-evidence/patient-logcat.txt; then
+            echo "::error::Fatal Patient Android runtime or local font loading error detected."
+            exit 1
+          fi
+          printf 'commit=%s\nenvironment=staging\napi=https://oralyn-multitenant-staging.onrender.com\npackage=com.drpranali.dental\nfonts=Inter-v20-OFL-1.1\n' "$GITHUB_SHA" > build-evidence/build-info.txt
           if grep -E "FATAL EXCEPTION|No safe area value available|Invariant Violation" build-evidence/patient-logcat.txt; then
             echo "::error::Fatal Patient Android startup or navigation error detected."
             exit 1

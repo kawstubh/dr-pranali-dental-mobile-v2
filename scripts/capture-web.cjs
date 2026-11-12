@@ -3,8 +3,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const chromePath = process.env.CHROME_BIN || (process.platform === 'win32' ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : 'google-chrome');
-const port = 9222;
-const baseUrl = 'http://127.0.0.1:19006';
+const port = Number(process.env.CDP_PORT || 9222);
+const baseUrl = process.env.PATIENT_WEB_BASE_URL || 'http://127.0.0.1:19006';
 const outDir = path.join(process.cwd(), 'build-evidence', 'patient-web');
 fs.mkdirSync(outDir, { recursive: true });
 const commit = require('node:child_process').execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
@@ -12,6 +12,7 @@ const commit = require('node:child_process').execFileSync('git', ['rev-parse', '
 const chrome = spawn(chromePath, [
   '--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars',
   '--remote-debugging-port=' + port,
+  '--remote-allow-origins=*',
   '--user-data-dir=' + path.join(process.cwd(), '.chrome-capture-profile-' + process.pid),
   '--window-size=1440,1000', baseUrl
 ], { stdio: 'ignore', windowsHide: true });
@@ -107,8 +108,8 @@ async function assertText(label) {
     await send('Page.navigate', { url: baseUrl });
     await waitFor(() => evaluate('document.readyState === "complete"'));
     await waitFor(() => evaluate('document.body.innerText.includes("Welcome to Oralyn")'));
-    const fonts = await evaluate('({jakarta: document.fonts.check("16px PlusJakartaSans"), playfair: document.fonts.check("24px PlayfairDisplay")})');
-    if (!fonts.jakarta || !fonts.playfair) throw new Error('Bundled Patient fonts did not finish loading: ' + JSON.stringify(fonts));
+    const fonts = await evaluate('({interRegular: document.fonts.check("16px InterRegular"), interBold: document.fonts.check("20px InterBold")})');
+    if (!fonts.interRegular || !fonts.interBold) throw new Error('Bundled local Inter fonts did not finish loading: ' + JSON.stringify(fonts));
     await screenshot('patient-welcome-1440x1000.png');
     await clickText('Explore as a guest');
     await waitFor(() => evaluate('document.body.innerText.includes("Care that puts your smile first.")'));
@@ -121,11 +122,14 @@ async function assertText(label) {
     await assertText('Preferred time');
     await screenshot('patient-appointment-1440x1000.png');
     await screenshot('patient-appointment-1280x800.png', 1280, 800);
+    await clickText('Contact');
+    await waitFor(() => evaluate('document.body.innerText.includes("Contact the clinic")'));
+    await screenshot('patient-contact-1440x1000.png');
     await clickText('My Care');
-    await waitFor(() => evaluate('document.body.innerText.toLowerCase().includes("your care journey") || document.body.innerText.toLowerCase().includes("connect your clinic profile")'));
+    await waitFor(() => evaluate('document.body.innerText.includes("No records shared yet") && document.body.innerText.includes("No invoices shared yet")'));
     await screenshot('patient-my-care-1440x1000.png');
     fs.writeFileSync(path.join(outDir, 'build-info.txt'),
-      'commit=' + commit + '\nenvironment=staging\napi=' + process.env.EXPO_PUBLIC_DENTAL_API_URL + '\nfonts=' + JSON.stringify(fonts) + '\n');
+      'commit=' + commit + '\\nenvironment=staging\\napi=' + process.env.EXPO_PUBLIC_DENTAL_API_URL + '\\nfonts=Inter-v20-OFL-1.1 ' + JSON.stringify(fonts) + '\\n');
     console.log(JSON.stringify({ commit, fonts, screenshots: fs.readdirSync(outDir) }));
   } finally {
     if (ws) ws.close();

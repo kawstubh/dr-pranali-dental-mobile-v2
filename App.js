@@ -4,7 +4,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { LanguageProvider } from './src/i18n';
-import PatientExperience from './src/patient/PatientExperience';
+import PatientExperience, { FontReadyContext } from './src/patient/PatientExperience';
 
 function FontLoadingScreen() {
   return (
@@ -45,16 +45,20 @@ class PatientAppErrorBoundary extends React.Component {
 
 function AppRoot() {
   const [fontsLoaded, fontError] = useFonts({
-    PlusJakartaSans: require('./assets/fonts/PlusJakartaSans-Variable.ttf'),
-    PlayfairDisplay: require('./assets/fonts/PlayfairDisplay-Variable.ttf'),
+    InterRegular: require('./assets/fonts/Inter-Regular.ttf'),
+    InterMedium: require('./assets/fonts/Inter-Medium.ttf'),
+    InterSemiBold: require('./assets/fonts/Inter-SemiBold.ttf'),
+    InterBold: require('./assets/fonts/Inter-Bold.ttf'),
+    InterExtraBold: require('./assets/fonts/Inter-ExtraBold.ttf'),
   });
   React.useEffect(() => {
-    if (fontError) console.warn('[Oralyn Patient] Local font load failed; using system fallback.', fontError);
-  }, [fontError]);
+    if (fontsLoaded && !fontError) console.info('[Oralyn Patient] Local Inter font assets loaded.');
+    if (fontError) console.warn('[Oralyn Patient] Local Inter font load failed; using system fallback.', fontError);
+  }, [fontsLoaded, fontError]);
   return (
     <SafeAreaProvider>
       <PatientAppErrorBoundary>
-        {fontsLoaded || fontError ? <LanguageProvider><PatientExperience /></LanguageProvider> : <FontLoadingScreen />}
+        {fontsLoaded || fontError ? <FontReadyContext.Provider value={fontsLoaded && !fontError}><LanguageProvider><PatientExperience /></LanguageProvider></FontReadyContext.Provider> : <FontLoadingScreen />}
       </PatientAppErrorBoundary>
     </SafeAreaProvider>
   );

@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 
 const root = path.resolve(__dirname, '../..');
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
@@ -30,20 +31,37 @@ test('all existing patient navigation destinations and twenty dental services re
   assert.equal((services.match(/\{ id: '/g) || []).length, 20);
 });
 
-test('local licensed fonts are bundled and no remote font stylesheet is requested', () => {
-  for (const file of ['assets/fonts/PlusJakartaSans-Variable.ttf', 'assets/fonts/PlayfairDisplay-Variable.ttf', 'assets/fonts/OFL-Plus-Jakarta-Sans.txt', 'assets/fonts/OFL-Playfair-Display.txt']) {
-    assert.ok(fs.existsSync(path.join(root, file)), 'Missing ' + file);
-    assert.ok(fs.statSync(path.join(root, file)).size > 1000, 'Unexpectedly small ' + file);
+test('Inter v20 is locally bundled with exact upstream SHA-256 provenance', () => {
+  const files = ['Inter-Regular.ttf','Inter-Medium.ttf','Inter-SemiBold.ttf','Inter-Bold.ttf','Inter-ExtraBold.ttf'];
+  const hashes = {
+    'Inter-Regular.ttf': 'A414B48AA577EF2C62EBB135341DDEEF33EE26A4F5DC9F787F93C1AAB08EBB50',
+    'Inter-Medium.ttf': 'F1738576525E86DB1D5CF63A6C1B56E0A7E2A2898B499AC93DB95F2E7A9F9CD5',
+    'Inter-SemiBold.ttf': 'F30E9D2574C3BEC5144347FF965F9841C8F06857F0B7383000F8C9489A161841',
+    'Inter-Bold.ttf': 'FBE825CBFC749317F57A1433D3905AA9D3F388732FD29B8E8A36F34845E3BC3E',
+    'Inter-ExtraBold.ttf': '1B9FAB96FFC7BCA31A9D4CD4D660CCE80B94695908EC7613AFDECE2B8CF803C2',
+  };
+  const actual = fs.readdirSync(path.join(root, 'assets/fonts')).filter(name => /\.(ttf|otf|woff2?)$/i.test(name)).sort();
+  assert.deepEqual(actual, [...files].sort(), 'Only documented Inter font files may remain');
+  for (const file of files) {
+    const bytes = fs.readFileSync(path.join(root, 'assets/fonts', file));
+    assert.equal(crypto.createHash('sha256').update(bytes).digest('hex').toUpperCase(), hashes[file], 'Inter provenance mismatch: ' + file);
+    assert.ok(app.includes(file), 'App must load ' + file);
   }
+  assert.match(app, /useFonts\(/);
+  assert.match(ui, /InterRegular/);
+  assert.doesNotMatch(ui, /PlusJakartaSans|PlayfairDisplay/);
+  assert.doesNotMatch(ui, /fonts\.googleapis\.com|fonts\.gstatic\.com|useFontsFromUrl/);
+  assert.match(fontDocs, /Google Fonts.*v20/);
   assert.match(fontDocs, /SIL Open Font License 1\.1/);
-  assert.match(app, /PlusJakartaSans-Variable\.ttf/);
-  assert.match(app, /PlayfairDisplay-Variable\.ttf/);
-  assert.doesNotMatch(ui, /fonts\.googleapis\.com|useFontsFromUrl/);
+  assert.match(read('licenses/Inter-OFL.txt'), /SIL OPEN FONT LICENSE/);
+  const metadata = JSON.parse(read('licenses/Inter-Google-Fonts-metadata-v20.json'));
+  assert.equal(metadata.family, 'Inter');
+  assert.equal(metadata.version, 'v20');
 });
 
 test('patient UI source contains no known mojibake sequences or self-diagnosis feature', () => {
-  assert.doesNotMatch(ui, /[\uFFFD]|â|ï¿|ðŸ/);
-  assert.doesNotMatch(read('shared/dentalServices.ts'), /[\uFFFD]|â|ï¿|ðŸ/);
+  assert.doesNotMatch(ui, /[\uFFFD\u0393\u251C\u252C\u00E2\u00F0\u00EF\u00C2\u00C3]|â|ï¿|ðŸ/);
+  assert.doesNotMatch(read('shared/dentalServices.ts'), /[\uFFFD\u0393\u251C\u252C\u00E2\u00F0\u00EF\u00C2\u00C3]|â|ï¿|ðŸ/);
   assert.doesNotMatch(ui, /self-diagnosis|AI diagnosis|diagnose yourself/i);
 });
 
@@ -67,12 +85,13 @@ test('desktop Patient portal uses spacious navigation, responsive content and se
   assert.doesNotMatch(ui, /AI diagnosis|self-diagnosis|diagnose yourself/i);
 });
 
-test('font assets and fallback remain local and traceable', () => {
-  assert.match(fontDocs, /Google Fonts snapshot/);
-  assert.match(fontDocs, /SIL Open Font License 1\.1/);
-  assert.match(fontDocs, /Roboto on Android/);
+test('Inter font loading has an explicit system-font fallback and continues rendering', () => {
   assert.match(app, /fontError/);
+  assert.match(app, /FontReadyContext\.Provider value=\{fontsLoaded && !fontError\}/);
   assert.match(app, /using system fallback/);
+  assert.match(ui, /export const FontReadyContext/);
+  assert.match(ui, /fontReady \?/);
+  assert.match(ui, /fontFamily: FONT_BY_WEIGHT/);
 });
 
 
@@ -129,4 +148,33 @@ test('web Google sign-in uses the existing Supabase provider while native keeps 
   assert.match(auth, /GOOGLE_WEB_CLIENT_ID = '56124766906-7qlnhr7b3l1iri981i6p984n12nma9ji\.apps\.googleusercontent\.com'/);
   assert.match(auth, /SUPABASE_URL = 'https:\/\/jzxbeldubkhwnznrathu\.supabase\.co'/);
   assert.match(ui, /exchangeCodeForSession\(code\)/);
+});
+
+test('appointment time slots are limited to the two clinic windows', () => {
+  assert.ok(ui.includes("const CLINIC_HOURS_LABEL = '10:00 AM – 2:00 PM and 5:00 PM – 9:00 PM';"));
+  assert.match(ui, /CLINIC_TIME_SLOTS = \[/);
+  assert.match(ui, /'1:30 PM'/);
+  assert.match(ui, /'5:00 PM'/);
+  assert.match(ui, /'8:30 PM'/);
+  assert.match(ui, /CLINIC_TIME_SLOTS\.includes\(time\)/);
+  assert.match(ui, /Please choose one of the available clinic time slots/);
+  assert.match(ui, /Please choose a future appointment time/);
+  assert.doesNotMatch(ui, /Monday.*10:00 AM.*9:00 PM/);
+  assert.doesNotMatch(ui, /setShowTime\(true\)|mode="time"/);
+});
+
+
+test('Patient Android smoke test launches the exact package and captures My Care empty states', () => {
+  assert.match(workflow, /monkey -p com\.drpranali\.dental 1/);
+  assert.doesNotMatch(workflow, /monkey -p com\.drprani\.dental/);
+  assert.match(workflow, /patient-my-care\.png/);
+  assert.match(workflow, /No records shared yet/);
+  assert.match(workflow, /No invoices shared yet/);
+});
+
+test('Patient Android emulator smoke test checks KVM permissions and retains failure diagnostics', () => {
+  assert.match(workflow, /sudo chmod 666 \/dev\/kvm/);
+  assert.match(workflow, /Android emulator requires \/dev\/kvm/);
+  assert.match(workflow, /devices -l/);
+  assert.match(workflow, /Android emulator did not connect to ADB/);
 });
