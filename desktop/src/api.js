@@ -66,6 +66,7 @@ export const dentalApi = {
   logout: (token) =>
     request("/v1/dental/auth/logout", { token, method: "POST" }),
   workspaces: (token) => request("/v1/dental/auth/workspaces", { token }),
+  dashboardSummary: (token) => request("/v1/dental/doctor/dashboard/summary", { token }),
   switchWorkspace: (token, clinic_id) =>
     request("/v1/dental/auth/workspace/switch", {
       token,

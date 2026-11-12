@@ -71,6 +71,9 @@ function App() {
     [booting, setBooting] = useState(true),
     [authError, setAuthError] = useState(""),
     [dataError, setDataError] = useState(""),
+    [dashboardSummary, setDashboardSummary] = useState(null),
+    [dashboardSummaryLoading, setDashboardSummaryLoading] = useState(false),
+    [dashboardSummaryError, setDashboardSummaryError] = useState(""),
     [patientName, setPatientName] = useState(""),
     [patientPhone, setPatientPhone] = useState(""),
     [patientSession, setPatientSession] = useState(null),
@@ -132,6 +135,9 @@ function App() {
       setWorkspaces([]);
       setWorkspaceError("");
       setDataError("");
+      setDashboardSummary(null);
+      setDashboardSummaryLoading(false);
+      setDashboardSummaryError("");
       setBooting(false);
       return () => {
         live = false;
@@ -147,18 +153,23 @@ function App() {
         if (!live) return;
         setUser(currentUser);
         setBooting(false);
+        setDashboardSummaryLoading(true);
         const results = await Promise.allSettled([
           dentalApi.patients(token),
           dentalApi.appointments(token),
           dentalApi.workspaces(token),
+          dentalApi.dashboardSummary(token),
         ]);
         if (!live) return;
-        const [patientResult, appointmentResult, workspaceResult] = results;
+        const [patientResult, appointmentResult, workspaceResult, summaryResult] = results;
         setPatients(patientResult.status === "fulfilled" ? normaliseList(patientResult.value, ["patients"]) : []);
         setAppointments(appointmentResult.status === "fulfilled" ? normaliseList(appointmentResult.value, ["appointments"]) : []);
         setWorkspaces(workspaceResult.status === "fulfilled" ? normaliseList(workspaceResult.value, ["workspaces"]) : []);
+        setDashboardSummary(summaryResult.status === "fulfilled" ? (summaryResult.value?.result || summaryResult.value) : null);
+        setDashboardSummaryError(summaryResult.status === "rejected" ? (summaryResult.reason?.message || "Live financial and treatment metrics are unavailable.") : "");
+        setDashboardSummaryLoading(false);
         setWorkspaceError(workspaceResult.status === "rejected" ? "Your authorised workspace list could not be refreshed." : "");
-        setDataError(results.some((result) => result.status === "rejected")
+        setDataError(results.slice(0, 3).some((result) => result.status === "rejected")
           ? "Some clinic data could not be loaded. Your doctor session remains active; retry when the clinic service is available."
           : "");
       } catch (err) {
@@ -326,17 +337,22 @@ function App() {
   };
   const refreshDoctorData = async () => {
     if (!token) return;
+    setDashboardSummaryLoading(true);
     const results = await Promise.allSettled([
       dentalApi.patients(token),
       dentalApi.appointments(token),
       dentalApi.workspaces(token),
+      dentalApi.dashboardSummary(token),
     ]);
-    const [patientResult, appointmentResult, workspaceResult] = results;
+    const [patientResult, appointmentResult, workspaceResult, summaryResult] = results;
     setPatients(patientResult.status === "fulfilled" ? normaliseList(patientResult.value, ["patients"]) : []);
     setAppointments(appointmentResult.status === "fulfilled" ? normaliseList(appointmentResult.value, ["appointments"]) : []);
     setWorkspaces(workspaceResult.status === "fulfilled" ? normaliseList(workspaceResult.value, ["workspaces"]) : []);
+    setDashboardSummary(summaryResult.status === "fulfilled" ? (summaryResult.value?.result || summaryResult.value) : null);
+    setDashboardSummaryError(summaryResult.status === "rejected" ? (summaryResult.reason?.message || "Live financial and treatment metrics are unavailable.") : "");
+    setDashboardSummaryLoading(false);
     setWorkspaceError(workspaceResult.status === "rejected" ? "Your authorised workspace list could not be refreshed." : "");
-    setDataError(results.some((result) => result.status === "rejected")
+    setDataError(results.slice(0, 3).some((result) => result.status === "rejected")
       ? "Some clinic data could not be refreshed. Your session remains active."
       : "");
   };
@@ -374,6 +390,9 @@ function App() {
     setWorkspaces([]);
     setWorkspaceError("");
     setDataError("");
+    setDashboardSummary(null);
+    setDashboardSummaryError("");
+    setDashboardSummaryLoading(false);
     R("doctor");
     P("dashboard");
   };
@@ -621,6 +640,9 @@ function App() {
               F={F}
               patients={patients}
               appointments={appointments}
+              dashboardSummary={dashboardSummary}
+              dashboardSummaryLoading={dashboardSummaryLoading}
+              dashboardSummaryError={dashboardSummaryError}
               token={token}
               user={user}
               refresh={refreshDoctorData}
@@ -1070,6 +1092,9 @@ function Doctor({
   F,
   patients,
   appointments,
+  dashboardSummary,
+  dashboardSummaryLoading,
+  dashboardSummaryError,
   token,
   user,
   refresh,
@@ -1124,6 +1149,11 @@ function Doctor({
   const now = new Date();
   const greeting = now.getHours() < 12 ? "Good morning" : now.getHours() < 17 ? "Good afternoon" : "Good evening";
   const todayLabel = now.toLocaleDateString("en-IN", { weekday: "long", day: "2-digit", month: "long", year: "numeric" }).toUpperCase();
+  const dashboardCount = (key) => dashboardSummaryLoading ? "…" : dashboardSummary ? Number(dashboardSummary[key] || 0) : "—";
+  const dashboardMoney = (key) => dashboardSummaryLoading ? "…" : dashboardSummary ? new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(dashboardSummary[key] || 0) / 100) : "—";
+  const dashboardUnavailable = dashboardSummaryError
+    ? "Live workspace metrics are unavailable: " + dashboardSummaryError
+    : "Live workspace metrics are not available from this API environment yet.";
   const [aiBusy, setAiBusy] = useState(false);
   const [aiResult, setAiResult] = useState("");
   if (page === "workspaces")
@@ -1469,33 +1499,40 @@ function Doctor({
         <Title
           eyebrow="PRACTICE MANAGEMENT"
           title="Reports & analytics"
-          desc="Live clinic activity from connected records."
+          desc="Workspace-scoped totals from persistent treatment and billing records."
+          action={<button className="outline" onClick={refresh}>Refresh reports</button>}
         />
         <div className="metricgrid three">
           <Metric
             Icon={Users}
             label="Patients loaded"
-            value={patients.length}
+            value={dashboardSummary ? dashboardCount("patient_count") : patients.length}
             detail="Live clinic directory"
           />
           <Metric
             Icon={CalendarDays}
             label="Appointments loaded"
-            value={appointments.length}
+            value={dashboardSummary ? dashboardCount("appointment_count") : appointments.length}
             detail="Live clinic schedule"
           />
           <Metric
             Icon={Wallet}
-            label="Financial reports"
-            value="—"
-            detail="Invoice API pending"
+            label="Issued invoices"
+            value={dashboardCount("issued_invoice_count")}
+            detail="Issued and paid invoices"
           />
         </div>
-        <Panel title="Reporting status">
-          <div className="empty-state">
-            Analytics will populate when treatment-plan and invoice services are
-            available.
-          </div>
+        <Panel title="Financial position" sub="All values are INR, derived from issued clinic invoices and recorded receipts.">
+          {dashboardSummary ? (
+            <>
+              <div className="listrow">Invoiced total <b>{dashboardMoney("invoiced_total_paise")}</b></div>
+              <div className="listrow">Collected to date <b>{dashboardMoney("collected_total_paise")}</b></div>
+              <div className="listrow">Outstanding balance <b>{dashboardMoney("outstanding_balance_paise")}</b></div>
+              <div className="listrow">Active treatment plans <b>{dashboardCount("active_treatment_plan_count")}</b></div>
+            </>
+          ) : (
+            <div className="empty-state">{dashboardSummaryLoading ? "Loading live workspace metrics…" : dashboardUnavailable}</div>
+          )}
         </Panel>
       </>
     );
@@ -1524,20 +1561,20 @@ function Doctor({
         <Metric
           Icon={HeartPulse}
           label="Active treatments"
-          value="—"
-          detail="Treatment-plan API pending"
+          value={dashboardCount("active_treatment_plan_count")}
+          detail="Proposed, accepted and in-progress plans"
         />
         <Metric
           Icon={Users}
           label="Pending requests"
-          value={appointments.filter((a) => a.status === "requested").length}
+          value={dashboardSummary ? dashboardCount("pending_appointment_requests") : appointments.filter((a) => a.status === "requested").length}
           detail="Awaiting clinic confirmation"
         />
         <Metric
           Icon={Wallet}
-          label="Today's collection"
-          value="—"
-          detail="Invoice API pending"
+          label="Collected to date"
+          value={dashboardMoney("collected_total_paise")}
+          detail="Receipts recorded against issued invoices"
         />
       </div>
       <div className="dashgrid">
@@ -1569,8 +1606,17 @@ function Doctor({
             </div>
           )}
         </Panel>
-        <Panel title="Practice snapshot" sub="Monthly performance">
-          <div className="empty-state">Live financial reporting is not yet available from the staging API. No collection chart or totals are fabricated.</div>
+        <Panel title="Practice snapshot" sub="Live treatment and financial totals">
+          {dashboardSummary ? (
+            <>
+              <div className="listrow">Active treatment plans <b>{dashboardCount("active_treatment_plan_count")}</b></div>
+              <div className="listrow">Issued invoices <b>{dashboardCount("issued_invoice_count")}</b></div>
+              <div className="listrow">Invoiced to date <b>{dashboardMoney("invoiced_total_paise")}</b></div>
+              <div className="listrow">Outstanding balance <b>{dashboardMoney("outstanding_balance_paise")}</b></div>
+            </>
+          ) : (
+            <div className="empty-state">{dashboardSummaryLoading ? "Loading live workspace metrics…" : dashboardUnavailable}</div>
+          )}
           <div className="listrow">
             Patients in clinic <b>{patients.length}</b>
           </div>

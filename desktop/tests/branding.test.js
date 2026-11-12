@@ -59,7 +59,11 @@ test("the Doctor dashboard uses live normalized data and does not fabricate tota
   assert.match(main, /Promise\.allSettled/);
   assert.match(main, /todayRows/);
   assert.doesNotMatch(main, /14 November 2026|Aarav Mehta|Rohan Kulkarni|Diya Shah/i);
-  assert.match(main, /Invoice API pending/);
+  assert.match(main, /dentalApi\.dashboardSummary\(token\)/);
+  assert.match(main, /Active treatments/);
+  assert.match(main, /Collected to date/);
+  assert.match(main, /dashboardSummaryError/);
+  assert.doesNotMatch(main, /Invoice API pending|Treatment-plan API pending/);
   assert.match(main, /No sample history is shown/);
   assert.doesNotMatch(main, /^const people = \[\];|^const appts = \[\];/m);
 });
