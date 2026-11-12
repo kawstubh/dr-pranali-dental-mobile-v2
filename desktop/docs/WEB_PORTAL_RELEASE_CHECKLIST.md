@@ -147,3 +147,12 @@ The connected Windows development machine currently reports **0 bytes free on C:
 
 No PR was merged, no Render service or secret was changed, no Supabase branch/bucket was created, no production migration/deployment was performed, and no patient data was touched. Native APKs remain out of release scope.
 
+## Public guest booking abuse and tenant-scope review — 12 Nov 2026
+
+- Review of `POST /v1/dental/public/appointments` found that guest intake creates a new patient and a `requested` appointment under `DENTAL_MASTER_CLINIC_ID`, falling back to the legacy `dr-pranali` clinic. The request has no public clinic slug/selector and previously had no request rate limit.
+- Backend [PR #51](https://github.com/kawstubh/universal-intelligence-engine/pull/51) adds an in-process sliding-window limit of **8 requests per client IP per 5 minutes**, HTTP 429 with `Retry-After`, and a bounded client-key map. PostgreSQL 16.15 CI [#43261410202](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43261410202): **199 passed**; Engine Tests [#43261410247](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43261410247): **198 passed, 1 PostgreSQL-only skip**. PR #51 is Draft and stacked on PR #50.
+- The limiter is a single-instance interim control; it does not coordinate across replicas or survive restarts. Configure a shared limiter or edge/WAF policy before horizontal scaling.
+- Until a verified public clinic slug and per-clinic abuse controls exist, keep guest booking restricted to the configured Dr Pranali master clinic. Do not present this endpoint as a multi-tenant public clinic directory.
+
+No staging service or environment was changed by this review.
+
