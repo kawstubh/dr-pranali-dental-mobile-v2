@@ -9,14 +9,16 @@ Independent React/Vite desktop and laptop experience for the Oralyn Doctor and P
 3. npm test
 4. npm run dev
 
-The Vite development server proxies /v1 to the isolated Oralyn staging API. CORS middleware and patient-boundary handling are present in the stacked backend PR #43, but the deployed staging API still returns HTTP 405 to browser OPTIONS preflight requests; keep the proxy until the backend stack is approved and deployed. Production builds default to the staging API unless VITE_DENTAL_API_URL is explicitly supplied. Do not point this app at production without a separate approval.
+The Vite development server proxies /v1 to the Oralyn staging API. CORS middleware and patient-boundary handling are present in the stacked backend PR #43, but the deployed staging API still returns HTTP 405 to browser OPTIONS preflight requests; keep the proxy until the backend stack is approved and deployed. Production builds require an explicit VITE_DENTAL_API_URL and do not silently fall back to staging. CI supplies the current staging API origin. Do not point this app at production without a separate approval.
 
 ## Validation
 
 - npm test covers brand/font asset provenance, data normalisation, date/time handling, tenant-scoped workspace management and patient/doctor role boundaries.
 - npm audit --audit-level=low
 - npm run build
-- The oralyn-desktop.yml workflow captures real, signed-out screens from the production Vite preview at 1440x1000 and 1280x800. It does not fabricate patient records or claim authenticated dashboard coverage.
+- The oralyn-desktop.yml workflow captures real, signed-out screens from the production Vite preview at 1440x1000, 1280x800 and 390x844. It does not fabricate patient records or claim authenticated dashboard coverage.
+- CI also uploads the static staging-targeted bundle as `oralyn-portal-static-staging-build`. Its `oralyn-build-manifest.json` records the commit, API origin and per-file SHA-256 checksums, never embeds Supabase credentials, and lists unmet release gates. A successful build artifact is not a deployment or release approval.
+- The current CI build intentionally reports Patient Supabase auth, isolated portal origin, staging CORS/auth redirects, the deployed backend stack and private document storage as unverified until those staging dependencies are configured and tested.
 
 ## Security and data boundaries
 

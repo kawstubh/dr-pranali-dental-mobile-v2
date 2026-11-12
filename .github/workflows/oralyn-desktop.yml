@@ -36,6 +36,10 @@ jobs:
         run: npm audit --audit-level=low
       - name: Build staging-targeted desktop bundle
         run: npm run build
+      - name: Write immutable build provenance and explicit release gates
+        env:
+          ORALYN_ENVIRONMENT: staging
+        run: node scripts/write-build-manifest.cjs
       - name: Install headless Chrome
         id: setup_chrome
         uses: browser-actions/setup-chrome@v1
@@ -65,5 +69,12 @@ jobs:
         with:
           name: oralyn-desktop-actual-screens
           path: desktop/evidence/actual-desktop/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload staging-targeted portal bundle and checksum manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: oralyn-portal-static-staging-build
+          path: desktop/dist/
           if-no-files-found: error
           retention-days: 14
