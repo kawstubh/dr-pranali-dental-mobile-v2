@@ -16,6 +16,7 @@ test("patient treatment journey hides prior records during initial load and reta
     server: { middlewareMode: true },
     appType: "custom",
     logLevel: "error",
+    optimizeDeps: { noDiscovery: true, include: [] },
   });
 
   try {
