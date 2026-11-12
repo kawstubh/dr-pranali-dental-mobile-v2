@@ -22,7 +22,7 @@ on:
 
 jobs:
   build-apk:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       EXPO_PUBLIC_DENTAL_API_URL: https://oralyn-multitenant-staging.onrender.com
@@ -178,22 +178,29 @@ jobs:
       - name: Capture Patient desktop screens at laptop widths
         timeout-minutes: 10
         if: ${{ always() && steps.export_web.outcome == 'success' }}
+        env:
+          CHROME_BIN: ${{ steps.setup_chrome.outputs.chrome-path }}
         run: |
           set -euo pipefail
-          python3 -m http.server 19006 --directory dist >/tmp/oralyn-patient-web.log 2>&1 &
+          test -x "$CHROME_BIN" || { echo "::error::Configured Chromium path is not executable: $CHROME_BIN"; exit 1; }
+          "$CHROME_BIN" --version
+          python3 -m http.server 19006 --bind 127.0.0.1 --directory dist >/tmp/oralyn-patient-web.log 2>&1 &
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          server_ready=0
           for attempt in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:19006/ >/dev/null; then break; fi
+            if curl -fsS http://127.0.0.1:19006/ >/dev/null 2>&1; then
+              server_ready=1
+              break
+            fi
             sleep 1
           done
-          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
-          if [ -z "$CHROME_BIN" ]; then
-            echo "::error::No headless Chrome/Chromium is installed on this runner."
+          if [ "$server_ready" != "1" ]; then
+            cat /tmp/oralyn-patient-web.log || true
+            echo "::error::Patient web export did not start its local preview server."
             exit 1
           fi
-          export CHROME_BIN
-          node scripts/capture-web.cjs
+          PATIENT_WEB_BASE_URL=http://127.0.0.1:19006 node scripts/capture-web.cjs
 
       - name: Upload Patient desktop screenshot evidence
         if: always()
@@ -205,7 +212,7 @@ jobs:
           retention-days: 14
 
       - name: Install and smoke-test Patient APK on Android emulator
-        timeout-minutes: 20
+        timeout-minutes: 30
         if: ${{ always() && steps.verify_apk.outcome == 'success' }}
         run: |
           set -euo pipefail
@@ -238,26 +245,28 @@ jobs:
           fi
           "$SDK_ROOT/emulator/emulator" -list-avds >build-evidence/emulator-list.txt 2>&1
           grep -Fxq "oralyn-patient-ci" build-evidence/emulator-list.txt
-          if [ ! -e /dev/kvm ]; then
-            echo "::error::Android emulator requires /dev/kvm, but the runner does not expose it."
-            exit 1
+          ACCEL_ARGS=()
+          if [ -e /dev/kvm ]; then
+            sudo chmod 666 /dev/kvm
+            if [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
+              ls -l /dev/kvm > build-evidence/kvm-permissions.txt
+            else
+              echo "::warning::KVM exists but is not accessible; trying software acceleration."
+              ACCEL_ARGS=(-accel off)
+            fi
+          else
+            echo "::warning::This hosted runner has no /dev/kvm; trying software acceleration."
+            ACCEL_ARGS=(-accel off)
           fi
-          sudo chmod 666 /dev/kvm
-          if [ ! -r /dev/kvm ] || [ ! -w /dev/kvm ]; then
-            ls -l /dev/kvm || true
-            echo "::error::Android emulator KVM device is not readable and writable by the runner."
-            exit 1
-          fi
-          ls -l /dev/kvm > build-evidence/kvm-permissions.txt
-          "$SDK_ROOT/emulator/emulator" -avd oralyn-patient-ci -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -wipe-data >build-evidence/emulator.log 2>&1 &
-          if ! timeout 240 "$ADB" wait-for-device; then
+          "$SDK_ROOT/emulator/emulator" -avd oralyn-patient-ci -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -wipe-data "${ACCEL_ARGS[@]}" >build-evidence/emulator.log 2>&1 &
+          if ! timeout 360 "$ADB" wait-for-device; then
             "$ADB" devices -l > build-evidence/adb-devices.txt 2>&1 || true
             cat build-evidence/emulator.log || true
             echo "::error::Android emulator did not connect to ADB."
             exit 1
           fi
           boot=""
-          for attempt in $(seq 1 60); do
+          for attempt in $(seq 1 120); do
             boot="$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
             [ "$boot" = "1" ] && break
             sleep 5
@@ -440,7 +449,7 @@ jobs:
             echo "::error::Fatal Patient Android startup or navigation error detected."
             exit 1
           fi
-          printf 'commit=%s\nenvironment=staging\napi=https://oralyn-multitenant-staging.onrender.com\npackage=com.drpranali.dental\n' "$GITHUB_SHA" > build-evidence/build-info.txt
+          printf 'android_smoke=passed\n' >> build-evidence/build-info.txt
           echo "::warning::Patient cold start, guest navigation and booking form verified. OAuth login/session persistence requires a dedicated staging Google test account."
 
       - name: Upload Patient Android runtime evidence
