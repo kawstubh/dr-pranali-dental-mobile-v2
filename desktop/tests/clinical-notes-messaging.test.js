@@ -58,3 +58,14 @@ test("patient treatment journey owns and resets its shared clinical-note state",
   assert.match(patientCare, /clinicalNotes\.length/);
   assert.match(patientCare, /notesError \|\|/);
 });
+
+test("patient-scoped records and clinic messages hide prior patient data while a new scope loads", () => {
+  assert.match(care, /const scopeKey = .*patientId/);
+  assert.match(care, /setLoadedScope\(""\)/);
+  assert.match(care, /loadedScope !== scopeKey/);
+  assert.match(care, /setPlans\(\[\]\)/);
+  assert.match(care, /setInvoices\(\[\]\)/);
+  assert.match(care, /setDocuments\(\[\]\)/);
+  assert.match(care, /setMessages\(\[\]\)/);
+  assert.match(care, /setDraft\(""\)/);
+});

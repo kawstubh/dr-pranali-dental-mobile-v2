@@ -86,3 +86,45 @@ test("patient-facing application contains no AI diagnosis or self-diagnosis acti
   assert.doesNotMatch(patientSource, /AI diagnosis|self-diagnosis|diagnose yourself/i);
   assert.doesNotMatch(patientSource, /DoctorAIActionCard|IntelligenceCard/);
 });
+
+test("authenticated patient booking, linking and chart reads stay outside the AI route namespace", () => {
+  assert.match(apiSource, /patientLink: \(token, invite_code\)[\s\S]*?\/v1\/dental\/patient\/link/);
+  assert.match(apiSource, /patientRequestAppointment: \(token, patientId, body\)[\s\S]*?\/v1\/dental\/patient\/appointments/);
+  assert.match(apiSource, /patientChart: \(token, patientId\)[\s\S]*?\/v1\/dental\/patient\/chart/);
+  assert.doesNotMatch(apiSource, /\/v1\/dental\/ai\/patient\/(?:link|appointments|chart)/);
+  assert.match(patientSource, /patientRequestAppointment\(\s*patientSession\.access_token/);
+  assert.match(patientSource, /patientSession\?\.access_token/);
+});
+
+test("clinic and patient record changes clear prior tenant-scoped data before the new scope renders", () => {
+  const workspaceStart = source.indexOf("const switchWorkspace = async");
+  const workspaceEnd = source.indexOf("const activeWorkspace =", workspaceStart);
+  assert.ok(workspaceStart >= 0 && workspaceEnd > workspaceStart);
+  const workspaceSwitch = source.slice(workspaceStart, workspaceEnd);
+  assert.ok(workspaceSwitch.indexOf("setPatients([])") < workspaceSwitch.indexOf("setToken(accessToken)"));
+  assert.ok(workspaceSwitch.indexOf("setAppointments([])") < workspaceSwitch.indexOf("setToken(accessToken)"));
+  assert.ok(workspaceSwitch.indexOf("F({})") < workspaceSwitch.indexOf("setToken(accessToken)"));
+
+  const selectStart = source.indexOf("const selectPatientRecord =");
+  const selectEnd = source.indexOf("const linkPatient =", selectStart);
+  assert.ok(selectStart >= 0 && selectEnd > selectStart);
+  const selection = source.slice(selectStart, selectEnd);
+  assert.ok(selection.indexOf("setPatientAppointments([])") < selection.indexOf("setSelectedPatientRecordId("));
+  assert.ok(selection.indexOf("setPatientChart([])") < selection.indexOf("setSelectedPatientRecordId("));
+  assert.match(careSource, /loadedScope !== scopeKey/);
+  assert.match(careSource, /const scopeKey = .*patientId/);
+});
+
+test("linked patient booking is attached to the verified record while guest intake stays separate", () => {
+  assert.match(patientSource, /patientRequestAppointment\(/);
+  assert.match(patientSource, /patientSession\?\.access_token/);
+  assert.match(patientSource, /publicAppointment\(/);
+  assert.match(patientSource, /Link your clinic record before booking/);
+  assert.match(apiSource, /patientRequestAppointment: \(token, patientId, body\)/);
+});
+
+test("patient record selection persistence is bound to the Supabase user identity", () => {
+  assert.match(source, /oralyn_patient_record_user_id/);
+  assert.match(source, /storedOwnerId !== patientUserId/);
+  assert.match(source, /localStorage\.removeItem\("oralyn_patient_record_user_id"\)/);
+});

@@ -1,4 +1,5 @@
 import React from "react";
+import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -8,7 +9,7 @@ import { createServer } from "vite";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-test("patient treatment journey renders shared notes and empty states without runtime errors", async () => {
+test("patient treatment journey hides prior records during initial load and retains explicit empty states", async () => {
   const vite = await createServer({
     configFile: path.join(root, "vite.config.js"),
     root,
@@ -28,10 +29,14 @@ test("patient treatment journey renders shared notes and empty states without ru
       }),
     );
 
-    assert.match(markup, /Clinic-shared treatment plans/);
-    assert.match(markup, /Clinical notes shared by your clinic/);
-    assert.match(markup, /Your clinic has not shared a treatment plan yet/);
-    assert.match(markup, /Your clinic has not shared clinical notes yet/);
+    assert.match(markup, /Loading information shared by your clinic/);
+    assert.doesNotMatch(markup, /Clinic-shared treatment plans|Clinical notes shared by your clinic/);
+
+    const source = fs.readFileSync(path.join(root, "src", "careScreens.jsx"), "utf8");
+    assert.match(source, /Clinic-shared treatment plans/);
+    assert.match(source, /Clinical notes shared by your clinic/);
+    assert.match(source, /Your clinic has not shared a treatment plan yet/);
+    assert.match(source, /Your clinic has not shared clinical notes yet/);
   } finally {
     await vite.close();
   }

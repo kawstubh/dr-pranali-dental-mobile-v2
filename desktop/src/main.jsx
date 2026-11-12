@@ -260,14 +260,28 @@ function App() {
     };
   }, []);
   useEffect(() => {
-    if (!patientSession?.access_token) {
+    if (patientBoot) return;
+    const patientUserId = patientSession?.user?.id || "";
+    if (!patientUserId || !patientSession?.access_token) {
       setPatientLinks([]);
       setPatientAppointments([]);
       setPatientChart([]);
+      setPatientError("");
       setSelectedPatientRecordId("");
       localStorage.removeItem("oralyn_patient_record_id");
+      localStorage.removeItem("oralyn_patient_record_user_id");
       return;
     }
+    const storedOwnerId = localStorage.getItem("oralyn_patient_record_user_id");
+    if (storedOwnerId !== patientUserId) {
+      localStorage.removeItem("oralyn_patient_record_id");
+      setSelectedPatientRecordId("");
+      localStorage.setItem("oralyn_patient_record_user_id", patientUserId);
+    }
+    setPatientLinks([]);
+    setPatientAppointments([]);
+    setPatientChart([]);
+    setPatientError("");
     let live = true;
     dentalApi.patientLinkedRecords(patientSession.access_token)
       .then((response) => {
@@ -287,7 +301,7 @@ function App() {
         if (live) setPatientError(error.message || "Your linked clinic records could not be loaded.");
       });
     return () => { live = false; };
-  }, [patientSession]);
+  }, [patientSession, patientBoot]);
 
   useEffect(() => {
     const selected = patientLinks.find((item) => String(item.patient_id) === String(selectedPatientRecordId));
@@ -326,7 +340,7 @@ function App() {
       );
     if (!result.data.session && mode === "signup")
       setPatientError(
-        "Check your email to confirm your patient account, then sign in.",
+        "Check your email to confirm your patient account, then sign in. If you entered a clinic invite code, enter it again from your home page after signing in.",
       );
   };
   const patientSignOut = async () => {
@@ -344,6 +358,7 @@ function App() {
     } finally {
       setPatientSession(null);
       localStorage.removeItem("oralyn_patient_record_id");
+      localStorage.removeItem("oralyn_patient_record_user_id");
       setPatientLinks([]);
       setSelectedPatientRecordId("");
       setPatientAppointments([]);
@@ -353,14 +368,22 @@ function App() {
     }
   };
   const selectPatientRecord = (patientId) => {
+    setPatientAppointments([]);
+    setPatientChart([]);
+    setPatientError("");
     setSelectedPatientRecordId(String(patientId || ""));
     if (patientId) localStorage.setItem("oralyn_patient_record_id", String(patientId));
     else localStorage.removeItem("oralyn_patient_record_id");
+    if (patientSession?.user?.id) localStorage.setItem("oralyn_patient_record_user_id", patientSession.user.id);
     P("home");
   };
   const linkPatient = async (code) => {
     if (!patientSession) throw new Error("Sign in first.");
     const linked = await dentalApi.patientLink(patientSession.access_token, code.trim());
+    if (patientSession.user?.id) localStorage.setItem("oralyn_patient_record_user_id", patientSession.user.id);
+    setPatientAppointments([]);
+    setPatientChart([]);
+    setPatientError("");
     const linkedPatientId = linked?.result?.patient_id;
     const response = await dentalApi.patientLinkedRecords(patientSession.access_token);
     const records = normaliseList(response);
@@ -398,12 +421,21 @@ function App() {
       const accessToken = session?.access_token || session?.result?.access_token;
       const sessionUser = normaliseUser(session);
       if (!accessToken || !sessionUser) throw new Error("The clinic service returned an incomplete workspace session.");
+      // Clear the previous clinic's scoped records before the new token can render.
+      setPatients([]);
+      setAppointments([]);
+      setWorkspaces([]);
+      setDashboardSummary(null);
+      setDashboardSummaryError("");
+      setDashboardSummaryLoading(false);
+      setWorkspaceError("");
+      setDataError("");
+      F({});
+      Q("36");
       localStorage.setItem("oralyn_doctor_token", accessToken);
       setToken(accessToken);
       setUser(sessionUser);
       setWorkspaces(normaliseList(session, ["workspaces"]));
-      setWorkspaceError("");
-      setDataError("");
       P("dashboard");
       T("Workspace switched successfully.");
       return true;
@@ -1960,25 +1992,40 @@ function Patient({
               {step === 3 && (
                 <>
                   <h2>Review your request</h2>
-                  <label className="field">
-                    Your full name
-                    <input
-                      value={patientName}
-                      onChange={(e) => setPatientName(e.target.value)}
-                      required
-                      placeholder="Full name"
-                    />
-                  </label>
-                  <label className="field">
-                    Mobile number
-                    <input
-                      value={patientPhone}
-                      onChange={(e) => setPatientPhone(e.target.value)}
-                      required
-                      minLength={7}
-                      placeholder="10-digit mobile number"
-                    />
-                  </label>
+                  {patientSession?.access_token ? (
+                    selectedPatientLink ? (
+                      <div className="patient-linked-clinic" role="status">
+                        Booking for <b>{selectedPatientLink.patient_name}</b> at <b>{selectedPatientLink.clinic_name}</b>. The request will be attached to this verified clinic record.
+                      </div>
+                    ) : (
+                      <div className="autherror" role="alert">
+                        Link your clinic record before booking from your patient account.
+                        <button className="link" type="button" onClick={() => P("home")}>Go to home and link a record</button>
+                      </div>
+                    )
+                  ) : (
+                    <>
+                      <label className="field">
+                        Your full name
+                        <input
+                          value={patientName}
+                          onChange={(e) => setPatientName(e.target.value)}
+                          required
+                          placeholder="Full name"
+                        />
+                      </label>
+                      <label className="field">
+                        Mobile number
+                        <input
+                          value={patientPhone}
+                          onChange={(e) => setPatientPhone(e.target.value)}
+                          required
+                          minLength={7}
+                          placeholder="10-digit mobile number"
+                        />
+                      </label>
+                    </>
+                  )}
                   <div className="review">
                     <span>Service</span>
                     <b>{service}</b>
@@ -2009,24 +2056,39 @@ function Patient({
                       return;
                     }
                     try {
-                      if (
-                        patientName.trim().length < 2 ||
-                        patientPhone.trim().length < 7
-                      ) {
-                        ping("Please enter your name and mobile number.");
-                        return;
-                      }
                       const starts = localDateTimeFromParts(date, slot);
                       if (!starts) {
                         ping("Choose a valid appointment date and time.");
                         return;
                       }
-                      await dentalApi.publicAppointment({
-                        name: patientName.trim(),
-                        phone: patientPhone.trim(),
-                        starts_at: starts.toISOString(),
-                        treatment_type: service,
-                      });
+                      if (patientSession?.access_token) {
+                        if (!selectedPatientRecordId) {
+                          ping("Link your clinic record before booking from your patient account.");
+                          return;
+                        }
+                        await dentalApi.patientRequestAppointment(
+                          patientSession.access_token,
+                          selectedPatientRecordId,
+                          {
+                            starts_at: starts.toISOString(),
+                            treatment_type: service,
+                          },
+                        );
+                      } else {
+                        if (
+                          patientName.trim().length < 2 ||
+                          patientPhone.trim().length < 7
+                        ) {
+                          ping("Please enter your name and mobile number.");
+                          return;
+                        }
+                        await dentalApi.publicAppointment({
+                          name: patientName.trim(),
+                          phone: patientPhone.trim(),
+                          starts_at: starts.toISOString(),
+                          treatment_type: service,
+                        });
+                      }
                       G(true);
                     } catch (e) {
                       ping("Booking request failed: " + e.message);
@@ -2159,7 +2221,7 @@ function Patient({
             : "No appointment linked yet"}
         </span>
       </Panel>
-      {!selectedPatientRecordId && (
+      {!selectedPatientLink && (
         <Panel
           title="Link your clinic record"
           sub="Enter the one-time invite code shared by your clinic."
@@ -2199,13 +2261,13 @@ function Patient({
           [
             FileHeart,
             "Records & prescriptions",
-            "Secure documents not yet connected",
+            "View documents shared by your clinic",
             "records",
           ],
           [
             Receipt,
             "Invoices & payments",
-            "Billing service not yet connected",
+            "View invoices and receipts shared by your clinic",
             "invoices",
           ],
         ].map(([Icon, x, y, p]) => (

@@ -128,7 +128,7 @@ export const dentalApi = {
   publicAppointment: (body) =>
     request("/v1/dental/public/appointments", { method: "POST", body }),
   patientLink: (token, invite_code) =>
-    request("/v1/dental/ai/patient/link", {
+    request("/v1/dental/patient/link", {
       token,
       method: "POST",
       body: { invite_code },
@@ -136,9 +136,15 @@ export const dentalApi = {
   patientLinkedRecords: (token) =>
     request("/v1/dental/patient/linked-records", { token }),
   patientAppointments: (token, patientId) =>
-    request(`/v1/dental/ai/patient/appointments${query({ patient_id: patientId })}`, { token }),
+    request(`/v1/dental/patient/appointments${query({ patient_id: patientId })}`, { token }),
+  patientRequestAppointment: (token, patientId, body) =>
+    request(`/v1/dental/patient/appointments${query({ patient_id: patientId })}`, {
+      token,
+      method: "POST",
+      body,
+    }),
   patientChart: (token, patientId) =>
-    request(`/v1/dental/ai/patient/chart${query({ patient_id: patientId })}`, { token }),
+    request(`/v1/dental/patient/chart${query({ patient_id: patientId })}`, { token }),
   createPatientInvite: (token, patientId) =>
     request(
       "/v1/dental/ai/doctor/patients/" +

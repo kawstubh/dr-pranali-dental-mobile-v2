@@ -73,6 +73,7 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [loadedScope, setLoadedScope] = useState("");
   const [busy, setBusy] = useState(false);
   const [planTitle, setPlanTitle] = useState("");
   const [planSummary, setPlanSummary] = useState("");
@@ -82,6 +83,7 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
   const [taxPercent, setTaxPercent] = useState("0");
   const [receiptDraft, setReceiptDraft] = useState({});
   const [uploadFile, setUploadFile] = useState(null);
+  const scopeKey = `${token || ""}:${page}:${activePatient?.id || ""}:${refreshKey}`;
 
   useEffect(() => {
     let live = true;
@@ -91,9 +93,14 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
       setDocuments([]);
       setLoading(false);
       setError("");
+      setLoadedScope(scopeKey);
       return () => { live = false; };
     }
     setLoading(true);
+    setLoadedScope("");
+    setPlans([]);
+    setInvoices([]);
+    setDocuments([]);
     setError("");
     const load = async () => {
       try {
@@ -110,12 +117,15 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
       } catch (err) {
         if (live) setError(err.message || "The clinic service could not load this section.");
       } finally {
-        if (live) setLoading(false);
+        if (live) {
+          setLoading(false);
+          setLoadedScope(scopeKey);
+        }
       }
     };
     load();
     return () => { live = false; };
-  }, [page, token, activePatient?.id, refreshKey]);
+  }, [page, token, activePatient?.id, refreshKey, scopeKey]);
 
   const refresh = () => setRefreshKey((value) => value + 1);
 
@@ -126,6 +136,10 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
         <StateMessage>Select a patient from the clinical workspace or patient directory. No sample clinical or financial records are displayed.</StateMessage>
       </>
     );
+  }
+
+  if (loading || loadedScope !== scopeKey) {
+    return <StateMessage>Loading this patient's protected clinic records…</StateMessage>;
   }
 
   const patientLabel = activePatient.name || activePatient.id;
@@ -426,6 +440,8 @@ export function PatientCareManagement({ page, session, patientId, patientChart =
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [loadedScope, setLoadedScope] = useState("");
+  const scopeKey = `${session?.user?.id || ""}:${page}:${patientId || ""}:${refreshKey}`;
 
   useEffect(() => {
     let live = true;
@@ -438,14 +454,18 @@ export function PatientCareManagement({ page, session, patientId, patientChart =
       setDocuments([]);
       setLoading(false);
       setError("");
+      setLoadedScope(scopeKey);
       return () => { live = false; };
     }
     setLoading(true);
+    setLoadedScope("");
+    setPlans([]);
+    setClinicalNotes([]);
+    setNotesError("");
+    setInvoices([]);
+    setReceipts([]);
+    setDocuments([]);
     setError("");
-    if (page === "journey") {
-      setClinicalNotes([]);
-      setNotesError("");
-    }
     const load = async () => {
       try {
         if (page === "journey") {
@@ -456,7 +476,7 @@ export function PatientCareManagement({ page, session, patientId, patientChart =
           if (live) {
             setPlans(planResult.status === "fulfilled" ? normaliseList(planResult.value) : []);
             setClinicalNotes(noteResult.status === "fulfilled" ? normaliseList(noteResult.value) : []);
-            setNotesError(noteResult.status === "rejected" ? "Shared clinical notes are not available from this staging API yet." : "");
+            setNotesError(noteResult.status === "rejected" ? (noteResult.reason?.message || "Shared clinical notes could not be loaded.") : "");
             if (planResult.status === "rejected") throw planResult.reason;
           }
         } else if (page === "invoices") {
@@ -475,12 +495,15 @@ export function PatientCareManagement({ page, session, patientId, patientChart =
       } catch (err) {
         if (live) setError(err.message || "Your clinic records could not be loaded.");
       } finally {
-        if (live) setLoading(false);
+        if (live) {
+          setLoading(false);
+          setLoadedScope(scopeKey);
+        }
       }
     };
     load();
     return () => { live = false; };
-  }, [page, session?.access_token, patientId, refreshKey]);
+  }, [page, session?.access_token, session?.user?.id, patientId, refreshKey, scopeKey]);
 
   const download = async (document) => {
     const popup = window.open("about:blank", "_blank");
@@ -507,7 +530,7 @@ export function PatientCareManagement({ page, session, patientId, patientChart =
   if (!patientId) {
     return <StateMessage>Link a clinic record or select a linked clinic to view information shared with you.</StateMessage>;
   }
-  if (loading) return <StateMessage>Loading information shared by your clinic…</StateMessage>;
+  if (loading || loadedScope !== scopeKey) return <StateMessage>Loading information shared by your clinic…</StateMessage>;
   if (error) return <StateMessage error>{error}</StateMessage>;
 
   if (page === "journey") {
@@ -582,6 +605,8 @@ export function DoctorClinicalNotes({ token, activePatient }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [loadedScope, setLoadedScope] = useState("");
+  const scopeKey = `${token || ""}:${activePatient?.id || ""}:${refreshKey}`;
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [drafts, setDrafts] = useState({});
@@ -590,18 +615,28 @@ export function DoctorClinicalNotes({ token, activePatient }) {
     let live = true;
     if (!token || !activePatient?.id) {
       setNotes([]);
+      setDrafts({});
       setLoading(false);
       setError("");
+      setLoadedScope(scopeKey);
       return () => { live = false; };
     }
     setLoading(true);
+    setLoadedScope("");
+    setNotes([]);
+    setDrafts({});
     setError("");
     dentalApi.doctorClinicalNotes(token, activePatient.id)
       .then((response) => { if (live) setNotes(normaliseList(response)); })
       .catch((err) => { if (live) setError(err.message || "Clinical notes could not be loaded."); })
-      .finally(() => { if (live) setLoading(false); });
+      .finally(() => {
+        if (live) {
+          setLoading(false);
+          setLoadedScope(scopeKey);
+        }
+      });
     return () => { live = false; };
-  }, [token, activePatient?.id, refreshKey]);
+  }, [token, activePatient?.id, refreshKey, scopeKey]);
 
   if (!activePatient?.id) {
     return (
@@ -610,6 +645,10 @@ export function DoctorClinicalNotes({ token, activePatient }) {
         <StateMessage>Select a patient from the clinical workspace before opening their notes.</StateMessage>
       </>
     );
+  }
+
+  if (loading || loadedScope !== scopeKey) {
+    return <StateMessage>Loading clinical notes for this patient…</StateMessage>;
   }
 
   const createNote = async (event) => {
@@ -729,16 +768,23 @@ export function PatientCommunication({ mode, token, session, activePatient, pati
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [loadedScope, setLoadedScope] = useState("");
+  const scopeKey = `${doctorMode ? "doctor" : "patient"}:${authToken || ""}:${recordId || ""}:${refreshKey}`;
 
   useEffect(() => {
     let live = true;
     if (!authToken || !recordId) {
       setMessages([]);
+      setDraft("");
       setLoading(false);
       setError("");
+      setLoadedScope(scopeKey);
       return () => { live = false; };
     }
     setLoading(true);
+    setLoadedScope("");
+    setMessages([]);
+    setDraft("");
     setError("");
     const request = doctorMode
       ? dentalApi.doctorMessages(authToken, recordId)
@@ -748,10 +794,13 @@ export function PatientCommunication({ mode, token, session, activePatient, pati
     }).catch((err) => {
       if (live) setError(err.message || "Clinic communication could not be loaded.");
     }).finally(() => {
-      if (live) setLoading(false);
+      if (live) {
+        setLoading(false);
+        setLoadedScope(scopeKey);
+      }
     });
     return () => { live = false; };
-  }, [doctorMode, authToken, recordId, refreshKey]);
+  }, [doctorMode, authToken, recordId, refreshKey, scopeKey]);
 
   const send = async (event) => {
     event.preventDefault();
@@ -792,7 +841,7 @@ export function PatientCommunication({ mode, token, session, activePatient, pati
       <section className="panel communication-panel">
         <div className="care-panel-heading"><MessageCircle /><div><h2>Clinic conversation</h2><p>Plain-text messages. Documents use the separate private-file workflow.</p></div></div>
         <div className="message-list" aria-live="polite">
-          {loading ? <StateMessage>Loading messages…</StateMessage> : messages.length ? messages.map((message) => {
+          {loading || loadedScope !== scopeKey ? <StateMessage>Loading messages…</StateMessage> : messages.length ? messages.map((message) => {
             const own = doctorMode ? message.sender_type === "doctor" : message.sender_type === "patient";
             return (
               <div className={own ? "message-row own" : "message-row"} key={message.id}>
@@ -807,7 +856,7 @@ export function PatientCommunication({ mode, token, session, activePatient, pati
         <form className="message-form" onSubmit={send}>
           <label className="sr-only" htmlFor="oralyn-message-draft">Write a message</label>
           <textarea id="oralyn-message-draft" value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={4000} rows={3} placeholder="Write a message to the clinic…" />
-          <button className="primary" disabled={busy || !draft.trim()}><Send size={16} /> {busy ? "Sending…" : "Send message"}</button>
+          <button className="primary" disabled={busy || loading || loadedScope !== scopeKey || !draft.trim()}><Send size={16} /> {busy ? "Sending…" : "Send message"}</button>
         </form>
       </section>
     </>
