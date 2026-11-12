@@ -8,6 +8,7 @@ const css = read("../src/styles.css");
 const html = read("../index.html");
 const fontsDoc = read("../docs/FONTS.md");
 const brandDoc = read("../docs/BRAND_ASSETS.md");
+const captureScript = read("../scripts/capture-actual-desktop.cjs");
 
 test("licensed display and body fonts are bundled locally with traceable source revisions", () => {
   assert.match(css, /font-family: "Plus Jakarta Sans"/);
@@ -78,4 +79,11 @@ test("Doctor workspace administration stays scoped to the active organisation", 
   assert.match(main, /dentalApi\.createWorkspaceMembership/);
   assert.match(main, /activeWorkspace\?\.organisation_id/);
   assert.match(main, /onSwitchWorkspace/);
+});
+
+
+test("headless capture stores its Chrome profile outside the Vite-watched project", () => {
+  assert.match(captureScript, /const os = require\("node:os"\)/);
+  assert.match(captureScript, /path\.join\(os\.tmpdir\(\), "oralyn-capture-profile-"/);
+  assert.doesNotMatch(captureScript, /path\.join\(output, "\.chrome-profile-"/);
 });
