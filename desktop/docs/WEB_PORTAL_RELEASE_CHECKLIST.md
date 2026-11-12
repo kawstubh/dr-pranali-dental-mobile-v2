@@ -9,24 +9,27 @@
 - PR #35: multi-tenant base and organisation/workspace authorization.
 - PR #43: patient treatment plans, invoices/receipts, patient linked-record selection, CORS middleware and patient AI boundary.
 - PR #44: private document metadata, signed upload/download intents and patient-visible sharing. Stacked on PR #43.
-- PR #46: authenticated active-workspace dashboard aggregates. Stacked on PR #44.
+- PR #45: private clinical notes and patient/clinic messaging. Stacked on PR #44; adds migration `0010_clinical_notes_messaging`.
+- PR #46: authenticated active-workspace dashboard aggregates. Currently based on PR #44 in parallel with PR #45; rebase/stack it on PR #45 before integrating the complete portal backend.
+- Required combined migration chain: `0006_multi_tenant_workspaces` → `0007_dental_audit_workspace` → `0008_patient_billing_plans` → `0009_private_dental_documents` → `0010_clinical_notes_messaging`. PR #46 adds no migration.
 - All backend PRs and the desktop portal PR remain Draft. Do not merge or deploy without the explicit approval gate.
 
 ## Latest verified code checks (12 Nov 2026)
 
-- Desktop commit `ece61efd81e07836213e08427d499a836d2dc2a3`: 29 local tests passed, npm audit reported zero vulnerabilities, Vite production build passed.
-- Backend PR #46 commit `c3cf902018b3c1cd3f318871b269a12e2e9ce898`: local full suite 169 passed, 1 skipped; Ruff check and git diff check passed; one Alembic head `0009_private_dental_documents`.
-- PR #46 PostgreSQL 16.15 CI: 170 passed, 1 warning. Engine CI: 169 passed, 1 skipped.
-- PR #44 PostgreSQL 16.15 CI: 167 passed, 1 warning. Engine CI: 166 passed, 1 skipped.
-- PR #43 PostgreSQL 16.15 CI: 156 passed, 1 warning. Engine CI: 155 passed, 1 skipped.
-- PR #35 PostgreSQL 16.15 CI: 137 passed, 1 warning. Engine CI: 136 passed, 1 skipped.
+- Portal commit `9d5669b29ebc0a5e2787d37894be5dfbf64d1d4e`: Oralyn Desktop CI run [#43176029000](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43176029000) passed tests, audit, Vite build and real signed-out responsive browser captures. Its screenshots are public/authentication routes only; no authenticated dashboard acceptance is claimed.
+- PR #46 commit `c3cf902018b3c1cd3f318871b269a12e2e9ce898`: PostgreSQL 16.15 CI **170 passed, 1 warning**; Engine CI **169 passed, 1 skipped**.
+- PR #45 commit `bed9460302500d8cd71946eed19f4a9a4fce8512`: PostgreSQL 16.15 CI **171 passed, 1 warning**; Engine CI **170 passed, 1 skipped**.
+- PR #44 commit `8618ceea22cce09a4b7528cf672d065b38640c50`: PostgreSQL 16.15 CI **167 passed, 1 warning**; Engine CI **166 passed, 1 skipped**.
+- PR #43 commit `9f2ff8518551f5b1143b5a6c784216177037ebcf`: PostgreSQL 16.15 CI **156 passed, 1 warning**; Engine CI **155 passed, 1 skipped**.
+- PR #35 commit `7f52c0e7d4e69c92bd167c71392a5c756db54b30`: PostgreSQL 16.15 CI **137 passed, 1 warning**; Engine CI **136 passed, 1 skipped**.
+- PR #43/#44/#45/#46 have no outstanding inline review threads at this check. All remain Draft.
 - No Neon main or production migration has been run.
 
 ## Verified staging state
 
 - `https://oralyn-multitenant-staging.onrender.com/health`: HTTP 200; providers report healthy.
 - `/ready`: HTTP 200, reports database provider `postgres` only. The Render service connector does not expose its `DATABASE_URL` target; the exact database identity remains unverified.
-- Staging OpenAPI does not currently expose the PR #43 treatment-plan/invoice/receipt routes, PR #44 document routes or PR #46 dashboard-summary route.
+- Staging OpenAPI does not currently expose the PR #43 treatment-plan/invoice/receipt routes, PR #44 document routes, PR #45 clinical-note/message routes or PR #46 dashboard-summary route.
 - Browser-style CORS preflight from `http://localhost:5173` returns HTTP 405. The local Vite proxy returns HTTP 200.
 - Neon project `dr-pranali-dental-recovery` is in `aws-ap-southeast-1`; only the `main` branch exists, with no isolated staging branch. Read-only query confirms PostgreSQL 17.11, database `dental_recovery`, Alembic `0007_dental_audit_workspace`.
 - Neon main object storage is enabled but lists zero buckets. No private bucket, storage credential or branch has been created.
@@ -35,7 +38,8 @@
 
 ## Required staging prerequisites
 
-- [ ] Backend PR stack reviewed and explicitly approved for merge/deployment in order: #35, then #43, then #44, then #46.
+- [ ] Backend PR stack reviewed and explicitly approved for merge/deployment: #35 → #43 → #44 → #45, then rebase/stack #46 on #45 before integrating the complete portal backend.
+- [ ] Harden PR #44 document finalization before staging: the current presigned PUT targets the same object key later used for downloads. A still-valid upload URL can be replayed after checksum verification and overwrite the verified object. Use a quarantine upload key and publish only a server-verified immutable/final object key; add a replay regression test.
 - [ ] Confirm the staging API database identity without exposing connection strings; it must be an isolated staging database, not Neon main or production.
 - [ ] Create/identify an isolated staging web origin without incurring unapproved charges.
 - [ ] Configure exact CORS origin and Supabase auth redirect allow-list only after the staging origin is approved.
@@ -60,6 +64,10 @@
 - [ ] Desktop 1440x1000 and 1280x800 plus mobile browser widths.
 - [ ] Capture eight actual authenticated screens from the tested commit with synthetic data only: Doctor dashboard, patient directory, odontogram, appointments, Doctor-only intelligence, Patient home, booking, Patient records/billing.
 - [ ] Verify screenshot metadata includes commit, environment and bundle checksum; no real patient identifiers.
+
+## Web-only workflow policy
+
+- Native Android APK workflows are retained only for manual `workflow_dispatch`; automatic push and pull-request triggers have been removed from the portal feature branch. APKs are not a release gate.
 
 ## Release decision
 
