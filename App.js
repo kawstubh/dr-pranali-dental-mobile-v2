@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, Text as NativeText, View } from 'react-native';
+import { ActivityIndicator, Platform, Text as NativeText, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
@@ -44,6 +44,19 @@ class PatientAppErrorBoundary extends React.Component {
 }
 
 function AppRoot() {
+  React.useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    const manifest = document.querySelector('link[rel="manifest"]') || document.createElement('link');
+    manifest.rel = 'manifest';
+    manifest.href = '/manifest.json';
+    if (!manifest.parentNode) document.head.appendChild(manifest);
+    let theme = document.querySelector('meta[name="theme-color"]');
+    if (!theme) { theme = document.createElement('meta'); theme.name = 'theme-color'; document.head.appendChild(theme); }
+    theme.content = '#0C3B82';
+    if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
+      navigator.serviceWorker.register('/sw.js').catch(error => console.warn('[Oralyn Patient] Offline shell registration unavailable.', error));
+    }
+  }, []);
   const [fontsLoaded, fontError] = useFonts({
     InterRegular: require('./assets/fonts/Inter-Regular.ttf'),
     InterMedium: require('./assets/fonts/Inter-Medium.ttf'),
