@@ -32,6 +32,7 @@ import {
   Receipt,
   Building2,
   Menu,
+  MessageCircle,
   X,
 } from "lucide-react";
 import "./styles.css";
@@ -39,6 +40,7 @@ import { dentalApi } from "./api.js";
 import { supabase } from "./supabase.js";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import { normaliseList, normaliseUser, localDateISO, localDateTimeFromParts, formatTime, isSameLocalDay } from "./data.js";
+import { DoctorCareManagement, PatientCareManagement, DoctorClinicalNotes, PatientCommunication } from "./careScreens.jsx";
 function App() {
   const [role, R] = useState(
       location.pathname.startsWith("/patient") ? "patient" : "doctor",
@@ -74,9 +76,53 @@ function App() {
     [patientSession, setPatientSession] = useState(null),
     [patientBoot, setPatientBoot] = useState(true),
     [patientError, setPatientError] = useState(""),
+    [patientLinks, setPatientLinks] = useState([]),
+    [selectedPatientRecordId, setSelectedPatientRecordId] = useState(
+      () => localStorage.getItem("oralyn_patient_record_id") || "",
+    ),
     [patientAppointments, setPatientAppointments] = useState([]),
     [patientChart, setPatientChart] = useState([]),
-    [patientInviteCode, setPatientInviteCode] = useState("");
+    [patientInviteCode, setPatientInviteCode] = useState(""),
+    [pwaRegistration, setPwaRegistration] = useState(null),
+    [pwaUpdateReady, setPwaUpdateReady] = useState(false);
+  useEffect(() => {
+    if (!("serviceWorker" in navigator) || !window.isSecureContext) return undefined;
+    let live = true;
+    let reloading = false;
+    const onControllerChange = () => {
+      if (reloading) return;
+      reloading = true;
+      window.location.reload();
+    };
+    navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
+    navigator.serviceWorker.register("/sw.js", { scope: "/" })
+      .then((registration) => {
+        if (!live) return;
+        setPwaRegistration(registration);
+        if (registration.waiting && navigator.serviceWorker.controller) setPwaUpdateReady(true);
+        registration.addEventListener("updatefound", () => {
+          const worker = registration.installing;
+          worker?.addEventListener("statechange", () => {
+            if (live && worker.state === "installed" && navigator.serviceWorker.controller) {
+              setPwaUpdateReady(true);
+            }
+          });
+        });
+        registration.update().catch(() => {});
+      })
+      .catch((error) => console.warn("[Oralyn PWA] Service worker registration failed.", error));
+    return () => {
+      live = false;
+      navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+    };
+  }, []);
+  const applyPwaUpdate = () => {
+    if (pwaRegistration?.waiting) {
+      pwaRegistration.waiting.postMessage({ type: "SKIP_WAITING" });
+    } else {
+      window.location.reload();
+    }
+  };
   useEffect(() => {
     let live = true;
     if (!token) {
@@ -168,11 +214,46 @@ function App() {
     };
   }, []);
   useEffect(() => {
-    if (role !== "patient" || !patientSession) return;
+    if (!patientSession?.access_token) {
+      setPatientLinks([]);
+      setPatientAppointments([]);
+      setPatientChart([]);
+      setSelectedPatientRecordId("");
+      localStorage.removeItem("oralyn_patient_record_id");
+      return;
+    }
+    let live = true;
+    dentalApi.patientLinkedRecords(patientSession.access_token)
+      .then((response) => {
+        if (!live) return;
+        const records = normaliseList(response);
+        setPatientLinks(records);
+        setSelectedPatientRecordId((current) => {
+          const selected = records.find((item) => String(item.patient_id) === String(current));
+          const next = selected?.patient_id || records[0]?.patient_id || "";
+          if (next) localStorage.setItem("oralyn_patient_record_id", String(next));
+          else localStorage.removeItem("oralyn_patient_record_id");
+          return String(next);
+        });
+        setPatientError("");
+      })
+      .catch((error) => {
+        if (live) setPatientError(error.message || "Your linked clinic records could not be loaded.");
+      });
+    return () => { live = false; };
+  }, [patientSession]);
+
+  useEffect(() => {
+    const selected = patientLinks.find((item) => String(item.patient_id) === String(selectedPatientRecordId));
+    if (role !== "patient" || !patientSession?.access_token || !selected) {
+      setPatientAppointments([]);
+      setPatientChart([]);
+      return;
+    }
     let live = true;
     Promise.all([
-      dentalApi.patientAppointments(patientSession.access_token),
-      dentalApi.patientChart(patientSession.access_token),
+      dentalApi.patientAppointments(patientSession.access_token, selectedPatientRecordId),
+      dentalApi.patientChart(patientSession.access_token, selectedPatientRecordId),
     ])
       .then(([a, c]) => {
         if (!live) return;
@@ -183,10 +264,8 @@ function App() {
       .catch((e) => {
         if (live) setPatientError(e.message);
       });
-    return () => {
-      live = false;
-    };
-  }, [role, patientSession]);
+    return () => { live = false; };
+  }, [role, patientSession, patientLinks, selectedPatientRecordId]);
   const patientAccess = async ({ mode, email, password, inviteCode }) => {
     if (!supabase) throw new Error("Patient sign-in is not configured.");
     const result =
@@ -205,21 +284,44 @@ function App() {
       );
   };
   const patientSignOut = async () => {
-    if (supabase) await supabase.auth.signOut();
-    setPatientAppointments([]);
-    setPatientChart([]);
-    setPatientError("");
+    try {
+      if (supabase) {
+        const result = await supabase.auth.signOut();
+        if (result.error) {
+          await supabase.auth.signOut({ scope: "local" }).catch(() => {});
+        }
+      }
+    } catch {
+      try {
+        await supabase?.auth.signOut({ scope: "local" });
+      } catch {}
+    } finally {
+      setPatientSession(null);
+      localStorage.removeItem("oralyn_patient_record_id");
+      setPatientLinks([]);
+      setSelectedPatientRecordId("");
+      setPatientAppointments([]);
+      setPatientChart([]);
+      setPatientError("");
+      P("home");
+    }
+  };
+  const selectPatientRecord = (patientId) => {
+    setSelectedPatientRecordId(String(patientId || ""));
+    if (patientId) localStorage.setItem("oralyn_patient_record_id", String(patientId));
+    else localStorage.removeItem("oralyn_patient_record_id");
     P("home");
   };
   const linkPatient = async (code) => {
     if (!patientSession) throw new Error("Sign in first.");
-    await dentalApi.patientLink(patientSession.access_token, code.trim());
-    const [a, c] = await Promise.all([
-      dentalApi.patientAppointments(patientSession.access_token),
-      dentalApi.patientChart(patientSession.access_token),
-    ]);
-    setPatientAppointments(normaliseList(a, ["appointments"]));
-    setPatientChart(normaliseList(c, ["chart", "entries", "records"]));
+    const linked = await dentalApi.patientLink(patientSession.access_token, code.trim());
+    const linkedPatientId = linked?.result?.patient_id;
+    const response = await dentalApi.patientLinkedRecords(patientSession.access_token);
+    const records = normaliseList(response);
+    setPatientLinks(records);
+    const next = linkedPatientId || records[0]?.patient_id || "";
+    setSelectedPatientRecordId(String(next));
+    if (next) localStorage.setItem("oralyn_patient_record_id", String(next));
     setPatientError("");
   };
   const refreshDoctorData = async () => {
@@ -325,6 +427,7 @@ function App() {
         ["dashboard", "Overview", LayoutDashboard],
         ["patients", "Patients", Users],
         ["clinical", "Clinical workspace", ClipboardList],
+        ["notes", "Clinical notes", FileText],
         ["appointments", "Appointments", CalendarDays],
       ],
     ],
@@ -333,12 +436,14 @@ function App() {
       [
         ["treatments", "Treatment plans", HeartPulse],
         ["billing", "Billing & invoices", Wallet],
+        ["files", "Private documents", FileText],
+        ["messages", "Patient messages", MessageCircle],
         ["reports", "Reports & analytics", BarChart3],
       ],
     ],
     [
       "Administration",
-      [["workspaces", "Workspaces", Building2]],
+      [["workspaces", "Workspaces", Building2], ["settings", "Settings", Settings]],
     ],
   ];
   const patientNav = [
@@ -350,12 +455,21 @@ function App() {
         ["journey", "Treatment journey", Activity],
         ["records", "Records & prescriptions", FileHeart],
         ["invoices", "Invoices & payments", Receipt],
+        ["messages", "Clinic messages", MessageCircle],
+        ["settings", "Account settings", Settings],
       ],
     ],
   ];
   const nav = role === "doctor" ? doctorNav : patientNav;
   return (
     <div className="shell">
+      {pwaUpdateReady && (
+        <div className="pwa-update-banner" role="status">
+          <span>A new Oralyn portal update is ready.</span>
+          <button onClick={applyPwaUpdate}>Refresh portal</button>
+          <button className="pwa-dismiss" aria-label="Dismiss update notice" onClick={() => setPwaUpdateReady(false)}>×</button>
+        </div>
+      )}
       <aside className={mobile ? "sidebar open" : "sidebar"}>
         <div className="brand"><img src="/oralyn-logo-approved.webp" alt="Oralyn official wordmark" /><button className="close" onClick={() => B(false)}>
             <X />
@@ -365,10 +479,11 @@ function App() {
           {role === "doctor" ? (activeWorkspace?.name || "CLINIC WORKSPACE").toUpperCase() : "PATIENT PORTAL"}
         </div>
         {nav.map(([group, items]) => (
-          <section className="navgroup">
+          <section className="navgroup" key={group}>
             <label>{group}</label>
             {items.map(([id, name, Icon]) => (
               <button
+                key={id}
                 className={page === id ? "nav active" : "nav"}
                 onClick={() => {
                   P(id);
@@ -393,13 +508,7 @@ function App() {
                 : "Your appointments and care information together."}
             </p>
           </div>
-          <button
-            className="nav"
-            onClick={() => ping("Settings are part of the connected account.")}
-          >
-            <Settings size={18} />
-            Settings
-          </button>
+
           <div className="user">
             <span>{role === "doctor" ? "DP" : "G"}</span>
             <div>
@@ -450,6 +559,20 @@ function App() {
                 {workspaces.map((workspace) => <option key={workspace.id || workspace.clinic_id} value={workspace.id || workspace.clinic_id}>{workspace.name} | {workspace.role}</option>)}
               </select>
             ) : <span className={activeWorkspace ? "workspace-chip" : "workspace-chip missing"}>{activeWorkspace?.name || "No active workspace"}</span>)}
+            {role === "patient" && patientSession && patientLinks.length > 0 && (
+              <select
+                className="workspace-switcher patient-clinic-switcher"
+                aria-label="Switch linked patient clinic"
+                value={selectedPatientRecordId}
+                onChange={(event) => selectPatientRecord(event.target.value)}
+              >
+                {patientLinks.map((item) => (
+                  <option key={item.patient_id} value={item.patient_id}>
+                    {item.organisation_name || item.clinic_name} · {item.clinic_name} · {item.patient_name}
+                  </option>
+                ))}
+              </select>
+            )}
             <button
               className="bell"
               onClick={() => ping("You’re all caught up.")}
@@ -506,6 +629,7 @@ function App() {
               workspaceError={workspaceError}
               onSwitchWorkspace={switchWorkspace}
               onRefreshWorkspaces={refreshDoctorData}
+              onSignOut={signOut}
             />
           ) : (
             <Patient
@@ -528,11 +652,15 @@ function App() {
               patientPhone={patientPhone}
               setPatientPhone={setPatientPhone}
               patientSession={patientSession}
+              patientLinks={patientLinks}
+              selectedPatientRecordId={selectedPatientRecordId}
+              onSelectPatientRecord={selectPatientRecord}
               patientAppointments={patientAppointments}
               patientChart={patientChart}
               patientInviteCode={patientInviteCode}
               setPatientInviteCode={setPatientInviteCode}
               onLinkPatient={linkPatient}
+              onSignOut={patientSignOut}
             />
           )}
         </div>
@@ -903,6 +1031,33 @@ function Panel({ title, sub, children, action }) {
     </section>
   );
 }
+function AccountSettings({ user, activeWorkspace, onSignOut }) {
+  return (
+    <>
+      <Title eyebrow="ACCOUNT & SECURITY" title="Settings" desc="Review the signed-in account and active clinic context." />
+      <div className="care-grid">
+        <Panel title="Signed-in account" sub="Identity returned by the authenticated service.">
+          <div className="settings-list">
+            <div><small>Account</small><b>{user?.email || user?.name || "Authenticated account"}</b></div>
+            <div><small>Role</small><b>{user?.role || "Patient"}</b></div>
+            <div><small>Session</small><b>Authenticated · session-managed</b></div>
+          </div>
+        </Panel>
+        <Panel title="Linked clinic" sub="The active record context used for protected portal requests.">
+          <div className="settings-list">
+            <div><small>Clinic</small><b>{activeWorkspace?.name || activeWorkspace?.clinic_name || "No clinic selected"}</b></div>
+            <div><small>Organisation</small><b>{activeWorkspace?.organisation_name || "Not returned"}</b></div>
+          </div>
+        </Panel>
+        <Panel title="Privacy and access" sub="Oralyn keeps clinical records behind role and clinic permissions.">
+          <p className="care-hint">Patient-facing AI diagnosis and self-diagnosis are not available. Clinical notes remain private until a doctor explicitly shares them. Documents use short-lived private download links.</p>
+          <button className="outline" onClick={onSignOut}>Sign out securely</button>
+        </Panel>
+      </div>
+    </>
+  );
+}
+
 function Doctor({
   page,
   P,
@@ -923,6 +1078,7 @@ function Doctor({
   workspaceError,
   onSwitchWorkspace,
   onRefreshWorkspaces,
+  onSignOut,
 }) {
   const [selectedPatientId, setSelectedPatientId] = useState("");
   useEffect(() => {
@@ -1296,54 +1452,17 @@ function Doctor({
       </>
     );
   if (page === "treatments")
-    return (
-      <>
-        <Title
-          eyebrow="PRACTICE MANAGEMENT"
-          title="Treatment plans"
-          desc="Clinician-authored care plans and progress."
-        />
-        <Panel title="Treatment plans">
-          <div className="empty-state">
-            The current staging API does not yet expose persistent
-            treatment-plan records. No sample treatment plans are shown.
-          </div>
-          <button className="outline" onClick={() => P("clinical")}>
-            Open clinical workspace
-          </button>
-        </Panel>
-      </>
-    );
+    return <DoctorCareManagement page={page} token={token} activePatient={activePatient} ping={ping} />;
   if (page === "notes")
-    return (
-      <>
-        <Title eyebrow="CLINICAL DOCUMENTATION" title="Clinical notes" desc="Verified notes attached to the selected patient record." />
-        <Panel title="Clinical notes"><div className="empty-state">The current staging API does not yet expose persistent clinical-note records. No sample notes are shown.</div></Panel>
-      </>
-    );
+    return <DoctorClinicalNotes token={token} activePatient={activePatient} />;
+  if (page === "messages")
+    return <PatientCommunication mode="doctor" token={token} activePatient={activePatient} />;
+  if (page === "settings")
+    return <AccountSettings user={user} activeWorkspace={activeWorkspace} onSignOut={onSignOut} />;
   if (page === "files")
-    return (
-      <>
-        <Title eyebrow="PATIENT DOCUMENTS" title="Clinical files" desc="Private radiographs and documents for the selected patient." />
-        <Panel title="Private documents"><div className="empty-state">Secure private document storage is not yet connected. No local or public file links are shown.</div></Panel>
-      </>
-    );
+    return <DoctorCareManagement page={page} token={token} activePatient={activePatient} ping={ping} />;
   if (page === "billing")
-    return (
-      <>
-        <Title
-          eyebrow="PRACTICE MANAGEMENT"
-          title="Billing & invoices"
-          desc="Patient invoices, receipts and payment status."
-        />
-        <Panel title="Patient invoices">
-          <div className="empty-state">
-            The current staging API does not yet expose patient invoice and
-            receipt records. No financial totals are fabricated.
-          </div>
-        </Panel>
-      </>
-    );
+    return <DoctorCareManagement page={page} token={token} activePatient={activePatient} ping={ping} />;
   if (page === "reports")
     return (
       <>
@@ -1652,12 +1771,17 @@ function Patient({
   patientPhone,
   setPatientPhone,
   patientSession,
+  patientLinks,
+  selectedPatientRecordId,
+  onSelectPatientRecord,
   patientAppointments,
   patientChart,
   patientInviteCode,
   setPatientInviteCode,
   onLinkPatient,
+  onSignOut,
 }) {
+  const selectedPatientLink = patientLinks.find((item) => String(item.patient_id) === String(selectedPatientRecordId));
   if (page === "booking")
     return (
       <>
@@ -1881,30 +2005,19 @@ function Patient({
         </Panel>
       </>
     );
+  if (page === "messages")
+    return <PatientCommunication mode="patient" session={patientSession} patientId={selectedPatientRecordId} />;
+  if (page === "settings")
+    return <AccountSettings user={patientSession?.user} activeWorkspace={selectedPatientLink} onSignOut={onSignOut} />;
   if (page === "journey")
     return (
       <>
         <Title
           eyebrow="YOUR DENTAL CARE"
           title="Treatment journey"
-          desc="Your clinic-recorded dental chart. Treatment plans are not yet connected in this staging build."
+          desc="Your clinic-shared treatment plans and recorded dental chart."
         />
-        <div className="journey">
-          <Panel title="Recorded dental chart">
-            {patientChart.length ? (
-              patientChart.map((t) => (
-                <div className="listrow">
-                  Tooth {t.tooth_fdi}
-                  <b>{t.status}</b>
-                </div>
-              ))
-            ) : (
-              <div className="empty-state">
-                No chart entries have been shared with this patient account yet.
-              </div>
-            )}
-          </Panel>
-        </div>
+        <PatientCareManagement page="journey" session={patientSession} patientId={selectedPatientRecordId} patientChart={patientChart} />
       </>
     );
   if (page === "records" || page === "invoices")
@@ -1912,42 +2025,10 @@ function Patient({
       <>
         <Title
           eyebrow={page === "records" ? "YOUR HEALTH FILE" : "PAYMENTS"}
-          title={
-            page === "records"
-              ? "Records & prescriptions"
-              : "Invoices & payments"
-          }
-          desc={
-            page === "records"
-              ? "Your clinic-shared documents, organised in one place."
-              : "Keep track of clinic payments and receipts."
-          }
+          title={page === "records" ? "Records & prescriptions" : "Invoices & payments"}
+          desc={page === "records" ? "Your clinic-shared documents, organised in one place." : "Invoices and receipts shared by your clinic."}
         />
-        <Panel
-          title={page === "records" ? "Available documents" : "Recent invoices"}
-        >
-          {(page === "records" ? [] : []).length === 0 ? (
-            <div className="empty-state">
-              Private document storage and invoice/receipt APIs are not connected in this staging build. No patient files, balances, totals or payment statuses are fabricated.
-            </div>
-          ) : (
-            (page === "records" ? [] : []).map((x) => (
-              <div className="listrow">
-                {x}
-                <button
-                  className="link"
-                  onClick={() =>
-                    ping(
-                      "No patient documents are available from the current API.",
-                    )
-                  }
-                >
-                  View / download
-                </button>
-              </div>
-            ))
-          )}
-        </Panel>
+        <PatientCareManagement page={page} session={patientSession} patientId={selectedPatientRecordId} patientChart={patientChart} />
       </>
     );
   return (
@@ -1959,6 +2040,7 @@ function Patient({
             Welcome to Oralyn <span>☀</span>
           </h1>
           <p>Your dental care, appointments and clinic updates in one place.</p>
+          {selectedPatientLink && <div className="patient-linked-clinic">Linked clinic: <b>{selectedPatientLink.clinic_name}</b> · {selectedPatientLink.patient_name}</div>}
           <button className="primary" onClick={() => P("booking")}>
             <Plus />
             Book an appointment
@@ -2002,7 +2084,7 @@ function Patient({
             : "No appointment linked yet"}
         </span>
       </Panel>
-      {!patientAppointments.length && !patientChart.length && (
+      {!selectedPatientRecordId && (
         <Panel
           title="Link your clinic record"
           sub="Enter the one-time invite code shared by your clinic."

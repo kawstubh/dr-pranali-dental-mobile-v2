@@ -1,19 +1,42 @@
+const ENV = import.meta.env || {};
 const API_BASE = (
-  import.meta.env.DEV
+  ENV.DEV
     ? ""
-    : import.meta.env.VITE_DENTAL_API_URL ||
+    : ENV.VITE_DENTAL_API_URL ||
       "https://oralyn-multitenant-staging.onrender.com"
 ).replace(/\/$/, "");
 
-async function request(path, { token, method = "GET", body } = {}) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    method,
-    headers: {
-      ...(body ? { "Content-Type": "application/json" } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  });
+function query(values = {}) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(values)) {
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      params.set(key, String(value));
+    }
+  }
+  const encoded = params.toString();
+  return encoded ? `?${encoded}` : "";
+}
+
+async function request(path, { token, method = "GET", body, headers = {} } = {}) {
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers: {
+        ...(body ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...headers,
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+  } catch (cause) {
+    const error = new Error(
+      "The clinic service could not be reached. Check your connection or the portal's staging CORS configuration.",
+    );
+    error.code = "NETWORK_OR_CORS_ERROR";
+    error.cause = cause;
+    throw error;
+  }
   const data =
     response.status === 204 ? null : await response.json().catch(() => null);
   if (!response.ok) {
@@ -26,6 +49,7 @@ async function request(path, { token, method = "GET", body } = {}) {
       message || "The clinic service could not complete this request.",
     );
     error.status = response.status;
+    error.code = detail?.code;
     throw error;
   }
   return data;
@@ -98,9 +122,12 @@ export const dentalApi = {
       method: "POST",
       body: { invite_code },
     }),
-  patientAppointments: (token) =>
-    request("/v1/dental/ai/patient/appointments", { token }),
-  patientChart: (token) => request("/v1/dental/ai/patient/chart", { token }),
+  patientLinkedRecords: (token) =>
+    request("/v1/dental/patient/linked-records", { token }),
+  patientAppointments: (token, patientId) =>
+    request(`/v1/dental/ai/patient/appointments${query({ patient_id: patientId })}`, { token }),
+  patientChart: (token, patientId) =>
+    request(`/v1/dental/ai/patient/chart${query({ patient_id: patientId })}`, { token }),
   createPatientInvite: (token, patientId) =>
     request(
       "/v1/dental/ai/doctor/patients/" +
@@ -108,4 +135,56 @@ export const dentalApi = {
         "/invite",
       { token, method: "POST" },
     ),
+  doctorTreatmentPlans: (token, patientId) =>
+    request(`/v1/dental/doctor/patients/${encodeURIComponent(patientId)}/treatment-plans`, { token }),
+  createTreatmentPlan: (token, patientId, body) =>
+    request(`/v1/dental/doctor/patients/${encodeURIComponent(patientId)}/treatment-plans`, { token, method: "POST", body }),
+  updateTreatmentPlan: (token, planId, body) =>
+    request(`/v1/dental/doctor/treatment-plans/${encodeURIComponent(planId)}`, { token, method: "PATCH", body }),
+  doctorInvoices: (token, patientId) =>
+    request(`/v1/dental/doctor/patients/${encodeURIComponent(patientId)}/invoices`, { token }),
+  createInvoice: (token, patientId, body) =>
+    request(`/v1/dental/doctor/patients/${encodeURIComponent(patientId)}/invoices`, { token, method: "POST", body }),
+  issueInvoice: (token, invoiceId, body = {}) =>
+    request(`/v1/dental/doctor/invoices/${encodeURIComponent(invoiceId)}/issue`, { token, method: "POST", body }),
+  recordInvoiceReceipt: (token, invoiceId, body) =>
+    request(`/v1/dental/doctor/invoices/${encodeURIComponent(invoiceId)}/receipts`, { token, method: "POST", body }),
+  voidInvoice: (token, invoiceId) =>
+    request(`/v1/dental/doctor/invoices/${encodeURIComponent(invoiceId)}/void`, { token, method: "POST" }),
+  doctorDocuments: (token, patientId) =>
+    request(`/v1/dental/doctor/patients/${encodeURIComponent(patientId)}/documents`, { token }),
+  createDocumentUploadIntent: (token, patientId, body) =>
+    request(`/v1/dental/doctor/patients/${encodeURIComponent(patientId)}/documents/upload-intent`, { token, method: "POST", body }),
+  completeDocumentUpload: (token, documentId) =>
+    request(`/v1/dental/doctor/documents/${encodeURIComponent(documentId)}/complete`, { token, method: "POST" }),
+  setDocumentVisibility: (token, documentId, patient_visible) =>
+    request(`/v1/dental/doctor/documents/${encodeURIComponent(documentId)}`, { token, method: "PATCH", body: { patient_visible } }),
+  doctorDocumentDownloadIntent: (token, documentId) =>
+    request(`/v1/dental/doctor/documents/${encodeURIComponent(documentId)}/download-intent`, { token, method: "POST" }),
+  doctorClinicalNotes: (token, patientId) =>
+    request(`/v1/dental/doctor/patients/${encodeURIComponent(patientId)}/clinical-notes`, { token }),
+  createClinicalNote: (token, patientId, body) =>
+    request(`/v1/dental/doctor/patients/${encodeURIComponent(patientId)}/clinical-notes`, { token, method: "POST", body }),
+  updateClinicalNote: (token, noteId, body) =>
+    request(`/v1/dental/doctor/clinical-notes/${encodeURIComponent(noteId)}`, { token, method: "PATCH", body }),
+  patientClinicalNotes: (token, patientId) =>
+    request(`/v1/dental/patient/clinical-notes${query({ patient_id: patientId })}`, { token }),
+  doctorMessages: (token, patientId) =>
+    request(`/v1/dental/doctor/patients/${encodeURIComponent(patientId)}/messages`, { token }),
+  sendDoctorMessage: (token, patientId, body) =>
+    request(`/v1/dental/doctor/patients/${encodeURIComponent(patientId)}/messages`, { token, method: "POST", body }),
+  patientMessages: (token, patientId) =>
+    request(`/v1/dental/patient/messages${query({ patient_id: patientId })}`, { token }),
+  sendPatientMessage: (token, patientId, body) =>
+    request(`/v1/dental/patient/messages${query({ patient_id: patientId })}`, { token, method: "POST", body }),
+  patientTreatmentPlans: (token, patientId) =>
+    request(`/v1/dental/patient/treatment-plans${query({ patient_id: patientId })}`, { token }),
+  patientInvoices: (token, patientId) =>
+    request(`/v1/dental/patient/invoices${query({ patient_id: patientId })}`, { token }),
+  patientReceipts: (token, patientId) =>
+    request(`/v1/dental/patient/receipts${query({ patient_id: patientId })}`, { token }),
+  patientDocuments: (token, patientId) =>
+    request(`/v1/dental/patient/documents${query({ patient_id: patientId })}`, { token }),
+  patientDocumentDownloadIntent: (token, documentId, patientId) =>
+    request(`/v1/dental/patient/documents/${encodeURIComponent(documentId)}/download-intent${query({ patient_id: patientId })}`, { token, method: "POST" }),
 };
