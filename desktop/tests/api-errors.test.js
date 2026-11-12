@@ -50,7 +50,7 @@ test("production API configuration fails closed when the API origin is missing",
 });
 
 test("production portal builds require an explicit API origin instead of silently falling back to staging", () => {
-  assert.match(apiSource, /ENV\.VITE_DENTAL_API_URL \|\| ""/);
+  assert.match(apiSource, /env\.VITE_DENTAL_API_URL \|\| ""/);
   assert.match(apiSource, /API_BASE_NOT_CONFIGURED/);
   assert.doesNotMatch(apiSource, /https:\/\/oralyn-multitenant-staging\.onrender\.com/);
   assert.match(captureSource, /process\.env\.VITE_DENTAL_API_URL \|\| "not-configured"/);
