@@ -13,4 +13,8 @@ export default defineConfig({
       },
     },
   },
+  preview: {
+    host: "0.0.0.0",
+    allowedHosts: ["oralyn-web-portal-spa.onrender.com"],
+  },
 });
