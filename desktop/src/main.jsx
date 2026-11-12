@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   LayoutDashboard,
@@ -41,14 +41,11 @@ import { supabase } from "./supabase.js";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import { normaliseList, normaliseUser, localDateISO, localDateTimeFromParts, formatTime, isSameLocalDay } from "./data.js";
 import { DoctorCareManagement, PatientCareManagement, DoctorClinicalNotes, PatientCommunication } from "./careScreens.jsx";
+import { createPortalNavigator, resolvePortalRoute } from "./routing.js";
 function App() {
-  const [role, R] = useState(
-      location.pathname.startsWith("/patient") ? "patient" : "doctor",
-    ),
-    [page, P] = useState(
-      location.pathname.split("/").filter(Boolean)[1] ||
-        (location.pathname.startsWith("/patient") ? "home" : "dashboard"),
-    ),
+  const initialRoute = resolvePortalRoute(window.location.pathname);
+  const [role, R] = useState(initialRoute.role),
+    [page, setPage] = useState(initialRoute.page),
     [search, S] = useState(""),
     [toast, T] = useState(""),
     [modal, M] = useState(false),
@@ -88,6 +85,27 @@ function App() {
     [patientInviteCode, setPatientInviteCode] = useState(""),
     [pwaRegistration, setPwaRegistration] = useState(null),
     [pwaUpdateReady, setPwaUpdateReady] = useState(false);
+  const portalNavigator = useRef(null);
+  const P = (nextPage) => {
+    setPage(nextPage);
+    portalNavigator.current?.navigate(role, nextPage);
+  };
+  const navigateRole = (nextRole, nextPage) => {
+    R(nextRole);
+    setPage(nextPage);
+    portalNavigator.current?.navigate(nextRole, nextPage);
+  };
+  useEffect(() => {
+    const navigator = createPortalNavigator(window, (nextRoute) => {
+      R(nextRoute.role);
+      setPage(nextRoute.page);
+    });
+    portalNavigator.current = navigator;
+    return () => {
+      navigator.dispose();
+      if (portalNavigator.current === navigator) portalNavigator.current = null;
+    };
+  }, []);
   useEffect(() => {
     if (!("serviceWorker" in navigator) || !window.isSecureContext) return undefined;
     let live = true;
@@ -460,8 +478,7 @@ function App() {
     setDashboardSummary(null);
     setDashboardSummaryError("");
     setDashboardSummaryLoading(false);
-    R("doctor");
-    P("dashboard");
+    navigateRole("doctor", "dashboard");
   };
   if (
     role === "patient" &&
@@ -474,10 +491,7 @@ function App() {
         error={patientError}
         onAccess={patientAccess}
         onBooking={() => P("booking")}
-        onDoctor={() => {
-          R("doctor");
-          P("dashboard");
-        }}
+        onDoctor={() => navigateRole("doctor", "dashboard")}
       />
     );
   if (role === "doctor" && (!user || booting))
@@ -486,8 +500,7 @@ function App() {
         loading={booting}
         error={authError}
         onPatient={() => {
-          R("patient");
-          P("home");
+          navigateRole("patient", "home");
           setAuthError("");
         }}
         onLogin={async (email, password) => {
