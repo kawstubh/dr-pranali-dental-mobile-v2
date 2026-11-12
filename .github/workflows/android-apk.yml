@@ -557,7 +557,7 @@ jobs:
             "$ADB" pull "/sdcard/patient-my-care-scroll-$index.png" "build-evidence/patient-my-care-scroll-$index.png"
             cat "build-evidence/patient-my-care-scroll-$index.xml" >> build-evidence/patient-my-care-scroll-all.txt
           done
-          for label in "No records shared yet" "No invoices shared yet" "Clinic communication"; do
+          for label in "No records shared yet" "Reports and documents released by your clinic will appear here." "No invoices shared yet" "Clinic communication"; do
             grep -Fq "$label" build-evidence/patient-my-care-scroll-all.txt || {
               echo "::error::My Care scrolling did not expose the expected empty-state/section: $label"
               exit 1
