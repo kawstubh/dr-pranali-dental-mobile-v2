@@ -71,6 +71,21 @@ jobs:
           path: desktop/evidence/actual-desktop/
           if-no-files-found: error
           retention-days: 14
+      - name: Capture authenticated Doctor UI with CI-only synthetic fixtures
+        env:
+          CHROME_BIN: ${{ steps.setup_chrome.outputs.chrome-path }}
+          ORALYN_PREVIEW_URL: http://127.0.0.1:4176
+          ORALYN_CAPTURE_OUTPUT: evidence/synthetic-doctor
+        run: |
+          test -x "$CHROME_BIN" || { echo "::error::Configured Chrome path is not executable: $CHROME_BIN"; exit 1; }
+          node scripts/capture-synthetic-doctor.cjs
+      - name: Upload synthetic Doctor UI evidence (not staging acceptance)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oralyn-doctor-synthetic-ui
+          path: desktop/evidence/synthetic-doctor/
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload staging-targeted portal bundle and checksum manifest
         uses: actions/upload-artifact@v4
         with:
