@@ -78,9 +78,6 @@ function walk(directory, prefix = "") {
 
 const environment = process.env.ORALYN_ENVIRONMENT || "local";
 const requireHttpsOrigins = ["staging", "production"].includes(environment.toLowerCase());
-const supabaseAuthConfigured = Boolean(
-  process.env.VITE_SUPABASE_URL && process.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-);
 const portalOrigin = originOf(process.env.ORALYN_PORTAL_ORIGIN || "", {
   requireHttps: requireHttpsOrigins,
   label: "Portal origin",
@@ -91,11 +88,9 @@ const apiOrigin = originOf(process.env.VITE_DENTAL_API_URL || "", {
 });
 
 const checks = {
-  supabase_auth_configured: supabaseAuthConfigured,
   isolated_portal_origin_assigned: Boolean(portalOrigin),
   backend_stack_verified: flag(process.env.ORALYN_BACKEND_STACK_VERIFIED),
   cors_verified_for_portal_origin: flag(process.env.ORALYN_CORS_VERIFIED),
-  auth_redirects_verified_for_portal_origin: flag(process.env.ORALYN_AUTH_REDIRECTS_VERIFIED),
   private_document_storage_verified: flag(process.env.ORALYN_PRIVATE_STORAGE_VERIFIED),
   document_malware_scanning_verified: flag(process.env.ORALYN_DOCUMENT_SCAN_VERIFIED),
   https_security_headers_verified: flag(process.env.ORALYN_SECURITY_HEADERS_VERIFIED),
@@ -103,18 +98,19 @@ const checks = {
   backup_restore_verified: flag(process.env.ORALYN_BACKUP_RESTORE_VERIFIED),
   error_monitoring_verified: flag(process.env.ORALYN_ERROR_MONITORING_VERIFIED),
   rollback_plan_verified: flag(process.env.ORALYN_ROLLBACK_VERIFIED),
-  authenticated_role_e2e_verified: flag(process.env.ORALYN_AUTHENTICATED_ROLE_E2E_VERIFIED),
+  doctor_auth_e2e_verified: flag(process.env.ORALYN_DOCTOR_AUTH_E2E_VERIFIED),
+  assistant_role_e2e_verified: flag(process.env.ORALYN_ASSISTANT_ROLE_E2E_VERIFIED),
+  patient_guest_booking_e2e_verified: flag(process.env.ORALYN_GUEST_BOOKING_E2E_VERIFIED),
   cross_tenant_e2e_verified: flag(process.env.ORALYN_CROSS_TENANT_E2E_VERIFIED),
   authenticated_screenshots_verified: flag(process.env.ORALYN_AUTHENTICATED_SCREENSHOTS_VERIFIED),
   mobile_browser_e2e_verified: flag(process.env.ORALYN_MOBILE_BROWSER_E2E_VERIFIED),
-  patient_ai_denial_verified: flag(process.env.ORALYN_PATIENT_AI_DENIAL_VERIFIED),
 };
 const blockers = Object.entries(checks)
   .filter(([, passed]) => !passed)
   .map(([name]) => name);
 
 const manifest = {
-  product: "Oralyn responsive Doctor and Patient web portal",
+  product: "Oralyn responsive clinic web portal",
   environment,
   commit_sha: process.env.GITHUB_SHA || process.env.ORALYN_COMMIT_SHA || "unknown",
   branch: process.env.GITHUB_REF_NAME || process.env.ORALYN_BRANCH || "unknown",
@@ -137,7 +133,7 @@ process.stdout.write([
   "Commit: " + manifest.commit_sha,
   "Service worker cache: " + serviceWorkerCacheName,
   "API origin: " + (manifest.api_origin || "not configured"),
-  "Patient Supabase auth: " + (supabaseAuthConfigured ? "configured" : "NOT CONFIGURED"),
+  "Patient authentication: intentionally not required",
   "Release status: " + manifest.release_status,
   "Release blockers: " + (blockers.length ? blockers.join(", ") : "none"),
   "Checksummed static files: " + manifest.files.length,
