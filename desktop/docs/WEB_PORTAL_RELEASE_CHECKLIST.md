@@ -5,9 +5,9 @@
 ## Canonical worktrees and current heads
 
 - Frontend repository: `kawstubh/dr-pranali-dental-mobile-v2`, branch `feat/oralyn-desktop-app`, portal under `desktop/`.
-- Current frontend branch head checked 12 Nov 2026: `f5e91db7180b948167278320e2c176ca3ccc3390` (release-checklist documentation update). Doctor workflow implementation commit: `c25cceefb630f637285a2df0e5fcd4368b9b84dd`; Vite SSR test shutdown-race mitigation commit: `4c342b7bd3f948056445396f3c1542d409a58d7b`.
+- Current frontend PR #18 head checked 12 Nov 2026: `35a929a513b55a7c74676dfb269820469a30345e` (release-checklist documentation update). Latest workflow [#43250957004](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43250957004) passed 55 tests, npm audit (0 vulnerabilities), Vite build, real responsive public-route captures and PWA checks. The build merge commit was `2ba7acd52002f8d5a046d060cc9da9ebd209ad52`; Doctor workflow implementation commit: `c25cceefb630f637285a2df0e5fcd4368b9b84dd`; Vite SSR test shutdown-race mitigation commit: `4c342b7bd3f948056445396f3c1542d409a58d7b`.
 - Backend repository: `kawstubh/universal-intelligence-engine`.
-- Local backend checkout was on `feat/dental-document-content-validation` at `6aed180f4dcb699fd8d05f09eb0ba8ef9570ad16` (PR #48); PR #49 is the next review-gate stack head.
+- Latest backend review head is PR #50 `886bd6ad9241eac24d36f8476ecbfd9dd77c4224`, stacked on PR #49. This cycle used GitHub-hosted CI and source inspection; the Windows C: drive was full, so no local backend checkout or test result is claimed.
 
 ## Backend review stack
 
@@ -23,7 +23,7 @@ All of these PRs are Draft and remain unmerged. Each latest observed CI pair pas
 | #47 | Patient-authenticated booking and linked records | `37e11aacf274e922ca536fe15387ea67d4c75c95` | CI #43217749675 and Engine #43217749639 passed |
 | #48 | Quarantine upload and verified immutable object key; file-signature checks | `6aed180f4dcb699fd8d05f09eb0ba8ef9570ad16` | CI #43219206335 and Engine #43219206215 passed |
 | #49 | Explicit clinician review before patient sharing | `2c75a31677874e9a4ea4e6f623cb75eecb3f3434` | CI #43229823588 and Engine #43229823390 passed |
-| #50 | Fail-closed exact-origin CORS defaults | `749ad3fcab00a8173a8573a6b0ac8771a10713e2` | PostgreSQL 16.15 CI #43248821384: **194 passed, 1 warning**; Engine #43248821754: **193 passed, 1 skipped, 1 warning** |
+| #50 | Fail-closed exact-origin CORS and non-cacheable clinical responses | `886bd6ad9241eac24d36f8476ecbfd9dd77c4224` | PostgreSQL 16.15 CI #43259961072: **196 passed, 1 warning**; Engine #43259961046: **195 passed, 1 skipped, 1 warning** |
 
 The dependency chain is now sequential: PR #35 → #43 → #44 → #45 → #46 → #47 → #48 → #49 → #50. PR #46 is based on #45, not a parallel branch.
 
@@ -123,3 +123,27 @@ The connected Windows development machine currently reports **0 bytes free on C:
 ## Release decision
 
 **Not release-ready.** The live staging API lacks the stacked backend routes, deployed CORS still returns HTTP 405, no unified portal staging origin exists, the staging database identity is unknown, Patient staging authentication is not provisioned, and no private staging object bucket/scanner is configured. Current screenshots are public/authentication routes only. Keep all PRs Draft; no production deployment or migration is authorized by this checklist.
+
+## Latest release-watch verification — 12 Nov 2026, 16:35 UTC
+
+### Portal PR #18
+- Current head: `35a929a513b55a7c74676dfb269820469a30345e`.
+- [Latest CI #43250957004](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43250957004) passed all steps: 55 frontend tests, zero npm audit vulnerabilities, production Vite build, browser capture and PWA checks.
+- [Actual browser screenshots #13959570982](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43250957004/artifacts/13959570982) contains 13 images at 1440×1000, 1280×800 and 390×844. The build manifest reports commit `2ba7acd52002f8d5a046d060cc9da9ebd209ad52`, local Plus Jakarta Sans and Playfair Display loaded, PWA controlled, zero API cache entries and no runtime errors.
+- The manifest explicitly reports `authenticated_screens=false` and `synthetic_patient_data=none`. The images are Doctor/Patient login, Patient sign-up, guest booking and the records access gate—not authenticated release acceptance.
+- [Staging-targeted static build #13958259178](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43250957004/artifacts/13958259178) remains `BLOCKED`: no Supabase staging auth, no isolated portal origin, backend stack not deployed, exact-origin CORS/auth redirects unverified, and private document storage not configured.
+
+### Backend PR #50
+- Latest head: `886bd6ad9241eac24d36f8476ecbfd9dd77c4224`.
+- Adds `Cache-Control: no-store, private`, `Pragma: no-cache`, `Expires: 0` and `X-Content-Type-Options: nosniff` to Dental API responses, including the disabled Patient AI response.
+- PostgreSQL 16.15 CI [#43259961072](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43259961072): **196 passed**; Engine Tests [#43259961046](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43259961046): **195 passed, 1 PostgreSQL-only skip**. The PostgreSQL migration test asserts one Alembic head, `0011_document_clinical_review`, and rehearses from `0005_password_auth` to `head` in an isolated CI schema.
+
+### Fresh staging and workstation checks
+- Render service `oralyn-multitenant-staging` still tracks `feat/multi-tenant-dental-saas-impl` at deployed commit `7f52c0e`; `/health` and `/ready` returned HTTP 200.
+- Deployed OpenAPI has 37 paths and does not expose the PR #43–#49 billing, document, notes/messaging, dashboard-summary or patient-linking/booking routes. OPTIONS preflight returned HTTP 405.
+- The separate legacy `dr-pranali-dental-api-staging` service returned health/readiness 200, but its OpenAPI request timed out; it is not substituted for the selected staging API.
+- Supabase project `supabase-lime-flower` has no development branches. No production project was used for synthetic accounts.
+- The canonical Windows worktree is at `024b678`, while the GitHub PR head is `35a929a`. `git fetch` failed with `ENOSPC`; C: reports 0 bytes free. No files or caches were deleted. GitHub CI is the verified build/test source for this cycle.
+
+No PR was merged, no Render service or secret was changed, no Supabase branch/bucket was created, no production migration/deployment was performed, and no patient data was touched. Native APKs remain out of release scope.
+
