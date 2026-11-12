@@ -33,12 +33,13 @@ test("clinic messages use separate doctor and patient identity-scoped routes", (
   assert.ok(care.includes("dentalApi.sendPatientMessage(authToken, recordId"));
 });
 
-test("portal exposes notes, private documents and clinic messaging in the correct role navigation", () => {
+test("portal keeps clinical navigation in Doctor workspace and patient navigation account-free", () => {
   assert.ok(main.includes('["notes", "Clinical notes", FileText]'));
   assert.ok(main.includes('["files", "Private documents", FileText]'));
   assert.ok(main.includes('["messages", "Patient messages", MessageCircle]'));
-  assert.ok(main.includes('["messages", "Clinic messages", MessageCircle]'));
-  assert.ok(main.includes('page === "settings"'));
+  assert.ok(main.includes('["booking", "Book appointment", CalendarDays]'));
+  assert.ok(main.includes('No patient account or password is needed.'));
+  assert.ok(!main.includes('["messages", "Clinic messages", MessageCircle]'));
 });
 
 test("patient messaging does not add diagnosis or clinical decision-support actions", () => {
