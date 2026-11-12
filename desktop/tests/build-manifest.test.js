@@ -17,6 +17,11 @@ test("staging build manifest records checksums without embedding Supabase creden
   fs.mkdirSync(assetDir);
   const asset = Buffer.from("synthetic static portal asset");
   fs.writeFileSync(path.join(assetDir, "app.js"), asset);
+  fs.writeFileSync(
+    path.join(outputDir, "sw.js"),
+    'const CACHE_NAME = "oralyn-portal-shell-__ORALYN_BUILD_ID__";\n',
+    "utf8",
+  );
 
   try {
     execFileSync(process.execPath, [scriptPath], {
@@ -37,6 +42,14 @@ test("staging build manifest records checksums without embedding Supabase creden
     const manifest = JSON.parse(fs.readFileSync(path.join(outputDir, "oralyn-build-manifest.json"), "utf8"));
     assert.equal(manifest.environment, "staging");
     assert.equal(manifest.commit_sha, "synthetic-commit-123");
+    assert.equal(
+      manifest.service_worker_cache_name,
+      "oralyn-portal-shell-synthetic-commit-123",
+    );
+    assert.ok(
+      fs.readFileSync(path.join(outputDir, "sw.js"), "utf8")
+        .includes("oralyn-portal-shell-synthetic-commit-123"),
+    );
     assert.equal(manifest.api_origin, "https://oralyn-multitenant-staging.onrender.com");
     assert.equal(manifest.portal_origin, null);
     assert.equal(manifest.patient_ai_enabled, false);
@@ -75,6 +88,11 @@ test("staging build manifest records checksums without embedding Supabase creden
 test("staging manifests reject insecure or non-canonical API origins", () => {
   const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "oralyn-build-manifest-insecure-"));
   fs.writeFileSync(path.join(outputDir, "index.html"), "<!doctype html>");
+  fs.writeFileSync(
+    path.join(outputDir, "sw.js"),
+    'const CACHE_NAME = "oralyn-portal-shell-__ORALYN_BUILD_ID__";\n',
+    "utf8",
+  );
   try {
     assert.throws(() => execFileSync(process.execPath, [scriptPath], {
       cwd: desktopRoot,
