@@ -3383,7 +3383,7 @@ table { max-width: 100%; }
   .crumb b { font-size: 14px !important; }
   .topright { gap: 7px; }
   .topright .bell { width: 36px; height: 36px; }
-  .topright select { max-width: 104px !important; font-size: 12px !important; padding: 7px 5px; }
+  .topright select { max-width: 128px !important; min-width: 112px; font-size: 12px !important; padding: 7px 5px; }
   .content {
     padding: 20px 14px calc(30px + env(safe-area-inset-bottom)) !important;
   }

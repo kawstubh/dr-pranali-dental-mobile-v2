@@ -670,7 +670,7 @@ function App() {
             </div>)}
             {role === "doctor" && (workspaces.length > 1 ? (
               <select className="workspace-switcher" aria-label="Switch clinic workspace" value={activeWorkspace?.id || activeWorkspace?.clinic_id || ""} onChange={(event) => switchWorkspace(event.target.value)}>
-                {workspaces.map((workspace) => <option key={workspace.id || workspace.clinic_id} value={workspace.id || workspace.clinic_id}>{workspace.name} | {workspace.role}</option>)}
+                {workspaces.map((workspace) => <option key={workspace.id || workspace.clinic_id} value={workspace.id || workspace.clinic_id}>{workspace.name}</option>)}
               </select>
             ) : <span className={activeWorkspace ? "workspace-chip" : "workspace-chip missing"}>{activeWorkspace?.name || "No active workspace"}</span>)}
             {role === "patient" && patientSession && patientLinks.length > 0 && (

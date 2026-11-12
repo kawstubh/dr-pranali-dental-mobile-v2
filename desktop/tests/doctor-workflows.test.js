@@ -61,3 +61,9 @@ test("Doctor empty workspace fixture covers zero patients and zero appointments"
   assert.match(source, /No appointments are available for this clinic account yet/);
   assert.match(source, /No patient records are available for this clinic account\./);
 });
+
+test("mobile workspace switcher prioritizes the clinic name over role text", () => {
+  assert.match(source, /<option key=\{workspace\.id \|\| workspace\.clinic_id\} value=\{workspace\.id \|\| workspace\.clinic_id\}>\{workspace\.name\}<\/option>/);
+  assert.doesNotMatch(source, /\{workspace\.name\} \| \{workspace\.role\}/);
+  assert.match(styles, /@media \(max-width: 560px\)[\s\S]*?\.topright select \{[^}]*max-width: 128px !important/s);
+});
