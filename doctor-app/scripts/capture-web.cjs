@@ -113,6 +113,7 @@ async function scrollToText(label) {
 async function selectWorkspaceIfNeeded() {
   const needsChoice = await evaluate('document.body.innerText.includes("Choose a workspace")');
   if (!needsChoice) return false;
+  await capture('doctor-workspace-selection-1440x1000.png');
   const selected = await evaluate(`(() => {
     const nodes = [...document.querySelectorAll('button,[role="button"]')];
     const node = nodes.find(item => (item.innerText || item.textContent || '').includes('Role:'));
@@ -134,8 +135,9 @@ async function login(email, password) {
     const text = await evaluate('document.body.innerText');
     return text.includes('Good day, Doctor') || text.includes('Choose a workspace');
   }, 30000);
-  await selectWorkspaceIfNeeded();
+  const workspaceSelected = await selectWorkspaceIfNeeded();
   await waitFor(() => evaluate('document.body.innerText.includes("Good day, Doctor")'), 30000);
+  return workspaceSelected;
 }
 
 async function reloadAndVerifySession() {
@@ -144,8 +146,9 @@ async function reloadAndVerifySession() {
     const text = await evaluate('document.body.innerText');
     return text.includes('Good day, Doctor') || text.includes('Choose a workspace');
   }, 30000);
-  await selectWorkspaceIfNeeded();
+  const workspaceSelected = await selectWorkspaceIfNeeded();
   await waitFor(() => evaluate('document.body.innerText.includes("Good day, Doctor")'), 30000);
+  return workspaceSelected;
 }
 
 async function signOut() {
@@ -163,6 +166,7 @@ async function signOut() {
     patientChartCaptured: false,
     periodontogramCaptured: false,
     clinicalIntelligenceCaptured: false,
+    workspaceSelectionCaptured: false,
     workspaceManagementVisible: false,
     organisationCreateFormCaptured: false,
     doctorAccessFormCaptured: false,
@@ -210,7 +214,7 @@ async function signOut() {
     const emptyMarker = process.env.DENTAL_STAGING_DOCTOR_EMPTY_DATASET || 'No patients yet';
 
     if (email && password) {
-      await login(email, password);
+      flags.workspaceSelectionCaptured = await login(email, password);
       flags.authenticatedDashboard = true;
       await capture('doctor-dashboard-populated-1440x1000.png');
       await capture('doctor-dashboard-populated-1280x800.png', 1280, 800);
@@ -259,18 +263,18 @@ async function signOut() {
       await capture('doctor-appointments-populated-1440x1000.png');
 
       await clickText('Clinical');
-      await waitFor(() => evaluate('document.body.innerText.includes("Clinical intelligence")'));
+      await waitFor(() => evaluate('document.body.innerText.includes("AI DENTAL COMMAND CENTER")'));
       await capture('doctor-clinical-intelligence-1440x1000.png');
       flags.clinicalIntelligenceCaptured = true;
 
-      await reloadAndVerifySession();
+      flags.workspaceSelectionCaptured = (await reloadAndVerifySession()) || flags.workspaceSelectionCaptured;
       flags.sessionRestored = true;
       await capture('doctor-session-restored-1440x1000.png');
       await signOut();
     }
 
     if (emptyEmail && emptyPassword) {
-      await login(emptyEmail, emptyPassword);
+      flags.workspaceSelectionCaptured = (await login(emptyEmail, emptyPassword)) || flags.workspaceSelectionCaptured;
       flags.emptyDashboardVerified = true;
       await capture('doctor-dashboard-empty-1440x1000.png');
       await clickText('Patients');
@@ -286,7 +290,7 @@ async function signOut() {
       flags.emptyAppointmentsVerified = true;
       await capture('doctor-appointments-empty-1440x1000.png');
 
-      await reloadAndVerifySession();
+      flags.workspaceSelectionCaptured = (await reloadAndVerifySession()) || flags.workspaceSelectionCaptured;
       flags.emptySessionRestored = true;
       await capture('doctor-empty-session-restored-1440x1000.png');
     }
@@ -294,7 +298,9 @@ async function signOut() {
     const authenticated = flags.authenticatedDashboard && flags.populatedDatasetVerified &&
       flags.patientChartCaptured && flags.clinicalIntelligenceCaptured && flags.sessionRestored &&
       flags.emptyDashboardVerified && flags.emptyPatientsVerified && flags.emptyAppointmentsVerified &&
-      flags.emptySessionRestored;
+      flags.emptySessionRestored && flags.workspaceManagementVisible &&
+      flags.organisationCreateFormCaptured && flags.doctorAccessFormCaptured &&
+      flags.crossWorkspaceFormCaptured;
     const api = process.env.EXPO_PUBLIC_DENTAL_API_URL || 'https://oralyn-multitenant-staging.onrender.com';
     const info = [
       'commit=' + commit,
