@@ -429,19 +429,43 @@ jobs:
           "$ADB" pull /sdcard/patient-time-slots.xml build-evidence/patient-time-slots.xml
           "$ADB" shell screencap -p /sdcard/patient-time-slots.png
           "$ADB" pull /sdcard/patient-time-slots.png build-evidence/patient-time-slots.png
-          python3 - <<'PY' > build-evidence/validation-tap.txt
+          # The send action is below the selected time row on smaller Android viewports.
+          # Scroll the installed APK, inspect each real UI hierarchy, and tap only when visible.
+          found_validation_action=0
+          for index in 1 2 3 4 5 6; do
+            python3 - <<'PY' > build-evidence/validation-tap.txt || true
           import re
           import xml.etree.ElementTree as ET
           root = ET.parse('build-evidence/patient-time-slots.xml').getroot()
           for node in root.iter('node'):
-              if node.attrib.get('text') == 'Send appointment request':
+              text = node.attrib.get('text', '').strip().casefold()
+              label = node.attrib.get('content-desc', '').strip().casefold()
+              if 'send appointment request' in text or 'send appointment request' in label:
                   match = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', node.attrib.get('bounds', ''))
                   if match:
                       x1, y1, x2, y2 = map(int, match.groups())
                       print((x1 + x2) // 2, (y1 + y2) // 2)
                       break
-          else: raise SystemExit('Appointment request action was not accessible')
           PY
+            if [ -s build-evidence/validation-tap.txt ]; then
+              found_validation_action=1
+              break
+            fi
+            if [ "$index" -lt 6 ]; then
+              "$ADB" shell input swipe 540 1500 540 500 500
+              sleep 1
+              "$ADB" shell uiautomator dump "/sdcard/patient-time-slots-action-$index.xml" >/dev/null
+              "$ADB" pull "/sdcard/patient-time-slots-action-$index.xml" "build-evidence/patient-time-slots-action-$index.xml"
+              cp "build-evidence/patient-time-slots-action-$index.xml" build-evidence/patient-time-slots.xml
+              "$ADB" shell screencap -p /sdcard/patient-time-slots-action.png
+              "$ADB" pull /sdcard/patient-time-slots-action.png build-evidence/patient-time-slots-action.png
+            fi
+          done
+          if [ "$found_validation_action" != "1" ]; then
+            cat build-evidence/patient-time-slots.xml
+            echo "::error::Appointment request action was not visible after scrolling the installed booking screen."
+            exit 1
+          fi
           read -r validate_x validate_y < build-evidence/validation-tap.txt
           "$ADB" shell input tap "$validate_x" "$validate_y"
           sleep 2
