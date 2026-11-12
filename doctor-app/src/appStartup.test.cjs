@@ -86,3 +86,21 @@ test('Android emulator smoke test checks KVM permissions and retains failure dia
   assert.match(workflow, /devices -l/);
   assert.match(workflow, /Android emulator did not connect to ADB/);
 });
+test('authenticated Android smoke requires explicitly synthetic staging accounts and checks the full Doctor workflow', () => {
+  const smoke = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'smoke-doctor-android.py'), 'utf8');
+  assert.match(workflow, /DENTAL_STAGING_DOCTOR_TEST_DATASET/);
+  assert.match(workflow, /DENTAL_STAGING_DOCTOR_EMPTY_DATASET/);
+  assert.match(workflow, /python3 scripts\/smoke-doctor-android\.py/);
+  assert.match(smoke, /dataset != "synthetic"/);
+  assert.match(smoke, /doctor-offline-error-state/);
+  assert.match(smoke, /doctor-.*session-restored/);
+  assert.match(smoke, /No appointments yet/);
+  assert.match(smoke, /No patients yet/);
+});
+
+test('workspace administration UI exposes organisation creation, doctor creation and cross-workspace membership', () => {
+  assert.match(app, /Create organisation/);
+  assert.match(app, /Create doctor account/);
+  assert.match(app, /Assign doctor to another workspace/);
+  assert.match(app, /Choose a workspace/);
+});
