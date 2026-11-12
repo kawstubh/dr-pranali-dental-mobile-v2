@@ -356,11 +356,13 @@ def main() -> int:
     else:
         results.append({"account": "empty", "result": "not_configured"})
 
-    lines = ["authenticated_runtime=passed"]
+    full_account_matrix = len(results) == 2 and results[1].get("data_mode") == "empty"
+    runtime_status = "passed" if full_account_matrix else "partial"
+    lines = [f"authenticated_runtime={runtime_status}"]
     for item in results:
         lines.extend(f"{key}={value}" for key, value in item.items())
     (EVIDENCE / "doctor-authenticated-result.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print("Authenticated Doctor Android runtime checks passed for the configured synthetic account(s).")
+    print(f"Authenticated Doctor Android runtime checks {runtime_status}; a separate empty account is required for the full gate.")
     return 0
 
 
