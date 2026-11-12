@@ -53,7 +53,7 @@ test("private documents use checksum verification and direct signed object uploa
   assert.match(careSource, /method: "PUT"/);
   assert.match(careSource, /completeDocumentUpload/);
   assert.match(careSource, /setDocumentVisibility/);
-  assert.match(careSource, /private object bucket/);
+  assert.match(careSource, /private storage/);
   assert.doesNotMatch(careSource, /localStorage\.setItem\([^\n]*document/i);
 });
 
@@ -127,4 +127,13 @@ test("patient record selection persistence is bound to the Supabase user identit
   assert.match(source, /oralyn_patient_record_user_id/);
   assert.match(source, /storedOwnerId !== patientUserId/);
   assert.match(source, /localStorage\.removeItem\("oralyn_patient_record_user_id"\)/);
+});
+
+test("private clinical documents require a doctor review before patient sharing", () => {
+  assert.match(apiSource, /reviewDocument: \(token, documentId\)[\s\S]*?\/v1\/dental\/doctor\/documents\/[\s\S]*?\/review/);
+  assert.match(careSource, /dentalApi\.reviewDocument\(token, document\.id\)/);
+  assert.match(careSource, /Mark as reviewed/);
+  assert.match(careSource, /document\.status === "available" && !document\.reviewed_at/);
+  assert.match(careSource, /document\.status === "available" && document\.reviewed_at &&/);
+  assert.match(careSource, /A doctor must review each file before patient sharing is enabled/);
 });

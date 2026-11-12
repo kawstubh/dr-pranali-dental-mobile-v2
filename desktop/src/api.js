@@ -174,6 +174,8 @@ export const dentalApi = {
     request(`/v1/dental/doctor/patients/${encodeURIComponent(patientId)}/documents/upload-intent`, { token, method: "POST", body }),
   completeDocumentUpload: (token, documentId) =>
     request(`/v1/dental/doctor/documents/${encodeURIComponent(documentId)}/complete`, { token, method: "POST" }),
+  reviewDocument: (token, documentId) =>
+    request(`/v1/dental/doctor/documents/${encodeURIComponent(documentId)}/review`, { token, method: "POST" }),
   setDocumentVisibility: (token, documentId, patient_visible) =>
     request(`/v1/dental/doctor/documents/${encodeURIComponent(documentId)}`, { token, method: "PATCH", body: { patient_visible } }),
   doctorDocumentDownloadIntent: (token, documentId) =>

@@ -6,6 +6,7 @@ import {
   Upload,
   Download,
   Share2,
+  ShieldCheck,
   RefreshCw,
   Plus,
   LockKeyhole,
@@ -370,6 +371,19 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
       setBusy(false);
     }
   };
+  const reviewDocument = async (document) => {
+    setBusy(true);
+    setError("");
+    try {
+      await dentalApi.reviewDocument(token, document.id);
+      refresh();
+      ping("Document reviewed. Share it with the patient only when appropriate.");
+    } catch (err) {
+      setError(err.message || "Document review could not be recorded.");
+    } finally {
+      setBusy(false);
+    }
+  };
   const shareDocument = async (document, visible) => {
     setBusy(true);
     try {
@@ -401,17 +415,18 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
   };
   return (
     <>
-      <CareHeader eyebrow="SECURE CLINICAL FILES" title="Private documents" description={`Verified, tenant-scoped files for ${patientLabel}. Documents are stored in a private object bucket, never the app server filesystem.`} action={<button className="outline" onClick={refresh}><RefreshCw size={16} /> Refresh</button>} />
+      <CareHeader eyebrow="SECURE CLINICAL FILES" title="Private documents" description={`Verified, tenant-scoped files for ${patientLabel}. A doctor must review each file before patient sharing is enabled.`} action={<button className="outline" onClick={refresh}><RefreshCw size={16} /> Refresh</button>} />
       {error && <StateMessage error>{error}</StateMessage>}
       <div className="care-grid">
         <section className="panel care-panel">
           <div className="care-panel-heading"><FileText /><div><h2>Documents for this patient</h2><p>{documents.length} document{documents.length === 1 ? "" : "s"}</p></div></div>
           {loading ? <StateMessage>Loading private document metadata…</StateMessage> : documents.length ? documents.map((document) => (
             <article className="care-record" key={document.id}>
-              <div className="care-record-top"><div><b>{document.file_name}</b><small>{document.content_type} · {Math.ceil(document.size_bytes / 1024)} KB · {dateLabel(document.created_at)}</small></div><span className={document.patient_visible ? "care-pill shared" : "care-pill private"}>{document.patient_visible ? "Patient shared" : document.status.replaceAll("_", " ")}</span></div>
+              <div className="care-record-top"><div><b>{document.file_name}</b><small>{document.content_type} · {Math.ceil(document.size_bytes / 1024)} KB · {dateLabel(document.created_at)}</small></div><span className={document.patient_visible ? "care-pill shared" : "care-pill private"}>{document.patient_visible ? "Patient shared" : document.reviewed_at ? "Reviewed · clinic only" : document.status === "available" ? "Review required" : document.status.replaceAll("_", " ")}</span></div>
               <div className="care-actions">
                 {document.status === "available" && <button className="outline" onClick={() => downloadDocument(document)}><Download size={15} /> Download</button>}
-                {document.status === "available" && <button className="outline" disabled={busy} onClick={() => shareDocument(document, !document.patient_visible)}><Share2 size={15} /> {document.patient_visible ? "Unshare" : "Share with patient"}</button>}
+                {document.status === "available" && !document.reviewed_at && <button className="outline" disabled={busy} onClick={() => reviewDocument(document)}><ShieldCheck size={15} /> Mark as reviewed</button>}
+                {document.status === "available" && document.reviewed_at && <button className="outline" disabled={busy} onClick={() => shareDocument(document, !document.patient_visible)}><Share2 size={15} /> {document.patient_visible ? "Unshare" : "Share with patient"}</button>}
               </div>
             </article>
           )) : <StateMessage>No documents have been uploaded for this patient.</StateMessage>}
@@ -423,7 +438,7 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
             {uploadFile && <small className="care-hint">{uploadFile.name} · {Math.ceil(uploadFile.size / 1024)} KB</small>}
             <button className="primary" disabled={busy || !uploadFile}><Upload size={16} /> Upload securely</button>
           </form>
-          <StateMessage>Upload requires a verified private staging bucket and scoped storage credentials. If storage is not configured, the API returns 503 and no public or local-file fallback is used.</StateMessage>
+          <StateMessage>Uploads remain private after verification. A doctor must explicitly review the file before the separate patient-sharing action becomes available. If private storage is not configured, the API returns 503 and no public or local-file fallback is used.</StateMessage>
         </section>
       </div>
     </>
