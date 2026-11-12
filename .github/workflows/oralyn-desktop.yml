@@ -19,10 +19,6 @@ jobs:
     env:
       VITE_DENTAL_API_URL: https://oralyn-staging-api-synthetic.onrender.com
       ORALYN_PORTAL_ORIGIN: https://oralyn-web-portal-spa.onrender.com
-      ORALYN_BACKEND_STACK_VERIFIED: "true"
-      ORALYN_CORS_VERIFIED: "true"
-      ORALYN_DATABASE_IDENTITY_VERIFIED: "true"
-      ORALYN_SECURITY_HEADERS_VERIFIED: "true"
       ORALYN_DOCTOR_AUTH_E2E_VERIFIED: "true"
       ORALYN_GUEST_BOOKING_E2E_VERIFIED: "true"
       ORALYN_MOBILE_BROWSER_E2E_VERIFIED: "true"
@@ -38,6 +34,8 @@ jobs:
           cache-dependency-path: desktop/package-lock.json
       - name: Install locked dependencies
         run: npm ci
+      - name: Verify live synthetic staging API, CORS and security headers
+        run: node scripts/verify-staging-api.cjs
       - name: Run desktop regression tests
         run: npm test
       - name: Audit dependencies
