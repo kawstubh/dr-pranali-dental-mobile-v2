@@ -9,6 +9,31 @@ if (!fs.existsSync(outputDir) || !fs.statSync(outputDir).isDirectory()) {
   throw new Error("Portal build output does not exist: " + outputDir);
 }
 
+const buildIdSource =
+  process.env.GITHUB_SHA ||
+  process.env.ORALYN_COMMIT_SHA ||
+  process.env.ORALYN_BUILD_ID ||
+  Date.now().toString(36);
+const buildId = String(buildIdSource)
+  .replace(/[^A-Za-z0-9._-]/g, "")
+  .slice(0, 40);
+if (!buildId) throw new Error("Oralyn build ID is empty after sanitization.");
+
+const serviceWorkerPath = path.join(outputDir, "sw.js");
+if (!fs.existsSync(serviceWorkerPath)) {
+  throw new Error("Oralyn service worker output is missing: " + serviceWorkerPath);
+}
+const serviceWorkerSource = fs.readFileSync(serviceWorkerPath, "utf8");
+if (!serviceWorkerSource.includes("__ORALYN_BUILD_ID__")) {
+  throw new Error("Oralyn service worker build ID placeholder is missing.");
+}
+const serviceWorkerCacheName = "oralyn-portal-shell-" + buildId;
+fs.writeFileSync(
+  serviceWorkerPath,
+  serviceWorkerSource.replace(/__ORALYN_BUILD_ID__/g, buildId),
+  "utf8",
+);
+
 function flag(value) {
   return ["1", "true", "yes"].includes(String(value || "").trim().toLowerCase());
 }
@@ -93,6 +118,7 @@ const manifest = {
   environment,
   commit_sha: process.env.GITHUB_SHA || process.env.ORALYN_COMMIT_SHA || "unknown",
   branch: process.env.GITHUB_REF_NAME || process.env.ORALYN_BRANCH || "unknown",
+  service_worker_cache_name: serviceWorkerCacheName,
   built_at: new Date().toISOString(),
   api_origin: apiOrigin,
   portal_origin: portalOrigin,
@@ -109,6 +135,7 @@ fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + newline, "utf
 process.stdout.write([
   "Oralyn build manifest written: " + path.relative(process.cwd(), manifestPath),
   "Commit: " + manifest.commit_sha,
+  "Service worker cache: " + serviceWorkerCacheName,
   "API origin: " + (manifest.api_origin || "not configured"),
   "Patient Supabase auth: " + (supabaseAuthConfigured ? "configured" : "NOT CONFIGURED"),
   "Release status: " + manifest.release_status,
