@@ -18,7 +18,7 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
-  if (/\\/(auth|api|rest|functions)(\\/|$)/i.test(url.pathname)) return;
+  if (/\/(auth|api|rest|functions)(\/|$)/i.test(url.pathname)) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(
@@ -33,7 +33,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  if (url.pathname.startsWith('/_expo/') || /\\.(js|css|png|jpg|jpeg|svg|woff2?)$/i.test(url.pathname)) {
+  if (url.pathname.startsWith('/_expo/') || /\.(js|css|png|jpg|jpeg|svg|woff2?)$/i.test(url.pathname)) {
     event.respondWith(
       caches.match(request).then(cached => cached || fetch(request).then(response => {
         if (response.ok && response.type === 'basic') {
