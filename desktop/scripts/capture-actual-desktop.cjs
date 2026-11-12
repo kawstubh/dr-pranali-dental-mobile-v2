@@ -230,6 +230,12 @@ async function navigate(route, expectedText, screenshotName) {
     ));
     fontResults.patientHome = await captureCurrent("Your smile, your care.", "patient-home");
 
+    await send("Page.navigate", { url: baseUrl + "/patient/login" });
+    await waitFor(() => evaluate(
+      'location.pathname === "/patient/home/" && document.body.innerText.includes("Your smile, your care.")'
+    ));
+    fontResults.patientLegacyLoginRedirect = true;
+
     fontResults.patientBooking = await navigate(
       "/patient/booking/",
       "Request an appointment",
@@ -258,6 +264,7 @@ async function navigate(route, expectedText, screenshotName) {
       "authenticated_screens=false",
       "mobile_viewport=390x844",
       "role_route_refresh_back_forward=passed",
+      "patient_login_redirect=passed",
       "runtime_errors=none",
     ].join("\n") + "\n";
     fs.writeFileSync(path.join(output, "build-info.txt"), metadata);
