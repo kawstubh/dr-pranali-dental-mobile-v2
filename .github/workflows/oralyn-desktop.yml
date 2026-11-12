@@ -1,12 +1,12 @@
 name: Oralyn Desktop
 on:
   pull_request:
-    branches: [master]
+    branches: [master, feat/oralyn-desktop-app]
     paths:
       - 'desktop/**'
       - '.github/workflows/oralyn-desktop.yml'
   push:
-    branches: [feat/oralyn-desktop-app]
+    branches: [feat/oralyn-desktop-app, feat/oralyn-assistant-ui-20261113]
     paths:
       - 'desktop/**'
       - '.github/workflows/oralyn-desktop.yml'
