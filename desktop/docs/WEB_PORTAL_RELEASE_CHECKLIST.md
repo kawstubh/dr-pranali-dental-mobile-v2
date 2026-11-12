@@ -341,3 +341,27 @@ This strengthens the isolated-database blocker: a clean staging database must be
 ### Release decision
 
 **Not release-ready.** Real isolated staging PostgreSQL and Patient auth, a dedicated private document bucket and ClamAV service, a unified HTTPS portal origin, exact CORS/auth redirects, database identity, deployed backend stack, authenticated Doctor/Patient E2E, backend cross-tenant denial, patient-visible sharing, mobile authenticated browser tests, monitoring, backup/restore and rollback remain unverified. Keep all PRs Draft. No merge, production deployment, production migration, secret change, spending or irreversible infrastructure action was performed.
+
+
+## 13 Nov 2026 — product decision: no patient account authentication
+
+This decision supersedes earlier patient-authentication requirements in this checklist and in older PR notes.
+
+- Oralyn is one responsive web portal for desktop, tablet and mobile browsers.
+- Patient account registration, patient passwords, patient OTP login, Supabase patient sessions and patient sign-in are **not required for release**.
+- The public Patient experience is account-free: clinic-facing information, service selection, appointment request and booking confirmation. The booking flow collects the minimum contact details needed for the clinic to confirm the request.
+- The Doctor/staff workspace remains authenticated and tenant-scoped.
+- Patient-specific clinical records, prescriptions, invoices, odontograms and private documents must never become public or be fetched by guessable patient IDs. These remain available to authorised clinic staff; any future no-account patient sharing must use clinic-issued, random, scoped, expiring/revocable links with audit and rate controls, or remain out of public scope.
+- Patient AI diagnosis and self-diagnosis remain unavailable.
+- Release browser acceptance now covers public guest booking without patient login, and authenticated Doctor/staff clinical workflows. Remove patient signup/login, patient session restore and patient account linking from release gates and test fixtures.
+- Keep public guest booking scoped to the configured clinic until verified clinic-slug routing and shared abuse protection are implemented.
+
+### Updated acceptance gates
+
+- [ ] Public patient landing page works without account creation.
+- [ ] Guest appointment request works end-to-end and produces a clinic-side appointment/request.
+- [ ] Public booking validates contact details, date/time and clinic availability; rate limits and abuse controls are effective.
+- [ ] Patient pages do not expose private records, invoices, prescriptions, clinical notes or documents.
+- [ ] Doctor/staff login, session lifecycle, workspace membership, tenant isolation and audit logging pass end-to-end.
+- [ ] Doctor clinical workflows and private document permissions pass using synthetic data.
+- [ ] Desktop, tablet and mobile browser captures reflect the same tested commit.
