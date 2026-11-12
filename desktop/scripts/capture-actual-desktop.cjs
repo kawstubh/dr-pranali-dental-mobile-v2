@@ -206,7 +206,7 @@ async function navigate(route, expectedText, screenshotName) {
     ));
     await evaluate("history.back()");
     await waitFor(() => evaluate(
-      'location.pathname === "/" && document.body.innerText.includes("Sign in with your clinic doctor account")'
+      'location.pathname === "/doctor/dashboard" && document.body.innerText.includes("Sign in with your clinic doctor account")'
     ));
     await evaluate("history.forward()");
     await waitFor(() => evaluate(
