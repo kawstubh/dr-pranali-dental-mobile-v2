@@ -106,7 +106,7 @@ const fixtureSource = [
   "  window.__ORALYN_SYNTHETIC_WRITES = JSON.parse(localStorage.getItem('oralyn_synthetic_writes') || '[]');",
   "  window.__ORALYN_SYNTHETIC_UNHANDLED = JSON.parse(localStorage.getItem('oralyn_synthetic_unhandled') || '[]');",
   "  const recordWrite = (value) => { window.__ORALYN_SYNTHETIC_WRITES.push(value); localStorage.setItem('oralyn_synthetic_writes', JSON.stringify(window.__ORALYN_SYNTHETIC_WRITES)); };",
-  "  const recordUnhandled = (value) => { window.__ORALYN_SYNTHETIC_UNHANDLED.push(value); localStorage.setItem('oralyn_synthetic_unhandled', JSON.stringify(window.__ORALYN_SYNTHETIC_UNHANDLED)); };"
+  "  const recordUnhandled = (value) => { window.__ORALYN_SYNTHETIC_UNHANDLED.push(value); localStorage.setItem('oralyn_synthetic_unhandled', JSON.stringify(window.__ORALYN_SYNTHETIC_UNHANDLED)); };",
   "  const originalFetch = window.fetch.bind(window);",
   "  const json = (payload, status = 200) => new Response(JSON.stringify(payload), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store, private' } });",
   "  window.fetch = async (input, init = {}) => {",
