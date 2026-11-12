@@ -88,15 +88,18 @@ const fixtureSource = [
   "(() => {",
   "  const tokenOne = 'synthetic-doctor-token';",
   "  const tokenTwo = 'synthetic-doctor-token-2';",
+  "  const tokenThree = 'synthetic-doctor-token-3';",
   "  const clinicOne = 'clinic-synthetic-one';",
   "  const clinicTwo = 'clinic-synthetic-two';",
+  "  const clinicThree = 'clinic-synthetic-empty';",
   "  const patientOne = { id: 'patient-synthetic-001', name: 'Ananya Synthetic', phone: '+91 90000 00001', email: 'ananya.synthetic@example.test', age: 34, clinic_id: clinicOne, patient_code: 'SYN-001' };",
   "  const patientTwo = { id: 'patient-synthetic-002', name: 'Bharat Synthetic', phone: '+91 90000 00002', email: 'bharat.synthetic@example.test', age: 41, clinic_id: clinicTwo, patient_code: 'SYN-002' };",
   "  const workspaceOne = { id: clinicOne, clinic_id: clinicOne, name: 'Dr Pranali Dental Clinic', clinic_name: 'Dr Pranali Dental Clinic', organisation_id: 'org-synthetic', organisation_name: 'Synthetic Organisation', role: 'owner', active_doctors: 1 };",
   "  const workspaceTwo = { id: clinicTwo, clinic_id: clinicTwo, name: 'Dr Pranali — Branch', clinic_name: 'Dr Pranali — Branch', organisation_id: 'org-synthetic', organisation_name: 'Synthetic Organisation', role: 'doctor', active_doctors: 1 };",
-  "  const workspaces = [workspaceOne, workspaceTwo];",
+  "  const workspaceThree = { id: clinicThree, clinic_id: clinicThree, name: 'Dr Pranali — Empty', clinic_name: 'Dr Pranali — Empty', organisation_id: 'org-synthetic', organisation_name: 'Synthetic Organisation', role: 'doctor', active_doctors: 0 };",
+  "  const workspaces = [workspaceOne, workspaceTwo, workspaceThree];",
   "  const userFor = (clinicId) => ({ id: 'doctor-synthetic-001', doctor_id: 'doctor-synthetic-001', email: 'doctor.synthetic@example.test', name: 'Dr Synthetic', role: clinicId === clinicOne ? 'owner' : 'doctor', clinic_id: clinicId, organisation_id: 'org-synthetic', organisation_name: 'Synthetic Organisation' });",
-  "  const summaryFor = (clinicId) => ({ patient_count: 1, appointment_count: clinicId === clinicOne ? 1 : 0, issued_invoice_count: 0, active_treatment_plan_count: 0, pending_appointment_requests: 0, invoiced_total_paise: 0, collected_total_paise: 0, outstanding_balance_paise: 0 });",
+  "  const summaryFor = (clinicId) => ({ patient_count: clinicId === clinicThree ? 0 : 1, appointment_count: clinicId === clinicOne ? 1 : 0, issued_invoice_count: 0, active_treatment_plan_count: 0, pending_appointment_requests: 0, invoiced_total_paise: 0, collected_total_paise: 0, outstanding_balance_paise: 0 });",
   "  const appointmentFor = (patient) => ({ id: 'appointment-' + patient.id, patient_id: patient.id, patient_name: patient.name, starts_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(), treatment_type: 'Dental check-up', status: 'confirmed', note: 'Synthetic CI fixture' });",
   "  if (!localStorage.getItem('oralyn_synthetic_bootstrapped')) {",
   "    localStorage.setItem('oralyn_doctor_token', tokenOne);",
@@ -117,9 +120,9 @@ const fixtureSource = [
   "    const method = String(init.method || (input instanceof Request ? input.method : 'GET')).toUpperCase();",
   "    const authorization = requestHeaders.get('authorization') || '';",
   "    const activeToken = authorization.replace(/^Bearer\\s+/i, '');",
-  "    const validDoctor = activeToken === tokenOne || activeToken === tokenTwo;",
-  "    const clinicId = activeToken === tokenTwo ? clinicTwo : clinicOne;",
-  "    const patient = clinicId === clinicOne ? patientOne : patientTwo;",
+  "    const validDoctor = activeToken === tokenOne || activeToken === tokenTwo || activeToken === tokenThree;",
+  "    const clinicId = activeToken === tokenTwo ? clinicTwo : activeToken === tokenThree ? clinicThree : clinicOne;",
+  "    const patient = clinicId === clinicOne ? patientOne : clinicId === clinicTwo ? patientTwo : null;",
   "    if (url.pathname === '/v1/dental/health') return json({ result: { status: 'ok', fixture: true } });",
   "    if (url.pathname === '/v1/dental/auth/me') {",
   "      if (!validDoctor) return json({ detail: { message: 'Synthetic doctor session expired', code: 'INVALID_DOCTOR_SESSION' } }, 401);",
@@ -130,12 +133,12 @@ const fixtureSource = [
   "    if (url.pathname === '/v1/dental/auth/workspaces') return json({ result: workspaces });",
   "    if (url.pathname === '/v1/dental/auth/workspace/switch' && method === 'POST') {",
   "      let body = {}; try { body = JSON.parse(init.body || '{}'); } catch {}",
-  "      if (body.clinic_id !== clinicOne && body.clinic_id !== clinicTwo) return json({ detail: { message: 'Workspace is not in the authenticated organisation', code: 'WORKSPACE_ACCESS_DENIED' } }, 403);",
-  "      const nextToken = body.clinic_id === clinicTwo ? tokenTwo : tokenOne;",
+  "      if (body.clinic_id !== clinicOne && body.clinic_id !== clinicTwo && body.clinic_id !== clinicThree) return json({ detail: { message: 'Workspace is not in the authenticated organisation', code: 'WORKSPACE_ACCESS_DENIED' } }, 403);",
+  "      const nextToken = body.clinic_id === clinicTwo ? tokenTwo : body.clinic_id === clinicThree ? tokenThree : tokenOne;",
   "      return json({ access_token: nextToken, user: userFor(body.clinic_id), workspaces });",
   "    }",
   "    if (url.pathname === '/v1/dental/doctor/dashboard/summary') return json({ result: summaryFor(clinicId) });",
-  "    if (url.pathname === '/v1/dental/patients' && method === 'GET') return json({ result: [patient] });",
+  "    if (url.pathname === '/v1/dental/patients' && method === 'GET') return json({ result: patient ? [patient] : [] });",
   "    if (url.pathname === '/v1/dental/appointments' && method === 'GET') return json({ result: clinicId === clinicOne ? [appointmentFor(patient)] : [] });",
   "    if (url.pathname === '/v1/dental/appointments' && method === 'POST') { recordWrite('appointment-create'); return json({ result: { id: 'appointment-synthetic-created', patient_id: patient.id, status: 'requested' } }); }",
   "    if (url.pathname === '/v1/dental/intelligence/run' && method === 'POST') {",
@@ -250,6 +253,15 @@ async function main() {
   if (!isolation.newClinicVisible || !isolation.oldClinicHidden) throw new Error("Synthetic clinic switch did not clear the previous clinic data: " + JSON.stringify(isolation));
   await capture("doctor-workspace-switch-1440x1000.png");
 
+  const switchedEmpty = await evaluate(`(() => { const select = document.querySelector('select[aria-label="Switch clinic workspace"]'); if (!select) return false; select.value = 'clinic-synthetic-empty'; select.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`);
+  if (!switchedEmpty) throw new Error("Could not select the synthetic empty clinic.");
+  await waitFor(() => evaluate('document.body.innerText.includes("Dr Pranali — Empty") && document.body.innerText.includes("No appointments are available for this clinic account yet.")'));
+  await capture("doctor-empty-dashboard-1440x1000.png");
+  await capture("doctor-empty-dashboard-390x844.png", 390, 844, true);
+  await navigate("/doctor/patients", "PATIENT DIRECTORY");
+  await waitFor(() => evaluate('document.body.innerText.includes("No patient records are available for this clinic account.")'));
+  await capture("doctor-empty-patient-directory-1440x1000.png");
+
   const switchedBack = await evaluate(`(() => { const select = document.querySelector('select[aria-label="Switch clinic workspace"]'); if (!select) return false; select.value = 'clinic-synthetic-one'; select.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`);
   if (!switchedBack) throw new Error("Could not select the original synthetic clinic.");
   await waitFor(() => evaluate('document.body.innerText.includes("Ananya Synthetic")'));
@@ -296,6 +308,9 @@ async function main() {
     "doctor_session_expiry=passed",
     "doctor_logout=passed",
     "doctor_clinic_switching=passed_fixture",
+    "doctor_empty_workspace=passed_fixture",
+    "empty_workspace_patient_count=0",
+    "empty_workspace_appointment_count=0",
     "cross_organisation_denial=fixture_403_not_backend",
     "patient_invite_ui=passed_fixture",
     "odontogram_save_ui=passed_fixture",

@@ -4,6 +4,7 @@ import { test } from "node:test";
 
 const source = readFileSync(new URL("../src/main.jsx", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+const captureSource = readFileSync(new URL("../scripts/capture-synthetic-doctor.cjs", import.meta.url), "utf8");
 
 test("Doctor patient directory can issue a one-time invite for a clinic record", () => {
   assert.match(source, /dentalApi\.createPatientInvite\(token, patientId\)/);
@@ -50,4 +51,13 @@ test("Doctor identity is taken from the signed-in account, not hardcoded clinic 
   assert.match(source, /\? doctorDisplayName\(user\)/);
   assert.match(source, /\? doctorRoleLabel\(user\)/);
   assert.doesNotMatch(source, /Good evening, Dr\. Pranali/);
+});
+
+test("Doctor empty workspace fixture covers zero patients and zero appointments", () => {
+  assert.match(captureSource, /clinic-synthetic-empty/);
+  assert.match(captureSource, /patient_count: clinicId === clinicThree \? 0 : 1/);
+  assert.match(captureSource, /doctor-empty-dashboard-1440x1000\.png/);
+  assert.match(captureSource, /doctor-empty-patient-directory-1440x1000\.png/);
+  assert.match(source, /No appointments are available for this clinic account yet/);
+  assert.match(source, /No patient records are available for this clinic account\./);
 });
