@@ -568,6 +568,83 @@ jobs:
               exit 1
             }
           done
+          # Exercise every patient bottom-navigation destination on the installed APK.
+          # Coordinates are derived from the live Android accessibility hierarchy.
+          tap_text() {
+            local xml_file="$1"
+            local label="$2"
+            local tap_file="$3"
+            python3 - "$xml_file" "$label" <<'PY' > "$tap_file"
+          import re
+          import sys
+          import xml.etree.ElementTree as ET
+          root = ET.parse(sys.argv[1]).getroot()
+          target = sys.argv[2]
+          for node in root.iter('node'):
+              if node.attrib.get('text', '').strip() == target:
+                  match = re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', node.attrib.get('bounds', ''))
+                  if match:
+                      x1, y1, x2, y2 = map(int, match.groups())
+                      if x2 > x1 and y2 > y1:
+                          print((x1 + x2) // 2, (y1 + y2) // 2)
+                          break
+          else:
+              raise SystemExit(f'Patient navigation label not visible: {target}')
+          PY
+            read -r tap_x tap_y < "$tap_file"
+            "$ADB" shell input tap "$tap_x" "$tap_y"
+            sleep 2
+          }
+
+          tap_text build-evidence/patient-my-care-scroll-6.xml "Home" build-evidence/home-nav-tap.txt
+          "$ADB" shell uiautomator dump /sdcard/patient-home-navigation.xml >/dev/null
+          "$ADB" pull /sdcard/patient-home-navigation.xml build-evidence/patient-home-navigation.xml
+          tap_text build-evidence/patient-home-navigation.xml "Services" build-evidence/services-nav-tap.txt
+          "$ADB" shell uiautomator dump /sdcard/patient-services.xml >/dev/null
+          "$ADB" pull /sdcard/patient-services.xml build-evidence/patient-services.xml
+          "$ADB" shell screencap -p /sdcard/patient-services.png
+          "$ADB" pull /sdcard/patient-services.png build-evidence/patient-services.png
+          for label in "Dental services" "Dental check-up" "Cleaning & polishing"; do
+            grep -Fq "$label" build-evidence/patient-services.xml || {
+              echo "::error::Patient Services navigation did not expose expected service: $label"
+              exit 1
+            }
+          done
+          tap_text build-evidence/patient-services.xml "Dental check-up" build-evidence/service-detail-tap.txt
+          "$ADB" shell uiautomator dump /sdcard/patient-service-detail.xml >/dev/null
+          "$ADB" pull /sdcard/patient-service-detail.xml build-evidence/patient-service-detail.xml
+          "$ADB" shell screencap -p /sdcard/patient-service-detail.png
+          "$ADB" pull /sdcard/patient-service-detail.png build-evidence/patient-service-detail.png
+          grep -Fq "Book this service" build-evidence/patient-service-detail.xml || {
+            echo "::error::Patient service detail did not expose its booking action."
+            exit 1
+          }
+          tap_text build-evidence/patient-service-detail.xml "Services" build-evidence/services-return-tap.txt
+          "$ADB" shell uiautomator dump /sdcard/patient-services-return.xml >/dev/null
+          "$ADB" pull /sdcard/patient-services-return.xml build-evidence/patient-services-return.xml
+          tap_text build-evidence/patient-services-return.xml "Gallery" build-evidence/gallery-nav-tap.txt
+          "$ADB" shell uiautomator dump /sdcard/patient-gallery.xml >/dev/null
+          "$ADB" pull /sdcard/patient-gallery.xml build-evidence/patient-gallery.xml
+          "$ADB" shell screencap -p /sdcard/patient-gallery.png
+          "$ADB" pull /sdcard/patient-gallery.png build-evidence/patient-gallery.png
+          for label in "A familiar, friendly face" "Dr. Pranali"; do
+            grep -Fq "$label" build-evidence/patient-gallery.xml || {
+              echo "::error::Patient Gallery navigation did not expose expected content: $label"
+              exit 1
+            }
+          done
+          tap_text build-evidence/patient-gallery.xml "Contact" build-evidence/contact-nav-tap.txt
+          "$ADB" shell uiautomator dump /sdcard/patient-contact.xml >/dev/null
+          "$ADB" pull /sdcard/patient-contact.xml build-evidence/patient-contact.xml
+          "$ADB" shell screencap -p /sdcard/patient-contact.png
+          "$ADB" pull /sdcard/patient-contact.png build-evidence/patient-contact.png
+          for label in "Contact the clinic" "Clinic location" "Clinic hours"; do
+            grep -Fq "$label" build-evidence/patient-contact.xml || {
+              echo "::error::Patient Contact navigation did not expose expected content: $label"
+              exit 1
+            }
+          done
+
           "$ADB" logcat -d -v brief > build-evidence/patient-logcat.txt
           if grep -Ei "FATAL EXCEPTION|No safe area value available|Invariant Violation|Local Inter font load failed" build-evidence/patient-logcat.txt; then
             echo "::error::Fatal Patient Android runtime or local font loading error detected."
@@ -583,7 +660,7 @@ jobs:
             exit 1
           fi
           printf 'android_smoke=passed\n' >> build-evidence/build-info.txt
-          echo "::warning::Patient cold start, guest navigation and booking form verified. OAuth login/session persistence requires a dedicated staging Google test account."
+          echo "::warning::Patient cold start, guest navigation, services, gallery, contact and booking validation verified. OAuth login/session persistence requires a dedicated staging Google test account."
 
       - name: Upload Patient Android runtime evidence
         if: always()
