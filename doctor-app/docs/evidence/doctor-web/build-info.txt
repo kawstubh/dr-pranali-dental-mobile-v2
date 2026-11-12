@@ -1,0 +1,5 @@
+commit=d138278254b118abab7bbb5e5832e12d44d91fcc
+environment=staging
+api=https://oralyn-multitenant-staging.onrender.com
+package=com.drpranali.dental.doctor
+authenticatedDashboard=false

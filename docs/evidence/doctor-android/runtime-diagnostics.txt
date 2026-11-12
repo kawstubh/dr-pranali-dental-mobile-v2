@@ -1,0 +1,5 @@
+cold_start_rendered=true
+react_native_js_started=true
+fatal_exception=false
+javascript_exception=false
+missing_safe_area_error=false

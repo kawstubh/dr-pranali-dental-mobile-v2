@@ -25,6 +25,22 @@ export class DoctorAuthError extends Error {
   }
 }
 
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new DoctorAuthError('The clinic service took too long to respond. Please try again.', 'REQUEST_TIMEOUT');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function parseResponse(response) {
   const raw = await response.text();
   let payload = null;
@@ -45,11 +61,11 @@ async function parseResponse(response) {
 export async function signInWithPassword(apiUrl, email, password) {
   const generation = sessionWrites.beginMutation();
   try {
-    const response = await fetch(apiUrl.replace(/\/$/, '') + '/v1/dental/auth/password/login', {
+    const response = await fetchWithTimeout(apiUrl.replace(/\/$/, '') + '/v1/dental/auth/password/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
-    });
+    }, 15000);
     const payload = await parseResponse(response);
     if (!payload.access_token || !payload.user) {
       throw new DoctorAuthError('The clinic API returned an incomplete login session.', 'INVALID_SESSION_RESPONSE');
@@ -133,12 +149,12 @@ export async function signOutDoctor(apiUrl) {
   // sign-in increments the generation and cannot be erased by this logout.
   await sessionWrites.clearIfCurrent(generation);
   if (token) {
-    await fetch(apiUrl.replace(/\/$/, '') + '/v1/dental/auth/logout', {
+    await fetchWithTimeout(apiUrl.replace(/\/$/, '') + '/v1/dental/auth/logout', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: 'Bearer ' + token,
       },
-    }).catch(() => {});
+    }, 5000).catch(() => {});
   }
 }

@@ -1,12 +1,16 @@
 name: Doctor Android APK
 
 permissions:
-  contents: write
+  contents: read
+  actions: read
 
 on:
   workflow_dispatch:
   pull_request:
     branches: [master]
+    paths:
+      - 'doctor-app/**'
+      - '.github/workflows/doctor-apk.yml'
   push:
     branches: [master]
 
@@ -15,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      EXPO_PUBLIC_DENTAL_API_URL: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && 'https://dr-pranali-dental-api.onrender.com' || 'https://oralyn-multitenant-staging.onrender.com' }}
+      EXPO_PUBLIC_DENTAL_API_URL: https://oralyn-multitenant-staging.onrender.com
     defaults:
       run:
         working-directory: doctor-app
@@ -38,6 +42,21 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Verify Expo SDK native package compatibility
+        run: |
+          npx expo install --check
+          node - <<'NODE'
+          const lock = require('./package-lock.json');
+          const versions = Object.entries(lock.packages || {})
+            .filter(([path]) => path.endsWith('node_modules/expo-font'))
+            .map(([, entry]) => entry.version);
+          if (!versions.length || versions.some(version => version.split('.')[0] !== '57')) {
+            console.error('Expo SDK 57 requires expo-font 57.x; resolved versions:', versions);
+            process.exit(1);
+          }
+          console.log('Compatible expo-font versions:', versions.join(', '));
+          NODE
 
       - name: Reject vulnerable dependency tree
         run: npm audit --audit-level=low
@@ -68,7 +87,7 @@ jobs:
       - name: Verify selected API environment
         run: |
           case "$EXPO_PUBLIC_DENTAL_API_URL" in
-            https://oralyn-multitenant-staging.onrender.com|https://dr-pranali-dental-api.onrender.com) ;;
+            https://oralyn-multitenant-staging.onrender.com) ;;
             *) echo "::error::Unexpected Doctor API target."; exit 1 ;;
           esac
           echo "Doctor API target: $EXPO_PUBLIC_DENTAL_API_URL"
@@ -88,7 +107,7 @@ jobs:
       - name: Generate Android project
         run: npx expo prebuild --platform android --non-interactive
 
-      - name: Verify production JavaScript bundle
+      - name: Verify staging JavaScript bundle
         run: npx expo export --platform android
 
       - name: Require fixed release signing secrets
@@ -152,7 +171,7 @@ jobs:
           }
           EOF
 
-      - name: Build RELEASE APK with fixed signing
+      - name: Build signed STAGING APK with fixed signing
         working-directory: doctor-app/android
         env:
           DENTAL_DOCTOR_STORE_PASSWORD: ${{ secrets.DENTAL_DOCTOR_STORE_PASSWORD }}
@@ -161,7 +180,8 @@ jobs:
           printf '\napply from: "./release-signing.gradle"\n' >> app/build.gradle
           ./gradlew assembleRelease --no-daemon
 
-      - name: Verify signed RELEASE APK
+      - name: Verify signed STAGING APK
+        id: verify_apk
         env:
           DENTAL_DOCTOR_STORE_PASSWORD: ${{ secrets.DENTAL_DOCTOR_STORE_PASSWORD }}
         run: |
@@ -219,22 +239,206 @@ jobs:
           fi
           unzip -l "$APK" | grep -Eq 'assets/index[.]android[.]bundle([.]hbc)?'
           echo "Verified Doctor APK package and release certificate: $PACKAGE_NAME"
-      - name: Upload RELEASE APK
+      - name: Export Doctor desktop web build
+        id: export_web
+        if: ${{ always() && steps.verify_apk.outcome == 'success' }}
+        run: npx expo export --platform web
+
+      - name: Capture Doctor desktop screens at laptop widths
+        if: ${{ always() && steps.export_web.outcome == 'success' }}
+        env:
+          DENTAL_STAGING_DOCTOR_EMAIL: ${{ secrets.DENTAL_STAGING_DOCTOR_EMAIL }}
+          DENTAL_STAGING_DOCTOR_PASSWORD: ${{ secrets.DENTAL_STAGING_DOCTOR_PASSWORD }}
+          DENTAL_STAGING_DOCTOR_TEST_DATASET: ${{ secrets.DENTAL_STAGING_DOCTOR_TEST_DATASET }}
+          DENTAL_STAGING_DOCTOR_EMPTY_EMAIL: ${{ secrets.DENTAL_STAGING_DOCTOR_EMPTY_EMAIL }}
+          DENTAL_STAGING_DOCTOR_EMPTY_PASSWORD: ${{ secrets.DENTAL_STAGING_DOCTOR_EMPTY_PASSWORD }}
+          DENTAL_STAGING_DOCTOR_EMPTY_DATASET: ${{ secrets.DENTAL_STAGING_DOCTOR_EMPTY_DATASET }}
+          GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          GITHUB_PR_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          python3 -m http.server 19007 --directory dist >/tmp/oralyn-doctor-web.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:19007/ >/dev/null; then break; fi
+            sleep 1
+          done
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$CHROME_BIN" ]; then
+            echo "::error::No headless Chrome/Chromium is installed on this runner."
+            exit 1
+          fi
+          export CHROME_BIN
+          node scripts/capture-web.cjs
+
+      - name: Upload Doctor desktop screenshot evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
+          name: oralyn-doctor-desktop-evidence-${{ github.sha }}
+          path: doctor-app/build-evidence/doctor-web/
+          if-no-files-found: warn
+          retention-days: 14
+
+      # Reproduce the user-reported blank staging APK before validating the fixed build.
+      - name: Download user-reported blank Doctor APK
+        if: ${{ steps.verify_apk.outcome == 'success' }}
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
           name: dr-pranali-dental-doctor-release-apk
+          run-id: 43052128200
+          path: doctor-app/build-evidence/previous-apk
+          github-token: ${{ github.token }}
+      - name: Install and smoke-test Doctor APK on Android emulator
+        timeout-minutes: 25
+        if: ${{ always() && steps.verify_apk.outcome == 'success' }}
+        env:
+          DENTAL_STAGING_DOCTOR_EMAIL: ${{ secrets.DENTAL_STAGING_DOCTOR_EMAIL }}
+          DENTAL_STAGING_DOCTOR_PASSWORD: ${{ secrets.DENTAL_STAGING_DOCTOR_PASSWORD }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p build-evidence
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager | sort | tail -n 1)"
+          AVDMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name avdmanager | sort | tail -n 1)"
+          ADB="$SDK_ROOT/platform-tools/adb"
+          export ADB
+          export ANDROID_HOME="$SDK_ROOT"
+          export ANDROID_SDK_ROOT="$SDK_ROOT"
+          export ANDROID_SDK_HOME="$HOME/.android"
+          export ANDROID_AVD_HOME="$HOME/.android/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          test -x "$SDKMANAGER"
+          test -x "$AVDMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          if ! timeout 360 "$SDKMANAGER" --install "emulator" "platform-tools" "system-images;android-35;google_apis;x86_64" >build-evidence/sdkmanager.log 2>&1; then
+            cat build-evidence/sdkmanager.log
+            echo "::error::Android SDK package installation failed."
+            exit 1
+          fi
+          "$SDKMANAGER" --list_installed >build-evidence/sdkmanager-installed.txt 2>&1
+          grep -Fq "system-images;android-35;google_apis;x86_64" build-evidence/sdkmanager-installed.txt || {
+            cat build-evidence/sdkmanager-installed.txt
+            echo "::error::Android 35 Google APIs system image was not installed."
+            exit 1
+          }
+          if ! printf 'no\n' | "$AVDMANAGER" create avd --force --name oralyn-doctor-ci --package "system-images;android-35;google_apis;x86_64" --device pixel_2 --path "$ANDROID_AVD_HOME/oralyn-doctor-ci.avd" >build-evidence/avdmanager.log 2>&1; then
+            cat build-evidence/avdmanager.log
+            echo "::error::Android virtual device creation failed."
+            exit 1
+          fi
+          "$AVDMANAGER" list avd >build-evidence/avdmanager-list.txt 2>&1
+          if [ ! -f "$ANDROID_AVD_HOME/oralyn-doctor-ci.ini" ]; then
+            find "$HOME/.android" "$SDK_ROOT" -maxdepth 6 -name oralyn-doctor-ci.ini -print >build-evidence/avd-locations.txt 2>&1 || true
+            cat build-evidence/avdmanager.log
+            cat build-evidence/avdmanager-list.txt
+            echo "::error::AVD manager did not create the expected AVD in ANDROID_AVD_HOME."
+            exit 1
+          fi
+          test -x "$SDK_ROOT/emulator/emulator"
+          "$ADB" start-server
+          if [ ! -e /dev/kvm ]; then
+            echo "::error::Android emulator requires /dev/kvm, but the runner does not expose it."
+            exit 1
+          fi
+          sudo chmod 666 /dev/kvm
+          if [ ! -r /dev/kvm ] || [ ! -w /dev/kvm ]; then
+            ls -l /dev/kvm || true
+            echo "::error::Android emulator KVM device is not readable and writable by the runner."
+            exit 1
+          fi
+          ls -l /dev/kvm > build-evidence/kvm-permissions.txt
+          "$SDK_ROOT/emulator/emulator" -avd oralyn-doctor-ci -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -wipe-data >build-evidence/emulator.log 2>&1 &
+          if ! timeout 240 "$ADB" wait-for-device; then
+            "$ADB" devices -l > build-evidence/adb-devices.txt 2>&1 || true
+            cat build-evidence/emulator.log || true
+            echo "::error::Android emulator did not connect to ADB."
+            exit 1
+          fi
+          boot=""
+          for attempt in $(seq 1 90); do
+            boot="$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
+            [ "$boot" = "1" ] && break
+            sleep 2
+          done
+          if [ "$boot" != "1" ]; then
+            cat build-evidence/emulator.log
+            echo "::error::Android emulator did not finish booting."
+            exit 1
+          fi
+          "$ADB" shell settings put global window_animation_scale 0
+          "$ADB" shell settings put global transition_animation_scale 0
+          "$ADB" shell settings put global animator_duration_scale 0
+          PREVIOUS_APK="build-evidence/previous-apk/app-release.apk"
+          if [ -f "$PREVIOUS_APK" ]; then
+            if "$ADB" install -r "$PREVIOUS_APK"; then
+              "$ADB" logcat -c
+              "$ADB" shell monkey -p com.drpranali.dental.doctor 1 || true
+              sleep 18
+              timeout 30 "$ADB" shell uiautomator dump /sdcard/doctor-previous-window.xml >/dev/null 2>&1 || true
+              "$ADB" pull /sdcard/doctor-previous-window.xml build-evidence/doctor-previous-window.xml >/dev/null 2>&1 || true
+              "$ADB" shell screencap -p /sdcard/doctor-previous.png >/dev/null 2>&1 || true
+              "$ADB" pull /sdcard/doctor-previous.png build-evidence/doctor-previous.png >/dev/null 2>&1 || true
+              "$ADB" logcat -d -v brief >build-evidence/doctor-previous-logcat.txt
+              grep -Ei "No safe area value|ReactNativeJS|FATAL EXCEPTION|AndroidRuntime|Invariant Violation|Unhandled" build-evidence/doctor-previous-logcat.txt >build-evidence/doctor-previous-runtime-errors.txt || true
+              if grep -Fq "Sign in with your clinic-issued email and password." build-evidence/doctor-previous-window.xml; then
+                echo "previous_apk_login_rendered=true" >build-evidence/previous-apk-result.txt
+              else
+                echo "previous_apk_login_rendered=false" >build-evidence/previous-apk-result.txt
+              fi
+              "$ADB" uninstall com.drprani.dental.doctor >/dev/null 2>&1 || true
+            else
+              echo "previous_apk_install_failed=true" >build-evidence/previous-apk-result.txt
+            fi
+          else
+            echo "previous_apk_available=false" >build-evidence/previous-apk-result.txt
+          fi
+          rm -rf build-evidence/previous-apk
+          "$ADB" install -r android/app/build/outputs/apk/release/app-release.apk
+          "$ADB" logcat -c
+          "$ADB" shell monkey -p com.drpranali.dental.doctor 1
+          sleep 20
+          timeout 30 "$ADB" shell uiautomator dump /sdcard/doctor-window.xml >/dev/null
+          "$ADB" pull /sdcard/doctor-window.xml build-evidence/doctor-window.xml
+          "$ADB" shell screencap -p /sdcard/doctor-login.png
+          "$ADB" pull /sdcard/doctor-login.png build-evidence/doctor-login.png
+          "$ADB" logcat -d -v brief >build-evidence/doctor-logcat.txt
+          "$ADB" shell dumpsys activity activities >build-evidence/doctor-activities.txt
+          grep -Fq "Sign in with your clinic-issued email and password." build-evidence/doctor-window.xml || {
+            echo "::error::Doctor login UI did not render after cold start; inspect screenshot and logcat."
+            exit 1
+          }
+          if grep -E "FATAL EXCEPTION|No safe area value available|Invariant Violation|ReactNativeJS.*(Error|TypeError)" build-evidence/doctor-logcat.txt; then
+            echo "::error::Fatal Android or React Native startup error detected."
+            exit 1
+          fi
+          printf 'commit=%s\nbuild_sha=%s\npr_head_sha=%s\npr_base_sha=%s\nenvironment=staging\napi=https://oralyn-multitenant-staging.onrender.com\npackage=com.drpranali.dental.doctor\n' "$GITHUB_SHA" "$GITHUB_SHA" "$PR_HEAD_SHA" "$PR_BASE_SHA" >build-evidence/build-info.txt
+          python3 scripts/smoke-doctor-android.py
+          cat build-evidence/doctor-authenticated-result.txt >>build-evidence/build-info.txt
+          if grep -q '^authenticated_runtime=partial' build-evidence/doctor-authenticated-result.txt; then
+            echo "::warning::A second synthetic empty-workspace Doctor account is still required before release."
+          elif grep -q '^authenticated_runtime=skipped' build-evidence/doctor-authenticated-result.txt; then
+            echo "::warning::Authenticated Doctor runtime checks are not release-verified; configure synthetic staging test-account secrets."
+          fi
+
+      - name: Upload Doctor Android runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oralyn-doctor-android-evidence-${{ github.sha }}
+          path: doctor-app/build-evidence/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload STAGING APK
+        if: ${{ always() && steps.verify_apk.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: dr-pranali-dental-doctor-staging-apk
           path: doctor-app/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
-
-      - name: Publish doctor-latest GitHub Release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          APK="android/app/build/outputs/apk/release/app-release.apk"
-          if gh release view doctor-latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload doctor-latest "$APK#dr-pranali-doctor.apk" --repo "$GITHUB_REPOSITORY" --clobber
-          else
-            gh release create doctor-latest "$APK#dr-pranali-doctor.apk" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Doctor APK latest" --notes "Latest signed doctor Android APK." --latest=false
-          fi
