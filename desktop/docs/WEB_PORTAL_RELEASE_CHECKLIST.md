@@ -300,3 +300,11 @@ The final release remains blocked on isolated authenticated staging, actual Doct
 - No migration, write query, branch creation, connection-string retrieval or secret change was performed.
 
 This strengthens the isolated-database blocker: a clean staging database must be separately provisioned without cloning existing clinical rows. The existing Neon main remains untouched at migration 0007.
+
+
+## Cross-repository API path contract review — 13 Nov 2026
+
+- Compared the portal's `desktop/src/api.js` request paths on the current web feature branch with FastAPI route decorators in backend integration PR #56.
+- **44 unique frontend API paths; zero unmatched paths** against the integrated backend routes after normalizing dynamic path parameters and query strings.
+- Nine backend routes are intentionally not currently called by the portal: membership billing/checkout/webhook, workspace membership update/deactivation, scan screening, WhatsApp template, and periodontogram routes.
+- This is a static path-contract check only. HTTP verb, payload/response shape, auth scope, tenant isolation, patient consent, persistence and browser session behaviour still require authenticated staging E2E tests. It does not close any release gate.
