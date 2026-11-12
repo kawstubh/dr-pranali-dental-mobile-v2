@@ -186,6 +186,7 @@ async function main() {
   await send("Page.addScriptToEvaluateOnNewDocument", { source: fixtureSource });
   await send("Page.navigate", { url: baseUrl + "/doctor/dashboard" });
   await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Dr Pranali Dental Clinic")'));
+  await waitFor(() => evaluate('document.body.innerText.includes("Good evening, Dr Synthetic")'));
   await waitFor(() => evaluate('document.body.innerText.includes("Ananya Synthetic")'));
   await waitFor(() => evaluate("(async () => { const registration = await navigator.serviceWorker?.getRegistration('/'); return Boolean(registration?.active && registration.active.state === 'activated'); })()"), 30000);
   let pwaControlled = await evaluate("Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)");

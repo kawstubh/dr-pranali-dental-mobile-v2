@@ -43,6 +43,21 @@ import { normaliseList, normaliseUser, localDateISO, localDateTimeFromParts, for
 import { DoctorCareManagement, PatientCareManagement, DoctorClinicalNotes, PatientCommunication } from "./careScreens.jsx";
 import { createPortalNavigator, resolvePortalRoute } from "./routing.js";
 import { createControllerChangeHandler } from "./serviceWorkerLifecycle.js";
+function doctorDisplayName(user) {
+  const candidate = String(
+    user?.name || user?.full_name || user?.display_name || user?.email?.split("@")[0] || "",
+  ).trim();
+  if (!candidate) return "Doctor";
+  return /^dr\.?\s/i.test(candidate) ? candidate : `Dr. ${candidate}`;
+}
+
+function doctorRoleLabel(user) {
+  const role = String(user?.role || "").toLowerCase();
+  if (role === "owner") return "Clinic owner";
+  if (role === "admin" || role === "administrator") return "Clinic administrator";
+  return "Doctor";
+}
+
 function App() {
   const initialRoute = resolvePortalRoute(window.location.pathname);
   const [role, R] = useState(initialRoute.role),
@@ -612,12 +627,12 @@ function App() {
             <div>
               <b>
                 {role === "doctor"
-                  ? "Dr. Pranali"
+                  ? doctorDisplayName(user)
                   : patientSession?.user?.email || "Patient guest"}
               </b>
               <small>
                 {role === "doctor"
-                  ? "Clinic administrator"
+                  ? doctorRoleLabel(user)
                   : patientSession
                     ? "Verified patient"
                     : "Guest access"}
@@ -1762,7 +1777,7 @@ function Doctor({
         <div>
           <div className="eyebrow">{todayLabel}</div>
           <h1>
-            {greeting}, Dr. Pranali <span>✦</span>
+            {greeting}, {doctorDisplayName(user)} <span>✦</span>
           </h1>
           <p>Here’s your practice overview for today.</p>
         </div>
