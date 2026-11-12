@@ -1,0 +1,69 @@
+name: Oralyn Desktop
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/oralyn-desktop.yml'
+  push:
+    branches: [feat/oralyn-desktop-app]
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/oralyn-desktop.yml'
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      VITE_DENTAL_API_URL: https://oralyn-multitenant-staging.onrender.com
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Run desktop regression tests
+        run: npm test
+      - name: Audit dependencies
+        run: npm audit --audit-level=low
+      - name: Build staging-targeted desktop bundle
+        run: npm run build
+      - name: Install headless Chrome
+        id: setup_chrome
+        uses: browser-actions/setup-chrome@v1
+      - name: Start production preview
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4176 > /tmp/oralyn-desktop-preview.log 2>&1 &
+          for attempt in $(seq 1 40); do
+            if curl --fail --silent http://127.0.0.1:4176/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/oralyn-desktop-preview.log
+          echo "::error::Oralyn desktop preview did not become ready."
+          exit 1
+      - name: Capture real responsive public screens and verify bundled fonts
+        env:
+          CHROME_BIN: ${{ steps.setup_chrome.outputs.chrome-path }}
+          ORALYN_PREVIEW_URL: http://127.0.0.1:4176
+          ORALYN_ENVIRONMENT: staging
+        run: |
+          test -x "$CHROME_BIN" || { echo "::error::Configured Chrome path is not executable: $CHROME_BIN"; exit 1; }
+          "$CHROME_BIN" --version
+          node scripts/capture-actual-desktop.cjs
+      - name: Upload real desktop screenshot evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: oralyn-desktop-actual-screens
+          path: desktop/evidence/actual-desktop/
+          if-no-files-found: error
+          retention-days: 14
