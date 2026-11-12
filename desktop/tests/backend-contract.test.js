@@ -122,3 +122,32 @@ test("private document upload, completion, clinical review and sharing use separ
   assert.deepEqual(JSON.parse(requests[3].init.body), { patient_visible: true });
   assert.equal(requests[2].init.body, undefined);
 });
+
+test("doctor appointment updates, patient invites and doctor provisioning use authenticated clinic routes", async () => {
+  const token = "synthetic-doctor-token";
+  const requests = await captureRequests(async () => {
+    await dentalApi.updateAppointment(token, "appointment-1", {
+      starts_at: "2026-11-13T04:30:00.000Z",
+      status: "confirmed",
+    });
+    await dentalApi.createPatientInvite(token, "patient-1");
+    await dentalApi.createDoctorAccount(token, {
+      email: "doctor@example.test",
+      password: "synthetic-long-password-123",
+      role: "doctor",
+    });
+  });
+
+  assert.deepEqual(requests.map(({ url, init }) => [url, init.method || "GET"]), [
+    ["/v1/dental/appointments/appointment-1", "PATCH"],
+    ["/v1/dental/ai/doctor/patients/patient-1/invite", "POST"],
+    ["/v1/dental/auth/doctors", "POST"],
+  ]);
+  assertBearer(requests, token);
+  assert.deepEqual(JSON.parse(requests[0].init.body), {
+    starts_at: "2026-11-13T04:30:00.000Z",
+    status: "confirmed",
+  });
+  assert.equal(requests[1].init.body, undefined);
+  assert.equal(JSON.parse(requests[2].init.body).role, "doctor");
+});
