@@ -268,6 +268,7 @@ async function main() {
 
   const evidence = await evaluate("({writes:window.__ORALYN_SYNTHETIC_WRITES || [],unhandled:window.__ORALYN_SYNTHETIC_UNHANDLED || []})");
   if (evidence.unhandled.length) throw new Error("Synthetic Doctor harness encountered unhandled API paths: " + evidence.unhandled.join(", "));
+  if (!evidence.writes.includes("chart-save") || !evidence.writes.includes("doctor-intelligence") || !evidence.writes.includes("logout")) {
     throw new Error("Expected synthetic Doctor workflow actions were not recorded: " + JSON.stringify(evidence));
   }
   if (runtimeErrors.length) throw new Error("Synthetic Doctor browser runtime errors: " + runtimeErrors.join(" | "));
