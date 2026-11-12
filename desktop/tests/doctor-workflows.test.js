@@ -6,11 +6,10 @@ const source = readFileSync(new URL("../src/main.jsx", import.meta.url), "utf8")
 const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 const captureSource = readFileSync(new URL("../scripts/capture-synthetic-doctor.cjs", import.meta.url), "utf8");
 
-test("Doctor patient directory can issue a one-time invite for a clinic record", () => {
-  assert.match(source, /dentalApi\.createPatientInvite\(token, patientId\)/);
-  assert.match(source, /Create invite/);
-  assert.match(source, /expires in 24 hours/);
-  assert.match(source, /Copy invite code/);
+test("Doctor patient directory does not create patient accounts or invite links", () => {
+  assert.doesNotMatch(source, /dentalApi\.createPatientInvite\(/);
+  assert.doesNotMatch(source, /Create invite|Copy invite code|expires in 24 hours/);
+  assert.match(source, /No patient account or password is needed/);
 });
 
 test("Doctor appointment schedule supports rescheduling and status updates", () => {
