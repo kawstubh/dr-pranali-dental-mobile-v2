@@ -38,7 +38,7 @@ import {
 import "./styles.css";
 import { dentalApi } from "./api.js";
 import ErrorBoundary from "./ErrorBoundary.jsx";
-import AssistantApp from "./assistant.jsx";
+import AssistantApp, { AssistantManagement } from "./assistant.jsx";
 import { normaliseList, normaliseUser, localDateISO, localDateTimeFromParts, formatTime, isSameLocalDay } from "./data.js";
 import { DoctorCareManagement, PatientCareManagement, DoctorClinicalNotes, PatientCommunication } from "./careScreens.jsx";
 import { createPortalNavigator, resolvePortalRoute } from "./routing.js";
@@ -1541,7 +1541,12 @@ function Doctor({
   if (page === "messages")
     return <PatientCommunication mode="doctor" token={token} activePatient={activePatient} />;
   if (page === "settings")
-    return <AccountSettings user={user} activeWorkspace={activeWorkspace} onSignOut={onSignOut} />;
+    return (
+      <>
+        <AccountSettings user={user} activeWorkspace={activeWorkspace} onSignOut={onSignOut} />
+        <AssistantManagement token={token} user={user} />
+      </>
+    );
   if (page === "files")
     return <DoctorCareManagement page={page} token={token} activePatient={activePatient} ping={ping} />;
   if (page === "billing")
