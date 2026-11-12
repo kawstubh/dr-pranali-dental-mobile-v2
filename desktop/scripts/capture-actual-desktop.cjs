@@ -194,42 +194,30 @@ async function navigate(route, expectedText, screenshotName) {
     const switchedToPatient = await evaluate(
       "(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').trim().includes('Continue to patient portal')); if (!button) return false; button.click(); return true; })()"
     );
-    if (!switchedToPatient) throw new Error("Doctor-to-Patient portal switch action was not found.");
+    if (!switchedToPatient) throw new Error("Doctor-to-public-patient portal link was not found.");
     await waitFor(() => evaluate(
-      'location.pathname === "/patient/home" && document.body.innerText.includes("PATIENT PORTAL")'
+      'location.pathname === "/patient/home/" && document.body.innerText.includes("Your smile, your care.")'
     ));
 
-    // The role switch must survive a full reload and browser back/forward.
+    // The public patient route must survive a hard reload without patient login.
     await send("Page.reload", { ignoreCache: true });
     await waitFor(() => evaluate(
-      'location.pathname === "/patient/home" && document.body.innerText.includes("PATIENT PORTAL")'
+      'location.pathname === "/patient/home/" && document.body.innerText.includes("Your smile, your care.")'
     ));
     await evaluate("history.back()");
     await waitFor(() => evaluate(
-      'location.pathname === "/doctor/dashboard" && document.body.innerText.includes("Sign in with your clinic doctor account")'
+      'location.pathname === "/" && document.body.innerText.includes("Sign in with your clinic doctor account")'
     ));
     await evaluate("history.forward()");
     await waitFor(() => evaluate(
-      'location.pathname === "/patient/home" && document.body.innerText.includes("PATIENT PORTAL")'
+      'location.pathname === "/patient/home/" && document.body.innerText.includes("Your smile, your care.")'
     ));
-    fontResults.patientLogin = await captureCurrent("PATIENT PORTAL", "patient-login");
-
-    const signupScript = "(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').includes('New here? Create an account')); if (button) button.click(); return !!button; })()";
-    const signupClicked = await evaluate(signupScript);
-    if (!signupClicked) throw new Error("Patient sign-up action was not found.");
-    await waitFor(() => evaluate('document.body.innerText.includes("Create your patient account")'));
-    fontResults.patientSignup = await verifyFonts();
-    await capture("patient-signup-1440x1000.png", 1440, 1000);
+    fontResults.patientHome = await captureCurrent("Your smile, your care.", "patient-home");
 
     fontResults.patientBooking = await navigate(
-      "/patient/booking",
-      "Book an appointment",
+      "/patient/booking/",
+      "Request an appointment",
       "patient-booking"
-    );
-    fontResults.patientRecordsGate = await navigate(
-      "/patient/records",
-      "Sign in securely to view your clinic appointments",
-      "patient-records-access"
     );
 
     if (runtimeErrors.length) {
