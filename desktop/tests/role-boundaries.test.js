@@ -11,6 +11,7 @@ const patientStart = source.indexOf("function Patient(");
 const patientSource = patientStart >= 0 ? source.slice(patientStart) : "";
 const careSource = fs.readFileSync(path.join(root, "src", "careScreens.jsx"), "utf8");
 const apiSource = fs.readFileSync(path.join(root, "src", "api.js"), "utf8");
+const bookingSource = fs.readFileSync(path.join(root, "public", "patient", "booking", "index.html"), "utf8");
 
 test("global patient search is rendered only in the Doctor workspace", () => {
   assert.match(source, /\{role === "doctor" && \(\s*<div className="search">/);
@@ -51,6 +52,15 @@ test("guest booking collects minimum contact details and uses public appointment
   assert.match(patientSource, /dentalApi\.publicAppointment\(/);
   assert.match(apiSource, /publicAppointment:/);
   assert.match(patientSource, /Request received/);
+});
+
+test("guest booking sends a stable idempotency key and validates future IST time", () => {
+  assert.match(bookingSource, /idempotency_key:\\s*idempotencyKey/);
+  assert.match(bookingSource, /oralyn_public_booking_idempotency/);
+  assert.match(bookingSource, /Asia\\/Kolkata/);
+  assert.match(bookingSource, /India Standard Time/);
+  assert.match(bookingSource, /startsAt <= new Date\\(\\)/);
+  assert.match(bookingSource, /intelligence_request:\\s*false/);
 });
 
 test("patient private records are not rendered in the public account-free experience", () => {
