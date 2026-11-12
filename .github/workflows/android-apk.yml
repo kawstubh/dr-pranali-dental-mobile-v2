@@ -604,13 +604,13 @@ jobs:
           "$ADB" pull /sdcard/patient-services.xml build-evidence/patient-services.xml
           "$ADB" shell screencap -p /sdcard/patient-services.png
           "$ADB" pull /sdcard/patient-services.png build-evidence/patient-services.png
-          for label in "Dental services" "Dental check-up" "Cleaning & polishing"; do
+          for label in "Dental services" "Dental Check-up & Consultation" "Scaling & Cleaning"; do
             grep -Fq "$label" build-evidence/patient-services.xml || {
               echo "::error::Patient Services navigation did not expose expected service: $label"
               exit 1
             }
           done
-          tap_text build-evidence/patient-services.xml "Dental check-up" build-evidence/service-detail-tap.txt
+          tap_text build-evidence/patient-services.xml "Dental Check-up & Consultation" build-evidence/service-detail-tap.txt
           "$ADB" shell uiautomator dump /sdcard/patient-service-detail.xml >/dev/null
           "$ADB" pull /sdcard/patient-service-detail.xml build-evidence/patient-service-detail.xml
           "$ADB" shell screencap -p /sdcard/patient-service-detail.png
