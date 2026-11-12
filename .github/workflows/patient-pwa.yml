@@ -40,6 +40,8 @@ jobs:
         run: npx expo export --platform web
       - name: Verify installable PWA output
         run: |
+          node --check public/sw.js
+          node --check dist/sw.js
           test -s dist/index.html
           test -s dist/manifest.json
           test -s dist/sw.js
