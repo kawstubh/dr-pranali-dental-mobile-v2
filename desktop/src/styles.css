@@ -3396,3 +3396,94 @@ table { max-width: 100%; }
   .topright .bell { display: none; }
   .servicegrid button.service b { font-size: 15px !important; }
 }
+
+
+/* Doctor workflow actions: secure patient linking and editable appointments. */
+.patient-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.invite-code-card {
+  display: grid;
+  gap: 7px;
+  margin-top: 9px;
+  max-width: 280px;
+  padding: 11px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: #f4fbff;
+}
+.invite-code-card small {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+.invite-code-card code {
+  display: block;
+  padding: 8px 10px;
+  border: 1px dashed #8eb6d8;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--navy);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+  user-select: all;
+}
+.appointment-main {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+}
+.appointment-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(145px, 0.65fr) auto;
+  align-items: end;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: #fbfdff;
+}
+.appointment-editor label {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  color: #526a80;
+  font-size: 10px;
+  font-weight: 800;
+}
+.appointment-editor input,
+.appointment-editor select {
+  width: 100%;
+  min-width: 0;
+  min-height: 39px;
+  padding: 8px 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: #16314c;
+  font-size: 11px;
+}
+.appointment-editor button {
+  min-height: 39px;
+  white-space: nowrap;
+}
+@media (max-width: 900px) {
+  .appointment-editor {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .appointment-editor button {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 520px) {
+  .appointment-editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .appointment-editor button {
+    grid-column: auto;
+  }
+}
