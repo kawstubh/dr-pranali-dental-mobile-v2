@@ -515,7 +515,7 @@ function MyCareScreen({
           <Text style={panelTitle}>Clinical records</Text>
           {linked && !loading && !error && chart.length > 0 ? chart.map((entry, index) => (
             <View key={entry.id || entry.tooth_fdi || index} style={row}>
-              <Icon name="tooth" size={17} color={C.blue} />
+              <Icon name="grid" size={17} color={C.blue} />
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={{ fontSize: 12, fontWeight: '800', color: C.navy }}>Tooth {entry.tooth_fdi || 'chart entry'}</Text>
                 <Text style={panelCopy}>{entry.status || 'Update shared by your clinic'}</Text>
