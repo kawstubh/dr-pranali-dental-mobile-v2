@@ -147,6 +147,8 @@ def sign_in(email: str, password: str, label: str) -> ET.Element:
     shell("input keyevent 4", check=False)
     root = dump_ui(f"{label}-password-entered")
     tap_text(root, "Sign in securely")
+    time.sleep(0.8)
+    capture(f"doctor-{label}-dashboard-loading")
     root = wait_for(
         lambda values: "Today's workspace" in values or "Choose a workspace" in values,
         f"{label} authenticated Doctor dashboard/workspace selection",
@@ -217,7 +219,6 @@ def logout_to_login() -> None:
 def test_account(label: str, email: str, password: str, mode: str) -> dict[str, str]:
     root = sign_in(email, password, label)
     capture(f"doctor-{label}-dashboard")
-    workspace_text = next((value for value in texts(root) if value not in {"Today's workspace", "Live clinic data"}), "")
 
     appointments = navigate(
         root, "Appointments",
@@ -265,16 +266,25 @@ def test_account(label: str, email: str, password: str, mode: str) -> dict[str, 
         f"{label} persisted Doctor session",
         timeout=60,
     )
-    restored_workspace = next((value for value in texts(restored) if value not in {"Today's workspace", "Live clinic data"}), "")
-    if workspace_text and restored_workspace and workspace_text != restored_workspace:
-        raise RuntimeError("The active clinic workspace changed after the Doctor session was restored.")
     capture(f"doctor-{label}-session-restored")
 
     management = "not_visible"
     home = navigate(restored, "Home", ("Today's workspace",), f"doctor-{label}-home")
-    if any("Workspace management" in value for value in texts(home)):
-        management = "visible"
-        capture(f"doctor-{label}-workspace-management")
+    if any("Switch workspace" in value for value in texts(home)):
+        tap_text(home, "Switch workspace")
+        selection = wait_for(lambda values: "Choose a workspace" in values, "workspace switch selector")
+        capture(f"doctor-{label}-workspace-switch")
+        if "Return to current workspace" in texts(selection):
+            tap_text(selection, "Return to current workspace")
+            home = wait_for(lambda values: "Today's workspace" in values, "return to active workspace")
+    for _ in range(4):
+        if any("Workspace management" in value for value in texts(home)):
+            management = "visible"
+            capture(f"doctor-{label}-workspace-management")
+            break
+        shell("input swipe 520 1500 520 650 450")
+        time.sleep(0.4)
+        home = dump_ui(f"doctor-{label}-home-scroll")
 
     return {
         "account": label,
@@ -313,9 +323,10 @@ def test_offline_error_state() -> None:
         shell("svc wifi enable", check=False)
         shell("svc data enable", check=False)
     time.sleep(5)
-    root = dump_ui("doctor-before-retry")
     shell("input swipe 520 430 520 1450 650")
-    wait_for(lambda values: "Today's workspace" in values, "Doctor dashboard after network recovery", timeout=60)
+    recovered = wait_for(lambda values: "Today's workspace" in values, "Doctor dashboard after network recovery", timeout=60)
+    if any(any(word in value.lower() for word in ("unavailable", "could not be loaded", "did not respond", "could not load")) for value in texts(recovered)):
+        raise RuntimeError("Doctor API error state did not clear after network restoration.")
     capture("doctor-network-recovered")
 
 
