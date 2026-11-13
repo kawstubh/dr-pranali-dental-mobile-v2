@@ -1,8 +1,26 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+const rewriteAssistantAdminDirectory = (request, _response, next) => {
+  const [pathname, query = ""] = String(request.url || "").split("?");
+  if (pathname === "/assistant-admin" || pathname === "/assistant-admin/") {
+    request.url = `/assistant-admin/index.html${query ? `?${query}` : ""}`;
+  }
+  next();
+};
+
+const assistantAdminDirectoryPlugin = {
+  name: "oralyn-assistant-admin-directory-index",
+  configureServer(server) {
+    server.middlewares.use(rewriteAssistantAdminDirectory);
+  },
+  configurePreviewServer(server) {
+    server.middlewares.use(rewriteAssistantAdminDirectory);
+  },
+};
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), assistantAdminDirectoryPlugin],
   server: {
     host: "0.0.0.0",
     proxy: {
