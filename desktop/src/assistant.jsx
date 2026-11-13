@@ -322,13 +322,11 @@ export default function AssistantApp() {
         { token, method: "PATCH", body }
       );
       setAppointments((current) => current.map((item) => item.id === appointment.id ? { ...item, ...next } : item));
-      if (action === "reschedule") {
-        setRescheduleDrafts((current) => {
-          const updated = { ...current };
-          delete updated[appointment.id];
-          return updated;
-        });
-      }
+      setRescheduleDrafts((current) => {
+        const updated = { ...current };
+        delete updated[appointment.id];
+        return updated;
+      });
       setNotice(
         action === "confirm"
           ? "Appointment confirmed."
