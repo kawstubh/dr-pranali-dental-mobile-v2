@@ -22,7 +22,7 @@ test("synthetic Doctor capture uses a safely quoted clinic workspace selector", 
 test("synthetic Doctor capture submits the current premium login form", () => {
   const source = readFileSync(join(process.cwd(), "scripts", "capture-synthetic-doctor.cjs"), "utf8");
   assert.match(source, /oralyn-auth-card form/);
-  assert.match(source, /Sign in with your clinic-issued account/);
+  assert.match(source, /Sign in with your clinic-issued email and password/);
   assert.doesNotMatch(source, /\.authcard form|Sign in with your clinic doctor account/);
 });
 
@@ -71,7 +71,7 @@ test("real browser capture verifies the approved Oralyn wordmark and app icon lo
 
 test("real browser capture follows the current premium Doctor login and patient-services link", () => {
   const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
-  assert.match(source, /Sign in with your clinic-issued account/);
+  assert.match(source, /Sign in with your clinic-issued email and password/);
   assert.match(source, /Patient services & appointment requests/);
   assert.doesNotMatch(source, /Sign in with your clinic doctor account|Public patient services/);
 });
