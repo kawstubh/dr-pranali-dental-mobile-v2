@@ -16,7 +16,8 @@ test("clinical notes use doctor-scoped APIs and optimistic version checks", () =
   assert.ok(api.includes("/doctor/patients/${encodeURIComponent(patientId)}/clinical-notes"));
   assert.ok(api.includes("/doctor/clinical-notes/${encodeURIComponent(noteId)}"));
   assert.ok(care.includes("expected_version: note.version"));
-  assert.ok(care.includes("patient_visible: !note.patient_visible"));
+  assert.doesNotMatch(care, /patient_visible:\s*!note\.patient_visible/);
+  assert.doesNotMatch(care, /Share with patient|Withdraw patient access/);
   assert.ok(care.includes("New notes are private to the clinic by default."));
 });
 
