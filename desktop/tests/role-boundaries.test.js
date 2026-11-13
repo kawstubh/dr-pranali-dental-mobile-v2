@@ -69,7 +69,9 @@ test("guest booking sends a stable idempotency key and validates future IST time
   assert.match(bookingSource, /10-digit Indian mobile number/);
   assert.match(bookingSource, /id="phone-error"/);
   assert.doesNotMatch(bookingSource, /name="note"/);
-  assert.match(bookingSource, /name="date" id="date" type="date" min=/);
+  assert.match(bookingSource, /name="date" id="date" type="date" required/);
+  assert.match(bookingSource, /dateInput\.min = localToday/);
+  assert.match(bookingSource, /form\.addEventListener\("invalid"/);
   assert.match(bookingSource, /name="phone" id="phone" type="tel"/);
 });
 
