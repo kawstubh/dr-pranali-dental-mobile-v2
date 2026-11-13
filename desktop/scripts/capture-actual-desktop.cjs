@@ -332,6 +332,17 @@ async function captureAssistantAdminGate() {
       "Sign in with your clinic-issued account",
       "doctor-login"
     );
+    const approvedLogoAssets = await evaluate(`(() => {
+      const wordmark = document.querySelector(".oralyn-vector-brand img");
+      const appIcon = document.querySelector(".oralyn-app-squircle img");
+      return {
+        wordmark: Boolean(wordmark && wordmark.complete && wordmark.naturalWidth > 0 && wordmark.getAttribute("src") === "/oralyn-logo-approved.webp"),
+        appIcon: Boolean(appIcon && appIcon.complete && appIcon.naturalWidth > 0 && appIcon.getAttribute("src") === "/oralyn-app-icon-approved.webp")
+      };
+    })()`);
+    if (!approvedLogoAssets.wordmark || !approvedLogoAssets.appIcon) {
+      throw new Error("Approved Oralyn logo assets did not load on the Doctor sign-in screen.");
+    }
     fontResults.assistantLogin = await navigate(
       "/assistant/",
       "Clinic Assistant",
@@ -391,6 +402,8 @@ async function captureAssistantAdminGate() {
       "bundle_sha256=" + bundleHash,
       "font_plus_jakarta_sans_loaded=" + fontResults.doctorLogin.plusJakartaSans,
       "font_playfair_display_loaded=" + fontResults.doctorLogin.playfairDisplay,
+      "approved_logo_wordmark_loaded=" + approvedLogoAssets.wordmark,
+      "approved_app_icon_loaded=" + approvedLogoAssets.appIcon,
       "pwa_service_worker_controlled=" + fontResults.doctorLogin.pwa.controlled,
       "pwa_cache_name_present=" + fontResults.doctorLogin.pwa.cachePresent,
       "pwa_api_cache_entries=" + fontResults.doctorLogin.pwa.forbidden.length,
@@ -411,7 +424,7 @@ async function captureAssistantAdminGate() {
     fs.writeFileSync(path.join(output, "runtime-errors.txt"), "none observed during signed-out public-route capture\n");
     console.log(JSON.stringify({
       commit, environment, baseUrl, apiBase, bundle: jsFile, bundleHash,
-      fontResults, pwa: fontResults.doctorLogin.pwa, runtimeErrors,
+      fontResults, approvedLogoAssets, pwa: fontResults.doctorLogin.pwa, runtimeErrors,
       screenshots: fs.readdirSync(output).filter((name) => name.endsWith(".png")),
     }));
   } finally {
