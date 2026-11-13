@@ -41,11 +41,13 @@ test("synthetic Assistant capture exercises memory-only login, reception and app
   const source = readFileSync(file, "utf8");
 
   assert.doesNotThrow(() => new Script(source, { filename: file }));
-  assert.match(source, /v1\/dental\/auth\/assistant\/login/);
+  assert.match(source, /v1\/dental\/assistant\/auth\/login/);
   assert.match(source, /reception\.synthetic@example\.test/);
   assert.match(source, /assistant-login/);
+  assert.match(source, /v1\\/dental\\/assistant\\/auth\\/logout/);
+  assert.match(source, /result: patients/);
   assert.match(source, /patient-create/);
-  assert.match(source, /appointment-create/);
+  assert.match(source, /appointment-confirm/);
   assert.match(source, /appointment-confirm/);
   assert.match(source, /billing-read/);
   assert.match(source, /UNHANDLED_SYNTHETIC_PATH/);
