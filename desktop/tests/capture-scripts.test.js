@@ -10,6 +10,8 @@ test("synthetic Doctor capture script parses before browser CI executes it", () 
 
   assert.doesNotThrow(() => new Script(source, { filename: file }));
   assert.match(source, /baseUrl \+ "\/doctor\/dashboard"/);
+  assert.match(source, /Uploads, downloads and review are disabled/);
+  assert.doesNotMatch(source, /Uploads, downloads, review and patient sharing are disabled/);
 });
 
 test("synthetic Doctor capture uses a safely quoted clinic workspace selector", () => {
@@ -36,8 +38,6 @@ test("real browser capture verifies Assistant login and legacy admin redirect at
   assert.match(source, /assistant-admin-redirect-gate-768x1024\.png/);
   assert.match(source, /assistant-admin-redirect-gate-390x844\.png/);
   assert.match(source, /assistantManagementFormVisible/);
-  assert.match(source, /Uploads, downloads and review are disabled/);
-  assert.doesNotMatch(source, /Uploads, downloads, review and patient sharing are disabled/);
 });
 
 
