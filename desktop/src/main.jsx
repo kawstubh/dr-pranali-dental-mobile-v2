@@ -40,7 +40,7 @@ import { dentalApi } from "./api.js";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import { normaliseList, normaliseUser, formatTime, isSameLocalDay } from "./data.js";
 import { DoctorCareManagement, DoctorClinicalNotes, PatientCommunication } from "./careScreens.jsx";
-import { AssistantManagement } from "./assistant.jsx";
+import AssistantApp, { AssistantManagement } from "./assistant.jsx";
 import { createPortalNavigator, resolvePortalRoute } from "./routing.js";
 import { createControllerChangeHandler } from "./serviceWorkerLifecycle.js";
 function doctorDisplayName(user) {
@@ -1643,6 +1643,7 @@ function WorkspaceManagement({ token, user, workspaces, activeWorkspace, workspa
 const currentPath = window.location.pathname;
 const normalizedPath = currentPath.replace(/\/+$/, "") || "/";
 const publicPatientPaths = new Set(["/patient/home", "/patient/booking"]);
+const isAssistantRoute = /^\/assistant(?:\/|$)/.test(currentPath);
 const isLegacyAssistantAdminRoute = /^\/assistant-admin(?:\/|$)/.test(currentPath);
 const isPublicPatientAlias = publicPatientPaths.has(normalizedPath) && !currentPath.endsWith("/");
 const isDisabledPatientRoute =
@@ -1660,7 +1661,9 @@ if (redirectPatientRoute) {
 if (isLegacyAssistantAdminRoute) window.location.replace("/doctor/settings");
 createRoot(document.getElementById("root")).render(
   <ErrorBoundary>
-    {redirectPatientRoute || isLegacyAssistantAdminRoute ? (
+    {isAssistantRoute ? (
+      <AssistantApp />
+    ) : redirectPatientRoute || isLegacyAssistantAdminRoute ? (
       <main className="redirect-screen" role="status">Opening the secure clinic workspace…</main>
     ) : (
       <App />
