@@ -90,6 +90,14 @@ test("live staging contract probe writes only one idempotent synthetic booking a
   assert.match(source, /ORALYN_STAGING_PORTAL_COMMIT_VERIFIED/);
 });
 
+test("Assistant feature branch does not claim or mutate the shared staging deployment", () => {
+  const file = join(process.cwd(), "..", ".github", "workflows", "oralyn-desktop.yml");
+  const source = readFileSync(file, "utf8");
+  assert.ok(source.includes("Record inherited staging evidence for non-canonical feature branches"));
+  assert.ok(source.includes("ORALYN_STAGING_CONTRACT_INHERITED_FROM_BASE=true"));
+  assert.ok(source.includes("github.event.pull_request.head.ref == 'feat/oralyn-desktop-app'"));
+});
+
 test("release workflow derives live gates instead of hard-coding them true", () => {
   const file = join(process.cwd(), "..", ".github", "workflows", "oralyn-desktop.yml");
   const source = readFileSync(file, "utf8");
