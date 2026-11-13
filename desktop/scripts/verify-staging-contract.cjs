@@ -209,6 +209,74 @@ async function main() {
   record("ORALYN_SERVICE_CATALOG_API_VERIFIED", catalogApiOk, "20 repository service labels plus Other in API schema");
   record("ORALYN_SERVICE_CATALOG_UI_VERIFIED", catalogUiOk, "all 20 repository service labels present in public booking HTML");
 
+  // One synthetic request per backend commit per IST day. The idempotency key
+  // is stable across hourly CI runs, so retries cannot create duplicate rows.
+  if (health?.database_identity_verified === true && expectedApiCommit) {
+    const istParts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
+    }).formatToParts(new Date());
+    const istPart = (type) => istParts.find((item) => item.type === type)?.value || "";
+    const istToday = istPart("year") + "-" + istPart("month") + "-" + istPart("day");
+    const nextUtcMidnight = new Date(istToday + "T00:00:00Z");
+    nextUtcMidnight.setUTCDate(nextUtcMidnight.getUTCDate() + 1);
+    const nextIstDay = nextUtcMidnight.toISOString().slice(0, 10);
+    const startsAt = new Date(nextIstDay + "T10:00:00+05:30").toISOString();
+    const commitDigits = expectedApiCommit.slice(0, 8)
+      .split("")
+      .map((character) => String(parseInt(character, 16) % 10))
+      .join("");
+    const syntheticPhone = "+919" + commitDigits + "0";
+    const idempotencyKey = "oralyn-staging-e2e-" + expectedApiCommit.slice(0, 12) + "-" + istToday.replaceAll("-", "");
+    const syntheticPayload = {
+      idempotency_key: idempotencyKey,
+      name: "Oralyn Synthetic " + expectedApiCommit.slice(0, 8),
+      phone: syntheticPhone,
+      treatment_type: "Dental Check-up & Consultation",
+      starts_at: startsAt,
+      intelligence_request: false,
+    };
+    const bookingHeaders = { ...originHeaders, "Content-Type": "application/json" };
+    const firstBooking = await request(apiOrigin + "/v1/dental/public/appointments", {
+      method: "POST",
+      headers: bookingHeaders,
+      body: JSON.stringify(syntheticPayload),
+    });
+    const firstBookingBody = await jsonBody(firstBooking.response);
+    const replayBooking = await request(apiOrigin + "/v1/dental/public/appointments", {
+      method: "POST",
+      headers: bookingHeaders,
+      body: JSON.stringify(syntheticPayload),
+    });
+    const replayBookingBody = await jsonBody(replayBooking.response);
+    const noPrivateIdentifiers = ["patient_id", "appointment_id", "patient", "appointment", "id"]
+      .every((key) => !Object.prototype.hasOwnProperty.call(firstBookingBody || {}, key));
+    const samePublicReference = typeof firstBookingBody?.reference === "string" &&
+      firstBookingBody.reference.startsWith("ORL-") &&
+      firstBookingBody.reference === replayBookingBody?.reference;
+    const firstAccepted = firstBooking.response?.status === 200 &&
+      ["requested", "already_received"].includes(firstBookingBody?.status);
+    const replayAccepted = replayBooking.response?.status === 200 &&
+      replayBookingBody?.status === "already_received";
+    const bookingE2eOk = firstAccepted && replayAccepted && samePublicReference && noPrivateIdentifiers;
+    record(
+      "ORALYN_GUEST_BOOKING_E2E_VERIFIED",
+      bookingE2eOk,
+      bookingE2eOk
+        ? "synthetic-only staging POST accepted and returned a public reference without patient or appointment identifiers"
+        : "synthetic-only staging POST contract failed; no production or real booking data was used",
+    );
+    record(
+      "ORALYN_GUEST_BOOKING_IDEMPOTENCY_VERIFIED",
+      bookingE2eOk && replayAccepted,
+      bookingE2eOk
+        ? "same key replay returned the same public reference with already_received status"
+        : "staging idempotency replay was not verified",
+    );
+  } else {
+    record("ORALYN_GUEST_BOOKING_E2E_VERIFIED", false, "not attempted because isolated synthetic database identity was not verified");
+    record("ORALYN_GUEST_BOOKING_IDEMPOTENCY_VERIFIED", false, "not attempted because isolated synthetic database identity was not verified");
+  }
+
   const livePortalManifestResult = portalManifestWait;
   const livePortalManifest = portalManifestWait.body;
   const portalCommitOk = Boolean(expectedPortalCommit &&
@@ -242,6 +310,8 @@ main().catch((error) => {
     "ORALYN_PATIENT_ACCOUNT_FREE_VERIFIED",
     "ORALYN_SERVICE_CATALOG_API_VERIFIED",
     "ORALYN_SERVICE_CATALOG_UI_VERIFIED",
+    "ORALYN_GUEST_BOOKING_E2E_VERIFIED",
+    "ORALYN_GUEST_BOOKING_IDEMPOTENCY_VERIFIED",
     "ORALYN_STAGING_PORTAL_COMMIT_VERIFIED",
     "ORALYN_STAGING_API_COMMIT_VERIFIED",
   ];
