@@ -58,3 +58,20 @@ test("public service pages remain account-free and patient AI-free", () => {
   assert.match(booking, /new URLSearchParams\(window\.location\.search\)/);
   assert.match(booking, /Other dental concern/);
 });
+
+
+test("guest booking exposes required and future IST validation", () => {
+  assert.match(booking, /<form id="booking">/);
+  assert.match(booking, /name="name"[^>]*required/);
+  assert.match(booking, /name="phone"[^>]*required/);
+  assert.match(booking, /name="treatment_type"[^>]*required/);
+  assert.match(booking, /id="date" type="date" required/);
+  assert.match(booking, /id="time" required/);
+  assert.match(booking, /dateInput\.min = localToday/);
+  assert.match(booking, /dateInput\.setAttribute\("min", localToday\)/);
+  assert.match(booking, /startsAt <= new Date\(\)/);
+  assert.match(booking, /form\.addEventListener\("invalid"/);
+  assert.match(booking, /Please complete all required fields/);
+  assert.match(booking, /Please choose a future date and time\./);
+  assert.doesNotMatch(booking, /min="2026-11-13"/);
+});
