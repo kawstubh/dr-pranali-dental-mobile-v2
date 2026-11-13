@@ -490,56 +490,81 @@ function OralynVectorBrand() {
     <img src="/oralyn-logo-approved.webp" alt="Oralyn approved logo" />
   </div>;
 }
+function OralynClinicIllustration() {
+  return <svg className="oralyn-clinic-illustration" viewBox="0 0 700 760" aria-hidden="true">
+    <defs>
+      <linearGradient id="chair-blue" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#F8FDFF"/><stop offset=".55" stopColor="#D8EAF5"/><stop offset="1" stopColor="#7FAACB"/></linearGradient>
+      <linearGradient id="chair-seat" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#19B9F0"/><stop offset="1" stopColor="#0756B8"/></linearGradient>
+      <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#A9E9FF" stopOpacity=".6"/><stop offset="1" stopColor="#0A4B7E" stopOpacity=".08"/></linearGradient>
+      <filter id="soft-glow"><feGaussianBlur stdDeviation="9"/></filter>
+    </defs>
+    <path d="M330 0H700V760H210L260 600 300 380Z" fill="url(#glass)" opacity=".7"/>
+    <path d="M370 0V570M540 0V570M370 180H700" stroke="#B7E8FF" strokeOpacity=".28" strokeWidth="3"/>
+    <path d="M455 82c-42-28-87-2-86 47 1 35 20 62 34 83 10 17 14 34 15 54 2 25 18 31 28 12l10-26 10 26c10 19 26 13 28-12 1-20 5-37 15-54 14-21 33-48 34-83 1-49-44-75-88-47Z" fill="none" stroke="#65DDFB" strokeWidth="8" filter="url(#soft-glow)" opacity=".65"/>
+    <path d="M455 82c-42-28-87-2-86 47 1 35 20 62 34 83 10 17 14 34 15 54 2 25 18 31 28 12l10-26 10 26c10 19 26 13 28-12 1-20 5-37 15-54 14-21 33-48 34-83 1-49-44-75-88-47Z" fill="none" stroke="#B5F3FF" strokeWidth="5"/>
+    <path d="M535 270h150l-28 23H540l-48 68-24-13 54-78Z" fill="#DCEFF8" stroke="#75B4D9" strokeWidth="4"/>
+    <path d="M515 340c-45-22-99-4-122 36l-16 27 38 26 37-31 65 10 32-31Z" fill="#EAF7FD" stroke="#80B5D4" strokeWidth="5"/>
+    <path d="M417 388c-34-18-83-10-99 25l-29 67 53 24 48-43 76 18 27-50Z" fill="#F6FBFF" stroke="#8FBBD6" strokeWidth="5"/>
+    <path d="M344 480c-27 15-45 47-37 80l35 138c9 36 41 54 77 43l150-46c35-11 48-44 31-77l-50-101c-15-29-48-41-80-30l-55 18Z" fill="url(#chair-blue)" stroke="#7FAACB" strokeWidth="6"/>
+    <path d="M387 537c-20 7-29 29-23 49l25 83c7 22 28 33 51 27l131-39c24-7 34-30 23-52l-31-63c-10-20-31-28-53-21l-80 25Z" fill="url(#chair-seat)"/>
+    <path d="M408 680l-22 54m174-92 40 67" stroke="#A7C7DD" strokeWidth="16" strokeLinecap="round"/>
+    <path d="M350 735h252" stroke="#A9C8DE" strokeWidth="11" strokeLinecap="round"/>
+    <path d="M215 0h180M250 0v160" stroke="#C7F3FF" strokeOpacity=".3" strokeWidth="3"/>
+    <ellipse cx="480" cy="690" rx="220" ry="26" fill="#4BBDEB" opacity=".12" filter="url(#soft-glow)"/>
+  </svg>;
+}
 function LoginScreen({ loading, error, onLogin, onPatient, onAssistant }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   return (
-    <main className="oralyn-auth-layout">
-      <section className="oralyn-auth-story" aria-label="About Oralyn">
+    <main className="oralyn-auth-layout oralyn-reference-layout">
+      <section className="oralyn-auth-story oralyn-reference-story" aria-label="About Oralyn">
+        <div className="oralyn-reference-atmosphere" />
         <header className="oralyn-auth-brand"><OralynVectorBrand /></header>
+        <div className="oralyn-reference-clinic-art"><OralynClinicIllustration /></div>
         <div className="oralyn-auth-copy">
-          <span className="oralyn-auth-kicker">THE INTELLIGENT DENTAL WORKSPACE</span>
+          <span className="oralyn-auth-kicker">DENTAL CLINIC MANAGEMENT</span>
           <h1>Smarter dental care,<br/><em>beautifully organized.</em></h1>
-          <p className="oralyn-auth-intro">A connected workspace for your clinic — from appointments and patient records to treatment planning and everyday team workflows.</p>
+          <div className="oralyn-reference-swoosh" />
+          <p className="oralyn-auth-intro">Manage appointments, patients, treatment plans, and clinic workflows in one secure workspace.</p>
           <div className="oralyn-auth-features" aria-label="Oralyn features">
-            <article><span className="oralyn-feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2" fill="none" stroke="currentColor" strokeWidth="1.7"/><path d="M8 3v4M16 3v4M4 10h16M8 14h3M8 17h6" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg></span><div><b>Appointments</b><small>Scheduling & daily visits</small></div></article>
-            <article><span className="oralyn-feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3" fill="none" stroke="currentColor" strokeWidth="1.7"/><path d="M3.5 19c.5-3.2 2.4-5 5.5-5s5 1.8 5.5 5M16 7h5M18.5 4.5v5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg></span><div><b>Patients</b><small>Clear, organized records</small></div></article>
-            <article><span className="oralyn-feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg></span><div><b>Treatment plans</b><small>Care progress at a glance</small></div></article>
-            <article><span className="oralyn-feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12l5 5L20 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.5"/></svg></span><div><b>Clinic workflows</b><small>Connected team operations</small></div></article>
+            <article><span className="oralyn-feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2" fill="none" stroke="currentColor" strokeWidth="1.7"/><path d="M7 2v5M17 2v5M3 9h18M7 13h3M14 13h3M7 17h3" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg></span><b>Appointments</b></article>
+            <article><span className="oralyn-feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3" fill="none" stroke="currentColor" strokeWidth="1.7"/><path d="M3 20c0-3.5 2.3-5.5 6-5.5s6 2 6 5.5M16 8a3 3 0 1 1 0 6M17 16c2.5.4 4 1.7 4 4" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg></span><b>Patients</b></article>
+            <article><span className="oralyn-feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C8 0 3 3 3 8c0 4 3 7 4 10 1 3 3 4 4 1l1-4 1 4c1 3 3 2 4-1 1-3 4-6 4-10 0-5-5-8-9-5Z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/></svg></span><b>Treatment plans</b></article>
+            <article><span className="oralyn-feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5ZM3 13l9 5 9-5M3 17l9 5 9-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/></svg></span><b>Clinic workflows</b></article>
           </div>
         </div>
         <footer className="oralyn-auth-footnote"><span className="oralyn-footnote-dot"/> A clearer view of your clinic. A more connected way to care.</footer>
       </section>
-      <section className="oralyn-auth-panel" aria-label="Doctor sign in">
-        <div className="oralyn-auth-card">
-          <div className="oralyn-app-squircle"><img src="/oralyn-app-icon-approved.webp" alt="Oralyn approved app icon" /></div>
+      <section className="oralyn-auth-panel oralyn-reference-panel" aria-label="Doctor sign in">
+        <div className="oralyn-auth-card oralyn-reference-card">
+          <div className="oralyn-app-squircle"><OralynToothMark compact /></div>
           <span className="oralyn-auth-label">DOCTOR PORTAL</span>
-          <h2>Welcome back</h2>
-          <p className="oralyn-auth-subtitle">Sign in with your clinic-issued account.</p>
+          <h2>Oralyn Doctor</h2>
+          <p className="oralyn-auth-subtitle">Sign in with your clinic-issued email and password.</p>
           {error && <div className="autherror" role="alert">{error}</div>}
           <form onSubmit={async (e) => {
             e.preventDefault(); setBusy(true);
             try { await onLogin(email, password); } finally { setBusy(false); }
           }}>
             <label className="oralyn-field"><span>Clinic email</span>
-              <span className="oralyn-input-wrap"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" strokeWidth="1.6"/><path d="m4 7 8 6 8-6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              <input type="email" autoComplete="username" required value={email} placeholder="doctor@yourclinic.com" onChange={(e) => setEmail(e.target.value)} /></span>
+              <span className="oralyn-input-wrap"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" strokeWidth="1.7"/><path d="m4 7 8 6 8-6" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <input type="email" autoComplete="username" required value={email} placeholder="doctor@clinic.com" onChange={(e) => setEmail(e.target.value)} /></span>
             </label>
             <label className="oralyn-field"><span>Password</span>
-              <span className="oralyn-password-wrap"><svg className="oralyn-input-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2" fill="none" stroke="currentColor" strokeWidth="1.6"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
+              <span className="oralyn-password-wrap"><svg className="oralyn-input-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2" fill="none" stroke="currentColor" strokeWidth="1.7"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg>
                 <input type={showPassword ? "text" : "password"} autoComplete="current-password" required value={password} placeholder="Enter your password" onChange={(e) => setPassword(e.target.value)} />
                 <button type="button" className="oralyn-password-toggle" onClick={() => setShowPassword(v => !v)} aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? "Hide" : "Show"}</button>
               </span>
             </label>
-            <button className="oralyn-signin" disabled={busy || loading}>{(busy || loading) && <span className="oralyn-spinner" aria-hidden="true" />}{busy || loading ? "Verifying securely…" : "Sign in securely"}<span className="oralyn-signin-arrow">→</span></button>
+            <button className="oralyn-signin" disabled={busy || loading}>{(busy || loading) && <span className="oralyn-spinner" aria-hidden="true" />}{busy || loading ? "Signing in securely…" : "Sign in"}</button>
           </form>
-          <div className="oralyn-auth-divider"><span>CLINIC TEAM ACCESS</span></div>
+          <div className="oralyn-auth-divider"><span>SECURE CLINIC ACCESS</span></div>
+          <div className="oralyn-reference-admin-note">Your account is issued and managed by your clinic administrator. Public sign-up is disabled.</div>
           <button className="oralyn-team-link" onClick={onAssistant}>Clinic Assistant sign in <span>→</span></button>
-          <div className="oralyn-auth-notice"><span>●</span> Access is managed by your clinic administrator. No public sign-up.</div>
           <button className="oralyn-patient-link" onClick={onPatient}>Patient services &amp; appointment requests <span>→</span></button>
-          <small className="auth-session-note">Secure clinic access · Your session stays in this tab.</small>
         </div>
       </section>
     </main>
