@@ -3631,3 +3631,93 @@ main.oralyn-auth-layout {
   .oralyn-auth-card {animation:none}
   .oralyn-signin,.oralyn-field input {transition:none}
 }
+
+
+/* Premium refinement: editorial whitespace, fewer cards, balanced vertical alignment */
+html:has(.oralyn-auth-layout), body:has(.oralyn-auth-layout), #root:has(.oralyn-auth-layout) {
+  min-height:100%; height:auto; margin:0; overflow-x:hidden;
+}
+body:has(.oralyn-auth-layout) { background:#071f3b; }
+main.oralyn-auth-layout {
+  min-height:100vh; min-height:100svh; height:auto; align-items:stretch;
+  grid-template-columns:minmax(0,1.08fr) minmax(450px,.92fr);
+  overflow:visible;
+  background:
+    radial-gradient(ellipse at 18% 92%,rgba(0,198,200,.17),transparent 36%),
+    radial-gradient(ellipse at 72% 7%,rgba(37,139,220,.18),transparent 32%),
+    linear-gradient(115deg,#061b34 0%,#092d50 58%,#0a3157 100%);
+}
+.oralyn-auth-story {
+  min-height:100vh; min-height:100svh; padding:clamp(38px,5.5vw,78px) clamp(34px,7vw,112px);
+  justify-content:center; gap:clamp(48px,8vh,88px);
+}
+.oralyn-auth-brand { width:100%; margin:0; }
+.oralyn-auth-brand img {
+  width:min(285px,72%); max-height:88px; object-fit:contain; object-position:left center;
+  border-radius:0; background:transparent;
+}
+.oralyn-auth-copy { max-width:670px; margin:0; }
+.oralyn-auth-copy h1 { max-width:640px; font-size:clamp(42px,4.15vw,64px); line-height:1.13; letter-spacing:-2.6px; }
+.oralyn-auth-intro { max-width:520px; font-size:16px; line-height:1.8; color:#c3d8e9; }
+.oralyn-auth-features {
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 34px;
+  max-width:620px; margin-top:36px;
+}
+.oralyn-auth-features article {
+  min-height:78px; padding:15px 0; border:0; border-bottom:1px solid rgba(191,224,244,.2);
+  border-radius:0; background:transparent; backdrop-filter:none; box-shadow:none;
+}
+.oralyn-auth-features article:nth-last-child(-n+2) { border-bottom:0; }
+.oralyn-feature-icon {
+  width:36px; height:36px; flex-basis:36px; border-radius:50%;
+  background:rgba(0,198,200,.14); color:#64e5e4; box-shadow:none; font-size:20px;
+}
+.oralyn-auth-features b { font-size:13px; letter-spacing:.1px; }
+.oralyn-auth-features small { color:#a9c4db; font-size:11px; }
+.oralyn-auth-footnote { margin-top:0; }
+.oralyn-auth-panel {
+  min-height:100vh; min-height:100svh; padding:clamp(30px,5vw,76px);
+  align-items:center; justify-content:center; background:rgba(255,255,255,.035);
+  border-left:1px solid rgba(190,222,244,.12);
+}
+.oralyn-auth-card {
+  width:min(100%,470px); padding:clamp(30px,3.4vw,48px);
+  border:0; border-radius:8px; background:rgba(255,255,255,.97);
+  box-shadow:0 22px 70px rgba(0,12,30,.16); animation:none;
+}
+.oralyn-auth-appmark { width:62px; height:62px; margin:0 auto 15px; border-radius:0; }
+.oralyn-auth-card h2 { font-size:34px; letter-spacing:-1.3px; }
+.oralyn-auth-subtitle { font-size:13px; margin-bottom:32px; }
+.oralyn-field { gap:9px; margin-bottom:21px; font-size:12px; letter-spacing:.15px; }
+.oralyn-field input { height:56px; border-radius:7px; background:#fbfdff; }
+.oralyn-signin { min-height:56px; border-radius:7px; letter-spacing:.15px; }
+.oralyn-auth-divider { margin:29px 0 12px; }
+.oralyn-team-link,.oralyn-patient-link { padding:14px 1px; }
+.oralyn-auth-notice { border:0; border-left:2px solid #00b9bd; border-radius:0; background:#f3f9fc; padding:12px 14px; }
+.oralyn-patient-link { justify-content:space-between; }
+@media(max-width:1050px) {
+  main.oralyn-auth-layout { grid-template-columns:minmax(0,1fr) minmax(390px,.9fr); }
+  .oralyn-auth-story { padding:42px 34px; gap:45px; }
+  .oralyn-auth-features { gap:0 22px; }
+}
+@media(max-width:760px) {
+  main.oralyn-auth-layout { grid-template-columns:1fr; }
+  .oralyn-auth-story { min-height:auto; padding:30px 26px 26px; gap:28px; }
+  .oralyn-auth-brand img { width:210px; max-height:70px; }
+  .oralyn-auth-copy { margin:0; }
+  .oralyn-auth-copy h1 { font-size:38px; }
+  .oralyn-auth-features { margin-top:22px; }
+  .oralyn-auth-features article:nth-last-child(-n+2) { border-bottom:1px solid rgba(191,224,244,.2); }
+  .oralyn-auth-features article:last-child { border-bottom:0; }
+  .oralyn-auth-footnote { display:none; }
+  .oralyn-auth-panel { min-height:auto; padding:22px 18px 38px; border-left:0; border-top:1px solid rgba(190,222,244,.12); }
+  .oralyn-auth-card { max-width:540px; }
+}
+@media(max-width:430px) {
+  .oralyn-auth-story { padding:24px 19px 20px; }
+  .oralyn-auth-copy h1 { font-size:33px; }
+  .oralyn-auth-features { grid-template-columns:1fr; }
+  .oralyn-auth-features article { min-height:65px; }
+  .oralyn-auth-panel { padding:16px 12px 28px; }
+  .oralyn-auth-card { padding:26px 21px; }
+}
