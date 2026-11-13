@@ -74,25 +74,16 @@ test("doctor treatment-plan and invoice calls match the tenant-scoped billing AP
   assert.ok(JSON.parse(requests[6].init.body).idempotency_key);
 });
 
-test("patient billing and document reads are scoped to the authenticated linked record", async () => {
-  const token = "synthetic-patient-token";
-  const requests = await captureRequests(async () => {
-    await dentalApi.patientTreatmentPlans(token, "linked-patient-1");
-    await dentalApi.patientInvoices(token, "linked-patient-1");
-    await dentalApi.patientReceipts(token, "linked-patient-1");
-    await dentalApi.patientDocuments(token, "linked-patient-1");
-    await dentalApi.patientDocumentDownloadIntent(token, "document-1", "linked-patient-1");
-  });
-
-  assert.deepEqual(requests.map(({ url, init }) => [url, init.method || "GET"]), [
-    ["/v1/dental/patient/treatment-plans?patient_id=linked-patient-1", "GET"],
-    ["/v1/dental/patient/invoices?patient_id=linked-patient-1", "GET"],
-    ["/v1/dental/patient/receipts?patient_id=linked-patient-1", "GET"],
-    ["/v1/dental/patient/documents?patient_id=linked-patient-1", "GET"],
-    ["/v1/dental/patient/documents/document-1/download-intent?patient_id=linked-patient-1", "POST"],
-  ]);
-  assertBearer(requests, token);
-  assert.ok(requests.every(({ url }) => !url.includes("/ai/patient/")));
+test("patient billing and document APIs are not exposed to the account-free client", () => {
+  for (const method of [
+    "patientTreatmentPlans",
+    "patientInvoices",
+    "patientReceipts",
+    "patientDocuments",
+    "patientDocumentDownloadIntent",
+  ]) {
+    assert.equal(typeof dentalApi[method], "undefined", method);
+  }
 });
 
 test("private document upload, completion, clinical review and sharing use separate doctor actions", async () => {
