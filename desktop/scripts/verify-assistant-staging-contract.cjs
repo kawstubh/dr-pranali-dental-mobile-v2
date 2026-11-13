@@ -30,9 +30,10 @@ async function request(path, init = {}) {
   throw lastError || new Error("Assistant staging API did not respond.");
 }
 
-async function expectStatus(path, status) {
+async function expectStatus(path, status, { consume = true } = {}) {
   const response = await request(path, { method: "GET" });
   assert.equal(response.status, status, path + " must return " + status);
+  if (consume) await response.arrayBuffer();
   return response;
 }
 
@@ -52,7 +53,7 @@ async function expectStatus(path, status) {
   }
   assert.equal(health.headers.get("x-content-type-options"), "nosniff");
 
-  const openapiResponse = await expectStatus("/openapi.json", 200);
+  const openapiResponse = await expectStatus("/openapi.json", 200, { consume: false });
   const openapi = await openapiResponse.json();
   const paths = Object.keys(openapi.paths || {});
   const required = [
@@ -106,6 +107,7 @@ async function expectStatus(path, status) {
     PORTAL_ORIGIN,
     "Assistant API must allow only the configured portal origin"
   );
+  await preflight.arrayBuffer();
 
   console.log("Assistant staging API contract passed (read-only; no credentials or writes used).");
   console.log("Verified " + required.length + " Assistant paths, " + assistantPaths.length + " Assistant routes, protected 401 boundaries, CORS and security headers.");
