@@ -38,7 +38,6 @@ test("doctor treatment-plan and invoice calls match the tenant-scoped billing AP
     });
     await dentalApi.updateTreatmentPlan(token, "plan-1", {
       expected_version: 1,
-      patient_visible: true,
       status: "proposed",
     });
     await dentalApi.doctorInvoices(token, "patient-1");
@@ -74,28 +73,15 @@ test("doctor treatment-plan and invoice calls match the tenant-scoped billing AP
   assert.ok(JSON.parse(requests[6].init.body).idempotency_key);
 });
 
-test("patient billing and document reads are scoped to the authenticated linked record", async () => {
-  const token = "synthetic-patient-token";
-  const requests = await captureRequests(async () => {
-    await dentalApi.patientTreatmentPlans(token, "linked-patient-1");
-    await dentalApi.patientInvoices(token, "linked-patient-1");
-    await dentalApi.patientReceipts(token, "linked-patient-1");
-    await dentalApi.patientDocuments(token, "linked-patient-1");
-    await dentalApi.patientDocumentDownloadIntent(token, "document-1", "linked-patient-1");
-  });
-
-  assert.deepEqual(requests.map(({ url, init }) => [url, init.method || "GET"]), [
-    ["/v1/dental/patient/treatment-plans?patient_id=linked-patient-1", "GET"],
-    ["/v1/dental/patient/invoices?patient_id=linked-patient-1", "GET"],
-    ["/v1/dental/patient/receipts?patient_id=linked-patient-1", "GET"],
-    ["/v1/dental/patient/documents?patient_id=linked-patient-1", "GET"],
-    ["/v1/dental/patient/documents/document-1/download-intent?patient_id=linked-patient-1", "POST"],
-  ]);
-  assertBearer(requests, token);
-  assert.ok(requests.every(({ url }) => !url.includes("/ai/patient/")));
+test("patient-linked record APIs are absent from the shipped client", () => {
+  const linkedRecordMethods = Object.keys(dentalApi).filter((key) => key.startsWith("patient") && key !== "patients");
+  assert.deepEqual(linkedRecordMethods, []);
+  for (const method of ["doctorTreatmentPlans", "doctorInvoices", "recordInvoiceReceipt", "doctorDocuments"]) {
+    assert.equal(typeof dentalApi[method], "function", method);
+  }
 });
 
-test("private document upload, completion, clinical review and sharing use separate doctor actions", async () => {
+test("private document upload, completion, review and download use separate Doctor actions", async () => {
   const token = "synthetic-doctor-token";
   const requests = await captureRequests(async () => {
     await dentalApi.createDocumentUploadIntent(token, "patient-1", {
@@ -106,7 +92,6 @@ test("private document upload, completion, clinical review and sharing use separ
     });
     await dentalApi.completeDocumentUpload(token, "document-1");
     await dentalApi.reviewDocument(token, "document-1");
-    await dentalApi.setDocumentVisibility(token, "document-1", true);
     await dentalApi.doctorDocumentDownloadIntent(token, "document-1");
   });
 
@@ -114,13 +99,13 @@ test("private document upload, completion, clinical review and sharing use separ
     ["/v1/dental/doctor/patients/patient-1/documents/upload-intent", "POST"],
     ["/v1/dental/doctor/documents/document-1/complete", "POST"],
     ["/v1/dental/doctor/documents/document-1/review", "POST"],
-    ["/v1/dental/doctor/documents/document-1", "PATCH"],
     ["/v1/dental/doctor/documents/document-1/download-intent", "POST"],
   ]);
   assertBearer(requests, token);
   assert.equal(JSON.parse(requests[0].init.body).checksum_sha256, "a".repeat(64));
-  assert.deepEqual(JSON.parse(requests[3].init.body), { patient_visible: true });
   assert.equal(requests[2].init.body, undefined);
+  assert.equal(requests[3].init.body, undefined);
+  assert.equal(dentalApi.setDocumentVisibility, undefined);
 });
 
 test("doctor appointment updates and doctor provisioning use authenticated clinic routes", async () => {
@@ -152,4 +137,10 @@ test("doctor appointment updates and doctor provisioning use authenticated clini
     password: "synthetic-long-password-123",
     role: "doctor",
   });
+});
+
+
+test("public client does not expose linked-record billing or document methods", () => {
+  const linkedRecordMethods = Object.keys(dentalApi).filter((key) => key.startsWith("patient") && key !== "patients");
+  assert.deepEqual(linkedRecordMethods, []);
 });

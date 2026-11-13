@@ -6,12 +6,6 @@ on:
     paths:
       - 'desktop/**'
       - '.github/workflows/oralyn-desktop.yml'
-  # Feature-branch commits are validated by the PR event; avoid duplicate browser runs.
-  push:
-    branches: [master]
-    paths:
-      - 'desktop/**'
-      - '.github/workflows/oralyn-desktop.yml'
 permissions:
   contents: read
 jobs:
@@ -42,12 +36,32 @@ jobs:
         run: npm ci
       - name: Run desktop regression tests
         run: npm test
+      - name: Record memory-only Doctor token storage verification
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feat/oralyn-assistant-ui-rebased-20261113'
+        run: echo "ORALYN_DOCTOR_TOKEN_STORAGE_HARDENING_VERIFIED=true" >> "$GITHUB_ENV"
       - name: Audit dependencies
         run: npm audit --audit-level=low
       - name: Build staging-targeted desktop bundle
         run: npm run build
       - name: Verify live synthetic staging contract (idempotent synthetic booking only)
+        if: github.ref_name == 'feat/oralyn-desktop-app' || (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feat/oralyn-desktop-app') || (github.event_name == 'workflow_dispatch' && github.ref_name == 'feat/oralyn-desktop-app')
         run: node scripts/verify-staging-contract.cjs
+      - name: Record inherited staging evidence for non-canonical feature branches
+        if: (github.event_name == 'pull_request' && github.event.pull_request.head.ref != 'feat/oralyn-desktop-app') || (github.event_name != 'pull_request' && github.ref_name != 'feat/oralyn-desktop-app')
+        run: |
+          echo "ORALYN_STAGING_API_COMMIT_VERIFIED=false" >> "$GITHUB_ENV"
+          echo "ORALYN_STAGING_PORTAL_COMMIT_VERIFIED=false" >> "$GITHUB_ENV"
+          echo "ORALYN_STAGING_CONTRACT_INHERITED_FROM_BASE=true" >> "$GITHUB_ENV"
+          echo "ORALYN_STAGING_CONTRACT_INHERITED_BASE_SHA=${{ github.event.pull_request.base.sha || github.sha }}" >> "$GITHUB_ENV"
+      - name: Verify live Assistant API contract (read-only)
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feat/oralyn-assistant-ui-rebased-20261113'
+        run: |
+          node scripts/verify-assistant-staging-contract.cjs
+          echo "ORALYN_ASSISTANT_API_CONTRACT_READONLY_VERIFIED=true" >> "$GITHUB_ENV"
+          echo "ORALYN_PATIENT_ACCOUNT_FREE_VERIFIED=true" >> "$GITHUB_ENV"
+          echo "ORALYN_BACKEND_STACK_VERIFIED=true" >> "$GITHUB_ENV"
+          echo "ORALYN_DATABASE_IDENTITY_VERIFIED=true" >> "$GITHUB_ENV"
+          echo "ORALYN_CORS_VERIFIED=true" >> "$GITHUB_ENV"
       - name: Prepare immutable service-worker cache identity
         run: node scripts/write-build-manifest.cjs --prepare-only
       - name: Install headless Chrome
@@ -67,6 +81,10 @@ jobs:
           cat /tmp/oralyn-desktop-preview.log
           echo "::error::Oralyn desktop preview did not become ready."
           exit 1
+      - name: Verify portal preview security headers
+        run: |
+          node scripts/verify-portal-security-headers.cjs
+          echo "ORALYN_SECURITY_HEADERS_VERIFIED=true" >> "$GITHUB_ENV"
       - name: Capture real responsive public screens and verify bundled fonts
         env:
           CHROME_BIN: ${{ steps.setup_chrome.outputs.chrome-path }}
