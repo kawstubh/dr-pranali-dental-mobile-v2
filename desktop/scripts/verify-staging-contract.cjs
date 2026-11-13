@@ -96,10 +96,10 @@ async function main() {
       { headers: originHeaders },
     ),
     waitForResponse(
-      portalOrigin + "/oralyn-build-manifest.json",
+      portalOrigin + "/oralyn-build-manifest.json?expected_commit=" + encodeURIComponent(expectedPortalCommit),
       (response, body) => response?.status === 200 &&
         body?.commit_sha === expectedPortalCommit,
-      { headers: { "Cache-Control": "no-cache" } },
+      { headers: { "Cache-Control": "no-store, no-cache", Pragma: "no-cache" } },
       24,
       4000,
     ),
