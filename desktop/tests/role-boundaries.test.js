@@ -61,6 +61,14 @@ test("guest booking sends a stable idempotency key and validates future IST time
   assert.match(bookingSource, /India Standard Time/);
   assert.match(bookingSource, /startsAt <= new Date\(\)/);
   assert.match(bookingSource, /intelligence_request:\s*false/);
+  assert.match(bookingSource, /dateInput\.setAttribute\("min", localToday\)/);
+  assert.match(bookingSource, /All appointment times are shown in India Standard Time/);
+  assert.match(bookingSource, /validateIndianMobile/);
+  assert.match(bookingSource, /10-digit Indian mobile number/);
+  assert.match(bookingSource, /id="phone-error"/);
+  assert.doesNotMatch(bookingSource, /name="note"/);
+  assert.match(bookingSource, /name="date" id="date" type="date" min=/);
+  assert.match(bookingSource, /name="phone" id="phone" type="tel"/);
 });
 
 test("patient private records are not rendered in the public account-free experience", () => {
