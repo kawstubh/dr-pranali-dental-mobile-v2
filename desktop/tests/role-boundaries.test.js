@@ -220,5 +220,5 @@ test("Clinic Assistant route is served by the main SPA rather than a legacy stat
 test("Doctor settings embeds the real owner/admin-gated Assistant management component", () => {
   assert.ok(source.includes("<AssistantManagement token={token} user={user} />"));
   assert.ok(assistantAppSource.includes('const allowed = ["owner", "admin"]'));
-  assert.ok(assistantAppSource.includes("/v1/dental/auth/assistants"));
+  assert.ok(assistantAppSource.includes("/v1/dental/clinic-assistants"));
 });
