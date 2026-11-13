@@ -103,6 +103,21 @@ test("live staging contract probe writes only one idempotent synthetic booking a
   assert.match(source, /ORALYN_STAGING_PORTAL_COMMIT_VERIFIED/);
 });
 
+test("preview server stays alive for responsive and synthetic UI captures in one CI step", () => {
+  const file = join(process.cwd(), "..", ".github", "workflows", "oralyn-desktop.yml");
+  const source = readFileSync(file, "utf8");
+  const start = source.indexOf("Start preview and capture responsive, Doctor and Assistant UI evidence");
+  const end = source.indexOf("Record responsive browser acceptance gates", start);
+  assert.ok(start >= 0 && end > start);
+  const captureStep = source.slice(start, end);
+  assert.match(captureStep, /setsid npm run preview/);
+  assert.match(captureStep, /trap cleanup_preview EXIT/);
+  assert.match(captureStep, /verify-portal-security-headers\.cjs/);
+  assert.match(captureStep, /capture-actual-desktop\.cjs/);
+  assert.match(captureStep, /capture-synthetic-doctor\.cjs/);
+  assert.match(captureStep, /capture-synthetic-assistant\.cjs/);
+});
+
 test("release workflow derives live gates instead of hard-coding them true", () => {
   const file = join(process.cwd(), "..", ".github", "workflows", "oralyn-desktop.yml");
   const source = readFileSync(file, "utf8");
