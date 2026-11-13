@@ -64,7 +64,7 @@ button:disabled{opacity:.55;cursor:wait}.wide{width:100%;margin-top:10px}
       <h2>Patient intake</h2>
       <form id="patient-form">
         <label>Patient name<input name="name" required minlength="2" maxlength="200" autocomplete="name"></label>
-        <label>Mobile number<input name="phone" required type="tel" inputmode="tel" minlength="7" maxlength="40" autocomplete="tel"></label>
+        <label>Mobile number<input name="phone" required type="tel" inputmode="tel" minlength="10" maxlength="13" pattern="([+]91)?[6-9][0-9]{9}" title="Enter a 10-digit Indian mobile number, optionally with +91." autocomplete="tel"></label>
         <button type="submit">Save contact</button>
       </form>
       <div id="patient-list" aria-live="polite"></div>
@@ -106,6 +106,7 @@ const request = async (path, options = {}) => {
     if (response.status === 401) {
       sessionStorage.removeItem(tokenKey); assistantToken = ""; assistantUser = null;
       workspace.classList.add("hidden"); login.classList.remove("hidden");
+      showMessage(loginMessage, "Your Assistant session expired. Please sign in again.", "error");
     }
     const detail = typeof body.detail === "string" ? body.detail : body.detail?.message;
     throw new Error(detail || "The request could not be completed.");
