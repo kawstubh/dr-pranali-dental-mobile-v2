@@ -45,6 +45,10 @@ test("staging manifest records verified public gates without claiming live booki
         ORALYN_SERVICE_CATALOG_UI_VERIFIED: "true",
         ORALYN_SERVICE_CATALOG_API_VERIFIED: "true",
         ORALYN_PATIENT_ACCOUNT_FREE_VERIFIED: "true",
+        ORALYN_STAGING_API_COMMIT_VERIFIED: "false",
+        ORALYN_STAGING_PORTAL_COMMIT_VERIFIED: "false",
+        ORALYN_STAGING_CONTRACT_INHERITED_FROM_BASE: "true",
+        ORALYN_STAGING_CONTRACT_INHERITED_BASE_SHA: "base-portal-commit-456",
       },
       stdio: "pipe",
     });
@@ -62,6 +66,9 @@ test("staging manifest records verified public gates without claiming live booki
     );
     assert.equal(manifest.api_origin, "https://oralyn-staging-api-assistant.onrender.com");
     assert.equal(manifest.portal_origin, "https://oralyn-web-portal-spa.onrender.com");
+    assert.equal(manifest.staging_contract.verified_for_this_commit, false);
+    assert.equal(manifest.staging_contract.inherited_from_base, true);
+    assert.equal(manifest.staging_contract.inherited_base_sha, "base-portal-commit-456");
     assert.equal(manifest.checks.backend_stack_verified, true);
     assert.equal(manifest.checks.cors_verified_for_portal_origin, true);
     assert.equal(manifest.checks.database_identity_verified, true);
