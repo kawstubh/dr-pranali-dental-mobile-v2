@@ -131,3 +131,26 @@ test("public patient booking remains separate from Doctor identity and tenant AP
   assert.doesNotMatch(patientSource, /dentalApi\.patients\(/);
   assert.doesNotMatch(patientSource, /dentalApi\.patientChart\(/);
 });
+
+
+const assistantAdminSource = fs.readFileSync(
+  path.join(root, "public", "assistant-admin", "index.html"),
+  "utf8",
+);
+
+test("Clinic Assistant account management is gated by the Doctor owner/admin session", () => {
+  assert.match(assistantAdminSource, /oralyn_doctor_token/);
+  assert.match(assistantAdminSource, /\/v1\/dental\/auth\/me/);
+  assert.match(assistantAdminSource, /\["owner","admin"\]/);
+  assert.match(assistantAdminSource, /\/v1\/dental\/clinic-assistants/);
+  assert.match(assistantAdminSource, /method:"POST"/);
+  assert.match(assistantAdminSource, /method:"PATCH"/);
+  assert.match(assistantAdminSource, /credentials:"omit"/);
+  assert.match(assistantAdminSource, /cache:"no-store"/);
+  assert.match(assistantAdminSource, /Assistant account deactivated and existing sessions revoked/);
+  assert.doesNotMatch(assistantAdminSource, /oralyn_assistant_session/);
+  assert.doesNotMatch(assistantAdminSource, /\/v1\/dental\/assistant\//);
+  const script = assistantAdminSource.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+  assert.ok(script, "Assistant admin page script must be present");
+  assert.doesNotThrow(() => new vm.Script(script));
+});
