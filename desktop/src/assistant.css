@@ -22,7 +22,7 @@
 .assistant-panel-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:18px;color:#0a84e8}
 .assistant-panel-heading h2{font-size:18px;color:#163d5c;margin:0 0 5px}.assistant-panel-heading p{font-size:13px;color:#6b8191;line-height:1.5;margin:0}
 .assistant-list{display:grid;gap:0}
-.assistant-appointment{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0;border-top:1px solid #edf2f5}
+.assistant-appointment{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;padding:16px 0;border-top:1px solid #edf2f5}
 .assistant-appointment-main{display:grid;gap:5px;min-width:0}.assistant-appointment-main b{color:#193f5d}.assistant-appointment-main span,.assistant-appointment-main small{font-size:12px;color:#6d8292}.assistant-appointment-main small{line-height:1.5}
 .assistant-appointment-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
 .assistant-appointment-actions button{display:inline-flex;align-items:center;gap:5px;border:1px solid #cde8e7;background:#f0fbfa;color:#06747b;border-radius:9px;padding:8px 10px;font:inherit;font-size:12px;font-weight:800;cursor:pointer}
@@ -47,7 +47,7 @@
 .assistant-back{display:block;text-align:center;margin-top:18px;color:#0a84e8;font-size:13px;font-weight:700;text-decoration:none}
 .assistant-loading{min-height:100vh;display:grid;place-content:center;justify-items:center;gap:14px;color:#617c8e}.assistant-loading img{width:180px}.assistant-loading p{font-size:14px}
 @media(max-width:900px){.assistant-grid{grid-template-columns:1fr}.assistant-content{padding-top:26px}}
-@media(max-width:640px){.assistant-topbar{align-items:flex-start;padding:13px 16px}.assistant-brand{display:grid;gap:5px}.assistant-brand img{width:116px}.assistant-brand span{font-size:9px}.assistant-user{gap:8px}.assistant-user b{max-width:145px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}.assistant-user small{font-size:10px}.assistant-content{padding:22px 14px 36px}.assistant-heading{align-items:flex-start;flex-direction:column}.assistant-heading h1{font-size:32px}.assistant-panel{padding:17px}.assistant-appointment{align-items:flex-start;flex-direction:column}.assistant-appointment-actions{justify-content:flex-start}.assistant-form-row{grid-template-columns:1fr}.assistant-auth-card{padding:25px 20px}.assistant-invoice-head strong{font-size:15px}}
+@media(max-width:640px){.assistant-topbar{align-items:flex-start;padding:13px 16px}.assistant-brand{display:grid;gap:5px}.assistant-brand img{width:116px}.assistant-brand span{font-size:9px}.assistant-user{gap:8px}.assistant-user b{max-width:145px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}.assistant-user small{font-size:10px}.assistant-content{padding:22px 14px 36px}.assistant-heading{align-items:flex-start;flex-direction:column}.assistant-heading h1{font-size:32px}.assistant-panel{padding:17px}.assistant-appointment{align-items:start;grid-template-columns:1fr}.assistant-appointment-actions{justify-content:flex-start}.assistant-form-row{grid-template-columns:1fr}.assistant-auth-card{padding:25px 20px}.assistant-invoice-head strong{font-size:15px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 
 .assistant-management-panel{margin-top:22px}.assistant-management-form{display:grid;grid-template-columns:1fr 1fr minmax(190px,.7fr);gap:14px;align-items:end}.assistant-management-form label{display:grid;gap:7px;color:#36556d;font-size:13px;font-weight:700}.assistant-management-form input{width:100%;min-height:47px;border:1px solid #cbdde7;border-radius:10px;background:#fff;padding:11px 12px;color:#193d5b;font:inherit;font-size:14px}.assistant-management-form small{font-size:11px;font-weight:500;color:#718696}.assistant-management-list{margin-top:20px}.assistant-management-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 0;border-top:1px solid #edf2f5}.assistant-management-row div{display:grid;gap:4px}.assistant-management-row b{font-size:13px;color:#173e5d}.assistant-management-row small{font-size:11px;color:#718696}.assistant-management-row button{border:1px solid #f1d8d6;background:#fff8f7;color:#a3423c;border-radius:9px;padding:9px 12px;font:inherit;font-size:12px;font-weight:800;cursor:pointer}.assistant-management-row button:disabled{opacity:.5;cursor:not-allowed}
@@ -62,3 +62,12 @@
 .assistant-receipt-actions .assistant-primary{width:auto;min-width:210px;min-height:42px;padding:10px 14px}
 .assistant-record-payment{margin-top:14px}
 @media(max-width:640px){.assistant-receipt-form{grid-template-columns:1fr}.assistant-receipt-form small,.assistant-receipt-actions{grid-column:auto}.assistant-receipt-actions{display:grid}.assistant-receipt-actions .assistant-primary{width:100%}}
+
+.assistant-reschedule-form{grid-column:1/-1;display:grid;gap:12px;margin-top:4px;padding:14px;border:1px solid #dcebf1;border-radius:13px;background:#f8fcff}
+.assistant-reschedule-form label{display:grid;gap:7px;color:#36556d;font-size:12px;font-weight:700}
+.assistant-reschedule-form input{width:100%;min-height:43px;border:1px solid #cbdde7;border-radius:9px;background:#fff;padding:10px;color:#193d5b;font:inherit;font-size:13px}
+.assistant-reschedule-form input:focus{border-color:#0a84e8;outline:none;box-shadow:0 0 0 3px rgba(10,132,232,.11)}
+.assistant-reschedule-form small{color:#718696;font-size:11px;line-height:1.5}
+.assistant-reschedule-actions{display:flex;gap:9px;flex-wrap:wrap}
+.assistant-reschedule-actions button{min-height:42px}
+@media(max-width:640px){.assistant-reschedule-actions{display:grid}.assistant-reschedule-actions button{width:100%}}
