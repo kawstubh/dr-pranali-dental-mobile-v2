@@ -39,16 +39,21 @@ test("staging manifest records verified public gates without claiming live booki
         ORALYN_CORS_VERIFIED: "true",
         ORALYN_DATABASE_IDENTITY_VERIFIED: "true",
         ORALYN_SECURITY_HEADERS_VERIFIED: "true",
-        ORALYN_GUEST_BOOKING_E2E_VERIFIED: "false",
         ORALYN_DOCTOR_API_PERSISTENCE_E2E_VERIFIED: "false",
-        ORALYN_MOBILE_BROWSER_E2E_VERIFIED: "true",
-        ORALYN_SERVICE_CATALOG_UI_VERIFIED: "true",
-        ORALYN_SERVICE_CATALOG_API_VERIFIED: "true",
-        ORALYN_PATIENT_ACCOUNT_FREE_VERIFIED: "true",
         ORALYN_STAGING_API_COMMIT_VERIFIED: "false",
         ORALYN_STAGING_PORTAL_COMMIT_VERIFIED: "false",
         ORALYN_STAGING_CONTRACT_INHERITED_FROM_BASE: "true",
         ORALYN_STAGING_CONTRACT_INHERITED_BASE_SHA: "base-portal-commit-456",
+        ORALYN_PRODUCTION_HOSTING_VERIFIED: "false",
+        ORALYN_PRODUCTION_DATABASE_VERIFIED: "false",
+        ORALYN_PRODUCTION_DOMAIN_VERIFIED: "false",
+        ORALYN_PRODUCTION_DEPLOYMENT_APPROVED: "false",
+        ORALYN_GUEST_BOOKING_E2E_VERIFIED: "false",
+
+        ORALYN_MOBILE_BROWSER_E2E_VERIFIED: "true",
+        ORALYN_SERVICE_CATALOG_UI_VERIFIED: "true",
+        ORALYN_SERVICE_CATALOG_API_VERIFIED: "true",
+        ORALYN_PATIENT_ACCOUNT_FREE_VERIFIED: "true",
       },
       stdio: "pipe",
     });
@@ -71,8 +76,6 @@ test("staging manifest records verified public gates without claiming live booki
     assert.equal(manifest.staging_contract.inherited_base_sha, "base-portal-commit-456");
     assert.equal(manifest.checks.staging_api_commit_verified, false);
     assert.equal(manifest.checks.staging_portal_commit_verified, false);
-    assert.ok(manifest.blockers.includes("staging_api_commit_verified"));
-    assert.ok(manifest.blockers.includes("staging_portal_commit_verified"));
     assert.equal(manifest.checks.backend_stack_verified, true);
     assert.equal(manifest.checks.cors_verified_for_portal_origin, true);
     assert.equal(manifest.checks.database_identity_verified, true);
@@ -94,13 +97,21 @@ test("staging manifest records verified public gates without claiming live booki
     assert.ok(!manifest.blockers.includes("public_service_catalog_api_verified"));
     assert.ok(!manifest.blockers.includes("patient_account_routes_disabled_verified"));
     assert.ok(manifest.blockers.includes("patient_guest_booking_e2e_verified"));
+    assert.ok(manifest.blockers.includes("staging_api_commit_verified"));
+    assert.ok(manifest.blockers.includes("staging_portal_commit_verified"));
     assert.ok(!manifest.blockers.includes("cors_verified_for_portal_origin"));
     for (const gate of [
+      "production_hosting_always_on_verified",
+      "production_database_verified",
+      "production_custom_domain_verified",
+      "production_deployment_approval_verified",
       "backup_restore_verified",
       "error_monitoring_verified",
       "rollback_plan_verified",
       "doctor_auth_e2e_verified",
       "doctor_api_persistence_e2e_verified",
+      "staging_api_commit_verified",
+      "staging_portal_commit_verified",
       "assistant_role_e2e_verified",
       "guest_booking_idempotency_verified",
       "assistant_ui_api_verified",
