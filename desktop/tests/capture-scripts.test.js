@@ -18,3 +18,18 @@ test("synthetic Doctor capture uses a safely quoted clinic workspace selector", 
 
   assert.equal(source.split(selector).length - 1, 3);
 });
+
+
+test("real browser capture verifies the gated Assistant admin page at desktop, tablet and mobile sizes", () => {
+  const file = join(process.cwd(), "scripts", "capture-actual-desktop.cjs");
+  const source = readFileSync(file, "utf8");
+
+  assert.doesNotThrow(() => new Script(source, { filename: file }));
+  assert.match(source, /\/assistant-admin\//);
+  assert.match(source, /assistant_admin_gate=passed/);
+  assert.match(source, /assistant-admin-gate-1440x1000\.png/);
+  assert.match(source, /assistant-admin-gate-768x1024\.png/);
+  assert.match(source, /assistant-admin-gate-390x844\.png/);
+  assert.match(source, /adminWorkspaceHidden/);
+  assert.match(source, /createFormVisible/);
+});
