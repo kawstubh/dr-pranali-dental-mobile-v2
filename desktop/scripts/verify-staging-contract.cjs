@@ -100,6 +100,8 @@ async function main() {
       (response, body) => response?.status === 200 &&
         body?.commit_sha === expectedPortalCommit,
       { headers: { "Cache-Control": "no-cache" } },
+      24,
+      4000,
     ),
   ]);
 
@@ -285,7 +287,12 @@ async function main() {
   const apiCommitOk = Boolean(expectedApiCommit &&
     health?.deployment_commit &&
     health.deployment_commit === expectedApiCommit);
-  record("ORALYN_STAGING_PORTAL_COMMIT_VERIFIED", portalCommitOk, "live portal manifest matches Draft PR #18 head");
+  record(
+    "ORALYN_STAGING_PORTAL_COMMIT_VERIFIED",
+    portalCommitOk,
+    "live portal manifest commit " + (livePortalManifest?.commit_sha || "unavailable") +
+      " compared with expected Draft PR #18 head " + (expectedPortalCommit || "unavailable"),
+  );
   record("ORALYN_STAGING_API_COMMIT_VERIFIED", apiCommitOk, "live API deployment commit matches Draft PR #60 head");
 
   const envFile = process.env.GITHUB_ENV;
