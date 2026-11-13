@@ -180,7 +180,6 @@ export const dentalApi = {
     request(`/v1/dental/doctor/documents/${encodeURIComponent(documentId)}/complete`, { token, method: "POST" }),
   reviewDocument: (token, documentId) =>
     request(`/v1/dental/doctor/documents/${encodeURIComponent(documentId)}/review`, { token, method: "POST" }),
-    request(`/v1/dental/doctor/documents/${encodeURIComponent(documentId)}`, { token, method: "PATCH", body: { patient_visible } }),
   doctorDocumentDownloadIntent: (token, documentId) =>
     request(`/v1/dental/doctor/documents/${encodeURIComponent(documentId)}/download-intent`, { token, method: "POST" }),
   doctorClinicalNotes: (token, patientId) =>
