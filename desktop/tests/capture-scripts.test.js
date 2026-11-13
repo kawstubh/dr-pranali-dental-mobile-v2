@@ -33,3 +33,19 @@ test("real browser capture verifies the gated Assistant admin page at desktop, t
   assert.match(source, /adminWorkspaceHidden/);
   assert.match(source, /createFormVisible/);
 });
+
+
+test("synthetic Assistant capture covers reception, appointment and billing without Doctor AI APIs", () => {
+  const file = join(process.cwd(), "scripts", "capture-synthetic-assistant.cjs");
+  const source = readFileSync(file, "utf8");
+
+  assert.doesNotThrow(() => new Script(source, { filename: file }));
+  assert.match(source, /assistant\/auth\/login/);
+  assert.match(source, /assistant\/patients/);
+  assert.match(source, /assistant\/appointments/);
+  assert.match(source, /assistant\/billing\/invoices/);
+  assert.match(source, /assistant_mobile_layout/);
+  assert.match(source, /doctor_ai_api_calls=none/);
+  assert.match(source, /clinical_controls=none/);
+  assert.match(source, /unhandled_api_paths=none/);
+});
