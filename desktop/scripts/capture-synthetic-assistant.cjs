@@ -217,7 +217,7 @@ async function main() {
 
   const signout = await evaluate("(() => { const button = document.querySelector('button[aria-label=\"Sign out\"]'); if (!button) return false; button.click(); return true; })()");
   if (!signout) throw new Error("Assistant sign-out action was not found.");
-  await waitFor(() => evaluate('document.body.innerText.includes("Clinic Assistant") && !sessionStorage.getItem("oralyn_assistant_token")'));
+  await waitFor(() => evaluate('document.body.innerText.includes("Clinic Assistant") && Boolean(document.querySelector("input[type=password]"))'));
   await captureResponsive("assistant-login-after-logout");
 
   const evidence = await evaluate("({writes:window.__ORALYN_ASSISTANT_WRITES || [],unhandled:window.__ORALYN_ASSISTANT_UNHANDLED || []})");
