@@ -38,8 +38,8 @@ import {
 import "./styles.css";
 import { dentalApi } from "./api.js";
 import ErrorBoundary from "./ErrorBoundary.jsx";
-import { normaliseList, normaliseUser, localDateISO, localDateTimeFromParts, formatTime, isSameLocalDay } from "./data.js";
-import { DoctorCareManagement, PatientCareManagement, DoctorClinicalNotes, PatientCommunication } from "./careScreens.jsx";
+import { normaliseList, normaliseUser, formatTime, isSameLocalDay } from "./data.js";
+import { DoctorCareManagement, DoctorClinicalNotes, PatientCommunication } from "./careScreens.jsx";
 import { createPortalNavigator, resolvePortalRoute } from "./routing.js";
 import { createControllerChangeHandler } from "./serviceWorkerLifecycle.js";
 function doctorDisplayName(user) {
@@ -67,14 +67,7 @@ function App() {
     [mobile, B] = useState(false),
     [tooth, Q] = useState("36"),
     [findings, F] = useState({}),
-    [step, Z] = useState(1),
-    [service, V] = useState("Dental check-up"),
-    [date, D] = useState(localDateISO()),
-    [slot, H] = useState(""),
-    [done, G] = useState(false),
-    [token, setToken] = useState(
-      () => localStorage.getItem("oralyn_doctor_token") || "",
-    ),
+    [token, setToken] = useState(""),
     [user, setUser] = useState(null),
     [patients, setPatients] = useState([]),
     [appointments, setAppointments] = useState([]),
@@ -86,24 +79,12 @@ function App() {
     [dashboardSummary, setDashboardSummary] = useState(null),
     [dashboardSummaryLoading, setDashboardSummaryLoading] = useState(false),
     [dashboardSummaryError, setDashboardSummaryError] = useState(""),
-    [patientName, setPatientName] = useState(""),
-    [patientPhone, setPatientPhone] = useState(""),
-    [patientSession, setPatientSession] = useState(null),
-    [patientBoot, setPatientBoot] = useState(true),
-    [patientError, setPatientError] = useState(""),
-    [patientLinks, setPatientLinks] = useState([]),
-    [selectedPatientRecordId, setSelectedPatientRecordId] = useState(
-      () => localStorage.getItem("oralyn_patient_record_id") || "",
-    ),
-    [patientAppointments, setPatientAppointments] = useState([]),
-    [patientChart, setPatientChart] = useState([]),
-    [patientInviteCode, setPatientInviteCode] = useState(""),
     [pwaRegistration, setPwaRegistration] = useState(null),
     [pwaUpdateReady, setPwaUpdateReady] = useState(false);
   const portalNavigator = useRef(null);
   const P = (nextPage) => {
     setPage(nextPage);
-    portalNavigator.current?.navigate(role, nextPage);
+    portalNavigator.current?.navigate("doctor", nextPage);
   };
   const navigateRole = (nextRole, nextPage) => {
     R(nextRole);
@@ -159,7 +140,6 @@ function App() {
   };
   useEffect(() => {
     const expireDoctorSession = () => {
-      localStorage.removeItem("oralyn_doctor_token");
       setToken("");
       setUser(null);
       setPatients([]);
@@ -225,7 +205,6 @@ function App() {
       } catch (err) {
         if (!live) return;
         if (err.status === 401) {
-          localStorage.removeItem("oralyn_doctor_token");
           setToken("");
           setUser(null);
           setAuthError("Your session expired. Please sign in again.");
@@ -242,20 +221,6 @@ function App() {
       live = false;
     };
   }, [token]);
-  useEffect(() => {
-    // Patient access is intentionally account-free. Public booking is the
-    // patient-facing workflow; private clinical records stay in the Doctor workspace.
-    setPatientBoot(false);
-    setPatientSession(null);
-    setPatientLinks([]);
-    setSelectedPatientRecordId("");
-    setPatientAppointments([]);
-    setPatientChart([]);
-  }, []);
-  const patientSignOut = async () => {};
-  const linkPatient = async () => {
-    throw new Error("Patient accounts are not required. Please contact the clinic for private records.");
-  };
   const refreshDoctorData = async () => {
     if (!token) return;
     setDashboardSummaryLoading(true);
@@ -295,7 +260,6 @@ function App() {
       setDataError("");
       F({});
       Q("36");
-      localStorage.setItem("oralyn_doctor_token", accessToken);
       setToken(accessToken);
       setUser(sessionUser);
       setWorkspaces(normaliseList(session, ["workspaces"]));
@@ -312,7 +276,6 @@ function App() {
     try {
       if (token) await dentalApi.logout(token);
     } catch {}
-    localStorage.removeItem("oralyn_doctor_token");
     setToken("");
     setUser(null);
     setPatients([]);
@@ -333,11 +296,13 @@ function App() {
         onPatient={() => {
           window.location.assign("/patient/home/");
         }}
+        onAssistant={() => {
+          window.location.assign("/assistant/");
+        }}
         onLogin={async (email, password) => {
           setAuthError("");
           try {
             const result = await dentalApi.login(email, password);
-            localStorage.setItem("oralyn_doctor_token", result.access_token);
             setToken(result.access_token);
           } catch (e) {
             setAuthError(e.message);
@@ -375,16 +340,7 @@ function App() {
       [["workspaces", "Workspaces", Building2], ["settings", "Settings", Settings]],
     ],
   ];
-  const patientNav = [
-    [
-      "Visit the clinic",
-      [
-        ["home", "Home", LayoutDashboard],
-        ["booking", "Book appointment", CalendarDays],
-      ],
-    ],
-  ];
-  const nav = role === "doctor" ? doctorNav : patientNav;
+  const nav = doctorNav;
   return (
     <div className="shell">
       {pwaUpdateReady && (
@@ -399,9 +355,7 @@ function App() {
             <X />
           </button>
         </div>
-        <div className="workspace">
-          {role === "doctor" ? (activeWorkspace?.name || "CLINIC WORKSPACE").toUpperCase() : "PATIENT PORTAL"}
-        </div>
+        <div className="workspace">{(activeWorkspace?.name || "CLINIC WORKSPACE").toUpperCase()}</div>
         {nav.map(([group, items]) => (
           <section className="navgroup" key={group}>
             <label>{group}</label>
@@ -423,31 +377,15 @@ function App() {
         <div className="sidefoot">
           <div className="help">
             <ShieldCheck />
-            <b>
-              {role === "doctor" ? "Clinical workspace" : "Care, made simpler"}
-            </b>
-            <p>
-              {role === "doctor"
-                ? "Your practice at a glance, with clinical tools in one place."
-                : "Your appointments and care information together."}
-            </p>
+            <b>Clinical workspace</b>
+            <p>Your practice at a glance, with clinical tools in one place.</p>
           </div>
 
           <div className="user">
-            <span>{role === "doctor" ? "DP" : "G"}</span>
+            <span>DP</span>
             <div>
-              <b>
-                {role === "doctor"
-                  ? doctorDisplayName(user)
-                  : patientSession?.user?.email || "Patient guest"}
-              </b>
-              <small>
-                {role === "doctor"
-                  ? doctorRoleLabel(user)
-                  : patientSession
-                    ? "Verified patient"
-                    : "Guest access"}
-              </small>
+              <b>{doctorDisplayName(user)}</b>
+              <small>{doctorRoleLabel(user)}</small>
             </div>
             <MoreHorizontal />
           </div>
@@ -484,20 +422,6 @@ function App() {
                 {workspaces.map((workspace) => <option key={workspace.id || workspace.clinic_id} value={workspace.id || workspace.clinic_id}>{workspace.name}</option>)}
               </select>
             ) : <span className={activeWorkspace ? "workspace-chip" : "workspace-chip missing"}>{activeWorkspace?.name || "No active workspace"}</span>)}
-            {role === "patient" && patientSession && patientLinks.length > 0 && (
-              <select
-                className="workspace-switcher patient-clinic-switcher"
-                aria-label="Switch linked patient clinic"
-                value={selectedPatientRecordId}
-                onChange={(event) => selectPatientRecord(event.target.value)}
-              >
-                {patientLinks.map((item) => (
-                  <option key={item.patient_id} value={item.patient_id}>
-                    {item.organisation_name || item.clinic_name} · {item.clinic_name} · {item.patient_name}
-                  </option>
-                ))}
-              </select>
-            )}
             <button
               className="bell"
               onClick={() => ping("You’re all caught up.")}
@@ -505,28 +429,14 @@ function App() {
               <Bell />
               <i />
             </button>
-            <span className="userpic">{role === "doctor" ? "DP" : "G"}</span>
-            <span className="workspace-chip" aria-label={role === "doctor" ? "Doctor portal" : "Patient portal"}>
-              {role === "doctor" ? "Doctor portal" : "Patient portal"}
-            </span>
-            {role === "doctor" ? (
-              <button className="logoutbtn" onClick={signOut}>
-                Sign out
-              </button>
-            ) : (
-              patientSession && (
-                <button className="logoutbtn" onClick={patientSignOut}>
-                  Sign out
-                </button>
-              )
-            )}
+            <span className="userpic">DP</span>
+            <span className="workspace-chip" aria-label="Doctor portal">Doctor portal</span>
+            <button className="logoutbtn" onClick={signOut}>Sign out</button>
           </div>
         </header>
         <div className="content">
           {role === "doctor" && workspaceError && <div className="autherror" role="alert">{workspaceError} <button className="link" onClick={refreshDoctorData}>Retry</button></div>}
           {role === "doctor" && dataError && <div className="autherror" role="alert">{dataError} <button className="link" onClick={refreshDoctorData}>Retry</button></div>}
-          {role === "patient" && patientSession && patientError && <div className="autherror" role="alert">{patientError}</div>}
-          {role === "doctor" ? (
             <Doctor
               page={page}
               P={P}
@@ -552,38 +462,7 @@ function App() {
               onRefreshWorkspaces={refreshDoctorData}
               onSignOut={signOut}
             />
-          ) : (
-            <Patient
-              page={page}
-              P={P}
-              M={M}
-              ping={ping}
-              step={step}
-              Z={Z}
-              service={service}
-              V={V}
-              date={date}
-              D={D}
-              slot={slot}
-              H={H}
-              done={done}
-              G={G}
-              patientName={patientName}
-              setPatientName={setPatientName}
-              patientPhone={patientPhone}
-              setPatientPhone={setPatientPhone}
-              patientSession={patientSession}
-              patientLinks={patientLinks}
-              selectedPatientRecordId={selectedPatientRecordId}
-              onSelectPatientRecord={selectPatientRecord}
-              patientAppointments={patientAppointments}
-              patientChart={patientChart}
-              patientInviteCode={patientInviteCode}
-              setPatientInviteCode={setPatientInviteCode}
-              onLinkPatient={linkPatient}
-              onSignOut={patientSignOut}
-            />
-          )}
+
         </div>
       </main>
       {toast && (
@@ -605,7 +484,7 @@ function App() {
     </div>
   );
 }
-function LoginScreen({ loading, error, onLogin, onPatient }) {
+function LoginScreen({ loading, error, onLogin, onPatient, onAssistant }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -655,9 +534,16 @@ function LoginScreen({ loading, error, onLogin, onPatient }) {
             {busy || loading ? "Connecting securely…" : "Sign in to Oralyn"}
           </button>
         </form>
-        <button className="patientlink" onClick={onPatient}>
-          Continue to patient portal
+        <button className="patientlink" onClick={onPatient} aria-label="Open public patient services; no account or OTP required">
+          Public patient services
+          <small>No account or OTP required</small>
         </button>
+        <button className="patientlink" onClick={onAssistant}>
+          Clinic Assistant sign in
+        </button>
+        <small className="auth-session-note">
+          For security, this sign-in stays in memory in this tab. Refreshing or closing the tab signs you out.
+        </small>
         <small className="authfoot">
           Secure clinic access · Session verified by the Oralyn server
         </small>
@@ -853,8 +739,6 @@ function Panel({ title, sub, children, action }) {
   );
 }
 function AccountSettings({ user, activeWorkspace, onSignOut }) {
-  const accountRole = String(user?.role || "").toLowerCase();
-  const canManageAssistants = accountRole === "owner" || accountRole === "admin";
   return (
     <>
       <Title eyebrow="ACCOUNT & SECURITY" title="Settings" desc="Review the signed-in account and active clinic context." />
@@ -862,7 +746,7 @@ function AccountSettings({ user, activeWorkspace, onSignOut }) {
         <Panel title="Signed-in account" sub="Identity returned by the authenticated service.">
           <div className="settings-list">
             <div><small>Account</small><b>{user?.email || user?.name || "Authenticated account"}</b></div>
-            <div><small>Role</small><b>{user?.role || "Patient"}</b></div>
+            <div><small>Role</small><b>{user?.role || "Doctor"}</b></div>
             <div><small>Session</small><b>Authenticated · session-managed</b></div>
           </div>
         </Panel>
@@ -872,12 +756,6 @@ function AccountSettings({ user, activeWorkspace, onSignOut }) {
             <div><small>Organisation</small><b>{activeWorkspace?.organisation_name || "Not returned"}</b></div>
           </div>
         </Panel>
-        {canManageAssistants && (
-          <Panel title="Clinic Assistant accounts" sub="Manage separate reception-only accounts for this clinic.">
-            <p className="care-hint">Assistants can manage intake, appointments and approved billing tasks. Clinical notes, treatment plans, prescriptions and clinical intelligence remain Doctor-only.</p>
-            <button className="outline" onClick={() => window.location.assign("/assistant-admin/index.html")}>Manage Clinic Assistant accounts</button>
-          </Panel>
-        )}
         <Panel title="Privacy and access" sub="Oralyn keeps clinical records behind role and clinic permissions.">
           <p className="care-hint">Patient-facing AI diagnosis and self-diagnosis are not available. Clinical notes remain private. Private document uploads, downloads, review and patient sharing are disabled until secure private storage and fail-closed malware scanning are configured and verified.</p>
           <button className="outline" onClick={onSignOut}>Sign out securely</button>
@@ -1406,9 +1284,13 @@ function Doctor({
   if (page === "notes")
     return <DoctorClinicalNotes token={token} activePatient={activePatient} />;
   if (page === "messages")
-    return <PatientCommunication mode="doctor" token={token} activePatient={activePatient} />;
+    return <PatientCommunication token={token} activePatient={activePatient} />;
   if (page === "settings")
-    return <AccountSettings user={user} activeWorkspace={activeWorkspace} onSignOut={onSignOut} />;
+    return (
+      <>
+        <AccountSettings user={user} activeWorkspace={activeWorkspace} onSignOut={onSignOut} />
+      </>
+    );
   if (page === "files")
     return <DoctorCareManagement page={page} token={token} activePatient={activePatient} ping={ping} />;
   if (page === "billing")
@@ -1756,454 +1638,30 @@ function WorkspaceManagement({ token, user, workspaces, activeWorkspace, workspa
   );
 }
 
-function Patient({
-  page,
-  P,
-  M,
-  ping,
-  step,
-  Z,
-  service,
-  V,
-  date,
-  D,
-  slot,
-  H,
-  done,
-  G,
-  patientName,
-  setPatientName,
-  patientPhone,
-  setPatientPhone,
-  patientSession,
-  patientLinks,
-  selectedPatientRecordId,
-  onSelectPatientRecord,
-  patientAppointments,
-  patientChart,
-  patientInviteCode,
-  setPatientInviteCode,
-  onLinkPatient,
-  onSignOut,
-}) {
-  const selectedPatientLink = patientLinks.find((item) => String(item.patient_id) === String(selectedPatientRecordId));
-  if (page !== "booking") {
-    return (
-      <>
-        <Title
-          eyebrow="PATIENT PORTAL"
-          title="Your smile, your care"
-          desc="Book your visit with Dr. Pranali Dental Clinic. No patient account or password is needed."
-        />
-        <div className="care-grid">
-          <Panel title="Book an appointment" sub="Choose a dental service and request a convenient clinic time.">
-            <p className="care-hint">Tell us your name and mobile number, select a preferred time, and the clinic team will contact you to confirm.</p>
-            <button className="primary" onClick={() => P("booking")}>
-              <CalendarDays /> Book an appointment
-            </button>
-          </Panel>
-          <Panel title="Your privacy matters" sub="No account creation or patient login is required for appointment requests.">
-            <p className="care-hint">Your clinical records, prescriptions and invoices remain private in the clinic's protected Doctor workspace. Contact the clinic directly when you need a copy of your records.</p>
-          </Panel>
-        </div>
-      </>
-    );
-  }
-  if (page === "booking")
-    return (
-      <>
-        <Title
-          eyebrow="BOOK YOUR VISIT"
-          title="Book an appointment"
-          desc="Choose a service and a convenient time at the clinic."
-        />
-        <div className="booking panel">
-          {done ? (
-            <div className="success">
-              <CheckCircle2 />
-              <h2>Request received</h2>
-              <p>
-                Your request has been sent to Dr. Pranali Dental Clinic. The
-                clinic will confirm the appointment.
-              </p>
-              <button
-                className="primary"
-                onClick={() => {
-                  G(false);
-                  P("home");
-                }}
-              >
-                Back to home
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="steps">
-                <span className={step >= 1 ? "on" : ""}>
-                  1 <b>Service</b>
-                </span>
-                <i />
-                <span className={step >= 2 ? "on" : ""}>
-                  2 <b>Date & time</b>
-                </span>
-                <i />
-                <span className={step >= 3 ? "on" : ""}>
-                  3 <b>Confirm</b>
-                </span>
-              </div>
-              {step === 1 && (
-                <>
-                  <h2>Select a dental service</h2>
-                  <div className="servicegrid">
-                    {[
-                      [ShieldCheck, "Dental check-up", "Preventive assessment and oral health review"],
-                      [Sparkles, "Cleaning & polishing", "Professional cleaning and stain care"],
-                      [Activity, "Tooth pain consultation", "Assessment for pain and sensitivity"],
-                      [Syringe, "Root canal treatment", "Endodontic care consultation"],
-                      [AlignCenter, "Braces & aligners", "Orthodontic treatment options"],
-                      [CircleDot, "Dental implants", "Tooth replacement consultation"],
-                    ].map(([Icon, x, description]) => (
-                      <button
-                        key={x}
-                        className={service === x ? "service selected" : "service"}
-                        onClick={() => V(x)}
-                      >
-                        <Icon aria-hidden="true" />
-                        <b>{x}</b>
-                        <small>{description}</small>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-              {step === 2 && (
-                <>
-                  <h2>Choose your preferred date and time</h2>
-                  <label className="field">
-                    Preferred date
-                    <input
-                      type="date"
-                      min={localDateISO()}
-                      value={date}
-                      onChange={(e) => D(e.target.value)}
-                    />
-                  </label>
-                  <div className="slots">
-                    {[
-                      "10:00 AM",
-                      "11:00 AM",
-                      "12:00 PM",
-                      "01:00 PM",
-                      "05:30 PM",
-                      "06:30 PM",
-                      "07:30 PM",
-                      "08:30 PM",
-                    ].map((x) => (
-                      <button
-                        className={slot === x ? "selected" : ""}
-                        onClick={() => H(x)}
-                      >
-                        {x}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-              {step === 3 && (
-                <>
-                  <h2>Review your request</h2>
-                  {patientSession?.access_token ? (
-                    selectedPatientLink ? (
-                      <div className="patient-linked-clinic" role="status">
-                        Booking for <b>{selectedPatientLink.patient_name}</b> at <b>{selectedPatientLink.clinic_name}</b>. The request will be attached to this verified clinic record.
-                      </div>
-                    ) : (
-                      <div className="autherror" role="alert">
-                        Link your clinic record before booking from your patient account.
-                        <button className="link" type="button" onClick={() => P("home")}>Go to home and link a record</button>
-                      </div>
-                    )
-                  ) : (
-                    <>
-                      <label className="field">
-                        Your full name
-                        <input
-                          value={patientName}
-                          onChange={(e) => setPatientName(e.target.value)}
-                          required
-                          placeholder="Full name"
-                        />
-                      </label>
-                      <label className="field">
-                        Mobile number
-                        <input
-                          value={patientPhone}
-                          onChange={(e) => setPatientPhone(e.target.value)}
-                          required
-                          minLength={7}
-                          placeholder="10-digit mobile number"
-                        />
-                      </label>
-                    </>
-                  )}
-                  <div className="review">
-                    <span>Service</span>
-                    <b>{service}</b>
-                    <span>Date</span>
-                    <b>{date}</b>
-                    <span>Time</span>
-                    <b>{slot}</b>
-                    <span>Clinic</span>
-                    <b>Dr. Pranali Dental Clinic · Taloja</b>
-                  </div>
-                </>
-              )}
-              <div className="bookingfoot">
-                {step > 1 && (
-                  <button className="outline" onClick={() => Z(step - 1)}>
-                    Back
-                  </button>
-                )}
-                <button
-                  className="primary"
-                  onClick={async () => {
-                    if (step === 2 && (!date || !slot || !localDateTimeFromParts(date, slot))) {
-                      ping("Choose a valid date and an available clinic time before continuing.");
-                      return;
-                    }
-                    if (step < 3) {
-                      Z(step + 1);
-                      return;
-                    }
-                    try {
-                      const starts = localDateTimeFromParts(date, slot);
-                      if (!starts) {
-                        ping("Choose a valid appointment date and time.");
-                        return;
-                      }
-                      if (patientSession?.access_token) {
-                        if (!selectedPatientRecordId) {
-                          ping("Link your clinic record before booking from your patient account.");
-                          return;
-                        }
-                        await dentalApi.patientRequestAppointment(
-                          patientSession.access_token,
-                          selectedPatientRecordId,
-                          {
-                            starts_at: starts.toISOString(),
-                            treatment_type: service,
-                          },
-                        );
-                      } else {
-                        if (
-                          patientName.trim().length < 2 ||
-                          patientPhone.trim().length < 7
-                        ) {
-                          ping("Please enter your name and mobile number.");
-                          return;
-                        }
-                        await dentalApi.publicAppointment({
-                          name: patientName.trim(),
-                          phone: patientPhone.trim(),
-                          starts_at: starts.toISOString(),
-                          treatment_type: service,
-                        });
-                      }
-                      G(true);
-                    } catch (e) {
-                      ping("Booking request failed: " + e.message);
-                    }
-                  }}
-                >
-                  {step === 3 ? "Send appointment request" : "Continue"}{" "}
-                  <ChevronRight />
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </>
-    );
-  if (page === "appointments")
-    return (
-      <>
-        <Title
-          eyebrow="YOUR SCHEDULE"
-          title="Appointments"
-          desc="All your upcoming and previous clinic visits."
-          action="Book appointment"
-          M={() => P("booking")}
-        />
-        <Panel title="Upcoming visits">
-          {patientAppointments.length ? (
-            patientAppointments.map((a) => (
-              <div className="visit">
-                <b>
-                  {new Date(a.starts_at).toLocaleDateString("en-IN", {
-                    day: "2-digit",
-                    month: "short",
-                  })}
-                </b>
-                <div>
-                  <strong>{a.treatment_type}</strong>
-                  <p>
-                    {new Date(a.starts_at).toLocaleString("en-IN")} · Dr.
-                    Pranali
-                  </p>
-                </div>
-                <em>{a.status}</em>
-              </div>
-            ))
-          ) : (
-            <div className="empty-state">
-              No appointments are linked to this patient account yet.
-            </div>
-          )}
-        </Panel>
-      </>
-    );
-  if (page === "messages")
-    return <PatientCommunication mode="patient" session={patientSession} patientId={selectedPatientRecordId} />;
-  if (page === "settings")
-    return <AccountSettings user={patientSession?.user} activeWorkspace={selectedPatientLink} onSignOut={onSignOut} />;
-  if (page === "journey")
-    return (
-      <>
-        <Title
-          eyebrow="YOUR DENTAL CARE"
-          title="Treatment journey"
-          desc="Your clinic-shared treatment plans and recorded dental chart."
-        />
-        <PatientCareManagement page="journey" session={patientSession} patientId={selectedPatientRecordId} patientChart={patientChart} />
-      </>
-    );
-  if (page === "records" || page === "invoices")
-    return (
-      <>
-        <Title
-          eyebrow={page === "records" ? "YOUR HEALTH FILE" : "PAYMENTS"}
-          title={page === "records" ? "Records & prescriptions" : "Invoices & payments"}
-          desc={page === "records" ? "Your clinic-shared documents, organised in one place." : "Invoices and receipts shared by your clinic."}
-        />
-        <PatientCareManagement page={page} session={patientSession} patientId={selectedPatientRecordId} patientChart={patientChart} />
-      </>
-    );
-  return (
-    <>
-      <div className="patienthero">
-        <div>
-          <div className="eyebrow">YOUR SMILE, YOUR CARE</div>
-          <h1>
-            Welcome to Oralyn <span>☀</span>
-          </h1>
-          <p>Your dental care, appointments and clinic updates in one place.</p>
-          {selectedPatientLink && <div className="patient-linked-clinic">Linked clinic: <b>{selectedPatientLink.clinic_name}</b> · {selectedPatientLink.patient_name}</div>}
-          <button className="primary" onClick={() => P("booking")}>
-            <Plus />
-            Book an appointment
-          </button>
-          <button className="outline" onClick={() => P("journey")}>
-            View my dental chart <ChevronRight />
-          </button>
-        </div>
-        <div className="heroart">
-          <img src="/oralyn-app-icon-approved.webp" alt="Oralyn official app mark" />
-          <b>
-            Small steps.
-            <br />
-            Healthier smiles.
-          </b>
-          <small>Your care journey, all in one place.</small>
-        </div>
-      </div>
-      <div className="sectiontitle">
-        <div>
-          <h2>Your next visit</h2>
-          <p>Stay on top of your dental care.</p>
-        </div>
-        <button className="link" onClick={() => P("appointments")}>
-          All appointments ›
-        </button>
-      </div>
-      <Panel
-        title={patientAppointments[0] ? "Your next visit" : "Your next visit"}
-        sub={
-          patientAppointments[0]
-            ? new Date(patientAppointments[0].starts_at).toLocaleString("en-IN")
-            : "Your confirmed clinic appointments will appear here."
-        }
-      >
-        <span className="confirmed">
-          {patientAppointments[0]
-            ? patientAppointments[0].treatment_type +
-              " · " +
-              patientAppointments[0].status
-            : "No appointment linked yet"}
-        </span>
-      </Panel>
-      {!selectedPatientLink && (
-        <Panel
-          title="Link your clinic record"
-          sub="Enter the one-time invite code shared by your clinic."
-        >
-          <div className="field">
-            <input
-              value={patientInviteCode}
-              onChange={(e) => setPatientInviteCode(e.target.value)}
-              placeholder="Clinic invite code"
-            />
-          </div>
-          <button
-            className="primary"
-            onClick={async () => {
-              try {
-                await onLinkPatient(patientInviteCode);
-                setPatientInviteCode("");
-                ping("Your clinic record is now linked.");
-              } catch (e) {
-                ping(e.message);
-              }
-            }}
-          >
-            Link patient record
-          </button>
-        </Panel>
-      )}
-      <div className="sectiontitle">
-        <div>
-          <h2>Your care at a glance</h2>
-          <p>Everything you need, right where you need it.</p>
-        </div>
-      </div>
-      <div className="shortcuts">
-        {[
-          [HeartPulse, "Dental chart", "View your clinic-recorded chart", "journey"],
-          [
-            FileHeart,
-            "Records & prescriptions",
-            "View documents shared by your clinic",
-            "records",
-          ],
-          [
-            Receipt,
-            "Invoices & payments",
-            "View invoices and receipts shared by your clinic",
-            "invoices",
-          ],
-        ].map(([Icon, x, y, p]) => (
-          <button onClick={() => P(p)}>
-            <Icon />
-            <b>{x}</b>
-            <small>{y}</small>
-            <ChevronRight />
-          </button>
-        ))}
-      </div>
-    </>
+const currentPath = window.location.pathname;
+const normalizedPath = currentPath.replace(/\/+$/, "") || "/";
+const publicPatientPaths = new Set(["/patient/home", "/patient/booking"]);
+const isLegacyAssistantAdminRoute = /^\/assistant-admin(?:\/|$)/.test(currentPath);
+const isPublicPatientAlias = publicPatientPaths.has(normalizedPath) && !currentPath.endsWith("/");
+const isDisabledPatientRoute =
+  /^\/patient(?:\/|$)/.test(currentPath) && !publicPatientPaths.has(normalizedPath);
+const redirectPatientRoute = isPublicPatientAlias || isDisabledPatientRoute;
+if (redirectPatientRoute) {
+  window.location.replace(
+    isPublicPatientAlias
+      ? normalizedPath + "/"
+      : currentPath.includes("/booking")
+        ? "/patient/booking/"
+        : "/patient/home/"
   );
 }
+if (isLegacyAssistantAdminRoute) window.location.replace("/doctor/settings");
 createRoot(document.getElementById("root")).render(
   <ErrorBoundary>
-    <App />
+    {redirectPatientRoute || isLegacyAssistantAdminRoute ? (
+      <main className="redirect-screen" role="status">Opening the secure clinic workspace…</main>
+    ) : (
+      <App />
+    )}
   </ErrorBoundary>,
 );
