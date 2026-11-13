@@ -50,6 +50,8 @@ test("synthetic Assistant capture exercises memory-only login, reception and app
   assert.match(source, /patient-create/);
   assert.match(source, /appointment-confirm/);
   assert.match(source, /billing-read/);
+  assert.match(source, /receipt-recorded/);
+  assert.match(source, /assistant_receipt_recording=passed_fixture/);
   assert.match(source, /UNHANDLED_SYNTHETIC_PATH/);
   assert.match(source, /staging_assistant_login_verified=false/);
   assert.match(source, /doctor_clinical_ai_visible=false/);
