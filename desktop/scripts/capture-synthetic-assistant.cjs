@@ -21,7 +21,7 @@ const chrome = spawn(chromePath, [
   "--headless=new", "--no-sandbox", "--disable-gpu", "--hide-scrollbars",
   "--remote-debugging-address=127.0.0.1", "--remote-debugging-port=" + port, "--remote-allow-origins=*",
   "--disable-dev-shm-usage", "--user-data-dir=" + profile,
-  "--window-size=1440,1000", baseUrl + "/assistant/",
+  "--window-size=1440,1000", "about:blank",
 ], { stdio: "ignore", windowsHide: true });
 
 let ws;
