@@ -1,7 +1,20 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { dentalApi } from "../src/api.js";
+
+const desktopRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+const stagingContractSource = fs.readFileSync(
+  path.join(desktopRoot, "scripts", "verify-staging-contract.cjs"),
+  "utf8",
+);
+const workflowSource = fs.readFileSync(
+  path.join(desktopRoot, "..", ".github", "workflows", "oralyn-desktop.yml"),
+  "utf8",
+);
 
 async function captureRequests(run) {
   const originalFetch = globalThis.fetch;
@@ -143,4 +156,27 @@ test("doctor appointment updates and doctor provisioning use authenticated clini
 test("public client does not expose linked-record billing or document methods", () => {
   const linkedRecordMethods = Object.keys(dentalApi).filter((key) => key.startsWith("patient") && key !== "patients");
   assert.deepEqual(linkedRecordMethods, []);
+});
+
+
+test("staging contract requires exact Neon branch identity before synthetic booking", () => {
+  assert.match(stagingContractSource, /database_branch_identity_verified === true/);
+  assert.match(stagingContractSource, /ORALYN_STAGING_DATABASE_BRANCH_VERIFIED/);
+  assert.match(
+    stagingContractSource,
+    /database_identity_verified === true && branchIdentityOk && expectedApiCommit/,
+  );
+});
+
+test("workflow cannot overwrite live backend verification gates with unconditional true", () => {
+  for (const gate of [
+    "ORALYN_PATIENT_ACCOUNT_FREE_VERIFIED",
+    "ORALYN_BACKEND_STACK_VERIFIED",
+    "ORALYN_DATABASE_IDENTITY_VERIFIED",
+    "ORALYN_STAGING_DATABASE_BRANCH_VERIFIED",
+    "ORALYN_CORS_VERIFIED",
+  ]) {
+    assert.doesNotMatch(workflowSource, new RegExp('echo "' + gate + '=true"'));
+  }
+  assert.match(workflowSource, /node scripts\/verify-staging-contract\.cjs/);
 });
