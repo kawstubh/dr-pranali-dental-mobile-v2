@@ -69,12 +69,56 @@ async function githubPullRequest(repo, number) {
   return jsonBody(result.response);
 }
 
+async function waitForResponse(url, predicate, options = {}, attempts = 12, delayMs = 4000) {
+  let last = { response: null, body: null, error: null };
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const result = await request(url, options, 1);
+    const body = await jsonBody(result.response);
+    last = { ...result, body };
+    if (predicate(result.response, body)) return last;
+    if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+  return last;
+}
+
 async function main() {
   const originHeaders = { Origin: portalOrigin };
-  const healthResult = await request(apiOrigin + "/health", { headers: originHeaders });
-  const readyResult = await request(apiOrigin + "/ready", { headers: originHeaders });
-  const dentalHealthResult = await request(apiOrigin + "/v1/dental/health", { headers: originHeaders });
-  const health = await jsonBody(dentalHealthResult.response);
+  const expectedPortalCommit = process.env.ORALYN_COMMIT_SHA || process.env.GITHUB_SHA || "";
+  const backendPr = await githubPullRequest("kawstubh/universal-intelligence-engine", 60);
+  const expectedApiCommit = backendPr?.head?.sha || "";
+
+  const [dentalHealthWait, portalManifestWait] = await Promise.all([
+    waitForResponse(
+      apiOrigin + "/v1/dental/health",
+      (response, body) => response?.status === 200 &&
+        body?.deployment_commit === expectedApiCommit &&
+        body?.database_identity_verified === true,
+      { headers: originHeaders },
+    ),
+    waitForResponse(
+      portalOrigin + "/oralyn-build-manifest.json",
+      (response, body) => response?.status === 200 &&
+        body?.commit_sha === expectedPortalCommit,
+      { headers: { "Cache-Control": "no-cache" } },
+    ),
+  ]);
+
+  const dentalHealthResult = dentalHealthWait;
+  const health = dentalHealthWait.body;
+  const healthResult = await waitForResponse(
+    apiOrigin + "/health",
+    (response) => response?.status === 200,
+    { headers: originHeaders },
+    4,
+    2500,
+  );
+  const readyResult = await waitForResponse(
+    apiOrigin + "/ready",
+    (response) => response?.status === 200,
+    { headers: originHeaders },
+    4,
+    2500,
+  );
   const apiStackOk = healthResult.response?.status === 200 &&
     readyResult.response?.status === 200 &&
     dentalHealthResult.response?.status === 200 &&
@@ -165,16 +209,14 @@ async function main() {
   record("ORALYN_SERVICE_CATALOG_API_VERIFIED", catalogApiOk, "20 repository service labels plus Other in API schema");
   record("ORALYN_SERVICE_CATALOG_UI_VERIFIED", catalogUiOk, "all 20 repository service labels present in public booking HTML");
 
-  const frontendPr = await githubPullRequest("kawstubh/dr-pranali-dental-mobile-v2", 18);
-  const backendPr = await githubPullRequest("kawstubh/universal-intelligence-engine", 60);
-  const livePortalManifestResult = await request(portalOrigin + "/oralyn-build-manifest.json");
-  const livePortalManifest = await jsonBody(livePortalManifestResult.response);
-  const portalCommitOk = Boolean(frontendPr?.head?.sha &&
+  const livePortalManifestResult = portalManifestWait;
+  const livePortalManifest = portalManifestWait.body;
+  const portalCommitOk = Boolean(expectedPortalCommit &&
     livePortalManifestResult.response?.status === 200 &&
-    livePortalManifest?.commit_sha === frontendPr.head.sha);
-  const apiCommitOk = Boolean(backendPr?.head?.sha &&
+    livePortalManifest?.commit_sha === expectedPortalCommit);
+  const apiCommitOk = Boolean(expectedApiCommit &&
     health?.deployment_commit &&
-    health.deployment_commit === backendPr.head.sha);
+    health.deployment_commit === expectedApiCommit);
   record("ORALYN_STAGING_PORTAL_COMMIT_VERIFIED", portalCommitOk, "live portal manifest matches Draft PR #18 head");
   record("ORALYN_STAGING_API_COMMIT_VERIFIED", apiCommitOk, "live API deployment commit matches Draft PR #60 head");
 
