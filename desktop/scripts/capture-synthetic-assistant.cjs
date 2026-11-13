@@ -77,6 +77,7 @@ async function capture(name, width = 1440, height = 1000, mobile = false) {
 
 const fixtureSource = [
   "(() => {",
+  "  window.ORALYN_API_BASE = 'https://oralyn-staging-api-synthetic.onrender.com';",
   "  const token = 'synthetic-assistant-token';",
   "  const assistant = { id: 'assistant-synthetic-001', email: 'reception.synthetic@example.test', role: 'assistant', clinic_id: 'clinic-synthetic-001' };",
   "  const state = {",
