@@ -67,31 +67,42 @@ jobs:
         uses: browser-actions/setup-chrome@v2.2.0
         with:
           chrome-version: latest
-      - name: Start production preview
-        run: |
-          npm run preview -- --host 127.0.0.1 --port 4176 > /tmp/oralyn-desktop-preview.log 2>&1 &
-          for attempt in $(seq 1 40); do
-            if curl --fail --silent http://127.0.0.1:4176/ >/dev/null; then
-              exit 0
-            fi
-            sleep 1
-          done
-          cat /tmp/oralyn-desktop-preview.log
-          echo "::error::Oralyn desktop preview did not become ready."
-          exit 1
-      - name: Verify portal preview security headers
-        run: |
-          node scripts/verify-portal-security-headers.cjs
-          echo "ORALYN_SECURITY_HEADERS_VERIFIED=true" >> "$GITHUB_ENV"
-      - name: Capture real responsive public screens and verify bundled fonts
+      - name: Start preview and capture responsive, Doctor and Assistant UI evidence
         env:
           CHROME_BIN: ${{ steps.setup_chrome.outputs.chrome-path }}
+          CDP_PORT: "19321"
           ORALYN_PREVIEW_URL: http://127.0.0.1:4176
           ORALYN_ENVIRONMENT: staging
         run: |
+          setsid npm run preview -- --host 127.0.0.1 --port 4176 --strictPort > /tmp/oralyn-desktop-preview.log 2>&1 < /dev/null &
+          PREVIEW_PID=$!
+          cleanup_preview() {
+            kill -- -"$PREVIEW_PID" 2>/dev/null || true
+          }
+          trap cleanup_preview EXIT
+          READY=0
+          for attempt in $(seq 1 40); do
+            if curl --fail --silent --max-time 2 http://127.0.0.1:4176/ >/dev/null; then
+              READY=1
+              break
+            fi
+            if ! kill -0 "$PREVIEW_PID" 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          if [ "$READY" -ne 1 ]; then
+            cat /tmp/oralyn-desktop-preview.log
+            echo "::error::Oralyn desktop preview did not become ready."
+            exit 1
+          fi
+          node scripts/verify-portal-security-headers.cjs
+          echo "ORALYN_SECURITY_HEADERS_VERIFIED=true" >> "$GITHUB_ENV"
           test -x "$CHROME_BIN" || { echo "::error::Configured Chrome path is not executable: $CHROME_BIN"; exit 1; }
           "$CHROME_BIN" --version
           node scripts/capture-actual-desktop.cjs
+          ORALYN_CAPTURE_OUTPUT=evidence/synthetic-doctor node scripts/capture-synthetic-doctor.cjs
+          ORALYN_CAPTURE_OUTPUT=evidence/synthetic-assistant node scripts/capture-synthetic-assistant.cjs
       - name: Record responsive browser acceptance gates
         run: |
           echo "ORALYN_MOBILE_BROWSER_E2E_VERIFIED=true" >> "$GITHUB_ENV"
@@ -103,15 +114,6 @@ jobs:
           path: desktop/evidence/actual-desktop/
           if-no-files-found: error
           retention-days: 14
-      - name: Capture authenticated Doctor UI with CI-only synthetic fixtures
-        env:
-          CHROME_BIN: ${{ steps.setup_chrome.outputs.chrome-path }}
-          CDP_PORT: "19321"
-          ORALYN_PREVIEW_URL: http://127.0.0.1:4176
-          ORALYN_CAPTURE_OUTPUT: evidence/synthetic-doctor
-        run: |
-          test -x "$CHROME_BIN" || { echo "::error::Configured Chrome path is not executable: $CHROME_BIN"; exit 1; }
-          node scripts/capture-synthetic-doctor.cjs
       - name: Upload synthetic Doctor UI evidence (not staging acceptance)
         uses: actions/upload-artifact@v7
         with:
@@ -119,14 +121,6 @@ jobs:
           path: desktop/evidence/synthetic-doctor/
           if-no-files-found: error
           retention-days: 14
-      - name: Capture Clinic Assistant UI with CI-only synthetic fixtures
-        env:
-          CHROME_BIN: ${{ steps.setup_chrome.outputs.chrome-path }}
-          ORALYN_PREVIEW_URL: http://127.0.0.1:4176
-          ORALYN_CAPTURE_OUTPUT: evidence/synthetic-assistant
-        run: |
-          test -x "$CHROME_BIN" || { echo "::error::Configured Chrome path is not executable: $CHROME_BIN"; exit 1; }
-          node scripts/capture-synthetic-assistant.cjs
       - name: Upload synthetic Assistant UI evidence (not staging acceptance)
         uses: actions/upload-artifact@v7
         with:
