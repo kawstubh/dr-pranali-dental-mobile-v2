@@ -58,6 +58,6 @@ test("Assistant intake resets the captured form after its asynchronous save", ()
   const file = join(process.cwd(), "public", "assistant", "index.html");
   const source = readFileSync(file, "utf8");
   assert.match(source, /const form = event\.currentTarget; const data = new FormData\(form\);/);
-  assert.match(source, /form\.reset\(\); showMessage\(workspaceMessage,"Patient contact saved\."/);
+  assert.match(source, /form\.reset\(\); await loadWorkspace\(\); showMessage\(workspaceMessage,"Patient contact saved\."/);
   assert.doesNotMatch(source, /event\.currentTarget\.reset\(\)/);
 });
