@@ -198,3 +198,11 @@ test("Clinic Assistant account management is gated by the Doctor owner/admin ses
   assert.ok(script, "Assistant admin page script must be present");
   assert.doesNotThrow(() => new vm.Script(script));
 });
+
+
+test("release manifest blocks production until Doctor token storage is hardened", () => {
+  const manifestPath = path.join(root, "scripts", "write-build-manifest.cjs");
+  const manifestSource = fs.readFileSync(manifestPath, "utf8");
+  assert.ok(manifestSource.includes("doctor_token_storage_hardening_verified"));
+  assert.ok(manifestSource.includes("process.env.ORALYN_DOCTOR_TOKEN_STORAGE_HARDENING_VERIFIED"));
+});
