@@ -489,67 +489,64 @@ function LoginScreen({ loading, error, onLogin, onPatient, onAssistant }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   return (
-    <div className="authscreen">
-      <div className="authcard">
-        <div className="authbrand"><img src="/oralyn-logo-approved.webp" alt="Oralyn official wordmark" /></div>
-        <div className="eyebrow">CLINIC WORKSPACE</div>
-        <h1>Welcome back</h1>
-        <p>
-          Sign in with your clinic doctor account to access secure patient
-          records.
-        </p>
-        {error && <div className="autherror">{error}</div>}
-        <form
-          onSubmit={async (e) => {
+    <main className="oralyn-auth-layout">
+      <section className="oralyn-auth-story" aria-label="About Oralyn">
+        <div className="oralyn-auth-brand">
+          <img src="/oralyn-logo-approved.webp" alt="Oralyn — official approved logo" />
+        </div>
+        <div className="oralyn-auth-copy">
+          <span className="oralyn-auth-kicker">DENTAL CLINIC MANAGEMENT</span>
+          <h1>Everything your dental clinic needs, <em>in one place.</em></h1>
+          <p className="oralyn-auth-intro">A calmer, more connected way to run your clinic — from the first appointment to the treatment journey.</p>
+          <div className="oralyn-auth-features">
+            <article><span className="oralyn-feature-icon">▦</span><div><b>Appointments</b><small>Organise schedules and manage daily visits.</small></div></article>
+            <article><span className="oralyn-feature-icon">＋</span><div><b>Patient records</b><small>Keep essential patient information structured.</small></div></article>
+            <article><span className="oralyn-feature-icon">◇</span><div><b>Treatment plans</b><small>Follow care progress in one workspace.</small></div></article>
+            <article><span className="oralyn-feature-icon">✓</span><div><b>Secure workflows</b><small>Role-based access for your clinic team.</small></div></article>
+          </div>
+        </div>
+        <div className="oralyn-auth-footnote">Designed for focused, connected dental care.</div>
+      </section>
+      <section className="oralyn-auth-panel" aria-label="Doctor sign in">
+        <div className="oralyn-auth-card">
+          <img className="oralyn-auth-appmark" src="/oralyn-app-icon-approved.webp" alt="Oralyn app mark" />
+          <span className="oralyn-auth-label">DOCTOR PORTAL</span>
+          <h2>Welcome back</h2>
+          <p className="oralyn-auth-subtitle">Sign in with your clinic-issued account.</p>
+          {error && <div className="autherror" role="alert">{error}</div>}
+          <form onSubmit={async (e) => {
             e.preventDefault();
             setBusy(true);
-            try {
-              await onLogin(email, password);
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          <label>
-            Email address
-            <input
-              type="email"
-              autoComplete="username"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </label>
-          <label>
-            Password
-            <input
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </label>
-          <button className="primary wide" disabled={busy || loading}>
-            {busy || loading ? "Connecting securely…" : "Sign in to Oralyn"}
-          </button>
-        </form>
-        <button className="patientlink" onClick={onPatient} aria-label="Open public patient services; no account or OTP required">
-          Public patient services
-          <small>No account or OTP required</small>
-        </button>
-        <button className="patientlink" onClick={onAssistant}>
-          Clinic Assistant sign in
-        </button>
-        <small className="auth-session-note">
-          For security, this sign-in stays in memory in this tab. Refreshing or closing the tab signs you out.
-        </small>
-        <small className="authfoot">
-          Secure clinic access · Session verified by the Oralyn server
-        </small>
-      </div>
-    </div>
+            try { await onLogin(email, password); }
+            finally { setBusy(false); }
+          }}>
+            <label className="oralyn-field">Clinic email
+              <input type="email" autoComplete="username" required value={email}
+                placeholder="doctor@yourclinic.com" onChange={(e) => setEmail(e.target.value)} />
+            </label>
+            <label className="oralyn-field">Password
+              <span className="oralyn-password-wrap">
+                <input type={showPassword ? "text" : "password"} autoComplete="current-password"
+                  required value={password} placeholder="Enter your password"
+                  onChange={(e) => setPassword(e.target.value)} />
+                <button type="button" className="oralyn-password-toggle" onClick={() => setShowPassword(v => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? "Hide" : "Show"}</button>
+              </span>
+            </label>
+            <button className="oralyn-signin" disabled={busy || loading}>
+              {busy || loading ? "Verifying securely…" : "Sign in securely"}
+            </button>
+          </form>
+          <div className="oralyn-auth-divider"><span>CLINIC TEAM ACCESS</span></div>
+          <button className="oralyn-team-link" onClick={onAssistant}>Clinic Assistant sign in <span>→</span></button>
+          <div className="oralyn-auth-notice"><span>●</span> Accounts are created and managed by your clinic administrator. No public sign-up.</div>
+          <button className="oralyn-patient-link" onClick={onPatient}>Patient services &amp; appointment requests <span>→</span></button>
+          <small className="auth-session-note">For security, your session stays in this tab. Closing or refreshing it signs you out.</small>
+        </div>
+      </section>
+    </main>
   );
 }
 function ClinicModal({ page, patients, token, onClose, onSaved, ping }) {
