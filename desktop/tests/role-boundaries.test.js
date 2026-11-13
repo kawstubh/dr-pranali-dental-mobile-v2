@@ -230,6 +230,6 @@ test("portal security header probe is a read-only GET check", () => {
 
 
 test("Clinic Assistant appointment queue shows scheduling details without clinical treatment type", () => {
-  assert.match(assistantAppSource, /dateLabel\\(appointment\\.starts_at\\) · Appointment/);
-  assert.doesNotMatch(assistantAppSource, /appointment\\.treatment_type|treatment_type/);
+  assert.match(assistantAppSource, /dateLabel\(appointment\.starts_at\) · Appointment/);
+  assert.doesNotMatch(assistantAppSource, /appointment\.treatment_type|treatment_type/);
 });
