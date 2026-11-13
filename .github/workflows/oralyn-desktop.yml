@@ -54,7 +54,7 @@ jobs:
         if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feat/oralyn-assistant-ui-rebased-20261113'
         run: |
           node scripts/verify-assistant-staging-contract.cjs
-          echo "ORALYN_ASSISTANT_UI_API_VERIFIED=true" >> "$GITHUB_ENV"
+          echo "ORALYN_ASSISTANT_API_CONTRACT_READONLY_VERIFIED=true" >> "$GITHUB_ENV"
           echo "ORALYN_PATIENT_ACCOUNT_FREE_VERIFIED=true" >> "$GITHUB_ENV"
           echo "ORALYN_BACKEND_STACK_VERIFIED=true" >> "$GITHUB_ENV"
           echo "ORALYN_DATABASE_IDENTITY_VERIFIED=true" >> "$GITHUB_ENV"
