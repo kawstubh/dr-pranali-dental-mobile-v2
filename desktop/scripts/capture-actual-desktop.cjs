@@ -222,19 +222,20 @@ async function verifyPublicBookingForm() {
 async function captureAssistantAdminGate() {
   await send("Page.navigate", { url: baseUrl + "/assistant-admin/" });
   await waitFor(() => evaluate(
-    'document.readyState === "complete" && document.body.innerText.includes("Your Doctor session is missing or has expired.")'
+    'location.pathname === "/doctor/settings" && document.body.innerText.includes("Sign in with your clinic doctor account")'
   ));
-  const state = await evaluate('(() => { const gate = document.querySelector("#gate-signin"); const workspace = document.querySelector("#admin-workspace"); const form = document.querySelector("#create-form"); return { signInGateVisible: Boolean(gate && !gate.classList.contains("hidden")), adminWorkspaceHidden: Boolean(workspace && workspace.classList.contains("hidden")), createFormVisible: Boolean(form && form.getClientRects().length) }; })()');
-  if (!state.signInGateVisible || !state.adminWorkspaceHidden || state.createFormVisible) {
-    throw new Error("Assistant admin page exposed controls without a Doctor session: " + JSON.stringify(state));
+  const state = await evaluate('(() => ({ redirectedToDoctorSettings: location.pathname === "/doctor/settings", doctorSignInVisible: document.body.innerText.includes("Sign in with your clinic doctor account"), assistantManagementFormVisible: Boolean(document.querySelector(".assistant-management-form")) }))()');
+  if (!state.redirectedToDoctorSettings || !state.doctorSignInVisible || state.assistantManagementFormVisible) {
+    throw new Error("Legacy Assistant admin route did not fail closed to Doctor authentication: " + JSON.stringify(state));
   }
   const plusJakartaSans = await evaluate('document.fonts.load("400 16px \\"Plus Jakarta Sans\\"").then((faces) => faces.length > 0)');
-  if (!plusJakartaSans) throw new Error("Assistant admin page did not load the bundled Plus Jakarta Sans font.");
-  await capture("assistant-admin-gate-1440x1000.png", 1440, 1000);
-  await capture("assistant-admin-gate-768x1024.png", 768, 1024);
-  await capture("assistant-admin-gate-390x844.png", 390, 844, true);
+  if (!plusJakartaSans) throw new Error("Doctor settings gate did not load the bundled Plus Jakarta Sans font.");
+  await capture("assistant-admin-redirect-gate-1440x1000.png", 1440, 1000);
+  await capture("assistant-admin-redirect-gate-768x1024.png", 768, 1024);
+  await capture("assistant-admin-redirect-gate-390x844.png", 390, 844, true);
   return { ...state, plusJakartaSans };
 }
+
 
 (async () => {
   try {
@@ -356,10 +357,10 @@ async function captureAssistantAdminGate() {
       "patient_login_redirect=" + Boolean(fontResults.patientLegacyLoginRedirect),
       "authenticated_screens=false",
       "mobile_viewport=390x844",
-      "assistant_admin_gate=passed",
+      "assistant_admin_redirect_gate=passed",
       "guest_booking_validation=passed",
       "guest_booking_service_count=" + fontResults.patientBookingValidation.catalogueCount,
-      "assistant_admin_create_form_visible=" + fontResults.assistantAdmin.createFormVisible,
+      "assistant_admin_management_form_visible=" + fontResults.assistantAdmin.assistantManagementFormVisible,
       "assistant_admin_plus_jakarta_sans_loaded=" + fontResults.assistantAdmin.plusJakartaSans,
       "role_route_refresh_back_forward=passed",
       "runtime_errors=none",
