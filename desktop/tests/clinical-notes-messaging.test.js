@@ -9,6 +9,8 @@ const root = path.join(here, "..");
 const api = fs.readFileSync(path.join(root, "src", "api.js"), "utf8");
 const care = fs.readFileSync(path.join(root, "src", "careScreens.jsx"), "utf8");
 const main = fs.readFileSync(path.join(root, "src", "main.jsx"), "utf8");
+const patientHome = fs.readFileSync(path.join(root, "public", "patient", "home", "index.html"), "utf8");
+const patientBooking = fs.readFileSync(path.join(root, "public", "patient", "booking", "index.html"), "utf8");
 
 test("clinical notes use doctor-scoped APIs and optimistic version checks", () => {
   assert.ok(api.includes("/doctor/patients/${encodeURIComponent(patientId)}/clinical-notes"));
@@ -41,8 +43,10 @@ test("portal keeps clinical navigation in Doctor workspace and patient navigatio
   assert.ok(main.includes('["notes", "Clinical notes", FileText]'));
   assert.ok(main.includes('["files", "Private documents", FileText]'));
   assert.ok(main.includes('["messages", "Patient messages", MessageCircle]'));
-  assert.ok(main.includes('["booking", "Book appointment", CalendarDays]'));
-  assert.ok(main.includes('No patient account or password is needed.'));
+  assert.ok(patientHome.includes('href="/patient/booking/"'));
+  assert.ok(patientHome.includes("No patient account, password or OTP is needed."));
+  assert.ok(patientBooking.includes("/v1/dental/public/appointments"));
+  assert.ok(!main.includes("function Patient("));
   assert.ok(!main.includes('["messages", "Clinic messages", MessageCircle]'));
 });
 
