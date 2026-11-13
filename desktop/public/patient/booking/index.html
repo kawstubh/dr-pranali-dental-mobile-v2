@@ -38,8 +38,8 @@
 <option value="Other dental concern">Other dental concern (not listed)</option>
 </select></label>
 <div class="grid">
-<label>Preferred date *<input name="date" id="date" type="date" min="2026-11-13" required></label>
-<label>Preferred time (IST) *<select name="time" required><option value="">Choose a time</option><option>10:00</option><option>11:00</option><option>12:00</option><option>13:00</option><option>17:00</option><option>18:00</option><option>19:00</option><option>20:00</option></select></label>
+<label>Preferred date *<input name="date" id="date" type="date" required></label>
+<label>Preferred time (IST) *<select name="time" id="time" required><option value="">Choose a time</option><option>10:00</option><option>11:00</option><option>12:00</option><option>13:00</option><option>17:00</option><option>18:00</option><option>19:00</option><option>20:00</option></select></label>
 </div>
 <p class="note"><strong>All appointment times are shown in India Standard Time (IST, Asia/Kolkata).</strong></p>
 <label class="hp" aria-hidden="true">Leave this field empty<input name="website" tabindex="-1" autocomplete="off"></label>
@@ -55,6 +55,7 @@ const form = document.getElementById("booking");
 const message = document.getElementById("message");
 const dateInput = document.getElementById("date");
 const phoneInput = document.getElementById("phone");
+const timeInput = document.getElementById("time");
 const phoneError = document.getElementById("phone-error");
 const serviceSelect = document.getElementById("treatment-type");
 const serviceById = {"checkup":"Dental Check-up & Consultation","scaling":"Scaling & Cleaning","whitening":"Teeth Whitening","filling":"Tooth Filling","rct":"Root Canal Treatment (RCT)","crowns":"Dental Crowns & Caps","implants":"Dental Implants","extraction":"Tooth Extraction","braces":"Braces Treatment","aligners":"Clear Aligners (Invisible Braces)","dentures":"Dentures (Full / Partial)","veneers":"Veneers (Smile Makeover)","gum-care":"Gum Treatment (Periodontal Care)","kids":"Kids Dentistry (Child Care)","emergency":"Emergency Dental Care","sensitivity":"Tooth Sensitivity Treatment","sealants":"Dental Sealants (Cavity Prevention)","hygiene":"Oral Hygiene Education","smile-makeover":"Smile Makeover (Cosmetic Dentistry)","tmj":"TMJ & Jaw Pain Treatment"};
@@ -86,8 +87,24 @@ const rotateIdempotencyKey = () => {
     sessionStorage.removeItem(pendingStorageKey);
   } catch {}
 };
-form.addEventListener("input", () => { if (requestPending) rotateIdempotencyKey(); });
-form.addEventListener("change", () => { if (requestPending) rotateIdempotencyKey(); });
+const clearValidationMessage = () => {
+  if (message.classList.contains("error")) {
+    message.className = "msg";
+    message.textContent = "";
+  }
+};
+form.addEventListener("invalid", () => {
+  message.className = "msg error";
+  message.textContent = "Please complete all required fields and correct any highlighted details before sending your request.";
+}, true);
+form.addEventListener("input", () => {
+  if (requestPending) rotateIdempotencyKey();
+  clearValidationMessage();
+});
+form.addEventListener("change", () => {
+  if (requestPending) rotateIdempotencyKey();
+  clearValidationMessage();
+});
 const today = new Date();
 const clinicParts = new Intl.DateTimeFormat("en-GB", {timeZone:"Asia/Kolkata",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(today);
 const clinicPart = (type) => clinicParts.find((part) => part.type === type)?.value || "";
