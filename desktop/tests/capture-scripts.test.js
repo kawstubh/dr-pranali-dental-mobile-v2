@@ -19,19 +19,38 @@ test("synthetic Doctor capture uses a safely quoted clinic workspace selector", 
   assert.equal(source.split(selector).length - 1, 3);
 });
 
+test("synthetic Doctor capture proves memory-only token behavior across refresh and expiry", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-synthetic-doctor.cjs"), "utf8");
+  assert.match(source, /auth\/password\/login/);
+  assert.match(source, /submitDoctorLogin/);
+  assert.match(source, /doctor_token_storage=memory_only/);
+  assert.match(source, /doctor_session_reload=requires_login/);
+  assert.match(source, /noPersistentTokenAfterReload/);
+  assert.doesNotMatch(source, /localStorage\.setItem\('oralyn_doctor_token'/);
+});
 
-test("real browser capture verifies the gated Assistant admin page at desktop, tablet and mobile sizes", () => {
+test("synthetic Doctor capture uses SPA navigation while the bearer token is memory-only", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-synthetic-doctor.cjs"), "utf8");
+  const start = source.indexOf("async function navigate(route, expectedText)");
+  const end = source.indexOf("async function submitDoctorLogin", start);
+  assert.ok(start >= 0 && end > start);
+  const helper = source.slice(start, end);
+  assert.match(helper, /history\.pushState/);
+  assert.match(helper, /PopStateEvent\('popstate'\)/);
+  assert.doesNotMatch(helper, /Page\.navigate/);
+});
+
+
+test("real browser capture verifies legacy Assistant admin route redirects to Doctor sign-in", () => {
   const file = join(process.cwd(), "scripts", "capture-actual-desktop.cjs");
   const source = readFileSync(file, "utf8");
 
   assert.doesNotThrow(() => new Script(source, { filename: file }));
-  assert.match(source, /\/assistant-admin\//);
-  assert.match(source, /assistant_admin_gate=passed/);
-  assert.match(source, /assistant-admin-gate-1440x1000\.png/);
-  assert.match(source, /assistant-admin-gate-768x1024\.png/);
-  assert.match(source, /assistant-admin-gate-390x844\.png/);
-  assert.match(source, /adminWorkspaceHidden/);
-  assert.match(source, /createFormVisible/);
+  assert.match(source, /assistant-admin-redirect-gate/);
+  assert.match(source, /redirectedToDoctorSettings/);
+  assert.match(source, /doctorSignInVisible/);
+  assert.match(source, /assistantManagementFormVisible/);
+  assert.match(source, /assistant_admin_redirect_gate=passed/);
 });
 
 
