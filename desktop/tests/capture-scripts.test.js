@@ -157,6 +157,6 @@ test("synthetic Doctor and Assistant captures tolerate PWA activation delay with
   assert.match(doctor, /service-worker-controlled Doctor page/);
   assert.match(doctor, /PWA state=/);
   assert.match(doctor, /30000,\s*"service-worker-controlled Doctor page"/);
-  assert.match(assistant, /controller\)\), 30000\)\.catch/);
+  assert.match(assistant, /controller\)'\), 30000\)\.catch/);
   assert.match(assistant, /if \(!controlled\) throw new Error\("Synthetic Assistant capture is not controlled/);
 });
