@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
+import vm from "node:vm";
 import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -91,6 +92,9 @@ test("Clinic Assistant has a separate least-privilege workspace", () => {
   assert.match(assistantSource, /assistant\/billing\/invoices/);
   assert.match(assistantSource, /sessionStorage/);
   assert.doesNotMatch(assistantSource, /\/v1\/dental\/(?:intelligence|doctor|patients|appointments)(?:\/|["?])/);
+  const script = assistantSource.match(/<script>([\\s\\S]*?)<\\/script>/)?.[1];
+  assert.ok(script, "assistant page script must be present");
+  assert.doesNotThrow(() => new vm.Script(script));
 });
 \ntest("Doctor clinical records remain scoped to Doctor-authenticated APIs", () => {
   assert.match(apiSource, /doctorTreatmentPlans:/);
