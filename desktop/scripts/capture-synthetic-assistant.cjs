@@ -9,6 +9,7 @@ const output = path.resolve(process.env.ORALYN_CAPTURE_OUTPUT || path.join(root,
 const chromePath = process.env.CHROME_BIN || "google-chrome";
 const port = Number(process.env.CDP_PORT || 19312);
 const baseUrl = process.env.ORALYN_PREVIEW_URL || "http://127.0.0.1:4176";
+const commit = process.env.ORALYN_COMMIT_SHA || process.env.GITHUB_SHA || "unknown";
 const profile = path.join(os.tmpdir(), "oralyn-synthetic-assistant-" + process.pid);
 const assetsDir = path.join(root, "dist", "assets");
 const jsFile = fs.readdirSync(assetsDir).find((name) => name.endsWith(".js"));
@@ -216,6 +217,7 @@ async function main() {
 
   const metadata = [
     "environment=CI_SYNTHETIC_ONLY",
+    "commit=" + commit,
     "bundle=" + jsFile,
     "bundle_sha256=" + bundleHash,
     "synthetic_data_only=true",
