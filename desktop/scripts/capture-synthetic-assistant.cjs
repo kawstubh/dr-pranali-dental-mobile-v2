@@ -208,6 +208,8 @@ async function main() {
   if (!fontLoaded) throw new Error("Bundled Plus Jakarta Sans did not load in the Assistant workspace.");
   await capture("assistant-workspace-1440x1000.png", 1440, 1000);
   await capture("assistant-workspace-768x1024.png", 768, 1024);
+  const tabletLayout = await evaluate("({viewportWidth:document.documentElement.clientWidth,innerWidth:window.innerWidth,scrollWidth:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)})");
+  if (tabletLayout.scrollWidth > tabletLayout.viewportWidth + 1) throw new Error("Assistant tablet layout failed: " + JSON.stringify(tabletLayout));
   await capture("assistant-workspace-390x844.png", 390, 844, true);
   const mobileLayout = await evaluate("({viewportWidth:document.documentElement.clientWidth,innerWidth:window.innerWidth,visualViewportWidth:window.visualViewport?.width,scrollWidth:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth),inputsLabeled:[...document.querySelectorAll('input')].every((input) => input.labels && input.labels.length > 0)})");
   if (mobileLayout.scrollWidth > mobileLayout.viewportWidth + 1 || !mobileLayout.inputsLabeled) throw new Error("Assistant mobile layout or form labels failed: " + JSON.stringify(mobileLayout));
@@ -320,6 +322,7 @@ async function main() {
     "assistant_appointment_reschedule=passed_fixture",
     "assistant_receipt_recording=passed_fixture",
     "assistant_session_logout=passed_fixture",
+    "assistant_tablet_layout=" + JSON.stringify(tabletLayout),
     "assistant_mobile_layout=" + JSON.stringify(mobileLayout),
     "doctor_ai_api_calls=none",
     "clinical_controls=none",
