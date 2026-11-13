@@ -10,7 +10,7 @@ const chromePath = process.env.CHROME_BIN || "google-chrome";
 const port = Number(process.env.CDP_PORT || 19321);
 const baseUrl = process.env.ORALYN_PREVIEW_URL || "http://127.0.0.1:4176";
 const profile = path.join(os.tmpdir(), "oralyn-synthetic-doctor-" + process.pid);
-const commit = process.env.GITHUB_SHA || "unknown";
+const commit = process.env.ORALYN_COMMIT_SHA || process.env.GITHUB_SHA || "unknown";
 const assetsDir = path.join(root, "dist", "assets");
 const jsFile = fs.readdirSync(assetsDir).find((name) => name.endsWith(".js"));
 if (!jsFile) throw new Error("Production JavaScript bundle was not found.");
