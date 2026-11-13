@@ -6,12 +6,6 @@ on:
     paths:
       - 'desktop/**'
       - '.github/workflows/oralyn-desktop.yml'
-  # Run the rebased Assistant integration branch directly because its PR targets a feature branch.
-  push:
-    branches: [master, feat/oralyn-assistant-ui-rebased-20261113]
-    paths:
-      - 'desktop/**'
-      - '.github/workflows/oralyn-desktop.yml'
 permissions:
   contents: read
 jobs:
