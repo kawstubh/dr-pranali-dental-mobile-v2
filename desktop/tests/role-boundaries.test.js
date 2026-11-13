@@ -115,7 +115,8 @@ test("private document actions remain fail-closed until storage and malware scan
   assert.match(careSource, /VITE_PRIVATE_DOCUMENT_STORAGE_READY/);
   assert.match(careSource, /VITE_DOCUMENT_MALWARE_SCANNING_READY/);
   assert.match(careSource, /PRIVATE_DOCUMENTS_READY/);
-  assert.match(careSource, /Uploads, downloads, review and patient sharing are disabled/);
+  assert.match(careSource, /Uploads, downloads and review are disabled/);
+  assert.match(careSource, /Patient-specific sharing is separately deferred/);
   assert.match(careSource, /PRIVATE_DOCUMENTS_READY && document\.status === "available"/);
   assert.match(apiSource, /createDocumentUploadIntent/);
 });
