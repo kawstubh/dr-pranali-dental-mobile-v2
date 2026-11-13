@@ -264,9 +264,9 @@ async function verifyPublicBookingForm() {
 async function captureAssistantAdminGate() {
   await send("Page.navigate", { url: baseUrl + "/assistant-admin/" });
   await waitFor(() => evaluate(
-    'location.pathname === "/doctor/settings" && document.body.innerText.includes("Sign in with your clinic doctor account")'
+    'location.pathname === "/doctor/settings" && document.body.innerText.includes("Sign in with your clinic-issued account")'
   ));
-  const state = await evaluate('(() => ({ redirectedToDoctorSettings: location.pathname === "/doctor/settings", doctorSignInVisible: document.body.innerText.includes("Sign in with your clinic doctor account"), assistantManagementFormVisible: Boolean(document.querySelector(".assistant-management-form")) }))()');
+  const state = await evaluate('(() => ({ redirectedToDoctorSettings: location.pathname === "/doctor/settings", doctorSignInVisible: document.body.innerText.includes("Sign in with your clinic-issued account"), assistantManagementFormVisible: Boolean(document.querySelector(".assistant-management-form")) }))()');
   if (!state.redirectedToDoctorSettings || !state.doctorSignInVisible || state.assistantManagementFormVisible) {
     throw new Error("Legacy Assistant admin route did not fail closed to Doctor authentication: " + JSON.stringify(state));
   }
@@ -329,7 +329,7 @@ async function captureAssistantAdminGate() {
 
     const fontResults = {};
     fontResults.doctorLogin = await captureCurrent(
-      "Sign in with your clinic doctor account",
+      "Sign in with your clinic-issued account",
       "doctor-login"
     );
     fontResults.assistantLogin = await navigate(
@@ -339,10 +339,10 @@ async function captureAssistantAdminGate() {
     );
     await send("Page.navigate", { url: baseUrl + "/doctor/dashboard" });
     await waitFor(() => evaluate(
-      'location.pathname === "/doctor/dashboard" && document.body.innerText.includes("Sign in with your clinic doctor account")'
+      'location.pathname === "/doctor/dashboard" && document.body.innerText.includes("Sign in with your clinic-issued account")'
     ));
     const switchedToPatient = await evaluate(
-      "(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').trim().includes('Public patient services')); if (!button) return false; button.click(); return true; })()"
+      "(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').trim().includes('Patient services & appointment requests')); if (!button) return false; button.click(); return true; })()"
     );
     if (!switchedToPatient) throw new Error("Doctor-to-public-patient portal link was not found.");
     await waitFor(() => evaluate(
@@ -356,7 +356,7 @@ async function captureAssistantAdminGate() {
     ));
     await evaluate("history.back()");
     await waitFor(() => evaluate(
-      'location.pathname === "/doctor/dashboard" && document.body.innerText.includes("Sign in with your clinic doctor account")'
+      'location.pathname === "/doctor/dashboard" && document.body.innerText.includes("Sign in with your clinic-issued account")'
     ));
     await evaluate("history.forward()");
     await waitFor(() => evaluate(
