@@ -3721,3 +3721,92 @@ main.oralyn-auth-layout {
   .oralyn-auth-panel { padding:16px 12px 28px; }
   .oralyn-auth-card { padding:26px 21px; }
 }
+
+
+/* ORALYN MOTION SYSTEM — restrained, high-performance CSS micro-interactions */
+@keyframes oralyn-enter {
+  from { opacity:0; transform:translate3d(0,8px,0); }
+  to { opacity:1; transform:translate3d(0,0,0); }
+}
+@keyframes oralyn-feature-enter {
+  from { opacity:0; transform:translate3d(0,10px,0); }
+  to { opacity:1; transform:translate3d(0,0,0); }
+}
+@keyframes oralyn-shimmer {
+  0% { background-position:110% 0; }
+  100% { background-position:-110% 0; }
+}
+@keyframes oralyn-spin { to { transform:rotate(360deg); } }
+@keyframes oralyn-pulse { 50% { opacity:.55; } }
+
+.oralyn-auth-brand { animation:oralyn-enter .72s cubic-bezier(.16,1,.3,1) .04s both; }
+.oralyn-auth-copy { animation:oralyn-enter .76s cubic-bezier(.16,1,.3,1) .12s both; }
+.oralyn-auth-panel { animation:oralyn-enter .78s cubic-bezier(.16,1,.3,1) .08s both; }
+.oralyn-auth-card { animation:oralyn-enter .82s cubic-bezier(.16,1,.3,1) .16s both; }
+.oralyn-auth-features article {
+  opacity:0; animation:oralyn-feature-enter .68s cubic-bezier(.16,1,.3,1) both;
+  transition:color .22s ease,transform .24s cubic-bezier(.16,1,.3,1);
+}
+.oralyn-auth-features article:nth-child(1) { animation-delay:.22s; }
+.oralyn-auth-features article:nth-child(2) { animation-delay:.27s; }
+.oralyn-auth-features article:nth-child(3) { animation-delay:.32s; }
+.oralyn-auth-features article:nth-child(4) { animation-delay:.37s; }
+.oralyn-auth-features article:hover { transform:translateX(4px); }
+.oralyn-feature-icon { transition:transform .28s cubic-bezier(.16,1,.3,1),background .25s ease,color .25s ease; }
+.oralyn-auth-features article:hover .oralyn-feature-icon { transform:scale(1.08); background:rgba(0,198,200,.25); }
+
+.oralyn-field { transition:color .22s ease,transform .22s cubic-bezier(.16,1,.3,1); }
+.oralyn-field:focus-within { color:#087bd2; transform:translateY(-1px); }
+.oralyn-field input {
+  transition:border-color .24s ease,box-shadow .28s cubic-bezier(.16,1,.3,1),background .24s ease,transform .24s ease;
+}
+.oralyn-field input:focus {
+  border-color:#168fe8; background:#fff;
+  box-shadow:0 0 0 3px rgba(10,132,232,.10),0 5px 18px rgba(10,132,232,.07);
+}
+.oralyn-field input:focus-visible { outline:none; }
+.oralyn-password-toggle { transition:color .2s ease,background .2s ease; }
+.oralyn-password-toggle:hover { color:#064f9d; background:#edf7ff; }
+
+.oralyn-signin {
+  position:relative; isolation:isolate; overflow:hidden;
+  background-image:linear-gradient(105deg,#087fe0 0%,#0756c7 38%,#168fe8 50%,#0756c7 62%,#087fe0 100%);
+  background-size:220% 100%; background-position:100% 0;
+  transition:transform .2s cubic-bezier(.16,1,.3,1),box-shadow .24s ease,background-position .55s ease,filter .2s ease;
+}
+.oralyn-signin:hover:not(:disabled) { transform:translateY(-1px); background-position:0 0; box-shadow:0 13px 27px rgba(7,105,207,.28); }
+.oralyn-signin:active:not(:disabled) { transform:scale(.98); box-shadow:0 5px 12px rgba(7,105,207,.18); }
+.oralyn-signin:focus-visible,.oralyn-team-link:focus-visible,.oralyn-patient-link:focus-visible {
+  outline:3px solid rgba(0,198,200,.45); outline-offset:3px;
+}
+.oralyn-signin:disabled { animation:oralyn-pulse 1.5s ease-in-out infinite; }
+.oralyn-spinner {
+  display:inline-block;width:15px;height:15px;margin-right:10px;vertical-align:-2px;
+  border:2px solid rgba(255,255,255,.38);border-top-color:#fff;border-radius:50%;
+  animation:oralyn-spin .72s linear infinite;
+}
+.oralyn-team-link,.oralyn-patient-link {
+  position:relative; transition:color .2s ease,transform .22s cubic-bezier(.16,1,.3,1);
+}
+.oralyn-team-link:after,.oralyn-patient-link:after {
+  content:"";position:absolute;left:1px;bottom:5px;width:0;height:1px;
+  background:currentColor;transition:width .28s cubic-bezier(.16,1,.3,1);
+}
+.oralyn-team-link:hover,.oralyn-patient-link:hover { color:#034f9e; transform:translateX(2px); }
+.oralyn-team-link:hover:after,.oralyn-patient-link:hover:after { width:calc(100% - 28px); }
+.oralyn-team-link span,.oralyn-patient-link span { transition:transform .22s ease; }
+.oralyn-team-link:hover span,.oralyn-patient-link:hover span { transform:translateX(4px); }
+.oralyn-auth-notice { transition:background .22s ease,border-color .22s ease; }
+.oralyn-auth-notice:hover { background:#eef8fc; border-color:#d2e9f0; }
+
+@media(prefers-reduced-motion:reduce) {
+  .oralyn-auth-brand,.oralyn-auth-copy,.oralyn-auth-panel,.oralyn-auth-card,
+  .oralyn-auth-features article { animation:none !important; opacity:1 !important; transform:none !important; }
+  .oralyn-auth-features article,.oralyn-feature-icon,.oralyn-field,.oralyn-field input,
+  .oralyn-password-toggle,.oralyn-signin,.oralyn-team-link,.oralyn-patient-link,
+  .oralyn-team-link:after,.oralyn-patient-link:after,.oralyn-team-link span,.oralyn-patient-link span {
+    transition:none !important;
+  }
+  .oralyn-signin:disabled { animation:none !important; }
+  .oralyn-spinner { animation:none !important; border-right-color:#fff; }
+}
