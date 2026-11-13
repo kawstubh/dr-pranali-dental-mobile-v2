@@ -6,8 +6,9 @@ on:
     paths:
       - 'desktop/**'
       - '.github/workflows/oralyn-desktop.yml'
+  # Feature-branch commits are validated by the PR event; avoid duplicate browser runs.
   push:
-    branches: [feat/oralyn-desktop-app, feat/oralyn-assistant-ui-20261113]
+    branches: [master]
     paths:
       - 'desktop/**'
       - '.github/workflows/oralyn-desktop.yml'
