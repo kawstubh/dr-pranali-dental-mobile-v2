@@ -38,6 +38,7 @@ import {
 import "./styles.css";
 import { dentalApi } from "./api.js";
 import ErrorBoundary from "./ErrorBoundary.jsx";
+import AssistantApp, { AssistantManagement } from "./assistant.jsx";
 import { normaliseList, normaliseUser, localDateISO, localDateTimeFromParts, formatTime, isSameLocalDay } from "./data.js";
 import { DoctorCareManagement, PatientCareManagement, DoctorClinicalNotes, PatientCommunication } from "./careScreens.jsx";
 import { createPortalNavigator, resolvePortalRoute } from "./routing.js";
@@ -102,6 +103,10 @@ function App() {
     [pwaUpdateReady, setPwaUpdateReady] = useState(false);
   const portalNavigator = useRef(null);
   const P = (nextPage) => {
+    if (role === "patient") {
+      window.location.assign(nextPage === "booking" ? "/patient/booking/" : "/patient/home/");
+      return;
+    }
     setPage(nextPage);
     portalNavigator.current?.navigate(role, nextPage);
   };
@@ -332,6 +337,9 @@ function App() {
         error={authError}
         onPatient={() => {
           window.location.assign("/patient/home/");
+        }}
+        onAssistant={() => {
+          window.location.assign("/assistant/");
         }}
         onLogin={async (email, password) => {
           setAuthError("");
@@ -605,7 +613,7 @@ function App() {
     </div>
   );
 }
-function LoginScreen({ loading, error, onLogin, onPatient }) {
+function LoginScreen({ loading, error, onLogin, onPatient, onAssistant }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -657,6 +665,9 @@ function LoginScreen({ loading, error, onLogin, onPatient }) {
         </form>
         <button className="patientlink" onClick={onPatient}>
           Continue to patient portal
+        </button>
+        <button className="patientlink" onClick={onAssistant}>
+          Clinic Assistant sign in
         </button>
         <small className="authfoot">
           Secure clinic access · Session verified by the Oralyn server
@@ -853,8 +864,6 @@ function Panel({ title, sub, children, action }) {
   );
 }
 function AccountSettings({ user, activeWorkspace, onSignOut }) {
-  const accountRole = String(user?.role || "").toLowerCase();
-  const canManageAssistants = accountRole === "owner" || accountRole === "admin";
   return (
     <>
       <Title eyebrow="ACCOUNT & SECURITY" title="Settings" desc="Review the signed-in account and active clinic context." />
@@ -862,7 +871,7 @@ function AccountSettings({ user, activeWorkspace, onSignOut }) {
         <Panel title="Signed-in account" sub="Identity returned by the authenticated service.">
           <div className="settings-list">
             <div><small>Account</small><b>{user?.email || user?.name || "Authenticated account"}</b></div>
-            <div><small>Role</small><b>{user?.role || "Patient"}</b></div>
+            <div><small>Role</small><b>{user?.role || "Doctor"}</b></div>
             <div><small>Session</small><b>Authenticated · session-managed</b></div>
           </div>
         </Panel>
@@ -872,12 +881,6 @@ function AccountSettings({ user, activeWorkspace, onSignOut }) {
             <div><small>Organisation</small><b>{activeWorkspace?.organisation_name || "Not returned"}</b></div>
           </div>
         </Panel>
-        {canManageAssistants && (
-          <Panel title="Clinic Assistant accounts" sub="Manage separate reception-only accounts for this clinic.">
-            <p className="care-hint">Assistants can manage intake, appointments and approved billing tasks. Clinical notes, treatment plans, prescriptions and clinical intelligence remain Doctor-only.</p>
-            <button className="outline" onClick={() => window.location.assign("/assistant-admin/index.html")}>Manage Clinic Assistant accounts</button>
-          </Panel>
-        )}
         <Panel title="Privacy and access" sub="Oralyn keeps clinical records behind role and clinic permissions.">
           <p className="care-hint">Patient-facing AI diagnosis and self-diagnosis are not available. Clinical notes remain private. Private document uploads, downloads, review and patient sharing are disabled until secure private storage and fail-closed malware scanning are configured and verified.</p>
           <button className="outline" onClick={onSignOut}>Sign out securely</button>
@@ -1408,7 +1411,12 @@ function Doctor({
   if (page === "messages")
     return <PatientCommunication mode="doctor" token={token} activePatient={activePatient} />;
   if (page === "settings")
-    return <AccountSettings user={user} activeWorkspace={activeWorkspace} onSignOut={onSignOut} />;
+    return (
+      <>
+        <AccountSettings user={user} activeWorkspace={activeWorkspace} onSignOut={onSignOut} />
+        <AssistantManagement token={token} user={user} />
+      </>
+    );
   if (page === "files")
     return <DoctorCareManagement page={page} token={token} activePatient={activePatient} ping={ping} />;
   if (page === "billing")
@@ -2202,8 +2210,31 @@ function Patient({
     </>
   );
 }
+const currentPath = window.location.pathname;
+const normalizedPath = currentPath.replace(/\/+$/, "") || "/";
+const publicPatientPaths = new Set(["/patient/home", "/patient/booking"]);
+const isAssistantRoute = /^\/assistant(?:\/|$)/.test(currentPath);
+const isPublicPatientAlias = publicPatientPaths.has(normalizedPath) && !currentPath.endsWith("/");
+const isDisabledPatientRoute =
+  /^\/patient(?:\/|$)/.test(currentPath) && !publicPatientPaths.has(normalizedPath);
+const redirectPatientRoute = isPublicPatientAlias || isDisabledPatientRoute;
+if (redirectPatientRoute) {
+  window.location.replace(
+    isPublicPatientAlias
+      ? normalizedPath + "/"
+      : currentPath.includes("/booking")
+        ? "/patient/booking/"
+        : "/patient/home/"
+  );
+}
 createRoot(document.getElementById("root")).render(
   <ErrorBoundary>
-    <App />
+    {isAssistantRoute ? (
+      <AssistantApp />
+    ) : redirectPatientRoute ? (
+      <main className="redirect-screen" role="status">Opening the public clinic page…</main>
+    ) : (
+      <App />
+    )}
   </ErrorBoundary>,
 );
