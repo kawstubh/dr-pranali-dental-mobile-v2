@@ -1,78 +1,47 @@
-﻿# Dr. Pranali Dental â€” AI-Ready Dental Care Platform
+# Oralyn Responsive Web Portal
 
-Oralyn is a React Native / Expo patient application for Dr. Pranali Dental Clinic, designed to connect with the Universal Intelligence Engine (UIE) for clinician-reviewed dental intelligence.
+Oralyn is one responsive browser-based portal for Dr. Pranali Dental Clinic. The same application serves desktop, tablet and mobile browsers. Installing it as a Progressive Web App is optional. Native Android/iOS applications and APKs are not part of this product or release.
 
-## Public status
+## Product surfaces
 
-This repository is **public** and intended for demonstration, pilot evaluation, and engineering collaboration.
+- Public Patient journey: clinic information, the approved 20-service catalogue and an account-free appointment request. A request is not a confirmed appointment; the clinic contacts the patient to confirm.
+- Doctor workspace: mandatory authenticated access to the patient directory, clinical profiles, appointments, odontogram, clinical notes, treatment plans, billing, reports and Doctor-only clinical intelligence.
+- Clinic Assistant workspace: separate Assistant identity and least-privilege access for reception intake, patient contact, appointment queue/confirmation and approved billing collection. Assistants cannot access clinical notes, odontograms, treatment plans, prescriptions, clinical intelligence, document sharing or owner settings.
 
-### Current product scope
+The Patient journey has no patient accounts, passwords, OTP, signup/login or Supabase patient authentication. Public pages never expose clinical notes, history, odontograms, prescriptions, invoices, private documents or guessable patient identifiers.
 
-- Patient mobile experience
-- Clinic profile and contact
-- Dental services catalogue
-- Appointment request workflow
-- WhatsApp, calling and Maps actions
-- Dental-domain intelligence adapter
-- Patient-care planning contract
-- Doctor intelligence contracts
-- Clinical research and treatment research
-- Product and supplier intelligence
-- Practice and referral intelligence
-- Clinician-review and patient-data authorization constraints
+## Active application
 
-## Architecture
+The active web application is in the desktop directory. The former root-level Expo/React Native package has been retired from the product build. Any remaining legacy native source files are reference-only and are not built or deployed.
 
-```
-Patient App
-    â†“
-Dental Domain Adapter
-    â†“
-Universal Intelligence Engine
-    â†“
-Research / Reasoning / Evidence / Verification
-    â†“
-Clinician Review
-```
+## Local development
 
-The architecture is designed to support future Scano integration when the required external API/device integration becomes available.
+Use Node.js 22 or a compatible current LTS release.
 
-## Safety
+From the repository root, run npm run build or npm test. These workspace commands install the locked desktop dependencies and delegate to the active portal.
 
-This software is an **AI-assisted clinical decision-support prototype/pilot**, not an autonomous diagnostic or treatment system.
+For development, change into the desktop directory, run npm ci, then npm run dev. Run npm test for regression tests and npm run build for the production bundle.
 
-The dental intelligence contracts explicitly require clinician review and prohibit autonomous diagnosis, treatment decisions, referrals and product purchases.
+## Public booking and privacy
 
-Do not commit real patient records, credentials, API keys, private certificates, or other secrets to this repository.
+The public booking API is scoped to the configured Dr. Pranali master clinic until a verified clinic-slug model is implemented. It stores only the minimum information needed for the clinic to respond, uses timezone-aware future appointment requests and idempotency, and returns an opaque request reference. It is not a patient-record access token.
 
-## Development
+Patient-specific no-login sharing is deferred. Clinical records, invoices and private documents require authenticated server-side authorization and clinic tenancy checks. Document uploads and sharing remain disabled until private object storage and fail-closed malware scanning are configured.
 
-Requirements:
+## Clinical safety and roles
 
-- Node.js
-- npm
-- Expo tooling
+Clinical intelligence is Doctor-only and requires clinician review. The public Patient journey and Clinic Assistant workspace do not provide AI diagnosis, clinical decision support, treatment-plan editing or prescribing.
 
-Install and run:
+Assistant permissions are enforced by the backend, not only by hiding controls in the UI. Assistant sessions are distinct from Doctor sessions and are clinic-scoped. Production multi-instance deployment also requires shared rate limiting or a trusted edge/WAF policy.
 
-```bash
-npm install
-npx expo start
-```
+## Staging and release
 
-## API
+Use synthetic data only in staging. Never copy recovery or production patient data into a staging environment. Do not mark authenticated acceptance based on mocked CI fixtures; live Doctor and Assistant login plus API-backed persistence must be verified separately.
 
-The mobile client communicates with the clinic's HTTPS API for appointment requests. Production credentials and secrets must remain outside source control.
+The release remains blocked until private document storage and malware scanning, cross-tenant E2E, authenticated Doctor/Assistant acceptance, backup/restore, monitoring and rollback are verified. Production deployment and production migrations require explicit approval.
 
-## Scano
-
-Scano is an external integration dependency currently under discussion. The application is structured so that the integration can be added without replacing the core dental intelligence architecture.
-
-## Disclaimer
-
-This repository is provided for software development, demonstration and pilot purposes. Clinical workflows, patient data handling, regulatory requirements and deployment security must be reviewed before production use.
+Google Business Profile is a discovery/referral entry point. No booking-link change is claimed unless authorized access and confirmation exist.
 
 ## License
 
-License terms should be selected before external commercial redistribution.
-
+License terms must be selected before external commercial redistribution.
