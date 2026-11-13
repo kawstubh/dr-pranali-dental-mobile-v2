@@ -536,6 +536,7 @@ function LoginScreen({ loading, error, onLogin, onPatient, onAssistant }) {
               </span>
             </label>
             <button className="oralyn-signin" disabled={busy || loading}>
+              {(busy || loading) && <span className="oralyn-spinner" aria-hidden="true" />}
               {busy || loading ? "Verifying securely…" : "Sign in securely"}
             </button>
           </form>
