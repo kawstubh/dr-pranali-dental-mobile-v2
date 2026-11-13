@@ -145,6 +145,23 @@ async function navigate(route, expectedText, screenshotName) {
   return captureCurrent(expectedText, screenshotName);
 }
 
+async function captureAssistantAdminGate() {
+  await send("Page.navigate", { url: baseUrl + "/assistant-admin/" });
+  await waitFor(() => evaluate(
+    'document.readyState === "complete" && document.body.innerText.includes("Your Doctor session is missing or has expired.")'
+  ));
+  const state = await evaluate('(() => { const gate = document.querySelector("#gate-signin"); const workspace = document.querySelector("#admin-workspace"); const form = document.querySelector("#create-form"); return { signInGateVisible: Boolean(gate && !gate.classList.contains("hidden")), adminWorkspaceHidden: Boolean(workspace && workspace.classList.contains("hidden")), createFormVisible: Boolean(form && form.getClientRects().length) }; })()');
+  if (!state.signInGateVisible || !state.adminWorkspaceHidden || state.createFormVisible) {
+    throw new Error("Assistant admin page exposed controls without a Doctor session: " + JSON.stringify(state));
+  }
+  const plusJakartaSans = await evaluate('document.fonts.load("400 16px \\"Plus Jakarta Sans\\"").then((faces) => faces.length > 0)');
+  if (!plusJakartaSans) throw new Error("Assistant admin page did not load the bundled Plus Jakarta Sans font.");
+  await capture("assistant-admin-gate-1440x1000.png", 1440, 1000);
+  await capture("assistant-admin-gate-768x1024.png", 768, 1024);
+  await capture("assistant-admin-gate-390x844.png", 390, 844, true);
+  return { ...state, plusJakartaSans };
+}
+
 (async () => {
   try {
     await waitFor(async () => {
@@ -226,6 +243,7 @@ async function navigate(route, expectedText, screenshotName) {
       "Request an appointment",
       "patient-booking"
     );
+    fontResults.assistantAdmin = await captureAssistantAdminGate();
 
     if (runtimeErrors.length) {
       throw new Error("Browser runtime/console errors: " + runtimeErrors.join(" | "));
@@ -246,6 +264,9 @@ async function navigate(route, expectedText, screenshotName) {
       "synthetic_patient_data=none",
       "authenticated_screens=false",
       "mobile_viewport=390x844",
+      "assistant_admin_gate=passed",
+      "assistant_admin_create_form_visible=" + fontResults.assistantAdmin.createFormVisible,
+      "assistant_admin_plus_jakarta_sans_loaded=" + fontResults.assistantAdmin.plusJakartaSans,
       "role_route_refresh_back_forward=passed",
       "runtime_errors=none",
     ].join("\n") + "\n";
