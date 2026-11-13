@@ -24,7 +24,7 @@ const chrome = spawn(chromePath, [
   "--remote-debugging-address=127.0.0.1", "--remote-debugging-port=" + port, "--remote-allow-origins=*",
   "--disable-dev-shm-usage", "--disable-background-networking", "--disable-extensions",
   "--no-first-run", "--user-data-dir=" + profile,
-  "--window-size=1440,1000", "about:blank",
+  "--window-size=1440,1000", baseUrl + "/doctor/dashboard",
 ], { stdio: ["ignore", "ignore", "pipe"], windowsHide: true });
 chrome.stderr.on("data", (chunk) => {
   const line = chunk.toString();
