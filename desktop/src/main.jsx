@@ -43,6 +43,16 @@ import { normaliseList, normaliseUser, localDateISO, localDateTimeFromParts, for
 import { DoctorCareManagement, PatientCareManagement, DoctorClinicalNotes, PatientCommunication } from "./careScreens.jsx";
 import { createPortalNavigator, resolvePortalRoute } from "./routing.js";
 import { createControllerChangeHandler } from "./serviceWorkerLifecycle.js";
+const currentPatientPath = window.location.pathname;
+const publicPatientPages = new Set(["/patient/home/", "/patient/booking/"]);
+if (
+  (currentPatientPath === "/patient" || currentPatientPath.startsWith("/patient/")) &&
+  !publicPatientPages.has(currentPatientPath)
+) {
+  const target = currentPatientPath.includes("/booking") ? "/patient/booking/" : "/patient/home/";
+  window.location.replace(target);
+}
+
 function doctorDisplayName(user) {
   const candidate = String(
     user?.name || user?.full_name || user?.display_name || user?.email?.split("@")[0] || "",
@@ -103,6 +113,10 @@ function App() {
     [pwaUpdateReady, setPwaUpdateReady] = useState(false);
   const portalNavigator = useRef(null);
   const P = (nextPage) => {
+    if (role === "patient") {
+      window.location.assign(nextPage === "booking" ? "/patient/booking/" : "/patient/home/");
+      return;
+    }
     setPage(nextPage);
     portalNavigator.current?.navigate(role, nextPage);
   };
