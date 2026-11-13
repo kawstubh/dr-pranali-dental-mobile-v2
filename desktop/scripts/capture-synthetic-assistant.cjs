@@ -118,8 +118,9 @@ const fixtureSource = [
   "    if (appointmentMatch && method === 'PATCH') {",
   "      const item = state.appointments.find((entry) => entry.id === appointmentMatch[1]);",
   "      if (!item) return json({ detail: { message: 'Synthetic appointment not found.' } }, 404);",
-  "      Object.assign(item, readBody(init));",
-  "      state.writes.push(item.starts_at ? 'appointment-reschedule' : 'appointment-confirm');",
+  "      const body = readBody(init);",
+  "      Object.assign(item, body);",
+  "      state.writes.push(body.starts_at ? 'appointment-reschedule' : 'appointment-confirm');",
   "      return json({ result: item });",
   "    }",
   "    if (url.pathname === '/v1/dental/assistant/billing/invoices' && method === 'GET') return json({ result: state.invoices });",
@@ -173,6 +174,7 @@ async function main() {
   await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Clinic Assistant sign in")'));
   await capture("assistant-login-1440x1000.png", 1440, 1000);
   await capture("assistant-login-390x844.png", 390, 844, true);
+  await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
 
   await send("Page.addScriptToEvaluateOnNewDocument", { source: fixtureSource });
   await send("Page.navigate", { url: baseUrl + "/assistant/" });
@@ -190,6 +192,8 @@ async function main() {
   await capture("assistant-workspace-1440x1000.png", 1440, 1000);
   await capture("assistant-workspace-768x1024.png", 768, 1024);
   await capture("assistant-workspace-390x844.png", 390, 844, true);
+  const mobileLayout = await evaluate("({width:window.innerWidth,scrollWidth:document.documentElement.scrollWidth,inputsLabeled:[...document.querySelectorAll('input')].every((input) => input.labels && input.labels.length > 0)})");
+  if (mobileLayout.scrollWidth > mobileLayout.width + 1 || !mobileLayout.inputsLabeled) throw new Error("Assistant mobile layout or form labels failed: " + JSON.stringify(mobileLayout));
   await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
 
   await evaluate(`(() => {
@@ -279,6 +283,7 @@ async function main() {
     "assistant_appointment_reschedule=passed_fixture",
     "assistant_receipt_recording=passed_fixture",
     "assistant_session_logout=passed_fixture",
+    "assistant_mobile_layout=" + JSON.stringify(mobileLayout),
     "doctor_ai_api_calls=none",
     "clinical_controls=none",
     "unhandled_api_paths=none",
