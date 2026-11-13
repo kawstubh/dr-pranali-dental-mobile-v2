@@ -31,7 +31,7 @@ const runtimeErrors = [];
 const failedResponses = [];
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function waitFor(fn, timeoutMs = 30000) {
+async function waitFor(fn, timeoutMs = 30000, description = "browser condition") {
   const end = Date.now() + timeoutMs;
   while (Date.now() < end) {
     try {
@@ -40,7 +40,7 @@ async function waitFor(fn, timeoutMs = 30000) {
     } catch {}
     await sleep(250);
   }
-  throw new Error("Timed out waiting for " + baseUrl);
+  throw new Error("Timed out waiting for " + description + " at " + baseUrl);
 }
 
 function send(method, params = {}) {
@@ -179,14 +179,23 @@ async function main() {
   await send("Log.enable");
   await send("Network.enable");
 
-  await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Clinic Assistant sign in")'));
+  await send("Page.navigate", { url: baseUrl + "/assistant/" });
+  await waitFor(
+    () => evaluate('document.readyState === "complete" && document.body.innerText.includes("Clinic Assistant sign in")'),
+    30000,
+    "Clinic Assistant sign-in page"
+  );
   await capture("assistant-login-1440x1000.png", 1440, 1000);
   await capture("assistant-login-390x844.png", 390, 844, true);
   await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
 
   await send("Page.addScriptToEvaluateOnNewDocument", { source: fixtureSource });
   await send("Page.navigate", { url: baseUrl + "/assistant/" });
-  await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Clinic Assistant sign in")'));
+  await waitFor(
+    () => evaluate('document.readyState === "complete" && document.body.innerText.includes("Clinic Assistant sign in")'),
+    30000,
+    "Clinic Assistant sign-in page after fixture injection"
+  );
 
   await evaluate(`(() => {
     document.querySelector('#login-form [name="email"]').value = 'reception.synthetic@example.test';
