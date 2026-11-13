@@ -117,6 +117,10 @@ const checks = {
   public_service_catalog_api_verified: flag(process.env.ORALYN_SERVICE_CATALOG_API_VERIFIED),
   staging_api_commit_verified: flag(process.env.ORALYN_STAGING_API_COMMIT_VERIFIED),
   staging_portal_commit_verified: flag(process.env.ORALYN_STAGING_PORTAL_COMMIT_VERIFIED),
+  production_hosting_always_on_verified: flag(process.env.ORALYN_PRODUCTION_HOSTING_VERIFIED),
+  production_database_verified: flag(process.env.ORALYN_PRODUCTION_DATABASE_VERIFIED),
+  production_custom_domain_verified: flag(process.env.ORALYN_PRODUCTION_DOMAIN_VERIFIED),
+  production_deployment_approval_verified: flag(process.env.ORALYN_PRODUCTION_DEPLOYMENT_APPROVED),
 };
 const blockers = Object.entries(checks)
   .filter(([, passed]) => !passed)
