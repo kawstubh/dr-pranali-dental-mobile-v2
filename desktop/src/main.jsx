@@ -523,7 +523,7 @@ function LoginScreen({ loading, error, onLogin, onPatient, onAssistant }) {
       <section className="oralyn-auth-story oralyn-reference-story" aria-label="About Oralyn">
         <div className="oralyn-reference-atmosphere" />
         <header className="oralyn-auth-brand"><OralynVectorBrand /></header>
-        <div className="oralyn-reference-clinic-art"><OralynClinicIllustration /></div>
+        <div className="oralyn-reference-clinic-art" aria-hidden="true" />
         <div className="oralyn-auth-copy">
           <span className="oralyn-auth-kicker">DENTAL CLINIC MANAGEMENT</span>
           <h1>Smarter dental care,<br/><em>beautifully organized.</em></h1>
@@ -540,7 +540,7 @@ function LoginScreen({ loading, error, onLogin, onPatient, onAssistant }) {
       </section>
       <section className="oralyn-auth-panel oralyn-reference-panel" aria-label="Doctor sign in">
         <div className="oralyn-auth-card oralyn-reference-card">
-          <div className="oralyn-app-squircle"><img src="/oralyn-app-icon-approved.webp" alt="Oralyn approved app icon" /></div>
+          <div className="oralyn-app-squircle" aria-label="Oralyn vector app mark"><OralynToothMark compact /></div>
           <span className="oralyn-auth-label">DOCTOR PORTAL</span>
           <h2>Oralyn Doctor</h2>
           <p className="oralyn-auth-subtitle">Sign in with your clinic-issued email and password.</p>
