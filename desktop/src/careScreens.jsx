@@ -462,175 +462,6 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
   );
 }
 
-export function PatientCareManagement({ page, session, patientId, patientChart = [] }) {
-  const [plans, setPlans] = useState([]);
-  const [clinicalNotes, setClinicalNotes] = useState([]);
-  const [notesError, setNotesError] = useState("");
-  const [invoices, setInvoices] = useState([]);
-  const [receipts, setReceipts] = useState([]);
-  const [documents, setDocuments] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [loadedScope, setLoadedScope] = useState("");
-  const scopeKey = `${session?.user?.id || ""}:${page}:${patientId || ""}:${refreshKey}`;
-
-  useEffect(() => {
-    let live = true;
-    if (!session?.access_token || !patientId) {
-      setPlans([]);
-      setClinicalNotes([]);
-      setNotesError("");
-      setInvoices([]);
-      setReceipts([]);
-      setDocuments([]);
-      setLoading(false);
-      setError("");
-      setLoadedScope(scopeKey);
-      return () => { live = false; };
-    }
-    setLoading(true);
-    setLoadedScope("");
-    setPlans([]);
-    setClinicalNotes([]);
-    setNotesError("");
-    setInvoices([]);
-    setReceipts([]);
-    setDocuments([]);
-    setError("");
-    const load = async () => {
-      try {
-        if (page === "journey") {
-          const [planResult, noteResult] = await Promise.allSettled([
-            dentalApi.patientTreatmentPlans(session.access_token, patientId),
-            dentalApi.patientClinicalNotes(session.access_token, patientId),
-          ]);
-          if (live) {
-            setPlans(planResult.status === "fulfilled" ? normaliseList(planResult.value) : []);
-            setClinicalNotes(noteResult.status === "fulfilled" ? normaliseList(noteResult.value) : []);
-            setNotesError(noteResult.status === "rejected" ? (noteResult.reason?.message || "Shared clinical notes could not be loaded.") : "");
-            if (planResult.status === "rejected") throw planResult.reason;
-          }
-        } else if (page === "invoices") {
-          const [invoiceResponse, receiptResponse] = await Promise.all([
-            dentalApi.patientInvoices(session.access_token, patientId),
-            dentalApi.patientReceipts(session.access_token, patientId),
-          ]);
-          if (live) {
-            setInvoices(normaliseList(invoiceResponse));
-            setReceipts(normaliseList(receiptResponse));
-          }
-        } else if (page === "records") {
-          const response = await dentalApi.patientDocuments(session.access_token, patientId);
-          if (live) setDocuments(normaliseList(response));
-        }
-      } catch (err) {
-        if (live) setError(err.message || "Your clinic records could not be loaded.");
-      } finally {
-        if (live) {
-          setLoading(false);
-          setLoadedScope(scopeKey);
-        }
-      }
-    };
-    load();
-    return () => { live = false; };
-  }, [page, session?.access_token, session?.user?.id, patientId, refreshKey, scopeKey]);
-
-  const download = async (document) => {
-    const popup = window.open("about:blank", "_blank");
-    try {
-      const response = await dentalApi.patientDocumentDownloadIntent(
-        session.access_token,
-        document.id,
-        patientId,
-      );
-      const url = response?.result?.download_url || response?.result?.url;
-      if (!url) throw new Error("The clinic did not return a secure download link.");
-      if (popup) {
-        popup.opener = null;
-        popup.location.href = url;
-      } else {
-        throw new Error("Your browser blocked the document tab. Allow pop-ups and try again.");
-      }
-    } catch (err) {
-      if (popup) popup.close();
-      setError(err.message);
-    }
-  };
-
-  if (!patientId) {
-    return <StateMessage>Link a clinic record or select a linked clinic to view information shared with you.</StateMessage>;
-  }
-  if (loading || loadedScope !== scopeKey) return <StateMessage>Loading information shared by your clinic…</StateMessage>;
-  if (error) return <StateMessage error>{error}</StateMessage>;
-
-  if (page === "journey") {
-    return (
-      <div className="care-grid">
-        <section className="panel care-panel">
-          <div className="care-panel-heading"><HeartPulse /><div><h2>Clinic-shared treatment plans</h2><p>Plans made visible by your treating clinic.</p></div></div>
-          {plans.length ? plans.map((plan) => (
-            <article className="care-record" key={plan.id}>
-              <div className="care-record-top"><div><b>{plan.title}</b><small>{plan.status.replaceAll("_", " ")} · Updated {dateLabel(plan.updated_at)}</small></div></div>
-              {plan.summary && <p>{plan.summary}</p>}
-              <ul>{(plan.items || []).map((item) => <li key={item.id}>{item.description}{item.tooth_fdi ? ` · Tooth ${item.tooth_fdi}` : ""}</li>)}</ul>
-            </article>
-          )) : <StateMessage>Your clinic has not shared a treatment plan yet.</StateMessage>}
-        </section>
-        <section className="panel care-panel">
-          <div className="care-panel-heading"><HeartPulse /><div><h2>Recorded dental chart</h2><p>Information released by your clinic.</p></div></div>
-          {patientChart.length ? patientChart.map((item, index) => <div className="listrow" key={item.tooth_fdi || index}>Tooth {item.tooth_fdi}<b>{item.status}</b></div>) : <StateMessage>No dental chart entries have been shared yet.</StateMessage>}
-        </section>
-        <section className="panel care-panel">
-          <div className="care-panel-heading"><FileText /><div><h2>Clinical notes shared by your clinic</h2><p>Only notes your treating clinician has explicitly released to you.</p></div></div>
-          {clinicalNotes.length ? clinicalNotes.map((note) => (
-            <article className="care-record" key={note.id}>
-              <div className="care-record-top"><b>{note.title}</b><small>{dateLabel(note.updated_at)}</small></div>
-              <p>{note.content}</p>
-            </article>
-          )) : <StateMessage>{notesError || "Your clinic has not shared clinical notes yet."}</StateMessage>}
-        </section>
-      </div>
-    );
-  }
-
-  if (page === "records") {
-    return (
-      <section className="panel care-panel">
-        <div className="care-panel-heading"><FileText /><div><h2>Clinic-shared documents</h2><p>Only verified files explicitly shared by your clinic appear here.</p></div></div>
-        {documents.length ? documents.map((document) => (
-          <article className="care-record" key={document.id}>
-            <div className="care-record-top"><div><b>{document.file_name}</b><small>{document.content_type} · {Math.ceil(document.size_bytes / 1024)} KB · {dateLabel(document.created_at)}</small></div><button className="outline" onClick={() => download(document)}><Download size={15} /> Download</button></div>
-          </article>
-        )) : <StateMessage>Your clinic has not shared any documents yet.</StateMessage>}
-      </section>
-    );
-  }
-
-  return (
-    <div className="care-grid">
-      <section className="panel care-panel">
-        <div className="care-panel-heading"><Receipt /><div><h2>Invoices shared by your clinic</h2><p>Issued invoices only. Draft and void records are never shown.</p></div></div>
-        {invoices.length ? invoices.map((invoice) => (
-          <article className="care-record" key={invoice.id}>
-            <div className="care-record-top"><div><b>{invoice.invoice_number}</b><small>{invoice.status.replaceAll("_", " ")} · {dateLabel(invoice.issued_at || invoice.created_at)}</small></div><strong>{inr(invoice.total_paise)}</strong></div>
-            <div className="care-finance-row"><span>Paid {inr(invoice.paid_paise)}</span><span>Balance {inr(invoice.balance_paise)}</span></div>
-            {(invoice.items || []).map((item) => <div className="listrow" key={item.id}>{item.description}<b>{inr(item.total_paise)}</b></div>)}
-          </article>
-        )) : <StateMessage>No issued invoices have been shared with this patient account.</StateMessage>}
-      </section>
-      <section className="panel care-panel">
-        <div className="care-panel-heading"><Receipt /><div><h2>Receipts</h2><p>Payments recorded by your clinic.</p></div></div>
-        {receipts.length ? receipts.map((receipt) => (
-          <div className="care-record" key={receipt.id}><div className="care-record-top"><div><b>{receipt.receipt_number}</b><small>{dateLabel(receipt.paid_at)} · {receipt.method}</small></div><strong>{inr(receipt.amount_paise)}</strong></div></div>
-        )) : <StateMessage>No receipts have been shared yet.</StateMessage>}
-      </section>
-    </div>
-  );
-}
-
-
 export function DoctorClinicalNotes({ token, activePatient }) {
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -790,10 +621,9 @@ export function DoctorClinicalNotes({ token, activePatient }) {
   );
 }
 
-export function PatientCommunication({ mode, token, session, activePatient, patientId }) {
-  const doctorMode = mode === "doctor";
-  const authToken = doctorMode ? token : session?.access_token;
-  const recordId = doctorMode ? activePatient?.id : patientId;
+export function PatientCommunication({ token, activePatient }) {
+  const authToken = token;
+  const recordId = activePatient?.id;
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(false);
@@ -801,7 +631,7 @@ export function PatientCommunication({ mode, token, session, activePatient, pati
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const [loadedScope, setLoadedScope] = useState("");
-  const scopeKey = `${doctorMode ? "doctor" : "patient"}:${authToken || ""}:${recordId || ""}:${refreshKey}`;
+  const scopeKey = `${authToken || ""}:${recordId || ""}:${refreshKey}`;
 
   useEffect(() => {
     let live = true;
@@ -818,10 +648,7 @@ export function PatientCommunication({ mode, token, session, activePatient, pati
     setMessages([]);
     setDraft("");
     setError("");
-    const request = doctorMode
-      ? dentalApi.doctorMessages(authToken, recordId)
-      : dentalApi.patientMessages(authToken, recordId);
-    request.then((response) => {
+    dentalApi.doctorMessages(authToken, recordId).then((response) => {
       if (live) setMessages(normaliseList(response));
     }).catch((err) => {
       if (live) setError(err.message || "Clinic communication could not be loaded.");
@@ -832,7 +659,7 @@ export function PatientCommunication({ mode, token, session, activePatient, pati
       }
     });
     return () => { live = false; };
-  }, [doctorMode, authToken, recordId, refreshKey, scopeKey]);
+  }, [authToken, recordId, refreshKey, scopeKey]);
 
   const send = async (event) => {
     event.preventDefault();
@@ -843,11 +670,7 @@ export function PatientCommunication({ mode, token, session, activePatient, pati
     setBusy(true);
     setError("");
     try {
-      if (doctorMode) {
-        await dentalApi.sendDoctorMessage(authToken, recordId, { body: draft.trim() });
-      } else {
-        await dentalApi.sendPatientMessage(authToken, recordId, { body: draft.trim() });
-      }
+      await dentalApi.sendDoctorMessage(authToken, recordId, { body: draft.trim() });
       setDraft("");
       setRefreshKey((value) => value + 1);
     } catch (err) {
@@ -860,21 +683,21 @@ export function PatientCommunication({ mode, token, session, activePatient, pati
   if (!recordId || !authToken) {
     return (
       <>
-        <CareHeader eyebrow="CLINIC COMMUNICATION" title="Messages" description="A private conversation linked to a verified clinic record." />
-        <StateMessage>{doctorMode ? "Select a patient from the clinic directory to open their conversation." : "Link or select a clinic record before sending a message."}</StateMessage>
+        <CareHeader eyebrow="CLINIC COMMUNICATION" title="Patient messages" description="A private conversation inside the authenticated Doctor workspace." />
+        <StateMessage>Select a patient from the clinic directory to open their conversation.</StateMessage>
       </>
     );
   }
 
   return (
     <>
-      <CareHeader eyebrow="CLINIC COMMUNICATION" title={doctorMode ? "Patient messages" : "Messages from your clinic"} description={doctorMode ? `Secure conversation with ${activePatient?.name || "the selected patient"}.` : "Messages are visible only to your linked clinic team and patient record."} action={<button className="outline" onClick={() => setRefreshKey((value) => value + 1)}><RefreshCw size={16} /> Refresh</button>} />
+      <CareHeader eyebrow="CLINIC COMMUNICATION" title="Patient messages" description={`Secure conversation with ${activePatient?.name || "the selected patient"}.`} action={<button className="outline" onClick={() => setRefreshKey((value) => value + 1)}><RefreshCw size={16} /> Refresh</button>} />
       {error && <StateMessage error>{error}</StateMessage>}
       <section className="panel communication-panel">
         <div className="care-panel-heading"><MessageCircle /><div><h2>Clinic conversation</h2><p>Plain-text messages. Documents use the separate private-file workflow.</p></div></div>
         <div className="message-list" aria-live="polite">
           {loading || loadedScope !== scopeKey ? <StateMessage>Loading messages…</StateMessage> : messages.length ? messages.map((message) => {
-            const own = doctorMode ? message.sender_type === "doctor" : message.sender_type === "patient";
+            const own = message.sender_type === "doctor";
             return (
               <div className={own ? "message-row own" : "message-row"} key={message.id}>
                 <article className="message-bubble">
@@ -887,7 +710,7 @@ export function PatientCommunication({ mode, token, session, activePatient, pati
         </div>
         <form className="message-form" onSubmit={send}>
           <label className="sr-only" htmlFor="oralyn-message-draft">Write a message</label>
-          <textarea id="oralyn-message-draft" value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={4000} rows={3} placeholder="Write a message to the clinic…" />
+          <textarea id="oralyn-message-draft" value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={4000} rows={3} placeholder="Write a message to the patient…" />
           <button className="primary" disabled={busy || loading || loadedScope !== scopeKey || !draft.trim()}><Send size={16} /> {busy ? "Sending…" : "Send message"}</button>
         </form>
       </section>
