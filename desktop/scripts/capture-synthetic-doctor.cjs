@@ -7,7 +7,7 @@ const crypto = require("node:crypto");
 const root = process.cwd();
 const output = path.resolve(process.env.ORALYN_CAPTURE_OUTPUT || path.join(root, "evidence", "synthetic-doctor"));
 const chromePath = process.env.CHROME_BIN || "google-chrome";
-const port = Number(process.env.CDP_PORT || 19311);
+const port = Number(process.env.CDP_PORT || 19321);
 const baseUrl = process.env.ORALYN_PREVIEW_URL || "http://127.0.0.1:4176";
 const profile = path.join(os.tmpdir(), "oralyn-synthetic-doctor-" + process.pid);
 const commit = process.env.GITHUB_SHA || "unknown";
@@ -17,12 +17,23 @@ if (!jsFile) throw new Error("Production JavaScript bundle was not found.");
 const bundleHash = crypto.createHash("sha256").update(fs.readFileSync(path.join(assetsDir, jsFile))).digest("hex");
 fs.mkdirSync(output, { recursive: true });
 
+let chromeExit = null;
+const chromeLogs = [];
 const chrome = spawn(chromePath, [
   "--headless=new", "--no-sandbox", "--disable-gpu", "--hide-scrollbars",
-  "--remote-debugging-port=" + port, "--remote-allow-origins=*",
-  "--disable-dev-shm-usage", "--user-data-dir=" + profile,
+  "--remote-debugging-address=127.0.0.1", "--remote-debugging-port=" + port, "--remote-allow-origins=*",
+  "--disable-dev-shm-usage", "--disable-background-networking", "--disable-extensions",
+  "--no-first-run", "--user-data-dir=" + profile,
   "--window-size=1440,1000", baseUrl + "/doctor/dashboard",
-], { stdio: "ignore", windowsHide: true });
+], { stdio: ["ignore", "ignore", "pipe"], windowsHide: true });
+chrome.stderr.on("data", (chunk) => {
+  const line = chunk.toString();
+  chromeLogs.push(line);
+  process.stderr.write("[Oralyn Chrome] " + line);
+});
+chrome.on("exit", (code, signal) => {
+  chromeExit = { code, signal };
+});
 
 let ws;
 let sequence = 0;
@@ -32,14 +43,28 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function waitFor(fn, timeoutMs = 30000) {
   const end = Date.now() + timeoutMs;
+  let lastError = "";
   while (Date.now() < end) {
     try {
       const value = await fn();
       if (value) return value;
-    } catch {}
+    } catch (error) {
+      lastError = error?.message || String(error);
+    }
+    if (chromeExit) {
+      throw new Error(
+        "Chrome exited before DevTools became ready (code=" + chromeExit.code +
+        ", signal=" + chromeExit.signal + ", port=" + port + "). " +
+        chromeLogs.join("").slice(-4000)
+      );
+    }
     await sleep(250);
   }
-  throw new Error("Timed out waiting for " + baseUrl);
+  throw new Error(
+    "Timed out waiting for Chrome DevTools on 127.0.0.1:" + port +
+    " for " + baseUrl + ". Last check: " + (lastError || "no CDP target") +
+    ". Chrome stderr: " + chromeLogs.join("").slice(-4000)
+  );
 }
 
 function send(method, params = {}) {
