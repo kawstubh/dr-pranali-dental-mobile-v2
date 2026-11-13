@@ -64,6 +64,7 @@ test("staging manifest records verified public gates without claiming live booki
     assert.equal(manifest.checks.backend_stack_verified, true);
     assert.equal(manifest.checks.cors_verified_for_portal_origin, true);
     assert.equal(manifest.checks.database_identity_verified, true);
+    assert.equal(manifest.checks.staging_database_branch_verified, false);
     assert.equal(manifest.checks.https_security_headers_verified, true);
     assert.equal(manifest.checks.doctor_auth_e2e_verified, false);
     assert.equal(manifest.checks.patient_guest_booking_e2e_verified, false);
@@ -87,6 +88,7 @@ test("staging manifest records verified public gates without claiming live booki
       "production_database_verified",
       "production_custom_domain_verified",
       "production_deployment_approval_verified",
+      "staging_database_branch_verified",
       "backup_restore_verified",
       "error_monitoring_verified",
       "rollback_plan_verified",

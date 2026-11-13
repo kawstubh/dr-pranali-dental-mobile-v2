@@ -101,6 +101,7 @@ const checks = {
   document_malware_scanning_verified: flag(process.env.ORALYN_DOCUMENT_SCAN_VERIFIED),
   https_security_headers_verified: flag(process.env.ORALYN_SECURITY_HEADERS_VERIFIED),
   database_identity_verified: flag(process.env.ORALYN_DATABASE_IDENTITY_VERIFIED),
+  staging_database_branch_verified: flag(process.env.ORALYN_STAGING_DATABASE_BRANCH_VERIFIED),
   backup_restore_verified: flag(process.env.ORALYN_BACKUP_RESTORE_VERIFIED),
   error_monitoring_verified: flag(process.env.ORALYN_ERROR_MONITORING_VERIFIED),
   rollback_plan_verified: flag(process.env.ORALYN_ROLLBACK_VERIFIED),

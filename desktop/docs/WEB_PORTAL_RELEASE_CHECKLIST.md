@@ -2,7 +2,7 @@
 
 **Status: BLOCKED — synthetic staging is operational, but production hosting, authenticated acceptance and security infrastructure are not release-ready.**
 
-Last refreshed: 13 November 2026, 19:17 UTC.
+Last refreshed: 14 November 2026, 19:41 UTC.
 
 ## Product decisions
 
@@ -143,7 +143,7 @@ Backend tests cover allowed writes, 403 denials, cross-clinic isolation, Doctor-
 
 The exact-commit CI manifest for d65997268c825246722d999194b25ef567c4a3e9 remains **BLOCKED**. Staging checks are not production approval.
 
-The remaining 16 gates are:
+The remaining 17 gates are:
 
 1. Private document storage API integration and verified credentials.
 2. Persistent fail-closed malware scanning and quarantine lifecycle.
@@ -211,12 +211,34 @@ Clinic confirmation of the exact production wording of the 20 catalogue labels i
 
 ### Synthetic database, restore and document storage
 
-- Read-only aggregate checks on Neon project `silent-king-54610898`, database `oralyn_staging`, matched between source branch `br-steep-bonus-a1yqarg7` and finalized restored branch `br-proud-scene-a1g7g3qo`: migration `0013_public_booking_idempotency`, 8 patients, 8 appointments, 7 public booking requests, 0 Assistant accounts, 0 Assistant sessions, 0 receipts, 0 documents and 9 audit events. No patient names, contact details or clinical content were read.
+- At 19:17 UTC on 13 November, aggregate counts on source branch `br-steep-bonus-a1yqarg7` and restored branch `br-proud-scene-a1g7g3qo` matched at 8 patients, 8 appointments, 7 public booking requests and 9 audit events. The later CI synthetic booking at 19:20:43 UTC appears on the restored branch only; current counts differ. See the latest watch note below. No patient names, contact details or clinical content were read.
 - Manual snapshot `snap-late-surf-a1j1sljm` exists and the restore branch is finalized. The automatic snapshot schedule remains empty; no application-level failover/recovery rehearsal exists. This is partial restore evidence only, so `backup_restore_verified` remains false.
 - Private bucket `oralyn-private-documents` exists but contains zero objects. Storage/API integration and a persistent fail-closed malware scanner are not verified. Document uploads and sharing remain disabled.
 
 ### Release manifest
 
-The exact-head CI manifest remains **BLOCKED** on these 16 gates: `private_document_storage_verified`, `document_malware_scanning_verified`, `backup_restore_verified`, `error_monitoring_verified`, `rollback_plan_verified`, `doctor_auth_e2e_verified`, `assistant_role_e2e_verified`, `production_guest_rate_limiting_verified`, `assistant_ui_api_verified`, `assistant_data_minimization_live_verified`, `cross_tenant_e2e_verified`, `authenticated_screenshots_verified`, `production_hosting_always_on_verified`, `production_database_verified`, `production_custom_domain_verified` and `production_deployment_approval_verified`.
+The exact-head CI manifest remains **BLOCKED** on these 17 gates: `staging_database_branch_verified`, `private_document_storage_verified`, `document_malware_scanning_verified`, `backup_restore_verified`, `error_monitoring_verified`, `rollback_plan_verified`, `doctor_auth_e2e_verified`, `assistant_role_e2e_verified`, `production_guest_rate_limiting_verified`, `assistant_ui_api_verified`, `assistant_data_minimization_live_verified`, `cross_tenant_e2e_verified`, `authenticated_screenshots_verified`, `production_hosting_always_on_verified`, `production_database_verified`, `production_custom_domain_verified` and `production_deployment_approval_verified`.
 
 No PR was merged. No production deployment, production migration, production secret change, paid infrastructure, real booking, patient-data transfer or Google Business Profile booking-link change was performed.
+
+
+## Latest autonomous release watch — 14 November 2026, 01:11 IST (19:41 UTC)
+
+### Exact revisions and CI
+- Frontend PR #18 remains Draft/unmerged at `ac007bdb58c743366492cc91c25a2cd684d303f3`. Exact-head CI [#43491180642](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43491180642) passed: 112/112 tests, npm audit 0 vulnerabilities, production build, live synthetic staging contract, read-only Assistant API contract, desktop/tablet/mobile headless-Chrome captures, approved logo, fonts and PWA checks. Synthetic Doctor/Assistant captures are fixtures, not real authenticated acceptance.
+- Render portal service `srv-dbr2ttsipgvc739a4tmg` is LIVE on `ac007bdb58c743366492cc91c25a2cd684d303f3`, deploy `dep-dbrm5llbedkc73bhqojg`.
+- Backend PR #60 remains Draft/unmerged at `39ed30ee82b9aa792fc19ea01639ee37268f1f49`. Engine CI #43446614361 passed 234 tests with 3 skips; PostgreSQL CI #43446614469 passed 237 tests. Render API service `srv-dbr8m159fdbs73dl404g` is LIVE on that exact commit, deploy `dep-dbrjkrui0phs73822v1g`.
+
+### New Neon branch-binding discrepancy — release gate
+- Read-only aggregate query on source branch `br-steep-bonus-a1yqarg7`: 8 patients, 8 appointments, 7 public booking requests and 9 audit events.
+- Read-only aggregate query on restored default branch `br-proud-scene-a1g7g3qo`: 9 patients, 9 appointments, 8 public booking requests and 10 audit events. Its latest linked-row timestamps are 19:20:43 UTC; the source branch's latest linked-row timestamps remain 15:18:33 UTC.
+- Frontend CI #43491180642 logged its synthetic-only public booking POST as accepted at 19:20:43 UTC, followed by an idempotent replay. The timestamp and aggregate delta are consistent with that CI write landing on the restored default branch. This supersedes the earlier statement that source and restored aggregate counts still matched.
+- Backend `_database_identity_verified` currently checks the configured database-host allowlist and database name; the health response does not expose or assert an explicit Neon branch ID. Render's read-only service metadata does not expose the `DATABASE_URL` value or expected-host environment value, so the exact branch binding cannot yet be independently confirmed. The API appears to be writing to the restored default branch, but this remains an inference until the Render connection target is verified.
+- A new manifest gate, `staging_database_branch_verified`, is now default-false. Do not run another booking POST or treat database identity as exact branch proof until the intended Neon endpoint/branch mapping is confirmed. Both branches remain synthetic-only; no patient values were read.
+
+### Storage, restore and live availability
+- Private bucket `oralyn-private-documents` remains empty. Neon lists a branch-scoped default object-storage credential with `storage:read` and `storage:write` on the source branch, but there is no evidence it is installed in Render or integrated with the API. It is not bucket-scoped; do not expose or reuse it. Uploads and sharing remain disabled.
+- One manual snapshot exists; the automatic snapshot schedule is empty. The restore rehearsal is partial and the post-restore aggregate delta now needs reconciliation.
+- Render app error/fatal and request 5xx log queries were empty for both services from 18:40–19:42 UTC. HTTP request/latency metrics returned no samples, so no uptime or latency claim is made.
+- Two read-only external fetch attempts for the API health and public portal pages returned HTTP 503, while Render still reports both deploys LIVE and no matching Render 5xx logs. Free-tier cold-start/fetcher behavior is possible, but a fresh external live response was not confirmed. The last successful browser evidence is the exact-head GitHub Actions capture.
+- TinyFish wallet balance is `-$0.072`; no browser-agent run or top-up was attempted. No production resources, secrets or data were changed.
