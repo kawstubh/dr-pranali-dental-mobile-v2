@@ -225,5 +225,5 @@ test("portal security header probe is a read-only GET check", () => {
   assert.match(portalHeadersSource, /content-security-policy/i);
   assert.match(portalHeadersSource, /strict-transport-security/i);
   assert.doesNotMatch(portalHeadersSource, /method:\s*"(?:POST|PATCH|DELETE)"/);
-  assert.match(portalHeadersSource, /ORALYN_SECURITY_HEADERS_VERIFIED=true/);
+  assert.match(assistantWorkflowSource, /ORALYN_SECURITY_HEADERS_VERIFIED=true/);
 });
