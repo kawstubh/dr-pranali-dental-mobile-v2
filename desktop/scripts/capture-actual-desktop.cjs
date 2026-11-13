@@ -145,6 +145,80 @@ async function navigate(route, expectedText, screenshotName) {
   return captureCurrent(expectedText, screenshotName);
 }
 
+async function verifyPublicBookingForm() {
+  const state = await evaluate(`(() => {
+    const form = document.querySelector("#booking");
+    const service = document.querySelector("#treatment-type");
+    const date = document.querySelector("#date");
+    const time = document.querySelector("#time");
+    const todayParts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit"
+    }).formatToParts(new Date());
+    const part = (type) => todayParts.find((item) => item.type === type)?.value || "";
+    const today = part("year") + "-" + part("month") + "-" + part("day");
+    return {
+      requiredFields: ["name", "phone", "treatment_type", "date", "time"]
+        .filter((name) => Boolean(form.elements.namedItem(name)?.required)),
+      catalogueCount: [...service.options].filter((option) =>
+        option.value && option.value !== "Other dental concern"
+      ).length,
+      otherCount: [...service.options].filter((option) =>
+        option.value === "Other dental concern"
+      ).length,
+      minDate: date.min,
+      expectedMinDate: today,
+      timezoneNotice: document.body.innerText.includes("Asia/Kolkata"),
+      accountFree: document.body.innerText.includes("No account or OTP is required."),
+    };
+  })()`);
+  if (state.requiredFields.length !== 5 || state.catalogueCount !== 20 ||
+      state.otherCount !== 1 || state.minDate !== state.expectedMinDate ||
+      !state.timezoneNotice || !state.accountFree) {
+    throw new Error("Public booking contract verification failed: " + JSON.stringify(state));
+  }
+
+  const empty = await evaluate(`(() => {
+    let fetchCalls = 0;
+    const originalFetch = window.fetch;
+    window.fetch = (...args) => { fetchCalls += 1; return originalFetch(...args); };
+    document.querySelector("#submit").click();
+    window.fetch = originalFetch;
+    const message = document.querySelector("#message");
+    return { fetchCalls, visibleError: message.classList.contains("error"), text: message.textContent };
+  })()`);
+  if (empty.fetchCalls !== 0 || !empty.visibleError || !empty.text.includes("required fields")) {
+    throw new Error("Empty guest booking did not show a safe validation message: " + JSON.stringify(empty));
+  }
+
+  const past = await evaluate(`(() => {
+    const form = document.querySelector("#booking");
+    const date = document.querySelector("#date");
+    const time = document.querySelector("#time");
+    form.elements.name.value = "Synthetic Browser Validation";
+    form.elements.phone.value = "9876543210";
+    form.elements.treatment_type.value = "Dental Check-up & Consultation";
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit"
+    }).formatToParts(new Date(Date.now() - 86400000));
+    const part = (type) => parts.find((item) => item.type === type)?.value || "";
+    date.removeAttribute("min");
+    date.value = part("year") + "-" + part("month") + "-" + part("day");
+    date.setCustomValidity("");
+    time.value = "10:00";
+    let fetchCalls = 0;
+    const originalFetch = window.fetch;
+    window.fetch = (...args) => { fetchCalls += 1; return originalFetch(...args); };
+    form.requestSubmit();
+    window.fetch = originalFetch;
+    const message = document.querySelector("#message");
+    return { fetchCalls, visibleError: message.classList.contains("error"), text: message.textContent };
+  })()`);
+  if (past.fetchCalls !== 0 || !past.visibleError || !past.text.includes("future date and time")) {
+    throw new Error("Past IST appointment was not blocked before network submission: " + JSON.stringify(past));
+  }
+  return { ...state, emptySubmit: empty, pastTimeSubmit: past };
+}
+
 async function captureAssistantAdminGate() {
   await send("Page.navigate", { url: baseUrl + "/assistant-admin/" });
   await waitFor(() => evaluate(
@@ -243,6 +317,7 @@ async function captureAssistantAdminGate() {
       "Request an appointment",
       "patient-booking"
     );
+    fontResults.patientBookingValidation = await verifyPublicBookingForm();
     fontResults.assistantAdmin = await captureAssistantAdminGate();
 
     if (runtimeErrors.length) {
@@ -265,6 +340,8 @@ async function captureAssistantAdminGate() {
       "authenticated_screens=false",
       "mobile_viewport=390x844",
       "assistant_admin_gate=passed",
+      "guest_booking_validation=passed",
+      "guest_booking_service_count=" + fontResults.patientBookingValidation.catalogueCount,
       "assistant_admin_create_form_visible=" + fontResults.assistantAdmin.createFormVisible,
       "assistant_admin_plus_jakarta_sans_loaded=" + fontResults.assistantAdmin.plusJakartaSans,
       "role_route_refresh_back_forward=passed",
