@@ -92,7 +92,8 @@ async function main() {
       apiOrigin + "/v1/dental/health",
       (response, body) => response?.status === 200 &&
         body?.deployment_commit === expectedApiCommit &&
-        body?.database_identity_verified === true,
+        body?.database_identity_verified === true &&
+        body?.database_branch_identity_verified === true,
       { headers: originHeaders },
     ),
     waitForResponse(
@@ -133,7 +134,13 @@ async function main() {
   record(
     "ORALYN_DATABASE_IDENTITY_VERIFIED",
     health?.database_identity_verified === true,
-    "API verified the live DATABASE_URL host and database name against the isolated Neon branch",
+    "API verified the live DATABASE_URL host and database name",
+  );
+  const branchIdentityOk = health?.database_branch_identity_verified === true;
+  record(
+    "ORALYN_STAGING_DATABASE_BRANCH_VERIFIED",
+    branchIdentityOk,
+    "API verified current_setting('neon.branch_id') against the expected isolated staging branch",
   );
 
   const preflight = await request(apiOrigin + "/v1/dental/public/appointments", {
@@ -213,7 +220,7 @@ async function main() {
 
   // One synthetic request per backend commit per IST day. The idempotency key
   // is stable across hourly CI runs, so retries cannot create duplicate rows.
-  if (health?.database_identity_verified === true && expectedApiCommit) {
+  if (health?.database_identity_verified === true && branchIdentityOk && expectedApiCommit) {
     const istParts = new Intl.DateTimeFormat("en-GB", {
       timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
     }).formatToParts(new Date());
@@ -312,6 +319,7 @@ main().catch((error) => {
   const defaults = [
     "ORALYN_BACKEND_STACK_VERIFIED",
     "ORALYN_DATABASE_IDENTITY_VERIFIED",
+    "ORALYN_STAGING_DATABASE_BRANCH_VERIFIED",
     "ORALYN_CORS_VERIFIED",
     "ORALYN_SECURITY_HEADERS_VERIFIED",
     "ORALYN_PATIENT_ACCOUNT_FREE_VERIFIED",
