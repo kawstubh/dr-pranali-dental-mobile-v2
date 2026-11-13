@@ -83,6 +83,10 @@ test("staging manifest records verified public gates without claiming live booki
     assert.ok(manifest.blockers.includes("patient_guest_booking_e2e_verified"));
     assert.ok(!manifest.blockers.includes("cors_verified_for_portal_origin"));
     for (const gate of [
+      "production_hosting_always_on_verified",
+      "production_database_verified",
+      "production_custom_domain_verified",
+      "production_deployment_approval_verified",
       "backup_restore_verified",
       "error_monitoring_verified",
       "rollback_plan_verified",
