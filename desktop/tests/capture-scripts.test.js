@@ -27,6 +27,8 @@ test("real browser capture verifies Assistant login and legacy admin redirect at
 
   assert.doesNotThrow(() => new Script(source, { filename: file }));
   assert.match(source, /assistantLogin/);
+  assert.match(source, /Public patient services/);
+  assert.doesNotMatch(source, /Continue to patient portal/);
   assert.match(source, /patientLegacyLoginRedirect/);
   assert.match(source, /\/assistant-admin\//);
   assert.match(source, /assistant_admin_redirect_gate=passed/);
