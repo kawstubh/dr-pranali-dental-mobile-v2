@@ -54,6 +54,13 @@ test("real browser capture verifies legacy Assistant admin route redirects to Do
 });
 
 
+test("real browser capture follows the current premium Doctor login and patient-services link", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.match(source, /Sign in with your clinic-issued account/);
+  assert.match(source, /Patient services & appointment requests/);
+  assert.doesNotMatch(source, /Sign in with your clinic doctor account|Public patient services/);
+});
+
 test("synthetic Assistant capture exercises the SPA route, memory-only login, reception, appointments and billing", () => {
   const file = join(process.cwd(), "scripts", "capture-synthetic-assistant.cjs");
   const source = readFileSync(file, "utf8");
