@@ -4182,3 +4182,26 @@ main.oralyn-reference-layout {
   .oralyn-reference-card .oralyn-auth-divider {margin:7px 0 2px;}
   .oralyn-reference-admin-note {font-size:9px;line-height:1.25;}
 }
+
+
+/* Brand correction: native vector circuit-tooth mark, no logo raster cutouts */
+.oralyn-reference-story .oralyn-vector-brand {
+  display:flex;align-items:center;gap:clamp(10px,1.1vw,16px);width:max-content;max-width:100%;
+}
+.oralyn-brand-tooth {display:block;width:clamp(58px,5.8vw,82px);height:auto;flex:0 0 auto;filter:drop-shadow(0 5px 12px rgba(0,195,239,.16));}
+.oralyn-reference-story .oralyn-vector-wordmark {display:flex;flex-direction:column;gap:5px;color:#fff;}
+.oralyn-reference-story .oralyn-vector-wordmark strong {
+  font-family:"Plus Jakarta Sans",sans-serif;font-size:clamp(36px,3.5vw,52px);
+  line-height:.95;font-weight:750;letter-spacing:-2.5px;color:#fff;
+}
+.oralyn-reference-story .oralyn-vector-wordmark span {
+  display:block;color:#d7efff;font-size:clamp(8px,.72vw,10px);
+  line-height:1.4;font-weight:750;letter-spacing:2.1px;white-space:nowrap;
+}
+.oralyn-app-squircle {
+  display:grid;place-items:center;overflow:hidden;
+  background:linear-gradient(145deg,#13d1dd 0%,#078ce4 48%,#0751c5 100%);
+  border-radius:27%;box-shadow:inset 0 1px 0 rgba(255,255,255,.42),0 12px 28px rgba(7,103,204,.22);
+}
+.oralyn-app-squircle img {display:none!important;}
+.oralyn-app-tooth {width:72%;height:76%;display:block;filter:drop-shadow(0 3px 5px rgba(0,44,120,.18));}
