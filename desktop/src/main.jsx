@@ -542,8 +542,9 @@ function LoginScreen({ loading, error, onLogin, onPatient, onAssistant }) {
             {busy || loading ? "Connecting securely…" : "Sign in to Oralyn"}
           </button>
         </form>
-        <button className="patientlink" onClick={onPatient}>
-          Continue to patient portal
+        <button className="patientlink" onClick={onPatient} aria-label="Open public patient services; no account or OTP required">
+          Public patient services
+          <small>No account or OTP required</small>
         </button>
         <button className="patientlink" onClick={onAssistant}>
           Clinic Assistant sign in
