@@ -96,7 +96,8 @@ test("Clinic Assistant has a separate least-privilege workspace", () => {
   assert.ok(script, "assistant page script must be present");
   assert.doesNotThrow(() => new vm.Script(script));
 });
-\ntest("Doctor clinical records remain scoped to Doctor-authenticated APIs", () => {
+
+test("Doctor clinical records remain scoped to Doctor-authenticated APIs", () => {
   assert.match(apiSource, /doctorTreatmentPlans:/);
   assert.match(apiSource, /doctorInvoices:/);
   assert.match(apiSource, /createDocumentUploadIntent/);
