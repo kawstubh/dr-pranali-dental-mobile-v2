@@ -19,6 +19,13 @@ test("synthetic Doctor capture uses a safely quoted clinic workspace selector", 
   assert.equal(source.split(selector).length - 1, 3);
 });
 
+test("synthetic Doctor capture submits the current premium login form", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-synthetic-doctor.cjs"), "utf8");
+  assert.match(source, /oralyn-auth-card form/);
+  assert.match(source, /Sign in with your clinic-issued account/);
+  assert.doesNotMatch(source, /\.authcard form|Sign in with your clinic doctor account/);
+});
+
 test("synthetic Doctor capture proves memory-only token behavior across refresh and expiry", () => {
   const source = readFileSync(join(process.cwd(), "scripts", "capture-synthetic-doctor.cjs"), "utf8");
   assert.match(source, /auth\/password\/login/);
