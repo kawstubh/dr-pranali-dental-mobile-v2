@@ -56,10 +56,6 @@ jobs:
         run: |
           node scripts/verify-assistant-staging-contract.cjs
           echo "ORALYN_ASSISTANT_API_CONTRACT_READONLY_VERIFIED=true" >> "$GITHUB_ENV"
-          echo "ORALYN_PATIENT_ACCOUNT_FREE_VERIFIED=true" >> "$GITHUB_ENV"
-          echo "ORALYN_BACKEND_STACK_VERIFIED=true" >> "$GITHUB_ENV"
-          echo "ORALYN_DATABASE_IDENTITY_VERIFIED=true" >> "$GITHUB_ENV"
-          echo "ORALYN_CORS_VERIFIED=true" >> "$GITHUB_ENV"
       - name: Prepare immutable service-worker cache identity
         run: node scripts/write-build-manifest.cjs --prepare-only
       - name: Install headless Chrome
