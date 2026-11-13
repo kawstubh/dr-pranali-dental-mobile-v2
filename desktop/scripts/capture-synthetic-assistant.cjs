@@ -194,7 +194,12 @@ async function main() {
   await captureResponsive("assistant-appointments");
 
   await evaluate("(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').includes('Billing')); if (!button) return false; button.click(); return true; })()");
-  await waitFor(() => evaluate('document.body.innerText.includes("Billing lookup") && document.body.innerText.includes("SYN-INV-001")'));
+  await waitFor(() => evaluate('document.body.innerText.includes("Billing administration") && document.body.innerText.includes("SYN-INV-001")'));
+  const payment = await evaluate("(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').includes('Record payment received')); if (!button) return false; button.click(); return true; })()");
+  if (!payment) throw new Error("Assistant received-payment action was not found.");
+  const paymentForm = await evaluate("(() => { const form = [...document.querySelectorAll('form')].find((item) => item.innerText.includes('Amount received')); if (!form) return false; const amount = form.querySelector('input[type=number]'); if (!amount) return false; const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; setter.call(amount, '100'); amount.dispatchEvent(new Event('input', { bubbles: true })); amount.dispatchEvent(new Event('change', { bubbles: true })); const submit = [...form.querySelectorAll('button')].find((item) => item.type === 'submit'); if (!submit) return false; submit.click(); return true; })()");
+  if (!paymentForm) throw new Error("Assistant received-payment form could not be exercised.");
+  await waitFor(() => evaluate('document.body.innerText.includes("Payment recorded.")'));
   await captureResponsive("assistant-billing");
 
   const signout = await evaluate("(() => { const button = document.querySelector('button[aria-label=\"Sign out\"]'); if (!button) return false; button.click(); return true; })()");
@@ -204,7 +209,7 @@ async function main() {
 
   const evidence = await evaluate("({writes:window.__ORALYN_ASSISTANT_WRITES || [],unhandled:window.__ORALYN_ASSISTANT_UNHANDLED || []})");
   if (evidence.unhandled.length) throw new Error("Synthetic Assistant harness encountered unhandled API paths: " + evidence.unhandled.join(", "));
-  for (const required of ["assistant-login", "patient-create", "appointment-confirm", "billing-read", "logout"]) {
+  for (const required of ["assistant-login", "patient-create", "appointment-confirm", "billing-read", "receipt-recorded", "logout"]) {
     if (!evidence.writes.includes(required)) throw new Error("Expected synthetic Assistant workflow action missing: " + required);
   }
   if (runtimeErrors.length) throw new Error("Synthetic Assistant browser runtime errors: " + runtimeErrors.join(" | "));
@@ -222,6 +227,7 @@ async function main() {
     "assistant_patient_intake=passed_fixture",
     "assistant_appointment_confirm=passed_fixture",
     "assistant_billing_read=passed_fixture",
+    "assistant_receipt_recording=passed_fixture",
     "assistant_logout=passed_fixture",
     "doctor_clinical_ai_visible=false",
     "fonts_loaded=" + JSON.stringify(fonts),
