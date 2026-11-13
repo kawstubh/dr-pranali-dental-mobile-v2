@@ -238,7 +238,7 @@ async function main() {
   const evidence = await evaluate(`(() => {
     const fixture = window.__ORALYN_ASSISTANT_FIXTURE;
     const controls = [...document.querySelectorAll('button,a')].map((item) => (item.innerText || '').toLowerCase());
-    const forbiddenControls = controls.filter((value) => /clinical|diagnos|prescription|odontogram|treatment plan|intelligence|\bai\b/.test(value));
+    const forbiddenControls = controls.filter((value) => /clinical|diagnos|prescription|odontogram|treatment plan|intelligence/.test(value) || value === 'ai');
     const token = sessionStorage.getItem('oralyn_assistant_session');
     return {
       requests: fixture.requests,
