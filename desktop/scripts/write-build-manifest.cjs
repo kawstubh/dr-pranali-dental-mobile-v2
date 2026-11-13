@@ -112,6 +112,7 @@ const checks = {
   patient_account_routes_disabled_verified: flag(process.env.ORALYN_PATIENT_ACCOUNT_FREE_VERIFIED),
   guest_booking_idempotency_verified: flag(process.env.ORALYN_GUEST_BOOKING_IDEMPOTENCY_VERIFIED),
   assistant_ui_api_verified: flag(process.env.ORALYN_ASSISTANT_UI_API_VERIFIED),
+  assistant_data_minimization_live_verified: flag(process.env.ORALYN_ASSISTANT_DATA_MINIMIZATION_LIVE_VERIFIED),
   cross_tenant_e2e_verified: flag(process.env.ORALYN_CROSS_TENANT_E2E_VERIFIED),
   authenticated_screenshots_verified: flag(process.env.ORALYN_AUTHENTICATED_SCREENSHOTS_VERIFIED),
   mobile_browser_e2e_verified: flag(process.env.ORALYN_MOBILE_BROWSER_E2E_VERIFIED),
@@ -137,6 +138,9 @@ const manifest = {
   built_at: new Date().toISOString(),
   api_origin: apiOrigin,
   portal_origin: portalOrigin,
+  evidence: {
+    assistant_api_contract_readonly_verified: flag(process.env.ORALYN_ASSISTANT_API_CONTRACT_READONLY_VERIFIED),
+  },
   staging_contract: {
     verified_for_this_commit:
       flag(process.env.ORALYN_STAGING_API_COMMIT_VERIFIED) &&
