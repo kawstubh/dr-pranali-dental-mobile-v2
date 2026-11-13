@@ -194,6 +194,13 @@ async function main() {
   await waitFor(() => evaluate('document.body.innerText.includes("Appointment confirmed.")'));
   await captureResponsive("assistant-appointments");
 
+  const rescheduleOpened = await evaluate("(() => { const card = [...document.querySelectorAll('.assistant-appointment')].find((item) => item.innerText.includes('Ananya Synthetic')); const button = card && [...card.querySelectorAll('button')].find((item) => (item.innerText || '').includes('Reschedule')); if (!button) return false; button.click(); return true; })()");
+  if (!rescheduleOpened) throw new Error("Assistant appointment reschedule action was not found.");
+  const rescheduleValues = await evaluate("(() => { const card = [...document.querySelectorAll('.assistant-appointment')].find((item) => item.innerText.includes('Ananya Synthetic')); const form = card?.querySelector('.assistant-reschedule-form'); const dateInput = form?.querySelector('input[type=date]'); const timeInput = form?.querySelector('input[type=time]'); if (!form || !dateInput || !timeInput) return false; const target = new Date(Date.now() + 3 * 86400000); const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(target); const get = (type) => parts.find((part) => part.type === type)?.value || ''; const date = [get('year'), get('month'), get('day')].join('-'); const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; setter.call(dateInput, date); dateInput.dispatchEvent(new Event('input', { bubbles: true })); dateInput.dispatchEvent(new Event('change', { bubbles: true })); setter.call(timeInput, '10:30'); timeInput.dispatchEvent(new Event('input', { bubbles: true })); timeInput.dispatchEvent(new Event('change', { bubbles: true })); form.requestSubmit(); return { date, time: '10:30' }; })()");
+  if (!rescheduleValues) throw new Error("Assistant timezone-aware reschedule form could not be exercised.");
+  await waitFor(() => evaluate('document.body.innerText.includes("Appointment rescheduled to")'));
+  await captureResponsive("assistant-appointments-rescheduled");
+
   await evaluate("(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').includes('Billing')); if (!button) return false; button.click(); return true; })()");
   await waitFor(() => evaluate('document.body.innerText.includes("Billing administration") && document.body.innerText.includes("SYN-INV-001")'));
   const payment = await evaluate("(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').includes('Record payment received')); if (!button) return false; button.click(); return true; })()");
@@ -210,7 +217,7 @@ async function main() {
 
   const evidence = await evaluate("({writes:window.__ORALYN_ASSISTANT_WRITES || [],unhandled:window.__ORALYN_ASSISTANT_UNHANDLED || []})");
   if (evidence.unhandled.length) throw new Error("Synthetic Assistant harness encountered unhandled API paths: " + evidence.unhandled.join(", "));
-  for (const required of ["assistant-login", "patient-create", "appointment-confirm", "billing-read", "receipt-recorded", "logout"]) {
+  for (const required of ["assistant-login", "patient-create", "appointment-confirm", "appointment-reschedule", "billing-read", "receipt-recorded", "logout"]) {
     if (!evidence.writes.includes(required)) throw new Error("Expected synthetic Assistant workflow action missing: " + required);
   }
   if (runtimeErrors.length) throw new Error("Synthetic Assistant browser runtime errors: " + runtimeErrors.join(" | "));
@@ -228,6 +235,7 @@ async function main() {
     "assistant_dashboard=passed_fixture",
     "assistant_patient_intake=passed_fixture",
     "assistant_appointment_confirm=passed_fixture",
+    "assistant_appointment_reschedule=passed_fixture",
     "assistant_billing_read=passed_fixture",
     "assistant_receipt_recording=passed_fixture",
     "assistant_logout=passed_fixture",
