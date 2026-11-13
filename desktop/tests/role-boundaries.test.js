@@ -215,7 +215,8 @@ test("Assistant staging contract verification is read-only and never creates a b
   assert.match(assistantContractSource, /method: "OPTIONS"/);
   assert.match(assistantContractSource, /method: "GET"/);
   assert.doesNotMatch(assistantContractSource, /method: "(?:POST|PATCH|DELETE)"/);
-  assert.match(assistantWorkflowSource, /ORALYN_ASSISTANT_UI_API_VERIFIED=true/);
+  assert.match(assistantWorkflowSource, /ORALYN_ASSISTANT_API_CONTRACT_READONLY_VERIFIED=true/);
+  assert.doesNotMatch(assistantWorkflowSource, /ORALYN_ASSISTANT_UI_API_VERIFIED=true/);
   assert.match(assistantContractSource, /no credentials or writes used/);
 });
 
@@ -241,4 +242,12 @@ test("release manifest blocks production until Doctor token storage is hardened"
   const manifestSource = fs.readFileSync(manifestPath, "utf8");
   assert.ok(manifestSource.includes("doctor_token_storage_hardening_verified"));
   assert.ok(manifestSource.includes("process.env.ORALYN_DOCTOR_TOKEN_STORAGE_HARDENING_VERIFIED"));
+});
+
+
+test("read-only Assistant API contract does not satisfy authenticated UI persistence or data-minimization release gates", () => {
+  const manifest = fs.readFileSync(path.join(root, "scripts", "write-build-manifest.cjs"), "utf8");
+  assert.ok(manifest.includes("assistant_api_contract_readonly_verified"));
+  assert.ok(manifest.includes("assistant_ui_api_verified"));
+  assert.ok(manifest.includes("assistant_data_minimization_live_verified"));
 });
