@@ -2,7 +2,7 @@
 
 **Status: BLOCKED — synthetic staging is operational, but production hosting, authenticated acceptance and security infrastructure are not release-ready.**
 
-Last refreshed: 13 November 2026, 12:34 UTC.
+Last refreshed: 13 November 2026, 12:36 UTC.
 
 ## Product decisions
 
@@ -162,7 +162,7 @@ The build manifest now explicitly requires all of the following to be verified:
 
 The staging Vite preview is a Free web service and sleeps after 15 minutes idle. It is not production hosting. The static alias is not canonical because the Doctor deep route returns 404. Do not mark production hosting verified based on either staging URL.
 
-Never change manifest flags manually to make a release appear ready. All four production gates default to false until independently verified.
+Never change manifest flags manually to make a release appear ready. All four production gates default to false until independently verified. The Render-hosted build manifest is generated without GitHub Actions verification environment variables, so it conservatively marks CI-only checks false. Use the GitHub Actions manifest artifact for the exact commit as the authoritative staging evidence; do not interpret the Render copy as a failed test run. Production gates remain false in both.
 
 ## Operational restrictions
 
