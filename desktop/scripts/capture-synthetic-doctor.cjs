@@ -227,12 +227,12 @@ async function main() {
   await send("Log.enable");
   await send("Page.addScriptToEvaluateOnNewDocument", { source: fixtureSource });
   await send("Page.navigate", { url: baseUrl + "/doctor/dashboard" });
-  await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Sign in with your clinic-issued account")'));
+  await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Sign in with your clinic-issued email and password")'));
   await waitFor(() => evaluate("(async () => { const registration = await navigator.serviceWorker?.getRegistration('/'); return Boolean(registration?.active && registration.active.state === 'activated'); })()"), 30000);
   let pwaControlled = await evaluate("Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)");
   if (!pwaControlled) {
     await send("Page.reload", { ignoreCache: true });
-    await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Sign in with your clinic-issued account") && Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)'), 20000);
+    await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Sign in with your clinic-issued email and password") && Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)'), 20000);
     pwaControlled = await evaluate("Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)");
   }
   if (!pwaControlled) throw new Error("Synthetic Doctor capture is not controlled by the Oralyn PWA service worker.");
@@ -294,7 +294,7 @@ async function main() {
   await waitFor(() => evaluate('document.body.innerText.includes("Ananya Synthetic")'));
 
   await send("Page.reload", { ignoreCache: true });
-  await waitFor(() => evaluate('document.body.innerText.includes("Sign in with your clinic-issued account")'));
+  await waitFor(() => evaluate('document.body.innerText.includes("Sign in with your clinic-issued email and password")'));
   const noPersistentTokenAfterReload = await evaluate('!localStorage.getItem("oralyn_doctor_token") && !sessionStorage.getItem("oralyn_doctor_token")');
   if (!noPersistentTokenAfterReload) throw new Error("Doctor bearer token was persisted across a page reload.");
   await capture("doctor-login-after-refresh-1440x1000.png");
@@ -309,13 +309,13 @@ async function main() {
   await navigate("/doctor/settings", "Sign out securely");
   const signout = await evaluate("(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').trim() === 'Sign out securely'); if (!button) return false; button.click(); return true; })()");
   if (!signout) throw new Error("Doctor sign-out action was not found.");
-  await waitFor(() => evaluate('document.body.innerText.includes("Sign in with your clinic-issued account")'));
+  await waitFor(() => evaluate('document.body.innerText.includes("Sign in with your clinic-issued email and password")'));
   const logoutCleared = await evaluate('!localStorage.getItem("oralyn_doctor_token") && !sessionStorage.getItem("oralyn_doctor_token")');
   if (!logoutCleared) throw new Error("Doctor logout left a persistent token in browser storage.");
   await capture("doctor-logout-1440x1000.png");
 
   await submitDoctorLogin("expired.synthetic@example.test", "expired-synthetic-password");
-  await waitFor(() => evaluate('document.body.innerText.includes("Sign in with your clinic-issued account") && document.body.innerText.includes("Your session expired. Please sign in again.")'));
+  await waitFor(() => evaluate('document.body.innerText.includes("Sign in with your clinic-issued email and password") && document.body.innerText.includes("Your session expired. Please sign in again.")'));
   const expiryCleared = await evaluate('!localStorage.getItem("oralyn_doctor_token") && !sessionStorage.getItem("oralyn_doctor_token")');
   if (!expiryCleared) throw new Error("Expired Doctor session was not cleared from memory and browser storage.");
   await capture("doctor-session-expired-1440x1000.png");
