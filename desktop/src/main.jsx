@@ -68,9 +68,7 @@ function App() {
     [mobile, B] = useState(false),
     [tooth, Q] = useState("36"),
     [findings, F] = useState({}),
-    [token, setToken] = useState(
-      () => localStorage.getItem("oralyn_doctor_token") || "",
-    ),
+    [token, setToken] = useState(""),
     [user, setUser] = useState(null),
     [patients, setPatients] = useState([]),
     [appointments, setAppointments] = useState([]),
@@ -143,7 +141,6 @@ function App() {
   };
   useEffect(() => {
     const expireDoctorSession = () => {
-      localStorage.removeItem("oralyn_doctor_token");
       setToken("");
       setUser(null);
       setPatients([]);
@@ -209,7 +206,6 @@ function App() {
       } catch (err) {
         if (!live) return;
         if (err.status === 401) {
-          localStorage.removeItem("oralyn_doctor_token");
           setToken("");
           setUser(null);
           setAuthError("Your session expired. Please sign in again.");
@@ -265,7 +261,6 @@ function App() {
       setDataError("");
       F({});
       Q("36");
-      localStorage.setItem("oralyn_doctor_token", accessToken);
       setToken(accessToken);
       setUser(sessionUser);
       setWorkspaces(normaliseList(session, ["workspaces"]));
@@ -282,7 +277,6 @@ function App() {
     try {
       if (token) await dentalApi.logout(token);
     } catch {}
-    localStorage.removeItem("oralyn_doctor_token");
     setToken("");
     setUser(null);
     setPatients([]);
@@ -310,7 +304,6 @@ function App() {
           setAuthError("");
           try {
             const result = await dentalApi.login(email, password);
-            localStorage.setItem("oralyn_doctor_token", result.access_token);
             setToken(result.access_token);
           } catch (e) {
             setAuthError(e.message);
@@ -549,6 +542,9 @@ function LoginScreen({ loading, error, onLogin, onPatient, onAssistant }) {
         <button className="patientlink" onClick={onAssistant}>
           Clinic Assistant sign in
         </button>
+        <small className="auth-session-note">
+          For security, this sign-in stays in memory in this tab. Refreshing or closing the tab signs you out.
+        </small>
         <small className="authfoot">
           Secure clinic access · Session verified by the Oralyn server
         </small>
