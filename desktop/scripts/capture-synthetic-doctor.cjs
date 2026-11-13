@@ -104,8 +104,8 @@ async function capture(name, width = 1440, height = 1000, mobile = false) {
 
 async function navigate(route, expectedText) {
   await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
-  await send("Page.navigate", { url: baseUrl + route });
-  await waitFor(() => evaluate('document.readyState === "complete"'));
+  const changed = await evaluate("(() => { history.pushState({ oralynPortal: true }, '', " + JSON.stringify(route) + "); window.dispatchEvent(new PopStateEvent('popstate')); return true; })()");
+  if (!changed) throw new Error("Could not navigate within the authenticated Doctor workspace.");
   await waitFor(() => evaluate("document.body && document.body.innerText.includes(" + JSON.stringify(expectedText) + ")"));
 }
 
@@ -228,17 +228,17 @@ async function main() {
   await send("Page.addScriptToEvaluateOnNewDocument", { source: fixtureSource });
   await send("Page.navigate", { url: baseUrl + "/doctor/dashboard" });
   await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Sign in with your clinic doctor account")'));
-  await submitDoctorLogin();
-  await waitFor(() => evaluate('document.body.innerText.includes("Dr Synthetic")'));
-  await waitFor(() => evaluate('document.body.innerText.includes("Ananya Synthetic")'));
   await waitFor(() => evaluate("(async () => { const registration = await navigator.serviceWorker?.getRegistration('/'); return Boolean(registration?.active && registration.active.state === 'activated'); })()"), 30000);
   let pwaControlled = await evaluate("Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)");
   if (!pwaControlled) {
-    await send("Page.navigate", { url: baseUrl + "/doctor/dashboard" });
-    await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Dr Pranali Dental Clinic") && Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)'), 20000);
+    await send("Page.reload", { ignoreCache: true });
+    await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Sign in with your clinic doctor account") && Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)'), 20000);
     pwaControlled = await evaluate("Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)");
   }
   if (!pwaControlled) throw new Error("Synthetic Doctor capture is not controlled by the Oralyn PWA service worker.");
+  await submitDoctorLogin();
+  await waitFor(() => evaluate('document.body.innerText.includes("Dr Synthetic")'));
+  await waitFor(() => evaluate('document.body.innerText.includes("Ananya Synthetic")'));
   const fontStatus = await evaluate('({plusJakartaSans:document.fonts.check("400 16px \\"Plus Jakarta Sans\\""),playfairDisplay:document.fonts.check("600 32px \\"Playfair Display\\"")})');
   if (!fontStatus.plusJakartaSans || !fontStatus.playfairDisplay) throw new Error("Bundled Oralyn fonts failed in synthetic Doctor session: " + JSON.stringify(fontStatus));
 
@@ -301,13 +301,12 @@ async function main() {
   await submitDoctorLogin();
   await waitFor(() => evaluate('document.body.innerText.includes("Dr Synthetic") && document.body.innerText.includes("Ananya Synthetic")'));
 
-  await send("Page.navigate", { url: baseUrl + "/doctor/settings" });
-  await waitFor(() => evaluate('document.body.innerText.includes("Clinic assistants") && document.body.innerText.includes("Create Clinic Assistant") && document.body.innerText.includes("Sign out securely")'));
+  await navigate("/doctor/settings", "Clinic assistants");
+  await waitFor(() => evaluate('document.body.innerText.includes("Create Clinic Assistant") && document.body.innerText.includes("Sign out securely")'));
   const assistantManagementFormVisible = await evaluate('Boolean(document.querySelector(".assistant-management-form"))');
   if (!assistantManagementFormVisible) throw new Error("Owner/admin Clinic Assistant management form was not available.");
   await capture("doctor-assistant-admin-owner-1440x1000.png");
-  await send("Page.navigate", { url: baseUrl + "/doctor/settings" });
-  await waitFor(() => evaluate('document.body.innerText.includes("Sign out securely")'));
+  await navigate("/doctor/settings", "Sign out securely");
   const signout = await evaluate("(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').trim() === 'Sign out securely'); if (!button) return false; button.click(); return true; })()");
   if (!signout) throw new Error("Doctor sign-out action was not found.");
   await waitFor(() => evaluate('document.body.innerText.includes("Sign in with your clinic doctor account")'));
