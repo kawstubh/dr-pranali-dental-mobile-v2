@@ -217,7 +217,7 @@ Clinic confirmation of the exact production wording of the 20 catalogue labels i
 
 ### Release manifest
 
-The exact-head CI manifest remains **BLOCKED** on these 17 gates: `staging_database_branch_verified`, `private_document_storage_verified`, `document_malware_scanning_verified`, `backup_restore_verified`, `error_monitoring_verified`, `rollback_plan_verified`, `doctor_auth_e2e_verified`, `assistant_role_e2e_verified`, `production_guest_rate_limiting_verified`, `assistant_ui_api_verified`, `assistant_data_minimization_live_verified`, `cross_tenant_e2e_verified`, `authenticated_screenshots_verified`, `production_hosting_always_on_verified`, `production_database_verified`, `production_custom_domain_verified` and `production_deployment_approval_verified`.
+The latest exact-head CI manifest remains **BLOCKED** on 16 gates: `private_document_storage_verified`, `document_malware_scanning_verified`, `backup_restore_verified`, `error_monitoring_verified`, `rollback_plan_verified`, `doctor_auth_e2e_verified`, `assistant_role_e2e_verified`, `production_guest_rate_limiting_verified`, `assistant_ui_api_verified`, `assistant_data_minimization_live_verified`, `cross_tenant_e2e_verified`, `authenticated_screenshots_verified`, `production_hosting_always_on_verified`, `production_database_verified`, `production_custom_domain_verified` and `production_deployment_approval_verified`. Exact staging database branch identity is now verified.
 
 No PR was merged. No production deployment, production migration, production secret change, paid infrastructure, real booking, patient-data transfer or Google Business Profile booking-link change was performed.
 
@@ -229,12 +229,12 @@ No PR was merged. No production deployment, production migration, production sec
 - Render portal service `srv-dbr2ttsipgvc739a4tmg` is LIVE on `ac007bdb58c743366492cc91c25a2cd684d303f3`, deploy `dep-dbrm5llbedkc73bhqojg`.
 - Backend PR #60 remains Draft/unmerged at `39ed30ee82b9aa792fc19ea01639ee37268f1f49`. Engine CI #43446614361 passed 234 tests with 3 skips; PostgreSQL CI #43446614469 passed 237 tests. Render API service `srv-dbr8m159fdbs73dl404g` is LIVE on that exact commit, deploy `dep-dbrjkrui0phs73822v1g`.
 
-### New Neon branch-binding discrepancy — release gate
+### Historical Neon branch-binding discrepancy — resolved 14 November 2026
 - Read-only aggregate query on source branch `br-steep-bonus-a1yqarg7`: 8 patients, 8 appointments, 7 public booking requests and 9 audit events.
 - Read-only aggregate query on restored default branch `br-proud-scene-a1g7g3qo`: 9 patients, 9 appointments, 8 public booking requests and 10 audit events. Its latest linked-row timestamps are 19:20:43 UTC; the source branch's latest linked-row timestamps remain 15:18:33 UTC.
 - Frontend CI #43491180642 logged its synthetic-only public booking POST as accepted at 19:20:43 UTC, followed by an idempotent replay. The timestamp and aggregate delta are consistent with that CI write landing on the restored default branch. This supersedes the earlier statement that source and restored aggregate counts still matched.
 - Backend `_database_identity_verified` currently checks the configured database-host allowlist and database name; the health response does not expose or assert an explicit Neon branch ID. Render's read-only service metadata does not expose the `DATABASE_URL` value or expected-host environment value, so the exact branch binding cannot yet be independently confirmed. The API appears to be writing to the restored default branch, but this remains an inference until the Render connection target is verified.
-- A new manifest gate, `staging_database_branch_verified`, is now default-false. Do not run another booking POST or treat database identity as exact branch proof until the intended Neon endpoint/branch mapping is confirmed. Both branches remain synthetic-only; no patient values were read.
+- The default-false branch gate was subsequently wired to the live API health check. On 14 November the staging API was rebound to the intended source branch, and exact branch identity was verified before the next synthetic booking test. The restored default branch was left untouched.
 
 ### Storage, restore and live availability
 - Private bucket `oralyn-private-documents` remains empty. Neon lists a branch-scoped default object-storage credential with `storage:read` and `storage:write` on the source branch, but there is no evidence it is installed in Render or integrated with the API. It is not bucket-scoped; do not expose or reuse it. Uploads and sharing remain disabled.
@@ -250,4 +250,16 @@ No PR was merged. No production deployment, production migration, production sec
 - Synthetic booking is gated on all three conditions: host/database identity, exact Neon branch identity, and the live API deployment commit matching Draft PR #60 head. If any condition is missing or mismatched, the probe does not POST a booking.
 - Frontend CI no longer overrides backend-stack, database-identity, CORS, or account-free gates with unconditional `true`; these flags are written only by the live staging contract checks.
 - Backend Engine CI #43503951195 and PostgreSQL CI #43503951035 passed on commit `5f4adba355b56f69427f554925ad8cdaa7f81d40`.
-- Render synthetic staging API deploy `dep-dbrndeom7kps73cplcag` is LIVE on that exact commit. The expected-branch setting has been added to the staging service. Exact live branch acceptance remains pending the next frontend staging-contract run; do not mark this gate passed until that run confirms it.
+- Render synthetic staging API deploy `dep-dbrngjnf3r2c7391c5v0` is LIVE on that exact commit. Its `DATABASE_URL`, expected host allowlist and `DENTAL_EXPECTED_NEON_BRANCH_ID` are pinned to `br-steep-bonus-a1yqarg7`; a fresh health response and frontend CI #43505648771 both confirmed exact branch identity true.
+
+### Latest verified acceptance — 14 November 2026
+
+- Frontend PR #18 head `d1a07b1128eb76d159960c707d06c839b9f70af3`; CI [#43505648771](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43505648771) passed 115/115 tests, npm audit 0 vulnerabilities, production build, live staging contract, read-only Assistant API contract, responsive browser capture, PWA/fonts and screenshot uploads.
+- Backend PR #60 head `5f4adba355b56f69427f554925ad8cdaa7f81d40`; Engine CI #43503951195 and PostgreSQL CI #43503951035 passed. Render staging API deploy `dep-dbrngjnf3r2c7391c5v0` is LIVE.
+- Live health confirms `database_ready=true`, `database_identity_verified=true`, `database_branch_identity_verified=true`, `uie_configured=true`, and the exact deployed backend commit. The API is pinned to synthetic Neon source branch `br-steep-bonus-a1yqarg7`, database `oralyn_staging`.
+- The latest synthetic booking contract accepted one request and replayed the same idempotency key; the replay returned the same public reference with `already_received`. Source-branch aggregate counts increased by one synthetic patient, appointment, public request and audit event; the restored default branch remained unchanged.
+- The shared source catalogue contains 20 unique service IDs and 20 local images. API schema, public home cards, booking options and preselection match those 20 services plus Other.
+- Browser evidence reports service-worker registration/activation/control on Doctor login, Assistant login, patient home and booking; one shell cache with no forbidden API/authenticated data; zero runtime errors; no unhandled API paths. Responsive screenshots were uploaded.
+- Doctor/Assistant UI captures are synthetic fixtures only. Their metadata explicitly keeps real staging Doctor login, real Assistant login and authenticated staging E2E false. Fixture writes do not count as live API persistence.
+
+The 16 manifest blockers listed above remain genuine. No PR was merged; no production deployment, production migration, production secret change, real patient-data transfer or Google Business Profile modification was performed.
