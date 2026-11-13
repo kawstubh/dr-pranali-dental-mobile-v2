@@ -107,7 +107,8 @@ const checks = {
   cross_tenant_e2e_verified: flag(process.env.ORALYN_CROSS_TENANT_E2E_VERIFIED),
   authenticated_screenshots_verified: flag(process.env.ORALYN_AUTHENTICATED_SCREENSHOTS_VERIFIED),
   mobile_browser_e2e_verified: flag(process.env.ORALYN_MOBILE_BROWSER_E2E_VERIFIED),
-  public_service_catalog_verified: flag(process.env.ORALYN_SERVICE_CATALOG_VERIFIED),
+  public_service_catalog_ui_verified: flag(process.env.ORALYN_SERVICE_CATALOG_UI_VERIFIED),
+  public_service_catalog_api_verified: flag(process.env.ORALYN_SERVICE_CATALOG_API_VERIFIED),
 };
 const blockers = Object.entries(checks)
   .filter(([, passed]) => !passed)
