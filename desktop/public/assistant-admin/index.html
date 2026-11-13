@@ -74,6 +74,9 @@ button:disabled{opacity:.55;cursor:wait}
           <label>Temporary password
             <input name="password" type="password" autocomplete="new-password" minlength="12" maxlength="256" required>
           </label>
+          <label>Confirm password
+            <input name="password_confirm" type="password" autocomplete="new-password" minlength="12" maxlength="256" required>
+          </label>
         </div>
         <button id="create-button" type="submit">Create Assistant account</button>
       </form>
@@ -213,6 +216,11 @@ document.getElementById("create-form").addEventListener("submit", async (event) 
   const data = new FormData(form);
   const email = String(data.get("email") || "").trim().toLowerCase();
   const password = String(data.get("password") || "");
+  const passwordConfirm = String(data.get("password_confirm") || "");
+  if (password !== passwordConfirm) {
+    showMessage(actionMessage, "The passwords do not match.", "error");
+    return;
+  }
   if (password.length < 12) {
     showMessage(actionMessage, "Use a password with at least 12 characters.", "error");
     return;
