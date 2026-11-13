@@ -147,6 +147,9 @@ test("doctor appointment updates and doctor provisioning use authenticated clini
     starts_at: "2026-11-13T04:30:00.000Z",
     status: "confirmed",
   });
-  assert.equal(requests[1].init.body, undefined);
-  assert.equal(JSON.parse(requests[2].init.body).role, "doctor");
+  assert.deepEqual(JSON.parse(requests[1].init.body), {
+    email: "doctor@example.test",
+    password: "synthetic-long-password-123",
+    role: "doctor",
+  });
 });
