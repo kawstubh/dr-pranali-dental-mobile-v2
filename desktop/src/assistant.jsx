@@ -189,7 +189,6 @@ export default function AssistantApp() {
           setAppointments([]);
           setBilling([]);
           setReceiptDrafts({});
-    setRescheduleDrafts({});
           setRescheduleDrafts({});
         }
         setError(cause?.message || "Assistant session could not be verified.");
@@ -218,7 +217,6 @@ export default function AssistantApp() {
           setAppointments([]);
           setBilling([]);
           setReceiptDrafts({});
-    setRescheduleDrafts({});
           setRescheduleDrafts({});
         }
         setError(cause?.message || "Billing summaries could not be loaded.");
