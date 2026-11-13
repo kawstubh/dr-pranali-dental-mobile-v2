@@ -206,3 +206,10 @@ test("release manifest blocks production until Doctor token storage is hardened"
   assert.ok(manifestSource.includes("doctor_token_storage_hardening_verified"));
   assert.ok(manifestSource.includes("process.env.ORALYN_DOCTOR_TOKEN_STORAGE_HARDENING_VERIFIED"));
 });
+
+
+test("release manifest keeps Assistant data minimization blocked until live authenticated verification", () => {
+  const manifest = fs.readFileSync(path.join(root, "scripts", "write-build-manifest.cjs"), "utf8");
+  assert.ok(manifest.includes("assistant_data_minimization_live_verified"));
+  assert.ok(manifest.includes("assistant_api_contract_readonly_verified"));
+});
