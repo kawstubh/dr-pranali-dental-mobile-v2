@@ -1,15 +1,14 @@
 import React from "react";
-import fs from "node:fs";
-import path from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { fileURLToPath } from "node:url";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createServer } from "vite";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-test("patient treatment journey hides prior records during initial load and retains explicit empty states", async () => {
+test("Doctor care modules render safe no-selection states without patient-account UI", async () => {
   const vite = await createServer({
     configFile: path.join(root, "vite.config.js"),
     root,
@@ -20,24 +19,44 @@ test("patient treatment journey hides prior records during initial load and reta
   });
 
   try {
-    const { PatientCareManagement } = await vite.ssrLoadModule("/src/careScreens.jsx");
-    const markup = renderToStaticMarkup(
-      React.createElement(PatientCareManagement, {
-        page: "journey",
-        session: { access_token: "synthetic-session-token" },
-        patientId: "synthetic-patient-record",
-        patientChart: [],
+    const screens = await vite.ssrLoadModule("/src/careScreens.jsx");
+    assert.equal(typeof screens.DoctorCareManagement, "function");
+    assert.equal(typeof screens.DoctorClinicalNotes, "function");
+    assert.equal(typeof screens.PatientCommunication, "function");
+    assert.equal(screens.PatientCareManagement, undefined);
+
+    const careMarkup = renderToStaticMarkup(
+      React.createElement(screens.DoctorCareManagement, {
+        page: "files",
+        token: "",
+        activePatient: null,
+        ping: () => {},
       }),
     );
+    assert.match(careMarkup, /Choose a clinic patient before opening their protected records/);
+    assert.match(careMarkup, /No sample clinical or financial records are displayed/);
 
-    assert.match(markup, /Loading information shared by your clinic/);
-    assert.doesNotMatch(markup, /Clinic-shared treatment plans|Clinical notes shared by your clinic/);
+    const notesMarkup = renderToStaticMarkup(
+      React.createElement(screens.DoctorClinicalNotes, {
+        token: "",
+        activePatient: null,
+      }),
+    );
+    assert.match(notesMarkup, /Select a patient from the clinical workspace before opening their notes/);
 
-    const source = fs.readFileSync(path.join(root, "src", "careScreens.jsx"), "utf8");
-    assert.match(source, /Clinic-shared treatment plans/);
-    assert.match(source, /Clinical notes shared by your clinic/);
-    assert.match(source, /Your clinic has not shared a treatment plan yet/);
-    assert.match(source, /Your clinic has not shared clinical notes yet/);
+    const messagesMarkup = renderToStaticMarkup(
+      React.createElement(screens.PatientCommunication, {
+        token: "",
+        activePatient: null,
+      }),
+    );
+    assert.match(messagesMarkup, /Select a patient from the clinic directory to open their conversation/);
+
+    const source = await import("node:fs").then(({ readFileSync }) =>
+      readFileSync(path.join(root, "src", "careScreens.jsx"), "utf8"),
+    );
+    assert.doesNotMatch(source, /export function PatientCareManagement/);
+    assert.doesNotMatch(source, /patientClinicalNotes|patientMessages|sendPatientMessage/);
   } finally {
     await vite.close();
   }
