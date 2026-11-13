@@ -63,14 +63,24 @@ test("Assistant intake resets the captured form after its asynchronous save", ()
 });
 
 
-test("live staging contract probe is read-only and verifies the deployed commit identities", () => {
+test("live staging contract probe writes only one idempotent synthetic booking after database identity verification", () => {
   const file = join(process.cwd(), "scripts", "verify-staging-contract.cjs");
   const source = readFileSync(file, "utf8");
 
   assert.doesNotThrow(() => new Script(source, { filename: file }));
+  const identityGate = source.indexOf('if (health?.database_identity_verified === true && expectedApiCommit)');
+  const postMethod = source.indexOf('method: "POST"');
+  assert.ok(identityGate >= 0 && postMethod > identityGate);
+  assert.equal((source.match(/method: "POST"/g) || []).length, 2);
+  assert.equal((source.match(/body: JSON.stringify\(syntheticPayload\)/g) || []).length, 2);
   assert.match(source, /method: "OPTIONS"/);
-  assert.doesNotMatch(source, /method: "POST"/);
-  assert.match(source, /database_identity_verified/);
+  assert.match(source, /name: "Oralyn Synthetic /);
+  assert.match(source, /intelligence_request: false/);
+  assert.match(source, /idempotency_key: idempotencyKey/);
+  assert.match(source, /replayBooking/);
+  assert.match(source, /noPrivateIdentifiers/);
+  assert.match(source, /ORALYN_GUEST_BOOKING_E2E_VERIFIED/);
+  assert.match(source, /ORALYN_GUEST_BOOKING_IDEMPOTENCY_VERIFIED/);
   assert.match(source, /ORALYN_STAGING_API_COMMIT_VERIFIED/);
   assert.match(source, /ORALYN_STAGING_PORTAL_COMMIT_VERIFIED/);
 });
