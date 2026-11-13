@@ -38,8 +38,11 @@ test("staging build manifest records verified account-free booking gates without
         ORALYN_CORS_VERIFIED: "true",
         ORALYN_DATABASE_IDENTITY_VERIFIED: "false",
         ORALYN_GUEST_BOOKING_IDEMPOTENCY_VERIFIED: "false",
+        ORALYN_CLINIC_SERVICE_CATALOG_20_APPROVED: "false",
+        ORALYN_GOOGLE_BUSINESS_PROFILE_BOOKING_LINK_VERIFIED: "false",
         ORALYN_SECURITY_HEADERS_VERIFIED: "true",
         ORALYN_DOCTOR_AUTH_E2E_VERIFIED: "true",
+        ORALYN_DOCTOR_API_PERSISTENCE_E2E_VERIFIED: "false",
         ORALYN_GUEST_BOOKING_E2E_VERIFIED: "true",
         ORALYN_MOBILE_BROWSER_E2E_VERIFIED: "true",
       },
@@ -67,6 +70,13 @@ test("staging build manifest records verified account-free booking gates without
     assert.ok(manifest.blockers.includes("patient_guest_booking_idempotency_verified"));
     assert.equal(manifest.checks.https_security_headers_verified, true);
     assert.equal(manifest.checks.doctor_auth_e2e_verified, true);
+    assert.equal(manifest.checks.doctor_api_persistence_e2e_verified, false);
+    assert.ok(manifest.blockers.includes("doctor_api_persistence_e2e_verified"));
+    assert.equal(manifest.checks.clinic_service_catalog_20_approved, false);
+    assert.ok(manifest.blockers.includes("clinic_service_catalog_20_approved"));
+    assert.equal(manifest.checks.google_business_profile_booking_link_verified, false);
+    assert.ok(manifest.blockers.includes("google_business_profile_booking_link_verified"));
+    assert.equal(manifest.patient_accounts_enabled, false);
     assert.equal(manifest.checks.patient_guest_booking_e2e_verified, true);
     assert.equal(manifest.checks.mobile_browser_e2e_verified, true);
     assert.equal(Object.hasOwn(manifest.checks, "supabase_auth_configured"), false);
@@ -79,6 +89,10 @@ test("staging build manifest records verified account-free booking gates without
     for (const gate of [
       "backup_restore_verified",
       "error_monitoring_verified",
+      "doctor_api_persistence_e2e_verified",
+      "clinic_service_catalog_20_approved",
+      "google_business_profile_booking_link_verified",
+      "patient_guest_booking_idempotency_verified",
       "rollback_plan_verified",
       "assistant_role_e2e_verified",
       "cross_tenant_e2e_verified",
