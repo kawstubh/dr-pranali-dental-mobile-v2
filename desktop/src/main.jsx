@@ -540,7 +540,7 @@ function LoginScreen({ loading, error, onLogin, onPatient, onAssistant }) {
       </section>
       <section className="oralyn-auth-panel oralyn-reference-panel" aria-label="Doctor sign in">
         <div className="oralyn-auth-card oralyn-reference-card">
-          <div className="oralyn-app-squircle"><OralynToothMark compact /></div>
+          <div className="oralyn-app-squircle"><img src="/oralyn-app-icon-approved.webp" alt="Oralyn approved app icon" /></div>
           <span className="oralyn-auth-label">DOCTOR PORTAL</span>
           <h2>Oralyn Doctor</h2>
           <p className="oralyn-auth-subtitle">Sign in with your clinic-issued email and password.</p>
