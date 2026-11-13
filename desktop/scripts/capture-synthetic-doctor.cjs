@@ -257,7 +257,7 @@ async function main() {
   await capture("doctor-appointments-390x844.png", 390, 844, true);
 
   await navigate("/doctor/files", "Private documents");
-  await waitFor(() => evaluate('document.body.innerText.includes("Uploads, downloads, review and patient sharing are disabled")'));
+  await waitFor(() => evaluate('document.body.innerText.includes("Uploads, downloads and review are disabled")'));
   const privateDocumentControls = await evaluate("(() => ({fileInput:Boolean(document.querySelector('input[type=file]')),uploadButton:[...document.querySelectorAll('button')].some((item)=>(item.innerText||'').includes('Upload securely')),shareButton:[...document.querySelectorAll('button')].some((item)=>(item.innerText||'').includes('Share with patient')),downloadButton:[...document.querySelectorAll('button')].some((item)=>(item.innerText||'').includes('Download'))}))()");
   if (Object.values(privateDocumentControls).some(Boolean)) throw new Error("Private document actions must remain disabled until storage and scanning are verified: " + JSON.stringify(privateDocumentControls));
   await capture("doctor-private-documents-disabled-1440x1000.png");
