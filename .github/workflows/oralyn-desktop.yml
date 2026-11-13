@@ -25,6 +25,7 @@ jobs:
       ORALYN_SECURITY_HEADERS_VERIFIED: "true"
       ORALYN_GUEST_BOOKING_E2E_VERIFIED: "true"
       ORALYN_MOBILE_BROWSER_E2E_VERIFIED: "true"
+      ORALYN_SERVICE_CATALOG_VERIFIED: "true"
     defaults:
       run:
         working-directory: desktop
