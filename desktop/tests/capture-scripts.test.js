@@ -53,6 +53,9 @@ test("synthetic Assistant capture exercises memory-only login, reception and app
   assert.match(source, /result: patients/);
   assert.match(source, /patient-create/);
   assert.match(source, /appointment-confirm/);
+  assert.match(source, /appointment-reschedule/);
+  assert.match(source, /assistant_appointment_reschedule=passed_fixture/);
+  assert.match(source, /assistant-reschedule-form/);
   assert.match(source, /billing-read/);
   assert.match(source, /receipt-recorded/);
   assert.match(source, /assistant_receipt_recording=passed_fixture/);
