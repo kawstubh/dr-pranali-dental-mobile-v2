@@ -22,6 +22,16 @@ test("synthetic Doctor capture uses a safely quoted clinic workspace selector", 
   assert.equal(source.split(selector).length - 1, 3);
 });
 
+test("synthetic Doctor capture proves memory-only token behavior across refresh and expiry", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-synthetic-doctor.cjs"), "utf8");
+  assert.match(source, /auth\/password\/login/);
+  assert.match(source, /submitDoctorLogin/);
+  assert.match(source, /doctor_token_storage=memory_only/);
+  assert.match(source, /doctor_session_reload=requires_login/);
+  assert.match(source, /noPersistentTokenAfterReload/);
+  assert.doesNotMatch(source, /localStorage\.setItem\('oralyn_doctor_token'/);
+});
+
 
 test("real browser capture verifies Assistant login and legacy admin redirect at desktop, tablet and mobile sizes", () => {
   const file = join(process.cwd(), "scripts", "capture-actual-desktop.cjs");
