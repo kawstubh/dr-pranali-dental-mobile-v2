@@ -92,7 +92,7 @@ test("Clinic Assistant has a separate least-privilege workspace", () => {
   assert.match(assistantSource, /assistant\/billing\/invoices/);
   assert.match(assistantSource, /sessionStorage/);
   assert.doesNotMatch(assistantSource, /\/v1\/dental\/(?:intelligence|doctor|patients|appointments)(?:\/|["?])/);
-  const script = assistantSource.match(/<script>([\\s\\S]*?)<\\/script>/)?.[1];
+  const script = assistantSource.match(/<script>([\s\S]*?)<\/script>/)?.[1];
   assert.ok(script, "assistant page script must be present");
   assert.doesNotThrow(() => new vm.Script(script));
 });
