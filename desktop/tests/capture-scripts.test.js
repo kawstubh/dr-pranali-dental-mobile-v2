@@ -61,6 +61,14 @@ test("real browser capture verifies legacy Assistant admin route redirects to Do
 });
 
 
+test("real browser capture verifies the approved Oralyn wordmark and app icon load", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.match(source, /oralyn-logo-approved\.webp/);
+  assert.match(source, /oralyn-app-icon-approved\.webp/);
+  assert.match(source, /approvedLogoAssets\.wordmark/);
+  assert.match(source, /approvedLogoAssets\.appIcon/);
+});
+
 test("real browser capture follows the current premium Doctor login and patient-services link", () => {
   const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
   assert.match(source, /Sign in with your clinic-issued account/);
