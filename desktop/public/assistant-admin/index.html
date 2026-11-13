@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0C3B82">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" type="image/webp" href="/oralyn-app-icon-approved.webp">
+<link rel="manifest" href="/manifest.webmanifest">
+<title>Clinic Assistant Accounts | Oralyn</title>
+<style>
+@font-face{font-family:'Plus Jakarta Sans';src:url('/fonts/PlusJakartaSans-Variable.ttf') format('truetype');font-style:normal;font-weight:200 800;font-display:swap}
+:root{font-family:'Plus Jakarta Sans',Arial,sans-serif;color:#12304a;background:#f4fbff}
+*{box-sizing:border-box}body{margin:0}
+header{background:#fff;border-bottom:1px solid #e2edf4;padding:15px 5vw;display:flex;align-items:center;justify-content:space-between;gap:16px}
+header img{width:160px;max-width:42vw}a{color:#0a84e8}
+.wrap{max-width:980px;margin:30px auto;padding:0 18px}
+.panel{background:#fff;border:1px solid #e0ebf2;border-radius:18px;padding:24px;box-shadow:0 12px 34px rgba(12,59,130,.05);margin-bottom:16px}
+.eyebrow{font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:#078c98;font-weight:800}
+h1{font-size:clamp(27px,4vw,36px);margin:8px 0}h2{font-size:19px;margin:0 0 10px}
+p{color:#627789;line-height:1.6}.note{font-size:12px;color:#718698}
+label{display:block;font-size:13px;font-weight:700;color:#35536a;margin:13px 0}
+input{display:block;width:100%;margin-top:7px;border:1px solid #cbdbe5;border-radius:10px;padding:12px;font:inherit;font-size:14px;background:#fff;color:#12304a;min-height:46px}
+button{border:0;border-radius:10px;padding:11px 15px;background:#0a84e8;color:#fff;font:inherit;font-size:13px;font-weight:800;cursor:pointer}
+button.secondary{background:#eaf5fa;color:#0c3b82;border:1px solid #cfe2ee}
+button.danger{background:#fff1ef;color:#a33b30;border:1px solid #f4d3cf}
+button:disabled{opacity:.55;cursor:wait}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.message{display:none;border-radius:10px;padding:13px;margin:14px 0;font-size:13px;line-height:1.5}
+.message.error{display:block;background:#fff1ef;color:#9a3025}
+.message.success{display:block;background:#e9faf7;color:#075f56}
+.message.info{display:block;background:#edf6ff;color:#174f79}
+.hidden{display:none!important}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.assistant-row{display:flex;align-items:center;justify-content:space-between;gap:14px;border:1px solid #e3edf3;border-radius:13px;padding:14px;margin-top:10px}
+.identity{min-width:0}.email{font-weight:800;overflow-wrap:anywhere}.meta{font-size:12px;color:#718698;margin-top:4px}
+.status{display:inline-block;border-radius:30px;padding:4px 9px;font-size:11px;font-weight:800;margin-top:7px}
+.status.active{background:#e9faf7;color:#08736a}.status.inactive{background:#fff2f0;color:#9a3025}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:680px){.wrap{margin:18px auto}.panel{padding:18px}.form-grid{grid-template-columns:1fr}.assistant-row{align-items:flex-start;flex-direction:column}.actions, .actions button{width:100%}}
+</style>
+</head>
+<body>
+<header>
+  <img src="/oralyn-logo-approved.webp" alt="Oralyn">
+  <a href="/">Return to Doctor workspace</a>
+</header>
+<main class="wrap">
+  <section class="panel">
+    <div class="eyebrow">Clinic administration</div>
+    <h1>Clinic Assistant accounts</h1>
+    <p>Create and deactivate separate reception accounts for your clinic. Assistant access is limited to patient contact intake, appointment queue and approved payment collection. Clinical notes, odontograms, treatment plans, prescriptions, private documents and clinical intelligence remain Doctor-only.</p>
+    <div id="gate-message" class="message info" role="status" aria-live="polite">Checking your Doctor session…</div>
+    <div id="gate-signin" class="hidden">
+      <p>Your Doctor session is missing or has expired. Sign in to the Doctor workspace first.</p>
+      <a href="/">Open Doctor sign in</a>
+    </div>
+    <div id="gate-restricted" class="hidden">
+      <p>Only the clinic owner or an administrator can manage Assistant accounts. No account data was changed.</p>
+      <a href="/">Return to Doctor workspace</a>
+    </div>
+  </section>
+
+  <section id="admin-workspace" class="hidden">
+    <section class="panel">
+      <div class="eyebrow">New staff access</div>
+      <h2>Create a Clinic Assistant</h2>
+      <p class="note">Set a unique email and a strong temporary password of at least 12 characters. Give the password directly to the staff member through a secure channel. Oralyn does not email or display passwords after creation.</p>
+      <form id="create-form">
+        <div class="form-grid">
+          <label>Email address
+            <input name="email" type="email" autocomplete="off" maxlength="320" required placeholder="assistant@clinic.example">
+          </label>
+          <label>Temporary password
+            <input name="password" type="password" autocomplete="new-password" minlength="12" maxlength="256" required>
+          </label>
+        </div>
+        <button id="create-button" type="submit">Create Assistant account</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="toolbar">
+        <div><div class="eyebrow">Current clinic</div><h2>Assistant accounts</h2></div>
+        <button id="refresh-button" class="secondary" type="button">Refresh list</button>
+      </div>
+      <div id="assistant-list" aria-live="polite"><p class="note">Loading Assistant accounts…</p></div>
+    </section>
+  </section>
+  <div id="action-message" class="message" role="status" aria-live="polite"></div>
+</main>
+<script>
+const API_BASE = window.ORALYN_API_BASE || (location.hostname === "oralyn-web-portal-spa.onrender.com" ? "https://oralyn-staging-api-synthetic.onrender.com" : "");
+const tokenKey = "oralyn_doctor_token";
+const gateMessage = document.getElementById("gate-message");
+const gateSignin = document.getElementById("gate-signin");
+const gateRestricted = document.getElementById("gate-restricted");
+const adminWorkspace = document.getElementById("admin-workspace");
+const assistantList = document.getElementById("assistant-list");
+const actionMessage = document.getElementById("action-message");
+let doctorToken = "";
+try { doctorToken = localStorage.getItem(tokenKey) || ""; } catch {}
+
+const showMessage = (node, message, type = "info") => {
+  node.className = "message " + type;
+  node.textContent = message;
+};
+const clearMessage = (node) => {
+  node.className = "message";
+  node.textContent = "";
+};
+const apiRequest = async (path, options = {}) => {
+  if (!API_BASE) {
+    const error = new Error("This website has no clinic API configured. Assistant administration remains unavailable here.");
+    error.status = 0;
+    throw error;
+  }
+  const headers = {
+    ...(options.body ? {"Content-Type":"application/json"} : {}),
+    ...(doctorToken ? {Authorization:"Bearer " + doctorToken} : {}),
+    ...(options.headers || {})
+  };
+  const response = await fetch(API_BASE + path, {
+    ...options,
+    headers,
+    cache:"no-store",
+    credentials:"omit"
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const detail = body.detail;
+    const message = typeof detail === "string" ? detail : detail?.message || detail?.code;
+    const error = new Error(message || "The clinic service could not complete this request.");
+    error.status = response.status;
+    throw error;
+  }
+  return body;
+};
+const formatDate = (value) => {
+  const date = new Date(value || "");
+  return Number.isFinite(date.getTime())
+    ? date.toLocaleDateString("en-IN", {day:"2-digit",month:"short",year:"numeric"})
+    : "Date not available";
+};
+const showGate = (kind, message) => {
+  gateMessage.className = "message " + (kind === "error" ? "error" : "info");
+  gateMessage.textContent = message;
+  if (kind === "signin") gateSignin.classList.remove("hidden");
+  if (kind === "restricted") gateRestricted.classList.remove("hidden");
+};
+const renderAssistants = (items) => {
+  assistantList.replaceChildren();
+  if (!items.length) {
+    const empty = document.createElement("p");
+    empty.className = "note";
+    empty.textContent = "No Assistant accounts have been created for this clinic.";
+    assistantList.append(empty);
+    return;
+  }
+  for (const item of items) {
+    const row = document.createElement("article");
+    row.className = "assistant-row";
+    const identity = document.createElement("div");
+    identity.className = "identity";
+    const email = document.createElement("div");
+    email.className = "email";
+    email.textContent = item.email || "Assistant account";
+    const status = document.createElement("span");
+    status.className = "status " + (item.active ? "active" : "inactive");
+    status.textContent = item.active ? "Active" : "Inactive";
+    const created = document.createElement("div");
+    created.className = "meta";
+    created.textContent = "Created " + formatDate(item.created_at);
+    identity.append(email, status, created);
+    const actions = document.createElement("div");
+    actions.className = "actions";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = item.active ? "danger" : "secondary";
+    button.dataset.assistantId = item.id;
+    button.dataset.nextActive = item.active ? "false" : "true";
+    button.textContent = item.active ? "Deactivate" : "Reactivate";
+    actions.append(button);
+    row.append(identity, actions);
+    assistantList.append(row);
+  }
+};
+const loadAssistants = async () => {
+  assistantList.textContent = "Loading Assistant accounts…";
+  try {
+    const response = await apiRequest("/v1/dental/clinic-assistants");
+    renderAssistants(Array.isArray(response.result) ? response.result : []);
+  } catch (error) {
+    if (error.status === 404) {
+      assistantList.textContent = "Assistant account management is not deployed on this API version yet. No account changes were made.";
+    } else if (error.status === 403) {
+      showGate("restricted", "Only the clinic owner or an administrator can manage Assistant accounts.");
+      adminWorkspace.classList.add("hidden");
+    } else if (error.status === 401) {
+      showGate("signin", "Your Doctor session has expired. Sign in again to continue.");
+      adminWorkspace.classList.add("hidden");
+    } else {
+      assistantList.textContent = error.message || "Assistant accounts could not be loaded.";
+    }
+  }
+};
+
+document.getElementById("create-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  clearMessage(actionMessage);
+  const form = event.currentTarget;
+  if (!form.reportValidity()) return;
+  const data = new FormData(form);
+  const email = String(data.get("email") || "").trim().toLowerCase();
+  const password = String(data.get("password") || "");
+  if (password.length < 12) {
+    showMessage(actionMessage, "Use a password with at least 12 characters.", "error");
+    return;
+  }
+  const button = document.getElementById("create-button");
+  button.disabled = true;
+  try {
+    await apiRequest("/v1/dental/clinic-assistants", {
+      method:"POST",
+      body:JSON.stringify({email,password})
+    });
+    form.reset();
+    showMessage(actionMessage, "Assistant account created. Share the temporary password securely; it will not be shown again here.", "success");
+    await loadAssistants();
+  } catch (error) {
+    showMessage(actionMessage, error.status === 404
+      ? "Assistant account management is not deployed on this API version yet. No account was created."
+      : error.message || "The Assistant account could not be created.", "error");
+  } finally {
+    button.disabled = false;
+  }
+});
+
+assistantList.addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-assistant-id]");
+  if (!button) return;
+  const nextActive = button.dataset.nextActive === "true";
+  const action = nextActive ? "reactivate" : "deactivate";
+  if (!window.confirm("Are you sure you want to " + action + " this Assistant account?")) return;
+  button.disabled = true;
+  try {
+    await apiRequest("/v1/dental/clinic-assistants/" + encodeURIComponent(button.dataset.assistantId), {
+      method:"PATCH",
+      body:JSON.stringify({active:nextActive})
+    });
+    showMessage(actionMessage, nextActive
+      ? "Assistant account reactivated. The staff member must sign in again."
+      : "Assistant account deactivated and existing sessions revoked.", "success");
+    await loadAssistants();
+  } catch (error) {
+    showMessage(actionMessage, error.status === 404
+      ? "Assistant account management is not deployed on this API version yet. No account was changed."
+      : error.message || "The Assistant account could not be updated.", "error");
+  } finally {
+    button.disabled = false;
+  }
+});
+document.getElementById("refresh-button").addEventListener("click", loadAssistants);
+
+(async () => {
+  if (!doctorToken) {
+    showGate("signin", "Sign in to the Doctor workspace first. No Assistant account data is shown.");
+    return;
+  }
+  if (!API_BASE) {
+    showGate("error", "This website has no clinic API configured. No Assistant account data is shown.");
+    return;
+  }
+  try {
+    const session = await apiRequest("/v1/dental/auth/me");
+    const user = session.user || session;
+    const role = String(user.role || "").toLowerCase();
+    if (!["owner","admin"].includes(role)) {
+      showGate("restricted", "Only the clinic owner or an administrator can manage Assistant accounts.");
+      return;
+    }
+    gateMessage.className = "message success";
+    gateMessage.textContent = "Verified clinic administrator session.";
+    adminWorkspace.classList.remove("hidden");
+    await loadAssistants();
+  } catch (error) {
+    if (error.status === 401) {
+      showGate("signin", "Your Doctor session has expired. Sign in again to continue.");
+    } else if (error.status === 403) {
+      showGate("restricted", "Only the clinic owner or an administrator can manage Assistant accounts.");
+    } else {
+      showGate("error", error.message || "The clinic session could not be verified.");
+    }
+  }
+})();
+</script>
+</body>
+</html>
