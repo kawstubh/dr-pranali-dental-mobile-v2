@@ -174,11 +174,6 @@ export const dentalApi = {
     }),
   patientChart: (token, patientId) =>
     request(`/v1/dental/patient/chart${query({ patient_id: patientId })}`, { token }),
-  createPatientInvite: (token, patientId) =>
-    request(`/v1/dental/doctor/patients/${encodeURIComponent(patientId)}/invite`, {
-      token,
-      method: "POST",
-    }),
   doctorTreatmentPlans: (token, patientId) =>
     request(`/v1/dental/doctor/patients/${encodeURIComponent(patientId)}/treatment-plans`, { token }),
   createTreatmentPlan: (token, patientId, body) =>
