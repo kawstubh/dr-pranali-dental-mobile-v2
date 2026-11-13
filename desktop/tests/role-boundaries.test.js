@@ -145,6 +145,8 @@ test("Clinic Assistant account management is gated by the Doctor owner/admin ses
   assert.match(assistantAdminSource, /\/v1\/dental\/clinic-assistants/);
   assert.match(assistantAdminSource, /method:"POST"/);
   assert.match(assistantAdminSource, /method:"PATCH"/);
+  assert.match(assistantAdminSource, /name="password_confirm"/);
+  assert.match(assistantAdminSource, /The passwords do not match/);
   assert.match(assistantAdminSource, /credentials:"omit"/);
   assert.match(assistantAdminSource, /cache:"no-store"/);
   assert.match(assistantAdminSource, /Assistant account deactivated and existing sessions revoked/);
