@@ -9,6 +9,7 @@ import { resolvePortalRoute } from "../src/routing.js";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, "..");
 const source = fs.readFileSync(path.join(root, "src", "main.jsx"), "utf8");
+const assistantContractSource = fs.readFileSync(path.join(root, "scripts", "verify-assistant-staging-contract.cjs"), "utf8");
 const careSource = fs.readFileSync(path.join(root, "src", "careScreens.jsx"), "utf8");
 const apiSource = fs.readFileSync(path.join(root, "src", "api.js"), "utf8");
 const assistantAppSource = fs.readFileSync(path.join(root, "src", "assistant.jsx"), "utf8");
@@ -205,4 +206,13 @@ test("Doctor settings embeds the real owner/admin-gated Assistant management com
   assert.ok(source.includes("<AssistantManagement token={token} user={user} />"));
   assert.ok(assistantAppSource.includes('const allowed = ["owner", "admin"]'));
   assert.ok(assistantAppSource.includes("/v1/dental/clinic-assistants"));
+});
+
+
+test("Assistant staging contract verification is read-only and never creates a booking", () => {
+  assert.match(assistantContractSource, /method: "OPTIONS"/);
+  assert.match(assistantContractSource, /method: "GET"/);
+  assert.doesNotMatch(assistantContractSource, /method: "(?:POST|PATCH|DELETE)"/);
+  assert.match(assistantContractSource, /ORALYN_ASSISTANT_UI_API_VERIFIED=true/);
+  assert.match(assistantContractSource, /no credentials or writes used/);
 });
