@@ -6,11 +6,10 @@ const source = readFileSync(new URL("../src/main.jsx", import.meta.url), "utf8")
 const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 const captureSource = readFileSync(new URL("../scripts/capture-synthetic-doctor.cjs", import.meta.url), "utf8");
 
-test("Doctor patient directory can issue a one-time invite for a clinic record", () => {
-  assert.match(source, /dentalApi\.createPatientInvite\(token, patientId\)/);
-  assert.match(source, /Create invite/);
-  assert.match(source, /expires in 24 hours/);
-  assert.match(source, /Copy invite code/);
+test("Doctor patient directory has no patient-account invite workflow", () => {
+  assert.doesNotMatch(source, /createPatientInvite|Create invite|invite-code-card/);
+  assert.doesNotMatch(captureSource, /patient-invite|SYNTHETIC-INVITE/);
+  assert.match(captureSource, /patient_invite_controls=absent/);
 });
 
 test("Doctor appointment schedule supports rescheduling and status updates", () => {
@@ -27,11 +26,10 @@ test("Owner/admin workspace screen provisions clinic-issued doctor accounts", ()
   assert.match(source, /Only an organisation owner or administrator can create doctor accounts/);
 });
 
-test("Doctor patient invite card wraps within the directory actions column", () => {
+test("patient directory action cell remains responsive without account-invite UI", () => {
   assert.match(source, /<td className="patient-actions-cell">/);
-  assert.match(styles, /\.patient-actions-cell\s*\{[^}]*white-space:\s*normal/s);
-  assert.match(styles, /\.invite-code-card code\s*\{[^}]*overflow-wrap:\s*anywhere/s);
-  assert.match(styles, /\.invite-code-card code\s*\{[^}]*box-sizing:\s*border-box/s);
+  assert.match(styles, /\\.patient-actions-cell\\s*\\{[^}]*white-space:\\s*normal/s);
+  assert.doesNotMatch(styles, /invite-code-card/);
 });
 
 test("Doctor clinical intelligence renders structured clinician-review sections", () => {
