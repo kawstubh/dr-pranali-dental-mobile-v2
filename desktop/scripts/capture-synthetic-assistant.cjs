@@ -197,14 +197,30 @@ async function main() {
   if (mobileLayout.scrollWidth > mobileLayout.width + 1 || !mobileLayout.inputsLabeled) throw new Error("Assistant mobile layout or form labels failed: " + JSON.stringify(mobileLayout));
   await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
 
-  await evaluate(`(() => {
+  const intakeValidation = await evaluate(`(() => {
     const form = document.querySelector('#patient-form');
-    form.querySelector('[name="name"]').value = 'Riya Synthetic';
-    form.querySelector('[name="phone"]').value = '+919000000002';
-    form.requestSubmit();
+    const name = form.querySelector('[name="name"]');
+    const phone = form.querySelector('[name="phone"]');
+    name.value = 'Riya Synthetic';
+    phone.value = '9876543210';
+    name.dispatchEvent(new Event('input', {bubbles:true}));
+    phone.dispatchEvent(new Event('input', {bubbles:true}));
+    return {valid:form.checkValidity(),nameValid:name.checkValidity(),phoneValid:phone.checkValidity(),phonePattern:phone.pattern,phoneMessage:phone.validationMessage};
+  })()`);
+  if (!intakeValidation.valid) throw new Error("Synthetic Assistant patient form validation failed: " + JSON.stringify(intakeValidation));
+  await evaluate(`(() => {
+    document.querySelector('#patient-form button[type="submit"]').click();
     return true;
   })()`);
-  await waitFor(() => evaluate('document.body.innerText.includes("Patient contact saved.") && document.body.innerText.includes("Riya Synthetic")'));
+  await waitFor(() => evaluate('document.body.innerText.includes("Patient contact saved.") || (document.getElementById("workspace-message") && document.getElementById("workspace-message").textContent.trim().length > 0)'));
+  const intakeResult = await evaluate(`(() => ({
+    success:document.body.innerText.includes("Patient contact saved.") && document.body.innerText.includes("Riya Synthetic"),
+    message:document.getElementById("workspace-message")?.textContent || "",
+    patientList:document.getElementById("patient-list")?.innerText || "",
+    writes:window.__ORALYN_ASSISTANT_FIXTURE?.writes || [],
+    requests:window.__ORALYN_ASSISTANT_FIXTURE?.requests || []
+  }))()`);
+  if (!intakeResult.success) throw new Error("Synthetic Assistant patient intake did not persist in the UI: " + JSON.stringify(intakeResult));
 
   const confirmed = await evaluate(`(() => {
     const button = document.querySelector('[data-confirm="appointment-synthetic-001"]');
