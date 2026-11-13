@@ -259,7 +259,8 @@ async function main() {
     const fixture = window.__ORALYN_ASSISTANT_FIXTURE;
     const controls = [...document.querySelectorAll('button,a')].map((item) => (item.innerText || '').toLowerCase());
     const forbiddenControls = controls.filter((value) => /clinical|diagnos|prescription|odontogram|treatment plan|intelligence/.test(value) || value === 'ai');
-    const token = sessionStorage.getItem('oralyn_assistant_session');
+    const tokenPersisted = sessionStorage.getItem('oralyn_assistant_session');
+    const workspaceVisible = !document.getElementById('workspace')?.classList.contains('hidden');
     return {
       requests: fixture.requests,
       writes: fixture.writes,
@@ -268,7 +269,8 @@ async function main() {
       appointmentStatus: fixture.appointments[0].status,
       appointmentRescheduled: fixture.appointments[0].starts_at.startsWith('2026-11-21'),
       invoiceBalancePaise: fixture.invoices[0].balance_paise,
-      sessionPresent: Boolean(token),
+      tokenPersisted: Boolean(tokenPersisted),
+      workspaceVisible,
       forbiddenControls
     };
   })()`);
@@ -276,7 +278,7 @@ async function main() {
   if (evidence.forbiddenControls.length) throw new Error("Assistant UI exposed forbidden clinical controls: " + evidence.forbiddenControls.join(", "));
   if (!evidence.writes.includes("assistant-login") || !evidence.writes.includes("patient-intake") ||
       !evidence.writes.includes("appointment-confirm") || !evidence.writes.includes("appointment-reschedule") ||
-      !evidence.writes.includes("receipt-recorded") || !evidence.sessionPresent ||
+      !evidence.writes.includes("receipt-recorded") || evidence.tokenPersisted || !evidence.workspaceVisible ||
       evidence.patientCount !== 2 || evidence.appointmentStatus !== "confirmed" ||
       !evidence.appointmentRescheduled || evidence.invoiceBalancePaise !== 349000) {
     throw new Error("Synthetic Assistant workflow evidence is incomplete: " + JSON.stringify(evidence));
@@ -288,6 +290,8 @@ async function main() {
   const logout = await evaluate("(() => { const button = document.querySelector('#logout'); if (!button) return false; button.click(); return true; })()");
   if (!logout) throw new Error("Assistant sign-out button was not found.");
   await waitFor(() => evaluate('document.body.innerText.includes("Clinic Assistant sign in") && !sessionStorage.getItem("oralyn_assistant_session")'));
+  await send("Page.navigate", { url: baseUrl + "/assistant/" });
+  await waitFor(() => evaluate('document.body.innerText.includes("Clinic Assistant sign in") && document.getElementById("workspace").classList.contains("hidden")'));
   await capture("assistant-logout-1440x1000.png", 1440, 1000);
 
   if (runtimeErrors.length || failedResponses.length) throw new Error("Synthetic Assistant browser runtime errors: " + runtimeErrors.join(" | ") + " | HTTP/resource failures: " + JSON.stringify(failedResponses));
