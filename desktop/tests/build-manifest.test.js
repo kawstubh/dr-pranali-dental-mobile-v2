@@ -30,6 +30,7 @@ test("staging manifest records verified public gates without claiming live booki
         ...process.env,
         ORALYN_BUILD_DIR: outputDir,
         ORALYN_ENVIRONMENT: "staging",
+        ORALYN_COMMIT_SHA: "",
         GITHUB_SHA: "synthetic-commit-123",
         GITHUB_REF_NAME: "feat/oralyn-desktop-app",
         VITE_DENTAL_API_URL: "https://oralyn-staging-api-assistant.onrender.com/",
