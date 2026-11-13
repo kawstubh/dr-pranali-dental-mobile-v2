@@ -2,7 +2,14 @@
 
 **Status: BLOCKED — the responsive portal and synthetic staging contract are passing; production release is not approved.**
 
-Last refreshed: 13 November 2026. This is a documentation-only refresh after the verified portal head below.
+Last refreshed: 13 November 2026.
+
+## Latest CI/runtime follow-up — 13 November 2026
+
+- Frontend head `8643f1cb4ca09ddbef77b7aa5e537d28bdeebf8d` upgrades checkout/setup-node/upload-artifact to Node 24-compatible action releases and Chrome setup to `browser-actions/setup-chrome@v2.2.0` with the latest Chrome channel. Backend PR #60 head `68898259171c2880057e3d07e24d2006e836ff3e` upgrades checkout/setup-python to Node 24-compatible action releases.
+- Backend PostgreSQL CI #43387808995 passed 237 tests; Engine Tests #43387809059 passed 236 tests with one expected skip. The Node 20 action-runtime deprecation warnings are gone; one non-blocking Starlette/httpx TestClient deprecation warning remains.
+- Frontend CI #43387803904 passed 93/93 tests, audits (0 vulnerabilities), build, live synthetic booking checks, and desktop/tablet/mobile browser captures with no browser runtime errors. Its manifest was generated while the API deployment was still rolling, so it correctly retained a temporary `staging_api_commit_verified` blocker.
+- Synthetic staging API deploy `dep-dbrbvpmi0phs73fdju8g` is now LIVE on exact backend PR #60 head `68898259171c2880057e3d07e24d2006e836ff3e`. A fresh frontend CI run is required to regenerate the manifest against this completed deployment; no production resources were touched.
 
 ## Product decisions
 
