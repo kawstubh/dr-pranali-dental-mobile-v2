@@ -3526,3 +3526,14 @@ table { max-width: 100%; }
 }
 
 .auth-session-note{display:block;margin-top:12px;color:#6f8294;font-size:11px;line-height:1.55;text-align:center;max-width:340px}
+
+
+/* Use the bundled editorial face for prominent portal headings. */
+.welcome h1,
+.heading h1,
+.patienthero h1,
+.authcard h1,
+.care-header h1 {
+  font-family: "Playfair Display", Georgia, serif !important;
+  font-weight: 600;
+}
