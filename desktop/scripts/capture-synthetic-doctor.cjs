@@ -111,6 +111,7 @@ async function navigate(route, expectedText) {
 
 const fixtureSource = [
   "(() => {",
+  "  window.ORALYN_API_BASE = 'https://oralyn-staging-api-assistant.onrender.com';",
   "  const tokenOne = 'synthetic-doctor-token';",
   "  const tokenTwo = 'synthetic-doctor-token-2';",
   "  const tokenThree = 'synthetic-doctor-token-3';",
