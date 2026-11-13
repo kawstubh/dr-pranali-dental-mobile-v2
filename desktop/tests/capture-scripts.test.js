@@ -54,33 +54,32 @@ test("real browser capture verifies legacy Assistant admin route redirects to Do
 });
 
 
-test("synthetic Assistant capture covers reception, appointment and billing without Doctor AI APIs", () => {
+test("synthetic Assistant capture exercises the SPA route, memory-only login, reception, appointments and billing", () => {
   const file = join(process.cwd(), "scripts", "capture-synthetic-assistant.cjs");
   const source = readFileSync(file, "utf8");
 
   assert.doesNotThrow(() => new Script(source, { filename: file }));
-  assert.match(source, /assistant\/auth\/login/);
-  assert.match(source, /ORALYN_API_BASE = 'https:\/\/oralyn-staging-api-assistant\.onrender\.com'/);
-  assert.match(source, /form\.checkValidity\(\)/);
-  assert.match(source, /phone\.value = '9876543210'/);
-  assert.match(source, /Synthetic Assistant patient intake did not persist in the UI/);
-  assert.match(source, /assistant\/patients/);
-  assert.match(source, /assistant\/appointments/);
-  assert.match(source, /assistant\/billing\/invoices/);
-  assert.match(source, /assistant_mobile_layout/);
-  assert.match(source, /doctor_ai_api_calls=none/);
-  assert.match(source, /clinical_controls=none/);
-  assert.match(source, /unhandled_api_paths=none/);
+  assert.match(source, /baseUrl \\+ "\\/assistant\\/"/);
+  assert.match(source, /v1\\/dental\\/assistant\\/auth\\/login/);
+  assert.match(source, /assistant-login/);
+  assert.match(source, /appointment-reschedule/);
+  assert.match(source, /assistant_appointment_reschedule=passed_fixture/);
+  assert.match(source, /receipt-recorded/);
+  assert.match(source, /assistant_receipt_recording=passed_fixture/);
+  assert.match(source, /UNHANDLED_SYNTHETIC_PATH/);
+  assert.match(source, /staging_assistant_login_verified=false/);
+  assert.doesNotMatch(source, /treatment_type/);
+  assert.match(source, /doctor_clinical_ai_visible=false/);
+  assert.doesNotMatch(source, /sessionStorage\\.setItem/);
 });
 
-test("Assistant intake resets the captured form after its asynchronous save", () => {
-  const file = join(process.cwd(), "public", "assistant", "index.html");
+test("Assistant intake clears contact fields after the API-backed save resolves", () => {
+  const file = join(process.cwd(), "src", "assistant.jsx");
   const source = readFileSync(file, "utf8");
-  assert.match(source, /const form = event\.currentTarget; const data = new FormData\(form\);/);
-  assert.match(source, /form\.reset\(\); await loadWorkspace\(\); showMessage\(workspaceMessage,"Patient contact saved\."/);
-  assert.doesNotMatch(source, /event\.currentTarget\.reset\(\)/);
+  assert.match(source, /setPatientForm\\(\\{ name: "", phone: "" \\}\\)/);
+  assert.match(source, /Patient contact details added\\./);
+  assert.match(source, /assistantRequest\\("\\/v1\\/dental\\/assistant\\/patients"/);
 });
-
 
 test("live staging contract probe writes only one idempotent synthetic booking after database identity verification", () => {
   const file = join(process.cwd(), "scripts", "verify-staging-contract.cjs");
