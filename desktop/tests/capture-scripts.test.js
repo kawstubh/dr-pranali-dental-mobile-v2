@@ -95,6 +95,7 @@ test("Assistant feature branch does not claim or mutate the shared staging deplo
   const source = readFileSync(file, "utf8");
   assert.ok(source.includes("Record inherited staging evidence for non-canonical feature branches"));
   assert.ok(source.includes("ORALYN_STAGING_CONTRACT_INHERITED_FROM_BASE=true"));
+  assert.ok(source.includes("github.event.pull_request.head.ref != 'feat/oralyn-desktop-app'"));
   assert.ok(source.includes("github.event.pull_request.head.ref == 'feat/oralyn-desktop-app'"));
 });
 
