@@ -239,7 +239,7 @@ async function main() {
         "service-worker-controlled Doctor page",
       );
     } catch (error) {
-      const pwaState = await evaluate("({path:location.pathname,controller:Boolean(navigator.serviceWorker && navigator.serviceWorker.controller),registration:(async()=>{const r=await navigator.serviceWorker?.getRegistration('/');return r?{scope:r.scope,activeState:r.active?.state||null}:null})()})").catch(() => null);
+      const pwaState = await evaluate("(async () => { const supported = 'serviceWorker' in navigator; const registrations = supported ? await navigator.serviceWorker.getRegistrations() : []; let swResponse = null; try { const response = await fetch('/sw.js', { cache: 'no-store' }); const body = await response.text(); swResponse = { status: response.status, contentType: response.headers.get('content-type'), prefix: body.slice(0, 120) }; } catch (fetchError) { swResponse = { error: fetchError?.message || String(fetchError) }; } return { path: location.pathname, isSecureContext: window.isSecureContext, serviceWorkerSupported: supported, controller: Boolean(supported && navigator.serviceWorker.controller), registrations: registrations.map((registration) => ({ scope: registration.scope, activeState: registration.active?.state || null, installingState: registration.installing?.state || null, waitingState: registration.waiting?.state || null })), swResponse }; })()").catch(() => null);
       throw new Error(error.message + " PWA state=" + JSON.stringify(pwaState));
     }
     pwaControlled = await evaluate("Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)");
