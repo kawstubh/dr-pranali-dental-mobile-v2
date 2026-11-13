@@ -288,10 +288,9 @@ async function main() {
   if (!restore) throw new Error("Doctor session was not restored from localStorage after reload.");
 
   await send("Page.navigate", { url: baseUrl + "/doctor/settings" });
-  await waitFor(() => evaluate('document.body.innerText.includes("Manage Clinic Assistant accounts") && document.body.innerText.includes("Sign out securely")'));
-  const assistantAdminClicked = await evaluate("(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').includes('Manage Clinic Assistant accounts')); if (!button) return false; button.click(); return true; })()");
-  if (!assistantAdminClicked) throw new Error("Owner/admin Clinic Assistant account-management link was not available.");
-  await waitFor(() => evaluate('document.body.innerText.includes("Clinic Assistant accounts") && document.body.innerText.includes("Create Assistant account")'));
+  await waitFor(() => evaluate('document.body.innerText.includes("Clinic assistants") && document.body.innerText.includes("Create Clinic Assistant") && document.body.innerText.includes("Sign out securely")'));
+  const assistantManagementFormVisible = await evaluate('Boolean(document.querySelector(".assistant-management-form"))');
+  if (!assistantManagementFormVisible) throw new Error("Owner/admin Clinic Assistant management form was not available.");
   await capture("doctor-assistant-admin-owner-1440x1000.png");
   await send("Page.navigate", { url: baseUrl + "/doctor/settings" });
   await waitFor(() => evaluate('document.body.innerText.includes("Sign out securely")'));
