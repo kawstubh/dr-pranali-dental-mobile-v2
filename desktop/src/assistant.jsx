@@ -310,7 +310,7 @@ export default function AssistantApp() {
   };
 
   const changeAppointment = async (appointment, action, startsAt = null) => {
-    if (!token) return;
+    if (!token || busy) return;
     setBusy(true);
     setError("");
     const body = action === "reschedule"
@@ -352,7 +352,7 @@ export default function AssistantApp() {
   const saveReschedule = (event, appointment) => {
     event.preventDefault();
     const draft = rescheduleDrafts[appointment.id];
-    if (!draft) return;
+    if (!draft || busy) return;
     try {
       const startsAt = appointmentInstant(draft.date, draft.time);
       void changeAppointment(appointment, "reschedule", startsAt);
