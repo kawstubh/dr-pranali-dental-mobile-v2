@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0C3B82">\n<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0C3B82">
+<meta name="robots" content="noindex,nofollow">
 <link rel="icon" type="image/webp" href="/oralyn-app-icon-approved.webp">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/oralyn-pwa-192.png">
@@ -84,7 +85,6 @@ button:disabled{opacity:.55;cursor:wait}.wide{width:100%;margin-top:10px}
 </main>
 <script>
 const API_BASE = window.ORALYN_API_BASE || (location.hostname === "oralyn-web-portal-spa.onrender.com" ? "https://oralyn-staging-api-assistant.onrender.com" : "");
-const tokenKey = "oralyn_assistant_session";
 const login = document.getElementById("login");
 const workspace = document.getElementById("workspace");
 const loginMessage = document.getElementById("login-message");
@@ -104,7 +104,7 @@ const request = async (path, options = {}) => {
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
     if (response.status === 401) {
-      sessionStorage.removeItem(tokenKey); assistantToken = ""; assistantUser = null;
+      assistantToken = ""; assistantUser = null;
       workspace.classList.add("hidden"); login.classList.remove("hidden");
       showMessage(loginMessage, "Your Assistant session expired. Please sign in again.", "error");
     }
@@ -169,7 +169,7 @@ document.getElementById("login-form").addEventListener("submit", async (event) =
       method:"POST",body:JSON.stringify({email:String(data.get("email")).trim(),password:String(data.get("password"))})
     });
     assistantToken = result.access_token; assistantUser = result.user;
-    sessionStorage.setItem(tokenKey,assistantToken); setSignedIn(assistantUser); await loadWorkspace();
+    setSignedIn(assistantUser); await loadWorkspace();
   } catch (error) { showMessage(loginMessage,error.message,"error"); }
   finally { button.disabled = false; }
 });
@@ -220,19 +220,10 @@ document.getElementById("invoice-list").addEventListener("submit", async (event)
 document.getElementById("refresh").addEventListener("click",refreshWorkspace);
 document.getElementById("logout").addEventListener("click",async () => {
   try { if (assistantToken) await request("/v1/dental/assistant/auth/logout",{method:"POST",body:"{}"}); } catch {}
-  assistantToken = ""; assistantUser = null; sessionStorage.removeItem(tokenKey);
+  assistantToken = ""; assistantUser = null;
   workspace.classList.add("hidden"); login.classList.remove("hidden"); clearMessage(loginMessage);
 });
-(async () => {
-  const stored = sessionStorage.getItem(tokenKey); if (!stored) return;
-  assistantToken = stored;
-  try {
-    const result = await request("/v1/dental/assistant/me");
-    setSignedIn(result.user); await loadWorkspace();
-  } catch (error) {
-    sessionStorage.removeItem(tokenKey); assistantToken = ""; showMessage(loginMessage,error.message,"error");
-  }
-})();
+// Assistant bearer tokens remain memory-only; a page reload requires a fresh sign-in.
 </script>
 </body>
 </html>
