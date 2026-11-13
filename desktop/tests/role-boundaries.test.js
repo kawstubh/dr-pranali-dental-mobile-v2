@@ -12,6 +12,7 @@ const patientSource = patientStart >= 0 ? source.slice(patientStart) : "";
 const careSource = fs.readFileSync(path.join(root, "src", "careScreens.jsx"), "utf8");
 const apiSource = fs.readFileSync(path.join(root, "src", "api.js"), "utf8");
 const bookingSource = fs.readFileSync(path.join(root, "public", "patient", "booking", "index.html"), "utf8");
+const routingSource = fs.readFileSync(path.join(root, "src", "routing.js"), "utf8");
 
 test("global patient search is rendered only in the Doctor workspace", () => {
   assert.match(source, /\{role === "doctor" && \(\s*<div className="search">/);
@@ -37,6 +38,26 @@ test("Patient portal is account-free and exposes only public home and booking na
   assert.doesNotMatch(source, /\["settings", "Account settings"/);
   assert.doesNotMatch(source, /return\s*\(\s*<PatientAccessScreen/);
   assert.doesNotMatch(source, /supabase\.auth/);
+});
+
+test("Patient routes expose only the public home and booking pages", () => {
+  const patientRoutesStart = routingSource.indexOf('patient: new Set(');
+  const patientRoutesEnd = routingSource.indexOf('}),', patientRoutesStart);
+  const patientRoutes = routingSource.slice(patientRoutesStart, patientRoutesEnd);
+  assert.match(patientRoutes, /"home"/);
+  assert.match(patientRoutes, /"booking"/);
+  assert.doesNotMatch(patientRoutes, /appointments|journey|records|invoices|messages|settings/);
+  assert.match(source, /window\.location\.replace\(target\)/);
+  assert.match(source, /window\.location\.assign\(nextPage === "booking" \? "\/patient\/booking\/" : "\/patient\/home\/"\)/);
+});
+
+test("public guest booking sends a clinic-local IST timestamp, not a UTC conversion", () => {
+  assert.match(bookingSource, /starts_at:\s*localDateTime\s*\+\s*"\\+05:30"/);
+  assert.doesNotMatch(bookingSource, /starts_at:\s*startsAt\.toISOString\(\)/);
+});
+
+test("frontend no longer exposes patient-authenticated API methods", () => {
+  assert.doesNotMatch(apiSource, /patient(?:Link|LinkedRecords|Appointments|RequestAppointment|Chart|ClinicalNotes|Messages|TreatmentPlans|Invoices|Receipts|Documents|DocumentDownloadIntent):/);
 });
 
 test("Patient landing page explains no account is needed and sends visitors to guest booking", () => {
