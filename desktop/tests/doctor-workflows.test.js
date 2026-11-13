@@ -28,7 +28,7 @@ test("Owner/admin workspace screen provisions clinic-issued doctor accounts", ()
 
 test("patient directory action cell remains responsive without account-invite UI", () => {
   assert.match(source, /<td className="patient-actions-cell">/);
-  assert.match(styles, /\\.patient-actions-cell\\s*\\{[^}]*white-space:\\s*normal/s);
+  assert.match(styles, /\.patient-actions-cell\s*\{[^}]*white-space:\s*normal/s);
   assert.doesNotMatch(styles, /invite-code-card/);
 });
 
