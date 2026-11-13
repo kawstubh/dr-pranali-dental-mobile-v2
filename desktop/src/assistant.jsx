@@ -16,7 +16,6 @@ import { resolveApiBase } from "./api.js";
 import "./assistant.css";
 
 const API_CONFIG = resolveApiBase(import.meta.env);
-const TOKEN_KEY = "oralyn_assistant_token";
 
 async function assistantRequest(path, { token, method = "GET", body } = {}) {
   if (!import.meta.env.DEV && API_CONFIG.error) {
@@ -106,7 +105,7 @@ export default function AssistantApp() {
       .catch((error) => console.warn("[Oralyn PWA] Assistant service worker registration failed.", error));
     return undefined;
   }, []);
-  const [token, setToken] = useState(() => sessionStorage.getItem(TOKEN_KEY) || "");
+  const [token, setToken] = useState("");
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -161,7 +160,6 @@ export default function AssistantApp() {
       } catch (cause) {
         if (!live) return;
         if (cause?.status === 401) {
-          sessionStorage.removeItem(TOKEN_KEY);
           setToken("");
           setUser(null);
         }
@@ -191,7 +189,6 @@ export default function AssistantApp() {
       if (!result?.access_token || result?.user?.role !== "assistant") {
         throw new Error("The server did not return a valid Clinic Assistant session.");
       }
-      sessionStorage.setItem(TOKEN_KEY, result.access_token);
       setPassword("");
       setToken(result.access_token);
       setUser(result.user);
@@ -206,7 +203,6 @@ export default function AssistantApp() {
     try {
       if (token) await assistantRequest("/v1/dental/auth/assistant/logout", { token, method: "POST" });
     } catch {}
-    sessionStorage.removeItem(TOKEN_KEY);
     setToken("");
     setUser(null);
     setPatients([]);
