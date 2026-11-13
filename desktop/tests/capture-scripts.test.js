@@ -150,3 +150,13 @@ test("release workflow derives live gates instead of hard-coding them true", () 
     /ORALYN_(?:BACKEND_STACK|CORS|DATABASE_IDENTITY|SECURITY_HEADERS|PATIENT_ACCOUNT_FREE|SERVICE_CATALOG_API)_VERIFIED:\s*["']true["']/,
   );
 });
+
+test("synthetic Doctor and Assistant captures tolerate PWA activation delay without weakening the control gate", () => {
+  const doctor = readFileSync(join(process.cwd(), "scripts", "capture-synthetic-doctor.cjs"), "utf8");
+  const assistant = readFileSync(join(process.cwd(), "scripts", "capture-synthetic-assistant.cjs"), "utf8");
+  assert.match(doctor, /service-worker-controlled Doctor page/);
+  assert.match(doctor, /PWA state=/);
+  assert.match(doctor, /30000,\s*"service-worker-controlled Doctor page"/);
+  assert.match(assistant, /controller\)\), 30000\)\.catch/);
+  assert.match(assistant, /if \(!controlled\) throw new Error\("Synthetic Assistant capture is not controlled/);
+});
