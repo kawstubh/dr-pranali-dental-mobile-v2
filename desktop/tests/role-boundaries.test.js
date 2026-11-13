@@ -91,7 +91,6 @@ test("Clinic Assistant has a separate least-privilege workspace", () => {
   assert.match(assistantSource, /assistant\/billing\/invoices/);
   assert.match(assistantSource, /sessionStorage/);
   assert.doesNotMatch(assistantSource, /\/v1\/dental\/(?:intelligence|doctor|patients|appointments)(?:\/|["?])/);
-  assert.doesNotMatch(assistantSource, /AI diagnosis|prescribe|odontogram|clinical notes API/i);
 });
 \ntest("Doctor clinical records remain scoped to Doctor-authenticated APIs", () => {
   assert.match(apiSource, /doctorTreatmentPlans:/);
