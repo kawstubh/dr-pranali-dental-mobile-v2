@@ -173,7 +173,7 @@ async function main() {
   if (!controlled) {
     await send("Page.navigate", { url: baseUrl + "/assistant/" });
     await signInSyntheticAssistant();
-    controlled = await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Reception workspace") && Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)'), 20000).catch(() => false);
+    controlled = await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Reception workspace") && Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)'), 30000).catch(() => false);
   }
   if (!controlled) throw new Error("Synthetic Assistant capture is not controlled by the Oralyn PWA service worker.");
   const fonts = await evaluate('({plusJakartaSans:document.fonts.check("400 16px \\"Plus Jakarta Sans\\""),playfairDisplay:document.fonts.check("600 32px \\"Playfair Display\\"")})');
