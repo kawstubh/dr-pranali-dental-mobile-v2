@@ -36,9 +36,13 @@ test("staging build manifest records verified account-free booking gates without
         ORALYN_PORTAL_ORIGIN: "https://oralyn-web-portal-spa.onrender.com",
         ORALYN_BACKEND_STACK_VERIFIED: "true",
         ORALYN_CORS_VERIFIED: "true",
-        ORALYN_DATABASE_IDENTITY_VERIFIED: "true",
+        ORALYN_DATABASE_IDENTITY_VERIFIED: "false",
+        ORALYN_GUEST_BOOKING_IDEMPOTENCY_VERIFIED: "false",
+        ORALYN_CLINIC_SERVICE_CATALOG_20_APPROVED: "false",
+        ORALYN_GOOGLE_BUSINESS_PROFILE_BOOKING_LINK_VERIFIED: "false",
         ORALYN_SECURITY_HEADERS_VERIFIED: "true",
         ORALYN_DOCTOR_AUTH_E2E_VERIFIED: "true",
+        ORALYN_DOCTOR_API_PERSISTENCE_E2E_VERIFIED: "false",
         ORALYN_GUEST_BOOKING_E2E_VERIFIED: "true",
         ORALYN_MOBILE_BROWSER_E2E_VERIFIED: "true",
       },
@@ -60,9 +64,19 @@ test("staging build manifest records verified account-free booking gates without
     assert.equal(manifest.portal_origin, "https://oralyn-web-portal-spa.onrender.com");
     assert.equal(manifest.checks.backend_stack_verified, true);
     assert.equal(manifest.checks.cors_verified_for_portal_origin, true);
-    assert.equal(manifest.checks.database_identity_verified, true);
+    assert.equal(manifest.checks.database_identity_verified, false);
+    assert.ok(manifest.blockers.includes("database_identity_verified"));
+    assert.equal(manifest.checks.patient_guest_booking_idempotency_verified, false);
+    assert.ok(manifest.blockers.includes("patient_guest_booking_idempotency_verified"));
     assert.equal(manifest.checks.https_security_headers_verified, true);
     assert.equal(manifest.checks.doctor_auth_e2e_verified, true);
+    assert.equal(manifest.checks.doctor_api_persistence_e2e_verified, false);
+    assert.ok(manifest.blockers.includes("doctor_api_persistence_e2e_verified"));
+    assert.equal(manifest.checks.clinic_service_catalog_20_approved, false);
+    assert.ok(manifest.blockers.includes("clinic_service_catalog_20_approved"));
+    assert.equal(manifest.checks.google_business_profile_booking_link_verified, false);
+    assert.ok(manifest.blockers.includes("google_business_profile_booking_link_verified"));
+    assert.equal(manifest.patient_accounts_enabled, false);
     assert.equal(manifest.checks.patient_guest_booking_e2e_verified, true);
     assert.equal(manifest.checks.mobile_browser_e2e_verified, true);
     assert.equal(Object.hasOwn(manifest.checks, "supabase_auth_configured"), false);
@@ -75,6 +89,10 @@ test("staging build manifest records verified account-free booking gates without
     for (const gate of [
       "backup_restore_verified",
       "error_monitoring_verified",
+      "doctor_api_persistence_e2e_verified",
+      "clinic_service_catalog_20_approved",
+      "google_business_profile_booking_link_verified",
+      "patient_guest_booking_idempotency_verified",
       "rollback_plan_verified",
       "assistant_role_e2e_verified",
       "cross_tenant_e2e_verified",
@@ -92,6 +110,19 @@ test("staging build manifest records verified account-free booking gates without
   } finally {
     fs.rmSync(outputDir, { recursive: true, force: true });
   }
+});
+
+test("live staging verification writes valid GitHub environment records only for checks it performs", () => {
+  const verifierSource = fs.readFileSync(
+    path.join(desktopRoot, "scripts", "verify-staging-api.cjs"),
+    "utf8",
+  );
+  assert.ok(verifierSource.includes('.join("\\n") + "\\n"'));
+  assert.ok(verifierSource.includes("ORALYN_BACKEND_STACK_VERIFIED=true"));
+  assert.ok(verifierSource.includes("ORALYN_CORS_VERIFIED=true"));
+  assert.ok(verifierSource.includes("ORALYN_SECURITY_HEADERS_VERIFIED=true"));
+  assert.ok(!verifierSource.includes("ORALYN_DATABASE_IDENTITY_VERIFIED=true"));
+  assert.ok(!verifierSource.includes("ORALYN_GUEST_BOOKING_IDEMPOTENCY_VERIFIED=true"));
 });
 
 test("staging manifests reject insecure or non-canonical API origins", () => {

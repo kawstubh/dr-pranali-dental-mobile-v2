@@ -198,6 +198,15 @@ async function navigate(route, expectedText, screenshotName) {
       "Sign in with your clinic doctor account",
       "doctor-login"
     );
+    fontResults.assistantLogin = await navigate(
+      "/assistant/",
+      "Clinic Assistant",
+      "assistant-login"
+    );
+    await send("Page.navigate", { url: baseUrl + "/doctor/dashboard" });
+    await waitFor(() => evaluate(
+      'location.pathname === "/doctor/dashboard" && document.body.innerText.includes("Sign in with your clinic doctor account")'
+    ));
     const switchedToPatient = await evaluate(
       "(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').trim().includes('Continue to patient portal')); if (!button) return false; button.click(); return true; })()"
     );
@@ -220,6 +229,12 @@ async function navigate(route, expectedText, screenshotName) {
       'location.pathname === "/patient/home/" && document.body.innerText.includes("Your smile, your care.")'
     ));
     fontResults.patientHome = await captureCurrent("Your smile, your care.", "patient-home");
+
+    await send("Page.navigate", { url: baseUrl + "/patient/login" });
+    await waitFor(() => evaluate(
+      'location.pathname === "/patient/home/" && document.body.innerText.includes("Your smile, your care.")'
+    ));
+    fontResults.patientLegacyLoginRedirect = true;
 
     fontResults.patientBooking = await navigate(
       "/patient/booking/",
@@ -244,9 +259,12 @@ async function navigate(route, expectedText, screenshotName) {
       "pwa_cache_name_present=" + fontResults.doctorLogin.pwa.cachePresent,
       "pwa_api_cache_entries=" + fontResults.doctorLogin.pwa.forbidden.length,
       "synthetic_patient_data=none",
+      "assistant_login_screen_captured=true",
+      "assistant_dashboard_synthetic_fixture_captured=false",
       "authenticated_screens=false",
       "mobile_viewport=390x844",
       "role_route_refresh_back_forward=passed",
+      "patient_login_redirect=passed",
       "runtime_errors=none",
     ].join("\n") + "\n";
     fs.writeFileSync(path.join(output, "build-info.txt"), metadata);

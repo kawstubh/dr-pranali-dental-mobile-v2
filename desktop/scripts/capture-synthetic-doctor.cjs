@@ -131,6 +131,10 @@ const fixtureSource = [
   "    if (url.pathname === '/v1/dental/auth/logout') { recordWrite('logout'); return json({ result: { logged_out: true } }); }",
   "    if (!validDoctor) return json({ detail: { message: 'Synthetic doctor authentication required' } }, 401);",
   "    if (url.pathname === '/v1/dental/auth/workspaces') return json({ result: workspaces });",
+  "    if (url.pathname === '/v1/dental/auth/assistants' && method === 'GET') return json({ assistants: [{ id: 'assistant-synthetic-001', email: 'reception.synthetic@example.test', active: true, clinic_id: clinicId }] });",
+  "    if (url.pathname === '/v1/dental/auth/assistants' && method === 'POST') { recordWrite('assistant-create'); return json({ id: 'assistant-synthetic-created', email: 'new-assistant.synthetic@example.test', active: true, role: 'assistant' }, 201); }",
+  "    const assistantDeactivate = url.pathname.match(/^\\/v1\\/dental\\/auth\\/assistants\\/([^/]+)\\/deactivate$/);",
+  "    if (assistantDeactivate && method === 'POST') { recordWrite('assistant-deactivate'); return json({ ok: true, active: false }); }",
   "    if (url.pathname === '/v1/dental/auth/workspace/switch' && method === 'POST') {",
   "      let body = {}; try { body = JSON.parse(init.body || '{}'); } catch {}",
   "      if (body.clinic_id !== clinicOne && body.clinic_id !== clinicTwo && body.clinic_id !== clinicThree) return json({ detail: { message: 'Workspace is not in the authenticated organisation', code: 'WORKSPACE_ACCESS_DENIED' } }, 403);",
@@ -148,8 +152,6 @@ const fixtureSource = [
   "    const chartMatch = url.pathname.match(/^\\/v1\\/dental\\/patients\\/([^/]+)\\/chart$/);",
   "    if (chartMatch && chartMatch[1] === patient.id && method === 'GET') return json({ result: [{ tooth_fdi: '36', status: 'caries' }, { tooth_fdi: '11', status: 'healthy' }] });",
   "    if (chartMatch && chartMatch[1] === patient.id && method === 'POST') { recordWrite('chart-save'); return json({ result: { saved: true, patient_id: patient.id } }); }",
-  "    const inviteMatch = url.pathname.match(/^\\/v1\\/dental\\/doctor\\/patients\\/([^/]+)\\/invite$/);",
-  "    if (inviteMatch && inviteMatch[1] === patient.id && method === 'POST') { recordWrite('patient-invite'); return json({ result: { patient_id: patient.id, invite_code: 'SYNTHETIC-INVITE-001', expires_in: 86400 } }); }",
   "    if (/^\\/v1\\/dental\\/doctor\\/patients\\/[^/]+\\/(treatment-plans|invoices|documents|clinical-notes|messages)$/.test(url.pathname)) return json({ result: [] });",
   "    if (/^\\/v1\\/dental\\/doctor\\/documents\\/[^/]+\\/download-intent$/.test(url.pathname)) return json({ result: { url: 'https://synthetic.invalid/private-document', expires_in: 60 } });",
   "    recordUnhandled(method + ' ' + url.pathname);",
@@ -206,27 +208,8 @@ async function main() {
   await capture("doctor-dashboard-390x844.png", 390, 844, true);
 
   await navigate("/doctor/patients", "PATIENT DIRECTORY");
-  const inviteClicked = await evaluate("(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').includes('Create invite')); if (!button) return false; button.click(); return true; })()");
-  if (!inviteClicked) throw new Error("Synthetic patient invite action was not found.");
-  await waitFor(() => evaluate('document.body.innerText.includes("SYNTHETIC-INVITE-001")'));
-  const inviteLayout = await evaluate(`(() => {
-    const cell = document.querySelector(".patient-actions-cell");
-    const card = document.querySelector(".invite-code-card");
-    const code = card?.querySelector("code");
-    if (!cell || !card || !code) return null;
-    const cellRect = cell.getBoundingClientRect();
-    const cardRect = card.getBoundingClientRect();
-    const codeRect = code.getBoundingClientRect();
-    return {
-      cardWithinCell: cardRect.left >= cellRect.left - 1 && cardRect.right <= cellRect.right + 1,
-      codeWithinCard: codeRect.left >= cardRect.left - 1 && codeRect.right <= cardRect.right + 1,
-      cardNoHorizontalOverflow: card.scrollWidth <= card.clientWidth + 1,
-      codeNoHorizontalOverflow: code.scrollWidth <= code.clientWidth + 1,
-    };
-  })()`);
-  if (!inviteLayout || Object.values(inviteLayout).some((value) => value !== true)) {
-    throw new Error("Synthetic patient invite card overflows its table cell: " + JSON.stringify(inviteLayout));
-  }
+  const inviteVisible = await evaluate("(() => [...document.querySelectorAll('button')].some((item) => (item.innerText || '').includes('Create invite')))()");
+  if (inviteVisible) throw new Error("Patient invite UI must be absent in the account-free patient journey.");
   await capture("doctor-patient-directory-1440x1000.png");
 
   await navigate("/doctor/clinical", "Clinical workspace");
@@ -289,7 +272,7 @@ async function main() {
 
   const evidence = await evaluate("({writes:window.__ORALYN_SYNTHETIC_WRITES || [],unhandled:window.__ORALYN_SYNTHETIC_UNHANDLED || []})");
   if (evidence.unhandled.length) throw new Error("Synthetic Doctor harness encountered unhandled API paths: " + evidence.unhandled.join(", "));
-  if (!evidence.writes.includes("patient-invite") || !evidence.writes.includes("chart-save") || !evidence.writes.includes("doctor-intelligence") || !evidence.writes.includes("logout")) {
+  if (!evidence.writes.includes("chart-save") || !evidence.writes.includes("doctor-intelligence") || !evidence.writes.includes("logout")) {
     throw new Error("Expected synthetic Doctor workflow actions were not recorded: " + JSON.stringify(evidence));
   }
   if (runtimeErrors.length) throw new Error("Synthetic Doctor browser runtime errors: " + runtimeErrors.join(" | "));
@@ -312,7 +295,7 @@ async function main() {
     "empty_workspace_patient_count=0",
     "empty_workspace_appointment_count=0",
     "cross_organisation_denial=fixture_403_not_backend",
-    "patient_invite_ui=passed_fixture",
+    "patient_invite_ui=disabled_account_free_patient_journey",
     "odontogram_save_ui=passed_fixture",
     "doctor_only_intelligence_ui=passed_fixture",
     "fonts_loaded=" + JSON.stringify(fontStatus),

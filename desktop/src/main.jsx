@@ -38,10 +38,21 @@ import {
 import "./styles.css";
 import { dentalApi } from "./api.js";
 import ErrorBoundary from "./ErrorBoundary.jsx";
+import AssistantApp, { AssistantManagement } from "./assistant.jsx";
 import { normaliseList, normaliseUser, localDateISO, localDateTimeFromParts, formatTime, isSameLocalDay } from "./data.js";
 import { DoctorCareManagement, PatientCareManagement, DoctorClinicalNotes, PatientCommunication } from "./careScreens.jsx";
 import { createPortalNavigator, resolvePortalRoute } from "./routing.js";
 import { createControllerChangeHandler } from "./serviceWorkerLifecycle.js";
+const currentPatientPath = window.location.pathname;
+const publicPatientPages = new Set(["/patient/home/", "/patient/booking/"]);
+if (
+  (currentPatientPath === "/patient" || currentPatientPath.startsWith("/patient/")) &&
+  !publicPatientPages.has(currentPatientPath)
+) {
+  const target = currentPatientPath.includes("/booking") ? "/patient/booking/" : "/patient/home/";
+  window.location.replace(target);
+}
+
 function doctorDisplayName(user) {
   const candidate = String(
     user?.name || user?.full_name || user?.display_name || user?.email?.split("@")[0] || "",
@@ -102,6 +113,10 @@ function App() {
     [pwaUpdateReady, setPwaUpdateReady] = useState(false);
   const portalNavigator = useRef(null);
   const P = (nextPage) => {
+    if (role === "patient") {
+      window.location.assign(nextPage === "booking" ? "/patient/booking/" : "/patient/home/");
+      return;
+    }
     setPage(nextPage);
     portalNavigator.current?.navigate(role, nextPage);
   };
@@ -332,6 +347,9 @@ function App() {
         error={authError}
         onPatient={() => {
           window.location.assign("/patient/home/");
+        }}
+        onAssistant={() => {
+          window.location.assign("/assistant/");
         }}
         onLogin={async (email, password) => {
           setAuthError("");
@@ -605,7 +623,7 @@ function App() {
     </div>
   );
 }
-function LoginScreen({ loading, error, onLogin, onPatient }) {
+function LoginScreen({ loading, error, onLogin, onPatient, onAssistant }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -657,6 +675,9 @@ function LoginScreen({ loading, error, onLogin, onPatient }) {
         </form>
         <button className="patientlink" onClick={onPatient}>
           Continue to patient portal
+        </button>
+        <button className="patientlink" onClick={onAssistant}>
+          Clinic Assistant sign in
         </button>
         <small className="authfoot">
           Secure clinic access · Session verified by the Oralyn server
@@ -1005,7 +1026,6 @@ function Doctor({
   onSignOut,
 }) {
   const [selectedPatientId, setSelectedPatientId] = useState("");
-  const [inviteState, setInviteState] = useState({ patientId: "", code: "", busy: false });
   const [appointmentEdits, setAppointmentEdits] = useState({});
   const [appointmentBusyId, setAppointmentBusyId] = useState("");
   const [appointmentError, setAppointmentError] = useState("");
@@ -1018,28 +1038,6 @@ function Doctor({
   useEffect(() => {
     setAppointmentEdits({});
   }, [appointments]);
-  const createPatientInvite = async (patientId) => {
-    setInviteState({ patientId, code: "", busy: true });
-    try {
-      const response = await dentalApi.createPatientInvite(token, patientId);
-      const code = response?.result?.invite_code || response?.invite_code || "";
-      if (!code) throw new Error("The clinic service did not return an invite code.");
-      setInviteState({ patientId, code, busy: false });
-      ping("One-time patient invite created. Share it only with the intended patient.");
-    } catch (error) {
-      setInviteState({ patientId: "", code: "", busy: false });
-      ping(error?.message || "Patient invite could not be created.");
-    }
-  };
-  const copyPatientInvite = async (code) => {
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error("Clipboard access is unavailable.");
-      await navigator.clipboard.writeText(code);
-      ping("Patient invite code copied.");
-    } catch {
-      ping("Select the displayed invite code and copy it manually.");
-    }
-  };
   const saveAppointment = async (appointment) => {
     const draft = appointmentEdits[appointment.id] || {};
     const startValue = draft.starts_at ?? localDateTimeValue(appointment.starts_at);
@@ -1419,22 +1417,9 @@ function Doctor({
                     <td>{p[2]}</td>
                     <td>{p[3]}</td>
                     <td className="patient-actions-cell">
-                      <div className="patient-row-actions">
-                        <button className="link" onClick={() => { setSelectedPatientId(String(p[2])); P("clinical"); }}>
-                          Open ›
-                        </button>
-                        <button className="link" disabled={inviteState.busy} onClick={() => createPatientInvite(String(p[2]))}>
-                          {inviteState.busy && inviteState.patientId === String(p[2]) ? "Creating…" : "Create invite"}
-                        </button>
-                      </div>
-                      {inviteState.patientId === String(p[2]) && inviteState.code && (
-                        <div className="invite-code-card">
-                          <small>One-time clinic invite · expires in 24 hours</small>
-                          <code>{inviteState.code}</code>
-                          <button className="outline" onClick={() => copyPatientInvite(inviteState.code)}>Copy invite code</button>
-                          <small>Share this code only with the intended patient. It links their signed-in account to this clinic record.</small>
-                        </div>
-                      )}
+                      <button className="link" onClick={() => { setSelectedPatientId(String(p[2])); P("clinical"); }}>
+                        Open ›
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -1534,7 +1519,12 @@ function Doctor({
   if (page === "messages")
     return <PatientCommunication mode="doctor" token={token} activePatient={activePatient} />;
   if (page === "settings")
-    return <AccountSettings user={user} activeWorkspace={activeWorkspace} onSignOut={onSignOut} />;
+    return (
+      <>
+        <AccountSettings user={user} activeWorkspace={activeWorkspace} onSignOut={onSignOut} />
+        <AssistantManagement token={token} user={user} />
+      </>
+    );
   if (page === "files")
     return <DoctorCareManagement page={page} token={token} activePatient={activePatient} ping={ping} />;
   if (page === "billing")
@@ -2328,8 +2318,25 @@ function Patient({
     </>
   );
 }
+const currentPath = window.location.pathname;
+const normalizedPath = currentPath.replace(/\/+$/, "") || "/";
+const publicPatientPaths = new Set(["/patient/home", "/patient/booking"]);
+const isAssistantRoute = /^\/assistant(?:\/|$)/.test(currentPath);
+const isPublicPatientAlias = publicPatientPaths.has(normalizedPath) && !currentPath.endsWith("/");
+const isDisabledPatientRoute =
+  /^\/patient(?:\/|$)/.test(currentPath) && !publicPatientPaths.has(normalizedPath);
+const redirectPatientRoute = isPublicPatientAlias || isDisabledPatientRoute;
+if (redirectPatientRoute) {
+  window.location.replace(isPublicPatientAlias ? normalizedPath + "/" : "/patient/home/");
+}
 createRoot(document.getElementById("root")).render(
   <ErrorBoundary>
-    <App />
+    {isAssistantRoute ? (
+      <AssistantApp />
+    ) : redirectPatientRoute ? (
+      <main className="redirect-screen" role="status">Opening the public clinic page…</main>
+    ) : (
+      <App />
+    )}
   </ErrorBoundary>,
 );

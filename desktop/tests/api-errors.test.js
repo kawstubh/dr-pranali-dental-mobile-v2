@@ -119,32 +119,24 @@ test("expired doctor API tokens trigger the portal session-expiry handler", asyn
   }
 });
 
-test("patient API 401 responses expire only the patient session", async () => {
-  const originalFetch = globalThis.fetch;
-  const originalWindow = globalThis.window;
-  const events = [];
-  globalThis.window = {
-    dispatchEvent(event) {
-      events.push(event.type);
-      return true;
-    },
-  };
-  globalThis.fetch = async () => new Response(
-    JSON.stringify({ detail: { code: "PATIENT_SESSION_INVALID", message: "Patient sign-in needs refreshing." } }),
-    { status: 401, headers: { "Content-Type": "application/json" } },
-  );
-  try {
-    await assert.rejects(dentalApi.patientAppointments("expired-patient-token", "synthetic-patient-1"), (error) => {
-      assert.equal(error.status, 401);
-      assert.equal(error.code, "PATIENT_SESSION_INVALID");
-      return true;
-    });
-    assert.deepEqual(events, ["oralyn:patient-session-expired"]);
-  } finally {
-    globalThis.fetch = originalFetch;
-    if (originalWindow === undefined) delete globalThis.window;
-    else globalThis.window = originalWindow;
+test("patient account API methods are not exposed to the public client", () => {
+  for (const method of [
+    "patientLink",
+    "patientLinkedRecords",
+    "patientAppointments",
+    "patientRequestAppointment",
+    "patientChart",
+    "patientClinicalNotes",
+    "patientMessages",
+    "patientTreatmentPlans",
+    "patientInvoices",
+    "patientReceipts",
+    "patientDocuments",
+    "patientDocumentDownloadIntent",
+  ]) {
+    assert.equal(typeof dentalApi[method], "undefined", method);
   }
+  assert.equal(typeof dentalApi.publicAppointment, "function");
 });
 
 test("doctor dashboard summary uses the authenticated active-workspace endpoint", async () => {
@@ -179,60 +171,40 @@ test("doctor dashboard summary uses the authenticated active-workspace endpoint"
   }
 });
 
-test("patient linking, appointments and chart use authenticated non-AI patient routes", async () => {
+test("public guest booking uses account-free intake without a patient bearer token", async () => {
   const originalFetch = globalThis.fetch;
-  const requests = [];
-  globalThis.fetch = async (url, init) => {
-    requests.push({ url: String(url), init });
-    return new Response(JSON.stringify({ result: [] }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+  const payload = {
+    name: "Synthetic booking probe",
+    phone: "9000000000",
+    starts_at: "2027-01-15T10:00:00+05:30",
+    treatment_type: "Dental check-up",
+    idempotency_key: "a".repeat(32),
+    intelligence_request: false,
+    website: "",
   };
-  try {
-    await dentalApi.patientLink("patient-token", "ABC12345");
-    await dentalApi.patientAppointments("patient-token", "patient-record-1");
-    await dentalApi.patientChart("patient-token", "patient-record-1");
-
-    assert.match(requests[0].url, /\/v1\/dental\/patient\/link$/);
-    assert.match(requests[1].url, /\/v1\/dental\/patient\/appointments\?patient_id=patient-record-1$/);
-    assert.match(requests[2].url, /\/v1\/dental\/patient\/chart\?patient_id=patient-record-1$/);
-    for (const request of requests) {
-      assert.equal(request.init.headers.Authorization, "Bearer patient-token");
-      assert.doesNotMatch(request.url, /\/dental\/ai\/patient\/(?:link|appointments|chart)/);
-    }
-  } finally {
-    globalThis.fetch = originalFetch;
-  }
-});
-
-test("signed-in patient appointment requests are attached to the verified clinic record", async () => {
-  const originalFetch = globalThis.fetch;
   let requestUrl = "";
   let requestInit;
   globalThis.fetch = async (url, init) => {
     requestUrl = String(url);
     requestInit = init;
-    return new Response(JSON.stringify({ result: { id: "request-1", status: "requested" } }), {
-      status: 200,
+    return new Response(JSON.stringify({ result: { public_reference: "ORALYN-TEST-ONLY" } }), {
+      status: 201,
       headers: { "Content-Type": "application/json" },
     });
   };
   try {
-    const response = await dentalApi.patientRequestAppointment(
-      "patient-token",
-      "linked-record-1",
-      { starts_at: "2027-01-15T04:30:00.000Z", treatment_type: "Dental check-up" },
-    );
-    assert.match(requestUrl, /\/v1\/dental\/patient\/appointments\?patient_id=linked-record-1$/);
+    const response = await dentalApi.publicAppointment(payload);
+    assert.match(requestUrl, /\/v1\/dental\/public\/appointments$/);
     assert.equal(requestInit.method, "POST");
-    assert.equal(requestInit.headers.Authorization, "Bearer patient-token");
-    assert.deepEqual(JSON.parse(requestInit.body), {
-      starts_at: "2027-01-15T04:30:00.000Z",
-      treatment_type: "Dental check-up",
-    });
-    assert.equal(response.result.status, "requested");
+    assert.equal(requestInit.headers.Authorization, undefined);
+    assert.deepEqual(JSON.parse(requestInit.body), payload);
+    assert.equal(response.result.public_reference, "ORALYN-TEST-ONLY");
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("legacy signed-in patient appointment methods are unavailable", () => {
+  assert.equal(typeof dentalApi.patientRequestAppointment, "undefined");
+  assert.equal(typeof dentalApi.patientAppointments, "undefined");
 });

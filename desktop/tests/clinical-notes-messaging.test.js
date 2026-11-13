@@ -18,19 +18,20 @@ test("clinical notes use doctor-scoped APIs and optimistic version checks", () =
   assert.ok(care.includes("New notes are private to the clinic by default."));
 });
 
-test("patient clinical notes are fetched only through the patient-authenticated linked-record API", () => {
-  assert.ok(api.includes("/patient/clinical-notes${query({ patient_id: patientId })}"));
-  assert.ok(care.includes("dentalApi.patientClinicalNotes(session.access_token, patientId)"));
-  assert.ok(care.includes("Clinical notes shared by your clinic"));
+test("patient clinical-note API methods are disabled in the account-free client", () => {
+  assert.ok(!api.includes("/patient/clinical-notes"));
+  assert.ok(!api.includes("patientClinicalNotes:"));
+  assert.ok(main.includes("Your clinical records, prescriptions and invoices remain private"));
 });
 
-test("clinic messages use separate doctor and patient identity-scoped routes", () => {
+test("clinic messaging remains Doctor-authenticated; patient message APIs are disabled", () => {
   assert.ok(api.includes("/doctor/patients/${encodeURIComponent(patientId)}/messages"));
-  assert.ok(api.includes("/patient/messages${query({ patient_id: patientId })}"));
+  assert.ok(!api.includes("/patient/messages"));
+  assert.ok(!api.includes("patientMessages:"));
+  assert.ok(!api.includes("sendPatientMessage:"));
   assert.ok(care.includes("dentalApi.doctorMessages(authToken, recordId)"));
-  assert.ok(care.includes("dentalApi.patientMessages(authToken, recordId)"));
   assert.ok(care.includes("dentalApi.sendDoctorMessage(authToken, recordId"));
-  assert.ok(care.includes("dentalApi.sendPatientMessage(authToken, recordId"));
+  assert.ok(main.includes('PatientCommunication mode="doctor"'));
 });
 
 test("portal keeps clinical navigation in Doctor workspace and patient navigation account-free", () => {
