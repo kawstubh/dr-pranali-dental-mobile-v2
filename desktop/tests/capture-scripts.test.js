@@ -9,6 +9,7 @@ test("synthetic Doctor capture script parses before browser CI executes it", () 
   const source = readFileSync(file, "utf8");
 
   assert.doesNotThrow(() => new Script(source, { filename: file }));
+  assert.match(source, /baseUrl \+ "\/doctor\/dashboard"/);
 });
 
 test("synthetic Doctor capture uses a safely quoted clinic workspace selector", () => {
