@@ -38,6 +38,12 @@ test("Doctor workspace still requires a verified Doctor session", () => {
   assert.match(source, /window\.addEventListener\("oralyn:doctor-session-expired"/);
 });
 
+test("Doctor sign-in uses the approved Oralyn logo assets without a replacement logo", () => {
+  assert.match(source, /src="\/oralyn-logo-approved\.webp"/);
+  assert.match(source, /src="\/oralyn-app-icon-approved\.webp"/);
+  assert.doesNotMatch(source, /function OralynToothMark|<OralynToothMark/);
+});
+
 test("Doctor bearer token is memory-only and never persisted in browser storage", () => {
   assert.match(source, /\[token, setToken\] = useState\(""/);
   assert.doesNotMatch(source, /localStorage|sessionStorage|oralyn_doctor_token/);
