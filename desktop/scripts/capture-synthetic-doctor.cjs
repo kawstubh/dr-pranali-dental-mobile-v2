@@ -187,10 +187,10 @@ async function main() {
     const response = await fetch("http://127.0.0.1:" + port + "/json/list").catch(() => null);
     if (!response || !response.ok) return false;
     const targets = await response.json();
-    return targets.find((item) => item.type === "page" && item.webSocketDebuggerUrl && item.url.startsWith(baseUrl));
+    return targets.find((item) => item.type === "page" && item.webSocketDebuggerUrl);
   });
   const targets = await (await fetch("http://127.0.0.1:" + port + "/json/list")).json();
-  const target = targets.find((item) => item.type === "page" && item.webSocketDebuggerUrl && item.url.startsWith(baseUrl));
+  const target = targets.find((item) => item.type === "page" && item.webSocketDebuggerUrl);
   if (!target) throw new Error("Chrome page target not found");
   ws = new WebSocket(target.webSocketDebuggerUrl);
   ws.addEventListener("message", (event) => {
