@@ -42,7 +42,7 @@ test("Patient portal is account-free and exposes only public home and booking na
 
 test("Patient routes expose only the public home and booking pages", () => {
   const patientRoutesStart = routingSource.indexOf('patient: new Set(');
-  const patientRoutesEnd = routingSource.indexOf('}),', patientRoutesStart);
+  const patientRoutesEnd = routingSource.indexOf('),', patientRoutesStart);
   const patientRoutes = routingSource.slice(patientRoutesStart, patientRoutesEnd);
   assert.match(patientRoutes, /"home"/);
   assert.match(patientRoutes, /"booking"/);
@@ -52,7 +52,7 @@ test("Patient routes expose only the public home and booking pages", () => {
 });
 
 test("public guest booking sends a clinic-local IST timestamp, not a UTC conversion", () => {
-  assert.match(bookingSource, /starts_at:\s*localDateTime\s*\+\s*"\\+05:30"/);
+  assert.match(bookingSource, /starts_at:\s*localDateTime\s*\+\s*"\+05:30"/);
   assert.doesNotMatch(bookingSource, /starts_at:\s*startsAt\.toISOString\(\)/);
 });
 
