@@ -156,7 +156,11 @@ test("synthetic Doctor and Assistant captures tolerate PWA activation delay with
   const assistant = readFileSync(join(process.cwd(), "scripts", "capture-synthetic-assistant.cjs"), "utf8");
   assert.match(doctor, /service-worker-controlled Doctor page/);
   assert.match(doctor, /PWA state=/);
+  assert.match(doctor, /registrations/);
+  assert.match(doctor, /swResponse/);
   assert.match(doctor, /30000,\s*"service-worker-controlled Doctor page"/);
   assert.match(assistant, /controller\)'\), 30000\)\.catch/);
-  assert.match(assistant, /if \(!controlled\) throw new Error\("Synthetic Assistant capture is not controlled/);
+  assert.match(assistant, /registrations/);
+  assert.match(assistant, /swResponse/);
+  assert.match(assistant, /Synthetic Assistant capture is not controlled by the Oralyn PWA service worker\. PWA state=/);
 });
