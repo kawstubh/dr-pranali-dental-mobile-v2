@@ -234,3 +234,11 @@ test("Clinic Assistant appointment queue shows scheduling details without clinic
   assert.match(assistantAppSource, /· Appointment/);
   assert.doesNotMatch(assistantAppSource, /appointment\.treatment_type|treatment_type/);
 });
+
+
+test("release manifest blocks production until Doctor token storage is hardened", () => {
+  const manifestPath = path.join(root, "scripts", "write-build-manifest.cjs");
+  const manifestSource = fs.readFileSync(manifestPath, "utf8");
+  assert.ok(manifestSource.includes("doctor_token_storage_hardening_verified"));
+  assert.ok(manifestSource.includes("process.env.ORALYN_DOCTOR_TOKEN_STORAGE_HARDENING_VERIFIED"));
+});
