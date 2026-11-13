@@ -18,19 +18,23 @@ test("clinical notes use doctor-scoped APIs and optimistic version checks", () =
   assert.ok(care.includes("New notes are private to the clinic by default."));
 });
 
-test("patient clinical notes are fetched only through the patient-authenticated linked-record API", () => {
-  assert.ok(api.includes("/patient/clinical-notes${query({ patient_id: patientId })}"));
-  assert.ok(care.includes("dentalApi.patientClinicalNotes(session.access_token, patientId)"));
-  assert.ok(care.includes("Clinical notes shared by your clinic"));
+test("private clinical notes remain Doctor-only in the account-free patient journey", () => {
+  assert.ok(api.includes("/doctor/patients/${encodeURIComponent(patientId)}/clinical-notes"));
+  assert.ok(!api.includes("/patient/clinical-notes"));
+  assert.ok(!api.includes("patientClinicalNotes:"));
+  assert.ok(main.includes("isDisabledPatientRoute"));
+  assert.ok(main.includes("/patient/home/"));
 });
 
-test("clinic messages use separate doctor and patient identity-scoped routes", () => {
+test("clinic messages remain Doctor-authenticated; no patient account messaging API is shipped", () => {
   assert.ok(api.includes("/doctor/patients/${encodeURIComponent(patientId)}/messages"));
-  assert.ok(api.includes("/patient/messages${query({ patient_id: patientId })}"));
+  assert.ok(api.includes("doctorMessages:"));
+  assert.ok(api.includes("sendDoctorMessage:"));
+  assert.ok(!api.includes("/patient/messages"));
+  assert.ok(!api.includes("patientMessages:"));
+  assert.ok(!api.includes("sendPatientMessage:"));
   assert.ok(care.includes("dentalApi.doctorMessages(authToken, recordId)"));
-  assert.ok(care.includes("dentalApi.patientMessages(authToken, recordId)"));
   assert.ok(care.includes("dentalApi.sendDoctorMessage(authToken, recordId"));
-  assert.ok(care.includes("dentalApi.sendPatientMessage(authToken, recordId"));
 });
 
 test("portal keeps clinical navigation in Doctor workspace and patient navigation account-free", () => {
@@ -42,31 +46,17 @@ test("portal keeps clinical navigation in Doctor workspace and patient navigatio
   assert.ok(!main.includes('["messages", "Clinic messages", MessageCircle]'));
 });
 
-test("patient messaging does not add diagnosis or clinical decision-support actions", () => {
-  assert.ok(!/patient.*(diagnos|triage|clinical recommendation)/i.test(care));
+test("public patient experience does not expose diagnosis or clinical decision-support actions", () => {
   assert.ok(main.includes("Patient-facing AI diagnosis and self-diagnosis are not available."));
+  assert.ok(!api.includes("/patient/messages"));
+  assert.ok(!api.includes("/patient/clinical-notes"));
 });
 
-test("patient treatment journey owns and resets its shared clinical-note state", () => {
-  const start = care.indexOf("export function PatientCareManagement");
-  const end = care.indexOf("export function DoctorClinicalNotes", start);
-  assert.ok(start >= 0 && end > start, "PatientCareManagement component must exist");
-  const patientCare = care.slice(start, end);
-  assert.match(patientCare, /const \[clinicalNotes, setClinicalNotes\] = useState\(\[\]\)/);
-  assert.match(patientCare, /const \[notesError, setNotesError\] = useState\("?"?\)/);
-  assert.match(patientCare, /setClinicalNotes\(\[\]\)/);
-  assert.match(patientCare, /setNotesError\(/);
-  assert.match(patientCare, /clinicalNotes\.length/);
-  assert.match(patientCare, /notesError \|\|/);
-});
 
-test("patient-scoped records and clinic messages hide prior patient data while a new scope loads", () => {
-  assert.match(care, /const scopeKey = .*patientId/);
-  assert.match(care, /setLoadedScope\(""\)/);
-  assert.match(care, /loadedScope !== scopeKey/);
-  assert.match(care, /setPlans\(\[\]\)/);
-  assert.match(care, /setInvoices\(\[\]\)/);
-  assert.match(care, /setDocuments\(\[\]\)/);
-  assert.match(care, /setMessages\(\[\]\)/);
-  assert.match(care, /setDraft\(""\)/);
+
+
+test("legacy patient paths redirect to the public account-free landing or booking page", () => {
+  assert.ok(main.includes("isDisabledPatientRoute"));
+  assert.ok(main.includes('"/patient/home/"'));
+  assert.ok(main.includes('"/patient/booking/"'));
 });
