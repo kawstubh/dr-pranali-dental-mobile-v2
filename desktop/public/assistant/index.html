@@ -177,7 +177,7 @@ document.getElementById("patient-form").addEventListener("submit", async (event)
   event.preventDefault(); const form = event.currentTarget; const data = new FormData(form);
   try {
     await request("/v1/dental/assistant/patients", {method:"POST",body:JSON.stringify({name:String(data.get("name")).trim(),phone:String(data.get("phone")).trim()})});
-    form.reset(); showMessage(workspaceMessage,"Patient contact saved.","success"); await loadWorkspace();
+    form.reset(); await loadWorkspace(); showMessage(workspaceMessage,"Patient contact saved.","success");
   } catch (error) { showMessage(workspaceMessage,error.message,"error"); }
 });
 document.getElementById("appointment-list").addEventListener("click", async (event) => {
@@ -187,7 +187,7 @@ document.getElementById("appointment-list").addEventListener("click", async (eve
   try {
     const id = button.dataset.confirm || button.dataset.cancel;
     await request("/v1/dental/assistant/appointments/" + encodeURIComponent(id), {method:"PATCH",body:JSON.stringify({status:confirmButton ? "confirmed" : "cancelled"})});
-    showMessage(workspaceMessage,confirmButton ? "Appointment confirmed." : "Appointment cancelled.","success"); await loadWorkspace();
+    await loadWorkspace(); showMessage(workspaceMessage,confirmButton ? "Appointment confirmed." : "Appointment cancelled.","success");
   } catch (error) { showMessage(workspaceMessage,error.message,"error"); }
 });
 document.getElementById("appointment-list").addEventListener("submit", async (event) => {
@@ -199,7 +199,7 @@ document.getElementById("appointment-list").addEventListener("submit", async (ev
   }
   try {
     await request("/v1/dental/assistant/appointments/" + encodeURIComponent(form.dataset.reschedule), {method:"PATCH",body:JSON.stringify({starts_at:startsAt.toISOString()})});
-    showMessage(workspaceMessage,"Appointment rescheduled.","success"); await loadWorkspace();
+    await loadWorkspace(); showMessage(workspaceMessage,"Appointment rescheduled.","success");
   } catch (error) { showMessage(workspaceMessage,error.message,"error"); }
 });
 document.getElementById("invoice-list").addEventListener("submit", async (event) => {
@@ -214,7 +214,7 @@ document.getElementById("invoice-list").addEventListener("submit", async (event)
     await request("/v1/dental/assistant/billing/invoices/" + encodeURIComponent(invoiceId) + "/receipts", {
       method:"POST",body:JSON.stringify({amount_paise:amountPaise,method:String(data.get("method")),reference:String(data.get("reference") || "").trim(),idempotency_key:idempotencyKey})
     });
-    sessionStorage.removeItem(keyName); showMessage(workspaceMessage,"Payment received and receipt recorded.","success"); await loadWorkspace();
+    sessionStorage.removeItem(keyName); await loadWorkspace(); showMessage(workspaceMessage,"Payment received and receipt recorded.","success");
   } catch (error) { showMessage(workspaceMessage,error.message,"error"); }
 });
 document.getElementById("refresh").addEventListener("click",refreshWorkspace);
