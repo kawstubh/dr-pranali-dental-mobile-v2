@@ -485,28 +485,9 @@ function App() {
     </div>
   );
 }
-function OralynToothVector({ className = "" }) {
-  return <svg className={className} viewBox="0 0 112 126" role="img" aria-label="Oralyn digital tooth symbol">
-    <defs>
-      <linearGradient id="oralyn-circuit-tooth" x1="8" y1="6" x2="104" y2="118" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#08C9E9"/><stop offset=".48" stopColor="#078CE5"/><stop offset="1" stopColor="#073A91"/>
-      </linearGradient>
-    </defs>
-    <path d="M55.8 7.5C38.5-1.7 15.8 7.2 8.5 27.2 2.1 44.8 11.7 63.1 19.3 80.2c5.3 11.8 8.4 34.9 19.2 37.3 10.5 2.3 12.7-29.2 19.2-29.2s8.7 31.5 19.2 29.2c10.8-2.4 13.9-25.5 19.2-37.3 7.6-17.1 17.2-35.4 10.8-53C99.6 7.2 76.9-1.7 59.6 7.5l-1.9 1Z" fill="url(#oralyn-circuit-tooth)"/>
-    <g fill="none" stroke="#fff" strokeWidth="6.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M8 73 43 48"/><path d="M17 93 70 55"/><path d="M30 108 83 70"/>
-    </g>
-    <g fill="#fff"><circle cx="46" cy="46" r="10.5"/><circle cx="73" cy="53" r="10.5"/><circle cx="85" cy="68" r="10.5"/></g>
-    <g fill="#0788d9"><circle cx="46" cy="46" r="4.5"/><circle cx="73" cy="53" r="4.5"/><circle cx="85" cy="68" r="4.5"/></g>
-  </svg>;
-}
 function OralynVectorBrand() {
   return <div className="oralyn-vector-brand" aria-label="Oralyn — Smart Dental Care for Healthier Smiles">
-    <OralynToothVector className="oralyn-brand-tooth"/>
-    <div className="oralyn-vector-wordmark">
-      <strong>Oralyn</strong>
-      <span>DENTAL CLINIC MANAGEMENT</span>
-    </div>
+    <img className="oralyn-approved-wordmark" src="/oralyn-logo-approved.webp" alt="Oralyn — Smart Dental Care for Healthier Smiles" />
   </div>;
 }
 function OralynClinicIllustration() {
@@ -559,7 +540,7 @@ function LoginScreen({ loading, error, onLogin, onPatient, onAssistant }) {
       </section>
       <section className="oralyn-auth-panel oralyn-reference-panel" aria-label="Doctor sign in">
         <div className="oralyn-auth-card oralyn-reference-card">
-          <div className="oralyn-app-squircle" aria-label="Oralyn vector app icon"><OralynToothVector className="oralyn-app-tooth"/></div>
+          <div className="oralyn-app-squircle" aria-label="Oralyn approved app icon"><img src="/oralyn-app-icon-approved.webp" alt="Oralyn app icon" /></div>
           <span className="oralyn-auth-label">DOCTOR PORTAL</span>
           <h2>Oralyn Doctor</h2>
           <p className="oralyn-auth-subtitle">Sign in with your clinic-issued email and password.</p>
