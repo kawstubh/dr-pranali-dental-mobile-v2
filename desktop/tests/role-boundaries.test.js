@@ -173,7 +173,7 @@ test("Clinic Assistant UI matches the backend route and result-envelope contract
     "/v1/dental/clinic-assistants",
   ]) assert.ok(assistantAppSource.includes(route), route);
   assert.ok(assistantAppSource.includes("data.result"));
-  assert.ok(assistantAppSource.includes('method: "PATCH", body: { status }'));
+  assert.match(assistantAppSource, /method: "PATCH", body\s*\}/);
   assert.doesNotMatch(assistantAppSource, /patient_id/);
   assert.doesNotMatch(assistantAppSource, /\/v1\/dental\/auth\/assistant/);
   assert.doesNotMatch(assistantAppSource, /\/v1\/dental\/auth\/assistants/);
@@ -229,6 +229,17 @@ test("portal security header probe is a read-only GET check", () => {
   assert.match(assistantWorkflowSource, /ORALYN_SECURITY_HEADERS_VERIFIED=true/);
 });
 
+
+test("Clinic Assistant reschedules only to a future India Standard Time slot", () => {
+  assert.match(assistantAppSource, /function appointmentInstant\(date, time\)/);
+  assert.match(assistantAppSource, /new Date\(date \+ "T" \+ time \+ ":00\\+05:30"\)/);
+  assert.match(assistantAppSource, /value <= new Date\(\)/);
+  assert.match(assistantAppSource, /status: "rescheduled", starts_at: startsAt/);
+  assert.match(assistantAppSource, /openReschedule\(appointment\)/);
+  assert.match(assistantAppSource, /type="date"/);
+  assert.match(assistantAppSource, /type="time"/);
+  assert.match(assistantAppSource, /India Standard Time/);
+});
 
 test("Clinic Assistant appointment queue shows scheduling details without clinical treatment type", () => {
   assert.match(assistantAppSource, /appointment\.starts_at/);
