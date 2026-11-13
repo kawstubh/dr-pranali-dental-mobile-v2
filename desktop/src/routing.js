@@ -18,16 +18,7 @@ const ALLOWED_PAGES = Object.freeze({
     "workspaces",
     "settings",
   ]),
-  patient: new Set([
-    "home",
-    "appointments",
-    "journey",
-    "records",
-    "invoices",
-    "messages",
-    "settings",
-    "booking",
-  ]),
+  patient: new Set(["home", "booking"]),
 });
 
 export function resolvePortalRoute(pathname = "/") {
