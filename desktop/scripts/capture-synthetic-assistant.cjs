@@ -175,7 +175,10 @@ async function main() {
     await signInSyntheticAssistant();
     controlled = await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Reception workspace") && Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)'), 30000).catch(() => false);
   }
-  if (!controlled) throw new Error("Synthetic Assistant capture is not controlled by the Oralyn PWA service worker.");
+  if (!controlled) {
+    const pwaState = await evaluate("(async () => { const supported = 'serviceWorker' in navigator; const registrations = supported ? await navigator.serviceWorker.getRegistrations() : []; let swResponse = null; try { const response = await fetch('/sw.js', { cache: 'no-store' }); const body = await response.text(); swResponse = { status: response.status, contentType: response.headers.get('content-type'), prefix: body.slice(0, 120) }; } catch (fetchError) { swResponse = { error: fetchError?.message || String(fetchError) }; } return { path: location.pathname, isSecureContext: window.isSecureContext, serviceWorkerSupported: supported, controller: Boolean(supported && navigator.serviceWorker.controller), registrations: registrations.map((registration) => ({ scope: registration.scope, activeState: registration.active?.state || null, installingState: registration.installing?.state || null, waitingState: registration.waiting?.state || null })), swResponse }; })()").catch(() => null);
+    throw new Error("Synthetic Assistant capture is not controlled by the Oralyn PWA service worker. PWA state=" + JSON.stringify(pwaState));
+  }
   const fonts = await evaluate('({plusJakartaSans:document.fonts.check("400 16px \\"Plus Jakarta Sans\\""),playfairDisplay:document.fonts.check("600 32px \\"Playfair Display\\"")})');
   if (!fonts.plusJakartaSans || !fonts.playfairDisplay) throw new Error("Bundled Oralyn fonts failed in synthetic Assistant session: " + JSON.stringify(fonts));
 
