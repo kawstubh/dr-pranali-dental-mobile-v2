@@ -45,7 +45,7 @@ async function assistantRequest(path, { token, method = "GET", body } = {}) {
     error.code = detail?.code;
     throw error;
   }
-  return data;
+  return data && Object.prototype.hasOwnProperty.call(data, "result") ? data.result : data;
 }
 
 function clinicToday() {
@@ -112,15 +112,8 @@ export default function AssistantApp() {
   const [tab, setTab] = useState("appointments");
   const [patients, setPatients] = useState([]);
   const [appointments, setAppointments] = useState([]);
-  const [selectedPatient, setSelectedPatient] = useState("");
   const [billing, setBilling] = useState(null);
   const [patientForm, setPatientForm] = useState({ name: "", phone: "" });
-  const [appointmentForm, setAppointmentForm] = useState({
-    patient_id: "",
-    date: clinicToday(),
-    time: "10:00",
-    treatment_type: "Dental check-up",
-  });
   const [loginBusy, setLoginBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [booting, setBooting] = useState(Boolean(token));
@@ -132,14 +125,10 @@ export default function AssistantApp() {
       assistantRequest("/v1/dental/assistant/patients", { token: accessToken }),
       assistantRequest("/v1/dental/assistant/appointments", { token: accessToken }),
     ]);
-    const nextPatients = Array.isArray(patientResult?.patients) ? patientResult.patients : [];
-    const nextAppointments = Array.isArray(appointmentResult?.appointments) ? appointmentResult.appointments : [];
+    const nextPatients = Array.isArray(patientResult) ? patientResult : [];
+    const nextAppointments = Array.isArray(appointmentResult) ? appointmentResult : [];
     setPatients(nextPatients);
     setAppointments(nextAppointments);
-    setAppointmentForm((current) => ({
-      ...current,
-      patient_id: current.patient_id || nextPatients[0]?.id || "",
-    }));
   };
 
   useEffect(() => {
@@ -153,7 +142,7 @@ export default function AssistantApp() {
     setError("");
     (async () => {
       try {
-        const me = await assistantRequest("/v1/dental/auth/assistant/me", { token });
+        const me = await assistantRequest("/v1/dental/assistant/me", { token });
         if (!live) return;
         setUser(me?.user || null);
         await loadData(token);
@@ -172,6 +161,23 @@ export default function AssistantApp() {
   }, [token]);
 
   useEffect(() => {
+    if (!token || tab !== "billing") return undefined;
+    let live = true;
+    setBusy(true);
+    setError("");
+    loadBilling(token)
+      .catch((cause) => {
+        if (!live) return;
+        if (cause?.status === 401) setToken("");
+        setError(cause?.message || "Billing summaries could not be loaded.");
+      })
+      .finally(() => {
+        if (live) setBusy(false);
+      });
+    return () => { live = false; };
+  }, [token, tab]);
+
+  useEffect(() => {
     if (!notice) return undefined;
     const handle = window.setTimeout(() => setNotice(""), 3200);
     return () => window.clearTimeout(handle);
@@ -182,7 +188,7 @@ export default function AssistantApp() {
     setLoginBusy(true);
     setError("");
     try {
-      const result = await assistantRequest("/v1/dental/auth/assistant/login", {
+      const result = await assistantRequest("/v1/dental/assistant/auth/login", {
         method: "POST",
         body: { email: email.trim(), password },
       });
@@ -201,14 +207,13 @@ export default function AssistantApp() {
 
   const signOut = async () => {
     try {
-      if (token) await assistantRequest("/v1/dental/auth/assistant/logout", { token, method: "POST" });
+      if (token) await assistantRequest("/v1/dental/assistant/auth/logout", { token, method: "POST" });
     } catch {}
     setToken("");
     setUser(null);
     setPatients([]);
     setAppointments([]);
-    setBilling(null);
-    setSelectedPatient("");
+    setBilling([]);
     setError("");
     setNotice("");
   };
@@ -241,35 +246,9 @@ export default function AssistantApp() {
       });
       setPatients((current) => [patient, ...current]);
       setPatientForm({ name: "", phone: "" });
-      setAppointmentForm((current) => ({ ...current, patient_id: current.patient_id || patient.id }));
       setNotice("Patient contact details added.");
     } catch (cause) {
       setError(cause?.message || "Patient intake could not be saved.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const addAppointment = async (event) => {
-    event.preventDefault();
-    if (!token) return;
-    setBusy(true);
-    setError("");
-    try {
-      const starts_at = appointmentInstant(appointmentForm.date, appointmentForm.time);
-      const appointment = await assistantRequest("/v1/dental/assistant/appointments", {
-        token,
-        method: "POST",
-        body: {
-          patient_id: appointmentForm.patient_id,
-          starts_at,
-          treatment_type: appointmentForm.treatment_type,
-        },
-      });
-      setAppointments((current) => [...current, appointment].sort((a, b) => String(a.starts_at).localeCompare(String(b.starts_at))));
-      setNotice("Appointment request added to the clinic queue.");
-    } catch (cause) {
-      setError(cause?.message || "Appointment request could not be saved.");
     } finally {
       setBusy(false);
     }
@@ -279,12 +258,13 @@ export default function AssistantApp() {
     if (!token) return;
     setBusy(true);
     setError("");
+    const status = action === "confirm" ? "confirmed" : "cancelled";
     try {
       const next = await assistantRequest(
-        "/v1/dental/assistant/appointments/" + encodeURIComponent(appointment.id) + "/" + action,
-        { token, method: "POST" }
+        "/v1/dental/assistant/appointments/" + encodeURIComponent(appointment.id),
+        { token, method: "PATCH", body: { status } }
       );
-      setAppointments((current) => current.map((item) => item.id === next.id ? next : item));
+      setAppointments((current) => current.map((item) => item.id === appointment.id ? { ...item, ...next } : item));
       setNotice(action === "confirm" ? "Appointment confirmed." : "Appointment cancelled.");
     } catch (cause) {
       setError(cause?.message || "Appointment status could not be changed.");
@@ -293,23 +273,9 @@ export default function AssistantApp() {
     }
   };
 
-  const loadBilling = async (patientId) => {
-    setSelectedPatient(patientId);
-    setBilling(null);
-    setError("");
-    if (!patientId || !token) return;
-    setBusy(true);
-    try {
-      const result = await assistantRequest(
-        "/v1/dental/assistant/patients/" + encodeURIComponent(patientId) + "/billing",
-        { token }
-      );
-      setBilling(result);
-    } catch (cause) {
-      setError(cause?.message || "Billing summary could not be loaded.");
-    } finally {
-      setBusy(false);
-    }
+  const loadBilling = async (accessToken = token) => {
+    const result = await assistantRequest("/v1/dental/assistant/billing/invoices", { token: accessToken });
+    setBilling(Array.isArray(result) ? result : []);
   };
 
   if (booting) {
@@ -359,29 +325,18 @@ export default function AssistantApp() {
         </nav>
 
         {tab === "appointments" && (
-          <section className="assistant-grid">
-            <div className="assistant-panel">
-              <div className="assistant-panel-heading"><div><h2>Appointment queue</h2><p>{appointments.length} appointment{appointments.length === 1 ? "" : "s"} in this clinic</p></div><CalendarDays size={20} /></div>
-              {appointments.length ? <div className="assistant-list">{appointments.map((appointment) => (
-                <article className="assistant-appointment" key={appointment.id}>
-                  <div className="assistant-appointment-main"><b>{appointment.patient_name || "Patient"}</b><span>{appointment.patient_phone}</span><small>{dateLabel(appointment.starts_at)} · {appointment.treatment_type}</small></div>
-                  <div className="assistant-appointment-actions"><span className={"assistant-status status-" + String(appointment.status).replace(/[^a-z_]/g, "")}>{String(appointment.status).replaceAll("_", " ")}</span>
-                    {appointment.status !== "confirmed" && !["cancelled", "completed", "no_show"].includes(appointment.status) && <button onClick={() => changeAppointment(appointment, "confirm")} disabled={busy}><CheckCircle2 size={15} /> Confirm</button>}
-                    {!["cancelled", "completed", "no_show"].includes(appointment.status) && <button className="assistant-danger-button" onClick={() => changeAppointment(appointment, "cancel")} disabled={busy}><XCircle size={15} /> Cancel</button>}
-                  </div>
-                </article>
-              ))}</div> : <div className="assistant-empty"><ClipboardList size={24} /><b>No appointments yet</b><span>New requests will appear here.</span></div>}
-            </div>
-            <div className="assistant-panel">
-              <div className="assistant-panel-heading"><div><h2>Schedule a visit</h2><p>Reception can request and confirm appointments.</p></div><Plus size={20} /></div>
-              <form className="assistant-form" onSubmit={addAppointment}>
-                <label>Patient<select required value={appointmentForm.patient_id} onChange={(event) => setAppointmentForm((current) => ({ ...current, patient_id: event.target.value }))}><option value="">Choose a patient</option>{patients.map((patient) => <option key={patient.id} value={patient.id}>{patient.name} · {patient.phone}</option>)}</select></label>
-                <div className="assistant-form-row"><label>Preferred date<input type="date" required min={clinicToday()} value={appointmentForm.date} onChange={(event) => setAppointmentForm((current) => ({ ...current, date: event.target.value }))} /></label><label>Time<select required value={appointmentForm.time} onChange={(event) => setAppointmentForm((current) => ({ ...current, time: event.target.value }))}>{["10:00","11:00","12:00","13:00","17:00","18:00","19:00","20:00"].map((time) => <option key={time}>{time}</option>)}</select></label></div>
-                <label>Visit type<select value={appointmentForm.treatment_type} onChange={(event) => setAppointmentForm((current) => ({ ...current, treatment_type: event.target.value }))}>{["Dental check-up","Cleaning & polishing","Tooth pain consultation","Root canal treatment","Braces & aligners","Dental implants","Other dental concern"].map((item) => <option key={item}>{item}</option>)}</select></label>
-                <button className="assistant-primary" type="submit" disabled={busy || !patients.length}>{busy ? "Saving…" : "Add appointment request"}</button>
-                {!patients.length && <small>Add a patient contact before scheduling.</small>}
-              </form>
-            </div>
+          <section className="assistant-panel">
+            <div className="assistant-panel-heading"><div><h2>Appointment queue</h2><p>{appointments.length} active appointment{appointments.length === 1 ? "" : "s"} in this clinic. New public requests appear here for reception confirmation.</p></div><CalendarDays size={20} /></div>
+            {appointments.length ? <div className="assistant-list">{appointments.map((appointment) => (
+              <article className="assistant-appointment" key={appointment.id}>
+                <div className="assistant-appointment-main"><b>{appointment.patient_name || "Patient"}</b><span>{appointment.patient_phone}</span><small>{dateLabel(appointment.starts_at)} · {appointment.treatment_type}</small></div>
+                <div className="assistant-appointment-actions">
+                  <span className={"assistant-status status-" + String(appointment.status).replace(/[^a-z_]/g, "")}>{String(appointment.status).replaceAll("_", " ")}</span>
+                  {appointment.status !== "confirmed" && !["cancelled", "completed", "no_show"].includes(appointment.status) && <button onClick={() => changeAppointment(appointment, "confirm")} disabled={busy}><CheckCircle2 size={15} /> Confirm</button>}
+                  {!["cancelled", "completed", "no_show"].includes(appointment.status) && <button className="assistant-danger-button" onClick={() => changeAppointment(appointment, "cancel")} disabled={busy}><XCircle size={15} /> Cancel</button>}
+                </div>
+              </article>
+            ))}</div> : <div className="assistant-empty"><ClipboardList size={24} /><b>No appointments yet</b><span>New public requests will appear here after submission.</span></div>}
           </section>
         )}
 
@@ -404,9 +359,13 @@ export default function AssistantApp() {
 
         {tab === "billing" && (
           <section className="assistant-panel">
-            <div className="assistant-panel-heading"><div><h2>Billing lookup</h2><p>Read-only invoice totals and receipt summaries. No payment or invoice changes can be made here.</p></div><Wallet size={20} /></div>
-            <label className="assistant-billing-select">Choose patient<select value={selectedPatient} onChange={(event) => loadBilling(event.target.value)}><option value="">Select a patient</option>{patients.map((patient) => <option key={patient.id} value={patient.id}>{patient.name} · {patient.phone}</option>)}</select></label>
-            {selected && billing && (billing.invoices || []).length ? <div className="assistant-billing-list">{billing.invoices.map((invoice) => <article className="assistant-invoice" key={invoice.id}><div className="assistant-invoice-head"><div><b>{invoice.invoice_number}</b><small>{invoice.status} · Due {invoice.due_date || "not set"}</small></div><strong>{money(invoice.total_paise)}</strong></div><div className="assistant-invoice-totals"><span>Paid <b>{money(invoice.paid_paise)}</b></span><span>Balance <b>{money(invoice.balance_paise)}</b></span></div>{(invoice.receipts || []).map((receipt) => <small className="assistant-receipt" key={receipt.receipt_number}>{receipt.receipt_number} · {receipt.method} · {money(receipt.amount_paise)} · {dateLabel(receipt.paid_at)}</small>)}</article>)}</div> : selected && billing ? <div className="assistant-empty"><Wallet size={24} /><b>No invoices found</b><span>There are no billing records for this patient.</span></div> : <div className="assistant-empty"><Wallet size={24} /><b>Select a patient</b><span>Billing summaries are limited to this clinic.</span></div>}
+            <div className="assistant-panel-heading"><div><h2>Billing lookup</h2><p>Issued invoice totals and outstanding balances only. Assistants cannot create, issue, void or alter invoices.</p></div><Wallet size={20} /></div>
+            {Array.isArray(billing) && billing.length ? <div className="assistant-billing-list">{billing.map((invoice) => (
+              <article className="assistant-invoice" key={invoice.id}>
+                <div className="assistant-invoice-head"><div><b>{invoice.invoice_number}</b><small>{invoice.patient_name} · {invoice.status} · Due {invoice.due_date || "not set"}</small></div><strong>{money(invoice.total_paise)}</strong></div>
+                <div className="assistant-invoice-totals"><span>Paid <b>{money(invoice.paid_paise)}</b></span><span>Balance <b>{money(invoice.balance_paise)}</b></span></div>
+              </article>
+            ))}</div> : <div className="assistant-empty"><Wallet size={24} /><b>No issued invoices</b><span>Issued invoice balances for this clinic will appear here.</span></div>}
           </section>
         )}
         <footer className="assistant-security-note"><ShieldCheck size={17} /><span>Clinical notes, history, odontograms, treatment plans, prescriptions, private documents and Doctor-only intelligence are not available to this role.</span></footer>
@@ -426,7 +385,7 @@ export function AssistantManagement({ token, user }) {
   const [notice, setNotice] = useState("");
 
   const loadAssistants = async () => {
-    const result = await assistantRequest("/v1/dental/auth/assistants", { token });
+    const result = await assistantRequest("/v1/dental/clinic-assistants", { token });
     setAssistants(Array.isArray(result?.assistants) ? result.assistants : []);
   };
 
@@ -478,8 +437,8 @@ export function AssistantManagement({ token, user }) {
     setNotice("");
     try {
       await assistantRequest(
-        "/v1/dental/auth/assistants/" + encodeURIComponent(assistant.id) + "/deactivate",
-        { token, method: "POST" }
+        "/v1/dental/clinic-assistants/" + encodeURIComponent(assistant.id),
+        { token, method: "PATCH", body: { active: false } }
       );
       await loadAssistants();
       setNotice("Assistant access deactivated and sessions revoked.");
