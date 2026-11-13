@@ -93,6 +93,7 @@ test("staging manifest records verified public gates without claiming live booki
       "doctor_auth_e2e_verified",
       "assistant_role_e2e_verified",
       "guest_booking_idempotency_verified",
+      "production_guest_rate_limiting_verified",
       "assistant_ui_api_verified",
       "cross_tenant_e2e_verified",
       "authenticated_screenshots_verified",
