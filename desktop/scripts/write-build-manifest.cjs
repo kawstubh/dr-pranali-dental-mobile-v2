@@ -10,8 +10,9 @@ if (!fs.existsSync(outputDir) || !fs.statSync(outputDir).isDirectory()) {
 }
 
 const buildIdSource =
-  process.env.GITHUB_SHA ||
   process.env.ORALYN_COMMIT_SHA ||
+  process.env.GITHUB_SHA ||
+  process.env.RENDER_GIT_COMMIT ||
   process.env.ORALYN_BUILD_ID ||
   Date.now().toString(36);
 const buildId = String(buildIdSource)
@@ -24,15 +25,20 @@ if (!fs.existsSync(serviceWorkerPath)) {
   throw new Error("Oralyn service worker output is missing: " + serviceWorkerPath);
 }
 const serviceWorkerSource = fs.readFileSync(serviceWorkerPath, "utf8");
-if (!serviceWorkerSource.includes("__ORALYN_BUILD_ID__")) {
-  throw new Error("Oralyn service worker build ID placeholder is missing.");
-}
 const serviceWorkerCacheName = "oralyn-portal-shell-" + buildId;
-fs.writeFileSync(
-  serviceWorkerPath,
-  serviceWorkerSource.replace(/__ORALYN_BUILD_ID__/g, buildId),
-  "utf8",
-);
+if (serviceWorkerSource.includes("__ORALYN_BUILD_ID__")) {
+  fs.writeFileSync(
+    serviceWorkerPath,
+    serviceWorkerSource.replace(/__ORALYN_BUILD_ID__/g, buildId),
+    "utf8",
+  );
+} else if (!serviceWorkerSource.includes(serviceWorkerCacheName)) {
+  throw new Error("Oralyn service worker does not contain the expected immutable build ID.");
+}
+if (process.argv.includes("--prepare-only")) {
+  process.stdout.write("Oralyn service-worker cache identity prepared: " + serviceWorkerCacheName + "\n");
+  process.exit(0);
+}
 
 function flag(value) {
   return ["1", "true", "yes"].includes(String(value || "").trim().toLowerCase());
@@ -76,7 +82,7 @@ function walk(directory, prefix = "") {
     });
 }
 
-const environment = process.env.ORALYN_ENVIRONMENT || "local";
+const environment = process.env.ORALYN_ENVIRONMENT || (process.env.RENDER_GIT_COMMIT ? "staging" : "local");
 const requireHttpsOrigins = ["staging", "production"].includes(environment.toLowerCase());
 const portalOrigin = originOf(process.env.ORALYN_PORTAL_ORIGIN || "", {
   requireHttps: requireHttpsOrigins,
@@ -109,6 +115,8 @@ const checks = {
   mobile_browser_e2e_verified: flag(process.env.ORALYN_MOBILE_BROWSER_E2E_VERIFIED),
   public_service_catalog_ui_verified: flag(process.env.ORALYN_SERVICE_CATALOG_UI_VERIFIED),
   public_service_catalog_api_verified: flag(process.env.ORALYN_SERVICE_CATALOG_API_VERIFIED),
+  staging_api_commit_verified: flag(process.env.ORALYN_STAGING_API_COMMIT_VERIFIED),
+  staging_portal_commit_verified: flag(process.env.ORALYN_STAGING_PORTAL_COMMIT_VERIFIED),
 };
 const blockers = Object.entries(checks)
   .filter(([, passed]) => !passed)
@@ -117,8 +125,8 @@ const blockers = Object.entries(checks)
 const manifest = {
   product: "Oralyn responsive clinic web portal",
   environment,
-  commit_sha: process.env.GITHUB_SHA || process.env.ORALYN_COMMIT_SHA || "unknown",
-  branch: process.env.GITHUB_REF_NAME || process.env.ORALYN_BRANCH || "unknown",
+  commit_sha: process.env.ORALYN_COMMIT_SHA || process.env.GITHUB_SHA || process.env.RENDER_GIT_COMMIT || "unknown",
+  branch: process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME || process.env.RENDER_GIT_BRANCH || process.env.ORALYN_BRANCH || "unknown",
   service_worker_cache_name: serviceWorkerCacheName,
   built_at: new Date().toISOString(),
   api_origin: apiOrigin,
