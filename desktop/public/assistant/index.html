@@ -35,7 +35,7 @@ button:disabled{opacity:.55;cursor:wait}.wide{width:100%;margin-top:10px}
 .message.error{display:block;background:#fff1ef;color:#9a3025}.message.success{display:block;background:#e9faf7;color:#075f56}
 .empty{padding:20px;text-align:center;color:#718698;border:1px dashed #cbdbe5;border-radius:12px}
 .hidden{display:none!important}.note{font-size:12px;color:#718698}
-@media(max-width:760px){.grid,.cards{grid-template-columns:1fr}.wrap{margin:18px auto}.panel,.card{padding:17px}}
+@media(max-width:760px){.grid,.cards{grid-template-columns:minmax(0,1fr)}.wrap{margin:18px auto;padding:0 12px;width:100%;max-width:100%}.panel,.card{padding:17px;min-width:0;max-width:100%}.topline{display:grid;grid-template-columns:minmax(0,1fr);align-items:stretch;gap:12px}.topline>div{min-width:0;width:100%;flex:none}.topline h1{font-size:clamp(22px,6vw,28px);line-height:1.2;overflow-wrap:anywhere;word-break:normal}.topline #assistant-email{display:inline;max-width:100%;overflow-wrap:anywhere;word-break:normal}.topline button{width:100%;min-width:0}.inline{grid-template-columns:minmax(0,1fr)}.item,.item form,.item label{min-width:0;max-width:100%}.item strong,.item p,.item div{overflow-wrap:anywhere}input,select{min-width:0;max-width:100%}}@media(max-width:420px){header{padding:12px 14px;gap:10px}header img{width:138px;max-width:44vw}header .status{font-size:10px;padding:4px 7px}.panel,.card{padding:14px}.topline{gap:10px}.topline h1{font-size:24px}.item{padding:12px}}
 </style>
 </head>
 <body>
