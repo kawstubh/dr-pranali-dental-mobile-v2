@@ -9,8 +9,6 @@ import { resolvePortalRoute } from "../src/routing.js";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, "..");
 const source = fs.readFileSync(path.join(root, "src", "main.jsx"), "utf8");
-const patientStart = source.indexOf("function Patient(");
-const patientSource = patientStart >= 0 ? source.slice(patientStart) : "";
 const careSource = fs.readFileSync(path.join(root, "src", "careScreens.jsx"), "utf8");
 const apiSource = fs.readFileSync(path.join(root, "src", "api.js"), "utf8");
 const assistantAppSource = fs.readFileSync(path.join(root, "src", "assistant.jsx"), "utf8");
@@ -37,19 +35,14 @@ test("Doctor workspace still requires a verified Doctor session", () => {
   assert.match(source, /window\.addEventListener\("oralyn:doctor-session-expired"/);
 });
 
-test("Patient portal is account-free and exposes only public home and booking navigation", () => {
-  assert.match(source, /\["home", "Home", LayoutDashboard\]/);
-  assert.match(source, /\["booking", "Book appointment", CalendarDays\]/);
-  const navStart = source.indexOf("const patientNav = [");
-  const navEnd = source.indexOf("const nav = role ===", navStart);
-  const patientNav = source.slice(navStart, navEnd);
-  assert.doesNotMatch(patientNav, /\["appointments", "Appointments", CalendarDays\]/);
-  assert.doesNotMatch(source, /\["journey", "Treatment journey"/);
-  assert.doesNotMatch(source, /\["records", "Records & prescriptions"/);
-  assert.doesNotMatch(source, /\["invoices", "Invoices & payments"/);
-  assert.doesNotMatch(source, /\["settings", "Account settings"/);
-  assert.doesNotMatch(source, /PatientAccessScreen|Create your patient account|Sign in to patient portal/);
-  assert.doesNotMatch(source, /supabase\.auth/);
+test("public patient journey is served only by account-free static pages", () => {
+  assert.doesNotMatch(source, /function Patient\(|patientSession|patientLinks|patientInviteCode|oralyn_patient_record_id/);
+  assert.match(patientHomeSource, /No patient account, password or OTP is needed/);
+  assert.match(bookingSource, /No account or OTP is required/);
+  assert.match(patientHomeSource, /href="\/patient\/booking\//);
+  const route = resolvePortalRoute("/patient/login");
+  assert.equal(route.role, "doctor");
+  assert.equal(route.redirectTo, "/patient/home/");
 });
 
 test("public patient pages ship without Supabase or patient account credentials", () => {
@@ -63,18 +56,16 @@ test("public patient pages ship without Supabase or patient account credentials"
 });
 
 test("Patient landing page explains no account is needed and sends visitors to guest booking", () => {
-  assert.match(patientSource, /if \(page !== "booking"\)/);
-  assert.match(patientSource, /No patient account or password is needed/);
-  assert.match(patientSource, /P\("booking"\)/);
-  assert.match(patientSource, /Your clinical records, prescriptions and invoices remain private/);
+  assert.match(patientHomeSource, /No patient account, password or OTP is needed/);
+  assert.match(patientHomeSource, /href="\/patient\/booking\//);
+  assert.match(patientHomeSource, /clinical records, prescriptions and invoices remain protected/);
 });
 
 test("guest booking collects minimum contact details and uses public appointment intake", () => {
-  assert.match(patientSource, /Your full name/);
-  assert.match(patientSource, /Mobile number/);
-  assert.match(patientSource, /dentalApi\.publicAppointment\(/);
-  assert.match(apiSource, /publicAppointment:/);
-  assert.match(patientSource, /Request received/);
+  assert.match(bookingSource, /name="name"/);
+  assert.match(bookingSource, /name="phone"/);
+  assert.match(bookingSource, /\/v1\/dental\/public\/appointments/);
+  assert.match(bookingSource, /Your appointment request has been received/);
 });
 
 test("guest booking sends a stable idempotency key and validates future IST time", () => {
@@ -97,15 +88,10 @@ test("guest booking sends a stable idempotency key and validates future IST time
 });
 
 test("patient private records are not rendered in the public account-free experience", () => {
-  const landingIndex = patientSource.indexOf('if (page !== "booking")');
-  const bookingIndex = patientSource.indexOf('if (page === "booking")');
-  assert.ok(landingIndex >= 0 && bookingIndex > landingIndex);
-  assert.match(patientSource.slice(0, bookingIndex), /Your clinical records, prescriptions and invoices remain private/);
-  assert.match(source, /const patientNav = \[/);
-  assert.match(source, /\["booking", "Book appointment", CalendarDays\]/);
+  assert.match(patientHomeSource, /clinical records, prescriptions and invoices remain protected/);
+  assert.doesNotMatch(bookingSource, /clinical notes|odontogram|prescription|invoice|patient_id|appointment_id/i);
+  assert.doesNotMatch(bookingSource, /Authorization\s*:/i);
 });
-
-
 
 test("Doctor patient directory has no patient-account invitation action", () => {
   assert.doesNotMatch(source, /createPatientInvite|Create invite|invite-code-card/);
@@ -121,9 +107,8 @@ test("Doctor clinical records remain scoped to Doctor-authenticated APIs", () =>
   assert.match(careSource, /createInvoice\(token, activePatient\.id/);
 });
 
-test("Doctor-only intelligence is not exposed in the Patient component", () => {
-  assert.doesNotMatch(patientSource, /DoctorAIActionCard|IntelligenceCard|clinical intelligence/i);
-  assert.doesNotMatch(patientSource, /AI diagnosis|self-diagnosis|diagnose yourself/i);
+test("Doctor-only intelligence is not exposed in public patient pages", () => {
+  assert.doesNotMatch(patientHomeSource + bookingSource, /AI diagnosis|self-diagnosis|clinical intelligence|diagnose yourself/i);
 });
 
 test("private document actions remain fail-closed until storage and malware scanning are verified", () => {
@@ -135,24 +120,19 @@ test("private document actions remain fail-closed until storage and malware scan
   assert.match(apiSource, /createDocumentUploadIntent/);
 });
 
-test("patient session and account-linking flows are not required or initialized", () => {
-  assert.doesNotMatch(source, /supabase\.auth/);
-  assert.doesNotMatch(source, /patientAccess/);
-  assert.doesNotMatch(source, /patientLinkedRecords\(patientSession/);
-  assert.match(source, /setPatientSession\(null\)/);
-  assert.match(source, /setPatientBoot\(false\)/);
+test("patient sessions, record linking and patient-account storage are absent from the portal shell", () => {
+  assert.doesNotMatch(source, /patientSession|patientLinks|patientInviteCode|oralyn_patient_record_id|Link patient record|Clinic invite code/);
+  assert.doesNotMatch(apiSource, /patientLink:|patientLinkedRecords:/);
+  assert.match(source, /window\.location\.assign\("\/patient\/home\/"\)/);
 });
 
 test("public patient booking remains separate from Doctor identity and tenant APIs", () => {
-  assert.match(patientSource, /dentalApi\.publicAppointment\(/);
-  assert.match(apiSource, /publicAppointment:/);
+  assert.match(bookingSource, /\/v1\/dental\/public\/appointments/);
+  assert.match(bookingSource, /intelligence_request:\s*false/);
   assert.match(apiSource, /appointments: \(token\) => request\("\/v1\/dental\/appointments", \{ token \}\)/);
-  assert.doesNotMatch(patientSource, /dentalApi\.patients\(/);
-  assert.doesNotMatch(patientSource, /dentalApi\.patientChart\(/);
+  assert.doesNotMatch(bookingSource, /patient_id|appointment_id|\/v1\/dental\/patients/);
+  assert.doesNotMatch(bookingSource, /Authorization\s*:/i);
 });
-
-
-
 
 test("Clinic Assistant has a distinct route, identity and session namespace", () => {
   assert.ok(source.includes('import AssistantApp, { AssistantManagement } from "./assistant.jsx";'));
