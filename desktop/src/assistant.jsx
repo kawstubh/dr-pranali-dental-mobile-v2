@@ -112,7 +112,7 @@ export default function AssistantApp() {
   const [tab, setTab] = useState("appointments");
   const [patients, setPatients] = useState([]);
   const [appointments, setAppointments] = useState([]);
-  const [billing, setBilling] = useState(null);
+  const [billing, setBilling] = useState([]);
   const [patientForm, setPatientForm] = useState({ name: "", phone: "" });
   const [loginBusy, setLoginBusy] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -224,6 +224,7 @@ export default function AssistantApp() {
     setError("");
     try {
       await loadData(token);
+      if (tab === "billing") await loadBilling(token);
       setNotice("Reception data refreshed.");
     } catch (cause) {
       if (cause?.status === 401) await signOut();
@@ -302,8 +303,6 @@ export default function AssistantApp() {
       </main>
     );
   }
-
-  const selected = patients.find((patient) => patient.id === selectedPatient);
 
   return (
     <main className="assistant-shell">
@@ -386,16 +385,16 @@ export function AssistantManagement({ token, user }) {
 
   const loadAssistants = async () => {
     const result = await assistantRequest("/v1/dental/clinic-assistants", { token });
-    setAssistants(Array.isArray(result?.assistants) ? result.assistants : []);
+    setAssistants(Array.isArray(result) ? result : []);
   };
 
   useEffect(() => {
     if (!allowed || !token) return undefined;
     let live = true;
     setBusy(true);
-    assistantRequest("/v1/dental/auth/assistants", { token })
+    assistantRequest("/v1/dental/clinic-assistants", { token })
       .then((result) => {
-        if (live) setAssistants(Array.isArray(result?.assistants) ? result.assistants : []);
+        if (live) setAssistants(Array.isArray(result) ? result : []);
       })
       .catch((cause) => {
         if (live) setError(cause?.message || "Assistant directory could not be loaded.");
@@ -414,7 +413,7 @@ export function AssistantManagement({ token, user }) {
     setError("");
     setNotice("");
     try {
-      await assistantRequest("/v1/dental/auth/assistants", {
+      await assistantRequest("/v1/dental/clinic-assistants", {
         token,
         method: "POST",
         body: { email: email.trim(), password },
@@ -470,7 +469,7 @@ export function AssistantManagement({ token, user }) {
           </article>
         )) : <div className="assistant-empty"><Users size={22} /><b>No Clinic Assistants</b><span>Create a separate reception account when the clinic is ready.</span></div>}
       </div>
-      <div className="assistant-security-note"><ShieldCheck size={17} /><span>Assistant access is limited to contact intake, appointment coordination and read-only billing summaries. Clinical notes, AI, prescriptions, private documents and owner settings remain Doctor-only.</span></div>
+      <div className="assistant-security-note"><ShieldCheck size={17} /><span>Assistant access is limited to contact intake, appointment coordination and read-only issued-invoice summaries. Clinical notes, AI, prescriptions, private documents and owner settings remain Doctor-only.</span></div>
     </section>
   );
 }
