@@ -1288,7 +1288,7 @@ function Doctor({
   if (page === "notes")
     return <DoctorClinicalNotes token={token} activePatient={activePatient} />;
   if (page === "messages")
-    return <PatientCommunication mode="doctor" token={token} activePatient={activePatient} />;
+    return <PatientCommunication token={token} activePatient={activePatient} />;
   if (page === "settings")
     return (
       <>
