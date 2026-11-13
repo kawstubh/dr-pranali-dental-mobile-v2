@@ -16,6 +16,9 @@ const apiSource = fs.readFileSync(path.join(root, "src", "api.js"), "utf8");
 const bookingSource = fs.readFileSync(path.join(root, "public", "patient", "booking", "index.html"), "utf8");
 const assistantSource = fs.readFileSync(path.join(root, "public", "assistant", "index.html"), "utf8");
 const viteSource = fs.readFileSync(path.join(root, "vite.config.js"), "utf8");
+const packageManifest = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
+const patientHomeSource = fs.readFileSync(path.join(root, "public", "patient", "home", "index.html"), "utf8");
+
 
 test("global patient search is rendered only in the Doctor workspace", () => {
   assert.match(source, /\{role === "doctor" && \(\s*<div className="search">/);
@@ -45,8 +48,18 @@ test("Patient portal is account-free and exposes only public home and booking na
   assert.doesNotMatch(source, /\["records", "Records & prescriptions"/);
   assert.doesNotMatch(source, /\["invoices", "Invoices & payments"/);
   assert.doesNotMatch(source, /\["settings", "Account settings"/);
-  assert.doesNotMatch(source, /return\s*\(\s*<PatientAccessScreen/);
+  assert.doesNotMatch(source, /PatientAccessScreen|Create your patient account|Sign in to patient portal/);
   assert.doesNotMatch(source, /supabase\.auth/);
+});
+
+test("public patient pages ship without Supabase or patient account credentials", () => {
+  assert.equal(packageManifest.dependencies?.["@supabase/supabase-js"], undefined);
+  assert.equal(fs.existsSync(path.join(root, "src", "supabase.js")), false);
+  for (const page of [patientHomeSource, bookingSource]) {
+    assert.doesNotMatch(page, /<input\\b[^>]*type=["']password/i);
+    assert.doesNotMatch(page, /patient\\/(?:login|signup|register)/i);
+    assert.doesNotMatch(page, /supabase/i);
+  }
 });
 
 test("Patient landing page explains no account is needed and sends visitors to guest booking", () => {

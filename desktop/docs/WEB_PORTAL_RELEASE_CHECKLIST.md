@@ -1,5 +1,8 @@
 # Oralyn web portal release checklist
 
+
+> **Current release scope — 13 Nov 2026 (supersedes historical patient-authentication items below):** the Patient journey is public and account-free. No patient accounts, passwords, OTP, signup/login, Supabase patient auth or linked-record routes are part of release. Public pages expose clinic information and guest appointment requests only; private clinical records remain inaccessible to patients through this portal. Doctor authentication remains mandatory, and Clinic Assistant is a separate least-privilege identity. The latest frontend head is `64c1f380cdd2e9adbd43facff3902a7da1a1ac10`; CI [#43373151804](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43373151804) passed 88/88 tests, npm audit (0 vulnerabilities), build, live synthetic staging contract and responsive browser captures. Backend PR #60 head `fb6a9e77f022d254f4ef6b4a3bcc8e150eaed6c6` passed PostgreSQL and Engine CI. The release manifest remains **BLOCKED** on live authenticated Doctor/Assistant acceptance, cross-tenant staging E2E, private storage and malware scanning, backup/restore, monitoring and rollback, plus production environment and approval. Staging remains synthetic-only; its Neon project has public connections enabled and HIPAA disabled, so it must never contain real patient data.
+
 **Release product:** one responsive Doctor and Patient web portal, with PWA installation where supported. Native Android APKs are out of release scope and are not release gates.
 
 ## Canonical worktrees and current heads
