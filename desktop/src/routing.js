@@ -18,16 +18,9 @@ const ALLOWED_PAGES = Object.freeze({
     "workspaces",
     "settings",
   ]),
-  patient: new Set([
-    "home",
-    "appointments",
-    "journey",
-    "records",
-    "invoices",
-    "messages",
-    "settings",
-    "booking",
-  ]),
+  // The patient experience is public and account-free. Private records and
+  // account pages are deliberately not routable in the patient browser surface.
+  patient: new Set(["home", "booking"]),
 });
 
 export function resolvePortalRoute(pathname = "/") {
