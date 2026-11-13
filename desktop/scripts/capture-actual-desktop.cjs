@@ -300,7 +300,7 @@ async function captureAssistantAdminGate() {
       'location.pathname === "/doctor/dashboard" && document.body.innerText.includes("Sign in with your clinic doctor account")'
     ));
     const switchedToPatient = await evaluate(
-      "(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').trim().includes('Continue to patient portal')); if (!button) return false; button.click(); return true; })()"
+      "(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').trim().includes('Public patient services')); if (!button) return false; button.click(); return true; })()"
     );
     if (!switchedToPatient) throw new Error("Doctor-to-public-patient portal link was not found.");
     await waitFor(() => evaluate(
