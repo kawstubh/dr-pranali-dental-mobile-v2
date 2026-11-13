@@ -53,3 +53,12 @@
 .assistant-management-panel{margin-top:22px}.assistant-management-form{display:grid;grid-template-columns:1fr 1fr minmax(190px,.7fr);gap:14px;align-items:end}.assistant-management-form label{display:grid;gap:7px;color:#36556d;font-size:13px;font-weight:700}.assistant-management-form input{width:100%;min-height:47px;border:1px solid #cbdde7;border-radius:10px;background:#fff;padding:11px 12px;color:#193d5b;font:inherit;font-size:14px}.assistant-management-form small{font-size:11px;font-weight:500;color:#718696}.assistant-management-list{margin-top:20px}.assistant-management-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 0;border-top:1px solid #edf2f5}.assistant-management-row div{display:grid;gap:4px}.assistant-management-row b{font-size:13px;color:#173e5d}.assistant-management-row small{font-size:11px;color:#718696}.assistant-management-row button{border:1px solid #f1d8d6;background:#fff8f7;color:#a3423c;border-radius:9px;padding:9px 12px;font:inherit;font-size:12px;font-weight:800;cursor:pointer}.assistant-management-row button:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:900px){.assistant-management-form{grid-template-columns:1fr 1fr}.assistant-management-form .assistant-primary{grid-column:1/-1}}
 @media(max-width:560px){.assistant-management-form{grid-template-columns:1fr}.assistant-management-form .assistant-primary{grid-column:auto}}
+
+.assistant-receipt-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:15px;padding:15px;border:1px solid #dcebf1;border-radius:13px;background:#f8fcff}
+.assistant-receipt-form label{display:grid;gap:7px;color:#36556d;font-size:12px;font-weight:700}
+.assistant-receipt-form input,.assistant-receipt-form select{width:100%;min-height:43px;border:1px solid #cbdde7;border-radius:9px;background:#fff;padding:10px;color:#193d5b;font:inherit;font-size:13px}
+.assistant-receipt-form small{grid-column:1/-1;color:#718696;font-size:11px;line-height:1.5}
+.assistant-receipt-actions{grid-column:1/-1;display:flex;gap:9px;flex-wrap:wrap}
+.assistant-receipt-actions .assistant-primary{width:auto;min-width:210px;min-height:42px;padding:10px 14px}
+.assistant-record-payment{margin-top:14px}
+@media(max-width:640px){.assistant-receipt-form{grid-template-columns:1fr}.assistant-receipt-form small,.assistant-receipt-actions{grid-column:auto}.assistant-receipt-actions{display:grid}.assistant-receipt-actions .assistant-primary{width:100%}}
