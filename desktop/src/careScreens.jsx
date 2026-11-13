@@ -174,26 +174,9 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
         setBusy(false);
       }
     };
-    const sharePlan = async (plan) => {
-      setBusy(true);
-      try {
-        const body = {
-          expected_version: plan.version,
-          patient_visible: true,
-          ...(plan.status === "draft" ? { status: "proposed" } : {}),
-        };
-        await dentalApi.updateTreatmentPlan(token, plan.id, body);
-        refresh();
-        ping("Treatment plan shared with the patient.");
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setBusy(false);
-      }
-    };
     return (
       <>
-        <CareHeader eyebrow="CLINICAL CARE" title="Treatment plans" description={`Clinician-authored care plans for ${patientLabel}. Drafts stay private until you explicitly share them.`} action={<button className="outline" onClick={refresh}><RefreshCw size={16} /> Refresh</button>} />
+        <CareHeader eyebrow="CLINICAL CARE" title="Treatment plans" description={`Clinician-authored care plans for ${patientLabel}. Treatment plans remain private to the Doctor workspace; patient sharing is not enabled.`} action={<button className="outline" onClick={refresh}><RefreshCw size={16} /> Refresh</button>} />
         {error && <StateMessage error>{error}</StateMessage>}
         {loading ? <StateMessage>Loading treatment plans from the clinic record…</StateMessage> : (
           <div className="care-grid">
@@ -201,10 +184,9 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
               <div className="care-panel-heading"><HeartPulse /><div><h2>Plans for this patient</h2><p>{plans.length} persistent plan{plans.length === 1 ? "" : "s"}</p></div></div>
               {plans.length ? plans.map((plan) => (
                 <article className="care-record" key={plan.id}>
-                  <div className="care-record-top"><div><b>{plan.title}</b><small>{plan.status.replaceAll("_", " ")} · Version {plan.version}</small></div><span className={plan.patient_visible ? "care-pill shared" : "care-pill private"}>{plan.patient_visible ? "Shared" : "Clinic only"}</span></div>
+                  <div className="care-record-top"><div><b>{plan.title}</b><small>{plan.status.replaceAll("_", " ")} · Version {plan.version}</small></div><span className="care-pill private">{plan.patient_visible ? "Legacy share flag disabled" : "Clinic only"}</span></div>
                   {plan.summary && <p>{plan.summary}</p>}
                   <ul>{(plan.items || []).map((item) => <li key={item.id}>{item.description}{item.tooth_fdi ? ` · Tooth ${item.tooth_fdi}` : ""}</li>)}</ul>
-                  {!plan.patient_visible && plan.status !== "cancelled" && plan.status !== "completed" && <button className="outline" disabled={busy} onClick={() => sharePlan(plan)}><Share2 size={15} /> Share with patient</button>}
                   {plan.patient_visible && <small className="care-hint">Visible in the patient's linked Oralyn portal.</small>}
                 </article>
               )) : <StateMessage>No treatment plans have been created for this patient.</StateMessage>}
@@ -262,7 +244,7 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
       try {
         await dentalApi.issueInvoice(token, invoice.id, {});
         refresh();
-        ping("Invoice issued and shared with the patient.");
+        ping("Invoice issued. It remains in the Doctor workspace.");
       } catch (err) {
         setError(err.message);
       } finally {
@@ -306,7 +288,7 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
                   <div className="care-record-top"><div><b>{invoice.invoice_number}</b><small>{invoice.status.replaceAll("_", " ")} · {dateLabel(invoice.created_at)}</small></div><strong>{inr(invoice.total_paise)}</strong></div>
                   <div className="care-finance-row"><span>Paid {inr(invoice.paid_paise)}</span><span>Balance {inr(invoice.balance_paise)}</span></div>
                   <ul>{(invoice.items || []).map((item) => <li key={item.id}>{item.description} · {inr(item.total_paise)}</li>)}</ul>
-                  {invoice.status === "draft" && <button className="primary" disabled={busy} onClick={() => issueInvoice(invoice)}>Issue invoice & share</button>}
+                  {invoice.status === "draft" && <button className="primary" disabled={busy} onClick={() => issueInvoice(invoice)}>Issue invoice</button>}
                   {["issued", "partially_paid", "overdue"].includes(invoice.status) && (
                     <div className="care-receipt-form">
                       <label>Amount received (₹)<input type="number" min="0.01" step="0.01" value={receiptDraft[invoice.id]?.amount || ""} onChange={(e) => setReceiptDraft((current) => ({ ...current, [invoice.id]: { ...current[invoice.id], amount: e.target.value } }))} /></label>
@@ -327,7 +309,7 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
                 <label>Tax rate (%)<input type="number" min="0" max="28" step="0.01" value={taxPercent} onChange={(e) => setTaxPercent(e.target.value)} /></label>
                 <button className="primary" disabled={busy}><Plus size={16} /> Create draft invoice</button>
               </form>
-              <p className="care-hint">Issuing an invoice makes it visible in the linked patient's portal. Receipts are recorded only after payment has been received; this screen does not initiate a payment.</p>
+              <p className="care-hint">Issuing an invoice keeps it in the Doctor workspace. It does not share patient records or initiate a payment. Receipts record payments already received.</p>
             </section>
           </div>
         )}
@@ -386,22 +368,9 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
     try {
       await dentalApi.reviewDocument(token, document.id);
       refresh();
-      ping("Document reviewed. Share it with the patient only when appropriate.");
+      ping("Document reviewed. It remains private to the Doctor workspace.");
     } catch (err) {
       setError(err.message || "Document review could not be recorded.");
-    } finally {
-      setBusy(false);
-    }
-  };
-  const shareDocument = async (document, visible) => {
-    if (!PRIVATE_DOCUMENTS_READY) return;
-    setBusy(true);
-    try {
-      await dentalApi.setDocumentVisibility(token, document.id, visible);
-      refresh();
-      ping(visible ? "Document shared with the patient." : "Document access withdrawn from the patient.");
-    } catch (err) {
-      setError(err.message);
     } finally {
       setBusy(false);
     }
@@ -426,18 +395,17 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
   };
   return (
     <>
-      <CareHeader eyebrow="SECURE CLINICAL FILES" title="Private documents" description={PRIVATE_DOCUMENTS_READY ? `Verified, tenant-scoped files for ${patientLabel}. A doctor must review each file before patient sharing is enabled.` : `Secure storage and fail-closed malware scanning are not enabled for ${patientLabel}. Upload, download, review and patient-sharing actions are disabled.`} action={<button className="outline" onClick={refresh}><RefreshCw size={16} /> Refresh</button>} />
+      <CareHeader eyebrow="SECURE CLINICAL FILES" title="Private documents" description={PRIVATE_DOCUMENTS_READY ? `Verified, tenant-scoped files for ${patientLabel}. Documents remain private to the Doctor workspace; patient sharing is deferred until scoped, expiring links are implemented.` : `Secure storage and fail-closed malware scanning are not enabled for ${patientLabel}. Upload, download and review actions are disabled. Patient-specific sharing is separately deferred.`} action={<button className="outline" onClick={refresh}><RefreshCw size={16} /> Refresh</button>} />
       {error && <StateMessage error>{error}</StateMessage>}
       <div className="care-grid">
         <section className="panel care-panel">
           <div className="care-panel-heading"><FileText /><div><h2>Documents for this patient</h2><p>{documents.length} document{documents.length === 1 ? "" : "s"}</p></div></div>
           {loading ? <StateMessage>Loading private document metadata…</StateMessage> : documents.length ? documents.map((document) => (
             <article className="care-record" key={document.id}>
-              <div className="care-record-top"><div><b>{document.file_name}</b><small>{document.content_type} · {Math.ceil(document.size_bytes / 1024)} KB · {dateLabel(document.created_at)}</small></div><span className={document.patient_visible ? "care-pill shared" : "care-pill private"}>{document.patient_visible ? "Patient shared" : document.reviewed_at ? "Reviewed · clinic only" : document.status === "available" ? "Review required" : document.status.replaceAll("_", " ")}</span></div>
+              <div className="care-record-top"><div><b>{document.file_name}</b><small>{document.content_type} · {Math.ceil(document.size_bytes / 1024)} KB · {dateLabel(document.created_at)}</small></div><span className="care-pill private">{document.patient_visible ? "Legacy share flag disabled" : document.reviewed_at ? "Reviewed · clinic only" : document.status === "available" ? "Review required" : document.status.replaceAll("_", " ")}</span></div>
               <div className="care-actions">
                 {PRIVATE_DOCUMENTS_READY && document.status === "available" && <button className="outline" onClick={() => downloadDocument(document)}><Download size={15} /> Download</button>}
                 {PRIVATE_DOCUMENTS_READY && document.status === "available" && !document.reviewed_at && <button className="outline" disabled={busy} onClick={() => reviewDocument(document)}><ShieldCheck size={15} /> Mark as reviewed</button>}
-                {PRIVATE_DOCUMENTS_READY && document.status === "available" && document.reviewed_at && <button className="outline" disabled={busy} onClick={() => shareDocument(document, !document.patient_visible)}><Share2 size={15} /> {document.patient_visible ? "Unshare" : "Share with patient"}</button>}
               </div>
             </article>
           )) : <StateMessage>No documents have been uploaded for this patient.</StateMessage>}
@@ -454,7 +422,7 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
               <StateMessage>Uploads remain private after verification. A doctor must explicitly review the file before the separate patient-sharing action becomes available.</StateMessage>
             </>
           ) : (
-            <StateMessage>Uploads, downloads, review and patient sharing are disabled until secure private storage and fail-closed malware scanning are configured and verified. No file upload or patient-sharing action is available in this environment.</StateMessage>
+            <StateMessage>Uploads, downloads and review are disabled until secure private storage and fail-closed malware scanning are configured and verified. Patient-specific sharing is separately deferred until scoped, expiring links are implemented.</StateMessage>
           )}
         </section>
       </div>
@@ -560,25 +528,9 @@ export function DoctorClinicalNotes({ token, activePatient }) {
     }
   };
 
-  const setVisibility = async (note) => {
-    setBusy(true);
-    setError("");
-    try {
-      await dentalApi.updateClinicalNote(token, note.id, {
-        patient_visible: !note.patient_visible,
-        expected_version: note.version,
-      });
-      setRefreshKey((value) => value + 1);
-    } catch (err) {
-      setError(err.message || "Clinical note visibility could not be changed.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
   return (
     <>
-      <CareHeader eyebrow="CLINICAL DOCUMENTATION" title="Clinical notes" description={`Private clinician-authored notes for ${activePatient.name || activePatient.id}. Patient access is always an explicit sharing decision.`} action={<button className="outline" onClick={() => setRefreshKey((value) => value + 1)}><RefreshCw size={16} /> Refresh</button>} />
+      <CareHeader eyebrow="CLINICAL DOCUMENTATION" title="Clinical notes" description={`Private clinician-authored notes for ${activePatient.name || activePatient.id}. Patient sharing is not enabled; notes remain inside the Doctor workspace.`} action={<button className="outline" onClick={() => setRefreshKey((value) => value + 1)}><RefreshCw size={16} /> Refresh</button>} />
       {error && <StateMessage error>{error}</StateMessage>}
       <div className="care-grid">
         <section className="panel care-panel">
@@ -592,16 +544,12 @@ export function DoctorClinicalNotes({ token, activePatient }) {
               <article className="care-record" key={note.id}>
                 <div className="care-record-top">
                   <div><b>{note.title}</b><small>Version {note.version} · Updated {dateLabel(note.updated_at)}</small></div>
-                  <span className={note.patient_visible ? "care-pill shared" : "care-pill private"}>{note.patient_visible ? "Patient shared" : "Clinic only"}</span>
+                  <span className="care-pill private">{note.patient_visible ? "Legacy share flag disabled" : "Clinic only"}</span>
                 </div>
                 <label className="care-note-field">Title<input value={titleValue} maxLength={160} onChange={(event) => setDrafts((current) => ({ ...current, [note.id]: { ...current[note.id], title: event.target.value } }))} /></label>
                 <label className="care-note-field">Clinical note<textarea rows={4} maxLength={10000} value={contentValue} onChange={(event) => setDrafts((current) => ({ ...current, [note.id]: { ...current[note.id], content: event.target.value } }))} /></label>
                 <div className="care-actions">
                   {changed && <button className="outline" disabled={busy} onClick={() => saveNote(note)}>Save changes</button>}
-                  <button className="outline" disabled={busy} onClick={() => setVisibility(note)}>
-                    {note.patient_visible ? <EyeOff size={15} /> : <Eye size={15} />}
-                    {note.patient_visible ? "Withdraw patient access" : "Share with patient"}
-                  </button>
                 </div>
               </article>
             );
@@ -614,7 +562,7 @@ export function DoctorClinicalNotes({ token, activePatient }) {
             <label>Clinical content<textarea value={content} onChange={(event) => setContent(event.target.value)} required maxLength={10000} rows={7} placeholder="Enter clinician-authored findings and observations." /></label>
             <button className="primary" disabled={busy}><Plus size={16} /> Save private note</button>
           </form>
-          <StateMessage>Clinical notes are not generated by AI. Patient visibility remains off until a clinician explicitly shares a note.</StateMessage>
+          <StateMessage>Clinical notes are not generated by AI. Patient access is not enabled; notes remain private to the Doctor workspace.</StateMessage>
         </section>
       </div>
     </>
