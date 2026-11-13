@@ -174,10 +174,10 @@ document.getElementById("login-form").addEventListener("submit", async (event) =
   finally { button.disabled = false; }
 });
 document.getElementById("patient-form").addEventListener("submit", async (event) => {
-  event.preventDefault(); const data = new FormData(event.currentTarget);
+  event.preventDefault(); const form = event.currentTarget; const data = new FormData(form);
   try {
     await request("/v1/dental/assistant/patients", {method:"POST",body:JSON.stringify({name:String(data.get("name")).trim(),phone:String(data.get("phone")).trim()})});
-    event.currentTarget.reset(); showMessage(workspaceMessage,"Patient contact saved.","success"); await loadWorkspace();
+    form.reset(); showMessage(workspaceMessage,"Patient contact saved.","success"); await loadWorkspace();
   } catch (error) { showMessage(workspaceMessage,error.message,"error"); }
 });
 document.getElementById("appointment-list").addEventListener("click", async (event) => {
