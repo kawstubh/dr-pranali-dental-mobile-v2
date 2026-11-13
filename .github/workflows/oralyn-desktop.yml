@@ -27,8 +27,8 @@ jobs:
       run:
         working-directory: desktop
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -52,7 +52,9 @@ jobs:
         run: node scripts/write-build-manifest.cjs --prepare-only
       - name: Install headless Chrome
         id: setup_chrome
-        uses: browser-actions/setup-chrome@v1
+        uses: browser-actions/setup-chrome@v2.2.0
+        with:
+          chrome-version: latest
       - name: Start production preview
         run: |
           npm run preview -- --host 127.0.0.1 --port 4176 > /tmp/oralyn-desktop-preview.log 2>&1 &
@@ -79,7 +81,7 @@ jobs:
           echo "ORALYN_MOBILE_BROWSER_E2E_VERIFIED=true" >> "$GITHUB_ENV"
           echo "ORALYN_SERVICE_CATALOG_UI_VERIFIED=true" >> "$GITHUB_ENV"
       - name: Upload real desktop screenshot evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: oralyn-desktop-actual-screens
           path: desktop/evidence/actual-desktop/
@@ -95,7 +97,7 @@ jobs:
           test -x "$CHROME_BIN" || { echo "::error::Configured Chrome path is not executable: $CHROME_BIN"; exit 1; }
           node scripts/capture-synthetic-doctor.cjs
       - name: Upload synthetic Doctor UI evidence (not staging acceptance)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: oralyn-doctor-synthetic-ui
           path: desktop/evidence/synthetic-doctor/
@@ -110,7 +112,7 @@ jobs:
           test -x "$CHROME_BIN" || { echo "::error::Configured Chrome path is not executable: $CHROME_BIN"; exit 1; }
           node scripts/capture-synthetic-assistant.cjs
       - name: Upload synthetic Assistant UI evidence (not staging acceptance)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: oralyn-assistant-synthetic-ui
           path: desktop/evidence/synthetic-assistant/
@@ -119,7 +121,7 @@ jobs:
       - name: Write immutable build provenance and explicit release gates
         run: node scripts/write-build-manifest.cjs
       - name: Upload staging-targeted portal bundle and checksum manifest
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: oralyn-portal-static-staging-build
           path: desktop/dist/
