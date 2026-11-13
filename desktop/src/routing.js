@@ -1,7 +1,8 @@
 const DEFAULT_PAGES = Object.freeze({
   doctor: "dashboard",
-  patient: "home",
 });
+
+const PUBLIC_PATIENT_PAGES = new Set(["home", "booking"]);
 
 const ALLOWED_PAGES = Object.freeze({
   doctor: new Set([
@@ -18,9 +19,6 @@ const ALLOWED_PAGES = Object.freeze({
     "workspaces",
     "settings",
   ]),
-  // The patient experience is public and account-free. Private records and
-  // account pages are deliberately not routable in the patient browser surface.
-  patient: new Set(["home", "booking"]),
 });
 
 export function resolvePortalRoute(pathname = "/") {
@@ -32,21 +30,33 @@ export function resolvePortalRoute(pathname = "/") {
   if (requestedRole && requestedRole !== "doctor" && requestedRole !== "patient") {
     return { role: "doctor", page: DEFAULT_PAGES.doctor };
   }
-  const role = requestedRole === "patient" ? "patient" : "doctor";
-  const candidate = segments[1] || DEFAULT_PAGES[role];
-  const page = ALLOWED_PAGES[role].has(candidate)
+  if (requestedRole === "patient") {
+    const candidate = segments[1] || "home";
+    const page = PUBLIC_PATIENT_PAGES.has(candidate) ? candidate : "home";
+    return {
+      role: "doctor",
+      page: DEFAULT_PAGES.doctor,
+      redirectTo: `/patient/${page}/`,
+    };
+  }
+  const candidate = segments[1] || DEFAULT_PAGES.doctor;
+  const page = ALLOWED_PAGES.doctor.has(candidate)
     ? candidate
-    : DEFAULT_PAGES[role];
-  return { role, page };
+    : DEFAULT_PAGES.doctor;
+  return { role: "doctor", page };
 }
 
 export function portalPath(role, page) {
-  const normalizedRole = role === "patient" ? "patient" : "doctor";
-  const candidate = String(page || DEFAULT_PAGES[normalizedRole]);
-  const safePage = ALLOWED_PAGES[normalizedRole].has(candidate)
+  if (role === "patient") {
+    const candidate = String(page || "home");
+    const safePage = PUBLIC_PATIENT_PAGES.has(candidate) ? candidate : "home";
+    return `/patient/${safePage}/`;
+  }
+  const candidate = String(page || DEFAULT_PAGES.doctor);
+  const safePage = ALLOWED_PAGES.doctor.has(candidate)
     ? candidate
-    : DEFAULT_PAGES[normalizedRole];
-  return `/${normalizedRole}/${safePage}`;
+    : DEFAULT_PAGES.doctor;
+  return `/doctor/${safePage}`;
 }
 
 export function createPortalNavigator(windowObject, onRouteChange) {
@@ -61,13 +71,24 @@ export function createPortalNavigator(windowObject, onRouteChange) {
   }
 
   const handlePopState = () => {
-    onRouteChange(resolvePortalRoute(windowObject.location.pathname));
+    const route = resolvePortalRoute(windowObject.location.pathname);
+    if (route.redirectTo) {
+      if (windowObject.location.pathname !== route.redirectTo) {
+        windowObject.location.assign?.(route.redirectTo);
+      }
+      return;
+    }
+    onRouteChange(route);
   };
   windowObject.addEventListener("popstate", handlePopState);
 
   return {
     navigate(role, page) {
       const path = portalPath(role, page);
+      if (role === "patient") {
+        windowObject.location.assign?.(path);
+        return;
+      }
       if (windowObject.location.pathname !== path) {
         windowObject.history.pushState({ oralynPortal: true }, "", path);
       }
