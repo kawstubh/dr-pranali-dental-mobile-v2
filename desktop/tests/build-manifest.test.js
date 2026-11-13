@@ -36,7 +36,8 @@ test("staging build manifest records verified account-free booking gates without
         ORALYN_PORTAL_ORIGIN: "https://oralyn-web-portal-spa.onrender.com",
         ORALYN_BACKEND_STACK_VERIFIED: "true",
         ORALYN_CORS_VERIFIED: "true",
-        ORALYN_DATABASE_IDENTITY_VERIFIED: "true",
+        ORALYN_DATABASE_IDENTITY_VERIFIED: "false",
+        ORALYN_GUEST_BOOKING_IDEMPOTENCY_VERIFIED: "false",
         ORALYN_SECURITY_HEADERS_VERIFIED: "true",
         ORALYN_DOCTOR_AUTH_E2E_VERIFIED: "true",
         ORALYN_GUEST_BOOKING_E2E_VERIFIED: "true",
@@ -60,7 +61,10 @@ test("staging build manifest records verified account-free booking gates without
     assert.equal(manifest.portal_origin, "https://oralyn-web-portal-spa.onrender.com");
     assert.equal(manifest.checks.backend_stack_verified, true);
     assert.equal(manifest.checks.cors_verified_for_portal_origin, true);
-    assert.equal(manifest.checks.database_identity_verified, true);
+    assert.equal(manifest.checks.database_identity_verified, false);
+    assert.ok(manifest.blockers.includes("database_identity_verified"));
+    assert.equal(manifest.checks.patient_guest_booking_idempotency_verified, false);
+    assert.ok(manifest.blockers.includes("patient_guest_booking_idempotency_verified"));
     assert.equal(manifest.checks.https_security_headers_verified, true);
     assert.equal(manifest.checks.doctor_auth_e2e_verified, true);
     assert.equal(manifest.checks.patient_guest_booking_e2e_verified, true);
@@ -92,6 +96,19 @@ test("staging build manifest records verified account-free booking gates without
   } finally {
     fs.rmSync(outputDir, { recursive: true, force: true });
   }
+});
+
+test("live staging verification writes valid GitHub environment records only for checks it performs", () => {
+  const verifierSource = fs.readFileSync(
+    path.join(desktopRoot, "scripts", "verify-staging-api.cjs"),
+    "utf8",
+  );
+  assert.ok(verifierSource.includes('.join("\\n") + "\\n"'));
+  assert.ok(verifierSource.includes("ORALYN_BACKEND_STACK_VERIFIED=true"));
+  assert.ok(verifierSource.includes("ORALYN_CORS_VERIFIED=true"));
+  assert.ok(verifierSource.includes("ORALYN_SECURITY_HEADERS_VERIFIED=true"));
+  assert.ok(!verifierSource.includes("ORALYN_DATABASE_IDENTITY_VERIFIED=true"));
+  assert.ok(!verifierSource.includes("ORALYN_GUEST_BOOKING_IDEMPOTENCY_VERIFIED=true"));
 });
 
 test("staging manifests reject insecure or non-canonical API origins", () => {
