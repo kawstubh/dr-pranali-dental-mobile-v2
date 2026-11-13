@@ -159,7 +159,7 @@ const loadWorkspace = async () => {
       }).join("")
     : '<div class="empty">No issued invoices to collect.</div>';
 };
-const refreshWorkspace = async () => { try { await loadWorkspace(); } catch (error) { showMessage(workspaceMessage,error.message,"error"); } };
+const refreshWorkspace = async () => { clearMessage(workspaceMessage); try { await loadWorkspace(); } catch (error) { showMessage(workspaceMessage,error.message,"error"); } };
 document.getElementById("login-form").addEventListener("submit", async (event) => {
   event.preventDefault(); clearMessage(loginMessage);
   const button = document.getElementById("login-button");
