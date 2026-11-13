@@ -15,7 +15,6 @@ const assistantWorkflowSource = fs.readFileSync(path.join(root, "..", ".github",
 const careSource = fs.readFileSync(path.join(root, "src", "careScreens.jsx"), "utf8");
 const apiSource = fs.readFileSync(path.join(root, "src", "api.js"), "utf8");
 const assistantAppSource = fs.readFileSync(path.join(root, "src", "assistant.jsx"), "utf8");
-const assistantEntrySource = fs.readFileSync(path.join(root, "public", "assistant", "index.html"), "utf8");
 const bookingSource = fs.readFileSync(path.join(root, "public", "patient", "booking", "index.html"), "utf8");
 const viteSource = fs.readFileSync(path.join(root, "vite.config.js"), "utf8");
 const packageManifest = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
@@ -157,13 +156,17 @@ test("public patient booking remains separate from Doctor identity and tenant AP
   assert.doesNotMatch(bookingSource, /Authorization\s*:/i);
 });
 
-test("Clinic Assistant has a separate same-origin staff entrypoint and auth namespace", () => {
-  assert.ok(source.includes('import { AssistantManagement } from "./assistant.jsx";'));
-  assert.ok(assistantEntrySource.includes("/v1/dental/assistant/auth/login"));
+test("Clinic Assistant has a distinct SPA route, identity and memory-only session namespace", () => {
+  assert.ok(source.includes('import AssistantApp, { AssistantManagement } from "./assistant.jsx";'));
+  assert.ok(source.includes('const isAssistantRoute = /^\\/assistant(?:\\/|$)/.test(currentPath);'));
+  assert.ok(source.includes("{isAssistantRoute ? ("));
+  assert.ok(source.includes("<AssistantApp />"));
   assert.ok(assistantAppSource.includes("/v1/dental/assistant/auth/login"));
   assert.ok(!assistantAppSource.includes("sessionStorage"));
   assert.ok(!assistantAppSource.includes("localStorage"));
   assert.ok(assistantAppSource.includes('role !== "assistant"'));
+  assert.equal(fs.existsSync(path.join(root, "public", "assistant", "index.html")), false);
+  assert.ok(!viteSource.includes("assistantAdminDirectoryPlugin"));
 });
 
 test("Clinic Assistant UI calls only its dedicated reception and assistant-auth API namespace", () => {
