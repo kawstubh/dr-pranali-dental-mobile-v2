@@ -209,8 +209,8 @@ async function main() {
   await capture("assistant-workspace-1440x1000.png", 1440, 1000);
   await capture("assistant-workspace-768x1024.png", 768, 1024);
   await capture("assistant-workspace-390x844.png", 390, 844, true);
-  const mobileLayout = await evaluate("({width:window.innerWidth,scrollWidth:document.documentElement.scrollWidth,inputsLabeled:[...document.querySelectorAll('input')].every((input) => input.labels && input.labels.length > 0)})");
-  if (mobileLayout.scrollWidth > mobileLayout.width + 1 || !mobileLayout.inputsLabeled) throw new Error("Assistant mobile layout or form labels failed: " + JSON.stringify(mobileLayout));
+  const mobileLayout = await evaluate("({viewportWidth:document.documentElement.clientWidth,innerWidth:window.innerWidth,visualViewportWidth:window.visualViewport?.width,scrollWidth:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth),inputsLabeled:[...document.querySelectorAll('input')].every((input) => input.labels && input.labels.length > 0)})");
+  if (mobileLayout.scrollWidth > mobileLayout.viewportWidth + 1 || !mobileLayout.inputsLabeled) throw new Error("Assistant mobile layout or form labels failed: " + JSON.stringify(mobileLayout));
   await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
 
   const intakeValidation = await evaluate(`(() => {
