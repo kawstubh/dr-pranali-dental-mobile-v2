@@ -123,8 +123,8 @@ test("all capture evidence records the exact PR head commit instead of the synth
   ];
   for (const name of scripts) {
     const source = readFileSync(join(process.cwd(), "scripts", name), "utf8");
-    assert.match(source, /process\\.env\\.ORALYN_COMMIT_SHA\\s*\\|\\|\\s*process\\.env\\.GITHUB_SHA/);
+    assert.ok(source.includes("process.env.ORALYN_COMMIT_SHA || process.env.GITHUB_SHA"));
   }
   const assistantSource = readFileSync(join(process.cwd(), "scripts", "capture-synthetic-assistant.cjs"), "utf8");
-  assert.match(assistantSource, /"commit=" \\+ commit/);
+  assert.ok(assistantSource.includes('"commit=" + commit'));
 });
