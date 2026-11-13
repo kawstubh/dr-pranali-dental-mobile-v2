@@ -953,6 +953,8 @@ function Panel({ title, sub, children, action }) {
   );
 }
 function AccountSettings({ user, activeWorkspace, onSignOut }) {
+  const accountRole = String(user?.role || "").toLowerCase();
+  const canManageAssistants = accountRole === "owner" || accountRole === "admin";
   return (
     <>
       <Title eyebrow="ACCOUNT & SECURITY" title="Settings" desc="Review the signed-in account and active clinic context." />
@@ -970,8 +972,14 @@ function AccountSettings({ user, activeWorkspace, onSignOut }) {
             <div><small>Organisation</small><b>{activeWorkspace?.organisation_name || "Not returned"}</b></div>
           </div>
         </Panel>
+        {canManageAssistants && (
+          <Panel title="Clinic Assistant accounts" sub="Manage separate reception-only accounts for this clinic.">
+            <p className="care-hint">Assistants can manage intake, appointments and approved billing tasks. Clinical notes, treatment plans, prescriptions and clinical intelligence remain Doctor-only.</p>
+            <button className="outline" onClick={() => window.location.assign("/assistant-admin/index.html")}>Manage Clinic Assistant accounts</button>
+          </Panel>
+        )}
         <Panel title="Privacy and access" sub="Oralyn keeps clinical records behind role and clinic permissions.">
-          <p className="care-hint">Patient-facing AI diagnosis and self-diagnosis are not available. Clinical notes remain private until a doctor explicitly shares them. Documents use short-lived private download links.</p>
+          <p className="care-hint">Patient-facing AI diagnosis and self-diagnosis are not available. Clinical notes remain private. Private document uploads, downloads, review and patient sharing are disabled until secure private storage and fail-closed malware scanning are configured and verified.</p>
           <button className="outline" onClick={onSignOut}>Sign out securely</button>
         </Panel>
       </div>
@@ -1005,7 +1013,6 @@ function Doctor({
   onSignOut,
 }) {
   const [selectedPatientId, setSelectedPatientId] = useState("");
-  const [inviteState, setInviteState] = useState({ patientId: "", code: "", busy: false });
   const [appointmentEdits, setAppointmentEdits] = useState({});
   const [appointmentBusyId, setAppointmentBusyId] = useState("");
   const [appointmentError, setAppointmentError] = useState("");
@@ -1018,28 +1025,6 @@ function Doctor({
   useEffect(() => {
     setAppointmentEdits({});
   }, [appointments]);
-  const createPatientInvite = async (patientId) => {
-    setInviteState({ patientId, code: "", busy: true });
-    try {
-      const response = await dentalApi.createPatientInvite(token, patientId);
-      const code = response?.result?.invite_code || response?.invite_code || "";
-      if (!code) throw new Error("The clinic service did not return an invite code.");
-      setInviteState({ patientId, code, busy: false });
-      ping("One-time patient invite created. Share it only with the intended patient.");
-    } catch (error) {
-      setInviteState({ patientId: "", code: "", busy: false });
-      ping(error?.message || "Patient invite could not be created.");
-    }
-  };
-  const copyPatientInvite = async (code) => {
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error("Clipboard access is unavailable.");
-      await navigator.clipboard.writeText(code);
-      ping("Patient invite code copied.");
-    } catch {
-      ping("Select the displayed invite code and copy it manually.");
-    }
-  };
   const saveAppointment = async (appointment) => {
     const draft = appointmentEdits[appointment.id] || {};
     const startValue = draft.starts_at ?? localDateTimeValue(appointment.starts_at);
@@ -1423,18 +1408,7 @@ function Doctor({
                         <button className="link" onClick={() => { setSelectedPatientId(String(p[2])); P("clinical"); }}>
                           Open ›
                         </button>
-                        <button className="link" disabled={inviteState.busy} onClick={() => createPatientInvite(String(p[2]))}>
-                          {inviteState.busy && inviteState.patientId === String(p[2]) ? "Creating…" : "Create invite"}
-                        </button>
                       </div>
-                      {inviteState.patientId === String(p[2]) && inviteState.code && (
-                        <div className="invite-code-card">
-                          <small>One-time clinic invite · expires in 24 hours</small>
-                          <code>{inviteState.code}</code>
-                          <button className="outline" onClick={() => copyPatientInvite(inviteState.code)}>Copy invite code</button>
-                          <small>Share this code only with the intended patient. It links their signed-in account to this clinic record.</small>
-                        </div>
-                      )}
                     </td>
                   </tr>
                 ))}
