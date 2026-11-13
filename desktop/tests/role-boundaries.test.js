@@ -12,6 +12,7 @@ const patientSource = patientStart >= 0 ? source.slice(patientStart) : "";
 const careSource = fs.readFileSync(path.join(root, "src", "careScreens.jsx"), "utf8");
 const apiSource = fs.readFileSync(path.join(root, "src", "api.js"), "utf8");
 const bookingSource = fs.readFileSync(path.join(root, "public", "patient", "booking", "index.html"), "utf8");
+const assistantSource = fs.readFileSync(path.join(root, "public", "assistant", "index.html"), "utf8");
 
 test("global patient search is rendered only in the Doctor workspace", () => {
   assert.match(source, /\{role === "doctor" && \(\s*<div className="search">/);
@@ -80,7 +81,19 @@ test("patient private records are not rendered in the public account-free experi
   assert.match(source, /\["booking", "Book appointment", CalendarDays\]/);
 });
 
-test("Doctor clinical records remain scoped to Doctor-authenticated APIs", () => {
+
+test("Clinic Assistant has a separate least-privilege workspace", () => {
+  assert.match(assistantSource, /Clinic Assistant sign in/);
+  assert.match(assistantSource, /assistant\/auth\/login/);
+  assert.match(assistantSource, /assistant\/auth\/logout/);
+  assert.match(assistantSource, /assistant\/patients/);
+  assert.match(assistantSource, /assistant\/appointments/);
+  assert.match(assistantSource, /assistant\/billing\/invoices/);
+  assert.match(assistantSource, /sessionStorage/);
+  assert.doesNotMatch(assistantSource, /\/v1\/dental\/(?:intelligence|doctor|patients|appointments)(?:\/|["?])/);
+  assert.doesNotMatch(assistantSource, /AI diagnosis|prescribe|odontogram|clinical notes API/i);
+});
+\ntest("Doctor clinical records remain scoped to Doctor-authenticated APIs", () => {
   assert.match(apiSource, /doctorTreatmentPlans:/);
   assert.match(apiSource, /doctorInvoices:/);
   assert.match(apiSource, /createDocumentUploadIntent/);
