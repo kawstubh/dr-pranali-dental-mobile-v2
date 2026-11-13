@@ -41,6 +41,7 @@ test("synthetic Assistant capture covers reception, appointment and billing with
 
   assert.doesNotThrow(() => new Script(source, { filename: file }));
   assert.match(source, /assistant\/auth\/login/);
+  assert.match(source, /ORALYN_API_BASE = 'https:\/\/oralyn-staging-api-synthetic\.onrender\.com'/);
   assert.match(source, /assistant\/patients/);
   assert.match(source, /assistant\/appointments/);
   assert.match(source, /assistant\/billing\/invoices/);
