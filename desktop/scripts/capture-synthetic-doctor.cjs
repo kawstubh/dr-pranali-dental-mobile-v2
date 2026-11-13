@@ -109,6 +109,11 @@ async function navigate(route, expectedText) {
   await waitFor(() => evaluate("document.body && document.body.innerText.includes(" + JSON.stringify(expectedText) + ")"));
 }
 
+async function submitDoctorLogin(email = "doctor.synthetic@example.test", password = "synthetic-doctor-password") {
+  const submitted = await evaluate("(() => { const form = document.querySelector('.authcard form'); const emailInput = form?.querySelector('input[type=email]'); const passwordInput = form?.querySelector('input[type=password]'); if (!form || !emailInput || !passwordInput) return false; const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; const set = (input, value) => { setter.call(input, value); input.dispatchEvent(new Event('input', { bubbles: true })); input.dispatchEvent(new Event('change', { bubbles: true })); }; set(emailInput, " + JSON.stringify(email) + "); set(passwordInput, " + JSON.stringify(password) + "); form.requestSubmit(); return true; })()");
+  if (!submitted) throw new Error("Doctor sign-in form was not available to the synthetic browser fixture.");
+}
+
 const fixtureSource = [
   "(() => {",
   "  window.ORALYN_API_BASE = 'https://oralyn-staging-api-assistant.onrender.com';",
@@ -128,7 +133,6 @@ const fixtureSource = [
   "  const summaryFor = (clinicId) => ({ patient_count: clinicId === clinicThree ? 0 : 1, appointment_count: clinicId === clinicOne ? 1 : 0, issued_invoice_count: 0, active_treatment_plan_count: 0, pending_appointment_requests: 0, invoiced_total_paise: 0, collected_total_paise: 0, outstanding_balance_paise: 0 });",
   "  const appointmentFor = (patient) => ({ id: 'appointment-' + patient.id, patient_id: patient.id, patient_name: patient.name, starts_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(), treatment_type: 'Dental check-up', status: 'confirmed', note: 'Synthetic CI fixture' });",
   "  if (!localStorage.getItem('oralyn_synthetic_bootstrapped')) {",
-  "    localStorage.setItem('oralyn_doctor_token', tokenOne);",
   "    localStorage.setItem('oralyn_active_workspace_id', clinicOne);",
   "    localStorage.setItem('oralyn_synthetic_bootstrapped', 'true');",
   "  }",
@@ -150,6 +154,13 @@ const fixtureSource = [
   "    const clinicId = activeToken === tokenTwo ? clinicTwo : activeToken === tokenThree ? clinicThree : clinicOne;",
   "    const patient = clinicId === clinicOne ? patientOne : clinicId === clinicTwo ? patientTwo : null;",
   "    if (url.pathname === '/v1/dental/health') return json({ result: { status: 'ok', fixture: true } });",
+    "    if (url.pathname === '/v1/dental/auth/password/login' && method === 'POST') {",
+    "      let body = {}; try { body = JSON.parse(init.body || '{}'); } catch {}",
+    "      if (!['doctor.synthetic@example.test', 'expired.synthetic@example.test'].includes(body.email)) return json({ detail: { message: 'Synthetic doctor login denied' } }, 401);",
+    "      const accessToken = body.email === 'expired.synthetic@example.test' ? 'expired-synthetic-token' : tokenOne;",
+    "      recordWrite('doctor-login');",
+    "      return json({ access_token: accessToken, user: userFor(clinicOne) });",
+    "    }",
   "    if (url.pathname === '/v1/dental/auth/me') {",
   "      if (!validDoctor) return json({ detail: { message: 'Synthetic doctor session expired', code: 'INVALID_DOCTOR_SESSION' } }, 401);",
   "      return json({ user: userFor(clinicId) });",
@@ -217,7 +228,8 @@ async function main() {
   await send("Log.enable");
   await send("Page.addScriptToEvaluateOnNewDocument", { source: fixtureSource });
   await send("Page.navigate", { url: baseUrl + "/doctor/dashboard" });
-  await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Dr Pranali Dental Clinic")'));
+  await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Sign in with your clinic doctor account")'));
+  await submitDoctorLogin();
   await waitFor(() => evaluate('document.body.innerText.includes("Dr Synthetic")'));
   await waitFor(() => evaluate('document.body.innerText.includes("Ananya Synthetic")'));
   await waitFor(() => evaluate("(async () => { const registration = await navigator.serviceWorker?.getRegistration('/'); return Boolean(registration?.active && registration.active.state === 'activated'); })()"), 30000);
@@ -283,9 +295,12 @@ async function main() {
   await waitFor(() => evaluate('document.body.innerText.includes("Ananya Synthetic")'));
 
   await send("Page.reload", { ignoreCache: true });
-  await waitFor(() => evaluate('document.body.innerText.includes("Dr Pranali Dental Clinic") && document.body.innerText.includes("Ananya Synthetic")'));
-  const restore = await evaluate('localStorage.getItem("oralyn_doctor_token") === "synthetic-doctor-token"');
-  if (!restore) throw new Error("Doctor session was not restored from localStorage after reload.");
+  await waitFor(() => evaluate('document.body.innerText.includes("Sign in with your clinic doctor account")'));
+  const noPersistentTokenAfterReload = await evaluate('!localStorage.getItem("oralyn_doctor_token") && !sessionStorage.getItem("oralyn_doctor_token")');
+  if (!noPersistentTokenAfterReload) throw new Error("Doctor bearer token was persisted across a page reload.");
+  await capture("doctor-login-after-refresh-1440x1000.png");
+  await submitDoctorLogin();
+  await waitFor(() => evaluate('document.body.innerText.includes("Dr Synthetic") && document.body.innerText.includes("Ananya Synthetic")'));
 
   await send("Page.navigate", { url: baseUrl + "/doctor/settings" });
   await waitFor(() => evaluate('document.body.innerText.includes("Clinic assistants") && document.body.innerText.includes("Create Clinic Assistant") && document.body.innerText.includes("Sign out securely")'));
@@ -297,15 +312,14 @@ async function main() {
   const signout = await evaluate("(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').trim() === 'Sign out securely'); if (!button) return false; button.click(); return true; })()");
   if (!signout) throw new Error("Doctor sign-out action was not found.");
   await waitFor(() => evaluate('document.body.innerText.includes("Sign in with your clinic doctor account")'));
-  const logoutCleared = await evaluate('!localStorage.getItem("oralyn_doctor_token")');
-  if (!logoutCleared) throw new Error("Doctor logout did not clear the local session token.");
+  const logoutCleared = await evaluate('!localStorage.getItem("oralyn_doctor_token") && !sessionStorage.getItem("oralyn_doctor_token")');
+  if (!logoutCleared) throw new Error("Doctor logout left a persistent token in browser storage.");
   await capture("doctor-logout-1440x1000.png");
 
-  await evaluate('localStorage.setItem("oralyn_doctor_token", "expired-synthetic-token")');
-  await send("Page.navigate", { url: baseUrl + "/doctor/dashboard" });
-  await waitFor(() => evaluate('document.body.innerText.includes("Your session expired. Please sign in again.")'));
-  const expiryCleared = await evaluate('!localStorage.getItem("oralyn_doctor_token")');
-  if (!expiryCleared) throw new Error("Expired Doctor session was not cleared.");
+  await submitDoctorLogin("expired.synthetic@example.test", "expired-synthetic-password");
+  await waitFor(() => evaluate('document.body.innerText.includes("Sign in with your clinic doctor account") && document.body.innerText.includes("Your session expired. Please sign in again.")'));
+  const expiryCleared = await evaluate('!localStorage.getItem("oralyn_doctor_token") && !sessionStorage.getItem("oralyn_doctor_token")');
+  if (!expiryCleared) throw new Error("Expired Doctor session was not cleared from memory and browser storage.");
   await capture("doctor-session-expired-1440x1000.png");
 
   const evidence = await evaluate("({writes:window.__ORALYN_SYNTHETIC_WRITES || [],unhandled:window.__ORALYN_SYNTHETIC_UNHANDLED || []})");
@@ -325,8 +339,9 @@ async function main() {
     "authenticated_ui_fixture=true",
     "staging_authenticated_e2e=false",
     "doctor_password_login_verified=false",
-    "doctor_session_restore=passed",
-    "doctor_session_expiry=passed",
+    "doctor_token_storage=memory_only",
+    "doctor_session_reload=requires_login",
+    "doctor_session_expiry=passed_fixture",
     "doctor_logout=passed",
     "doctor_clinic_switching=passed_fixture",
     "doctor_empty_workspace=passed_fixture",
