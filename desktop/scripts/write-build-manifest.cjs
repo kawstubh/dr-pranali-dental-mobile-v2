@@ -132,6 +132,13 @@ const manifest = {
   built_at: new Date().toISOString(),
   api_origin: apiOrigin,
   portal_origin: portalOrigin,
+  staging_contract: {
+    verified_for_this_commit:
+      flag(process.env.ORALYN_STAGING_API_COMMIT_VERIFIED) &&
+      flag(process.env.ORALYN_STAGING_PORTAL_COMMIT_VERIFIED),
+    inherited_from_base: flag(process.env.ORALYN_STAGING_CONTRACT_INHERITED_FROM_BASE),
+    inherited_base_sha: process.env.ORALYN_STAGING_CONTRACT_INHERITED_BASE_SHA || null,
+  },
   checks,
   blockers,
   release_status: blockers.length ? "BLOCKED" : "AUTHENTICATED_ACCEPTANCE_REQUIRED",
