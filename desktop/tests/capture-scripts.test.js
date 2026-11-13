@@ -59,26 +59,26 @@ test("synthetic Assistant capture exercises the SPA route, memory-only login, re
   const source = readFileSync(file, "utf8");
 
   assert.doesNotThrow(() => new Script(source, { filename: file }));
-  assert.match(source, /baseUrl \\+ "\\/assistant\\/"/);
-  assert.match(source, /v1\\/dental\\/assistant\\/auth\\/login/);
-  assert.match(source, /assistant-login/);
-  assert.match(source, /appointment-reschedule/);
-  assert.match(source, /assistant_appointment_reschedule=passed_fixture/);
-  assert.match(source, /receipt-recorded/);
-  assert.match(source, /assistant_receipt_recording=passed_fixture/);
-  assert.match(source, /UNHANDLED_SYNTHETIC_PATH/);
-  assert.match(source, /staging_assistant_login_verified=false/);
-  assert.doesNotMatch(source, /treatment_type/);
-  assert.match(source, /doctor_clinical_ai_visible=false/);
-  assert.doesNotMatch(source, /sessionStorage\\.setItem/);
+  assert.ok(source.includes('baseUrl + "/assistant/"'));
+  assert.ok(source.includes("v1/dental/assistant/auth/login"));
+  assert.ok(source.includes("assistant-login"));
+  assert.ok(source.includes("appointment-reschedule"));
+  assert.ok(source.includes("assistant_appointment_reschedule=passed_fixture"));
+  assert.ok(source.includes("receipt-recorded"));
+  assert.ok(source.includes("assistant_receipt_recording=passed_fixture"));
+  assert.ok(source.includes("UNHANDLED_SYNTHETIC_PATH"));
+  assert.ok(source.includes("staging_assistant_login_verified=false"));
+  assert.ok(!source.includes("treatment_type"));
+  assert.ok(source.includes("doctor_clinical_ai_visible=false"));
+  assert.ok(!source.includes("sessionStorage.setItem"));
 });
 
 test("Assistant intake clears contact fields after the API-backed save resolves", () => {
   const file = join(process.cwd(), "src", "assistant.jsx");
   const source = readFileSync(file, "utf8");
-  assert.match(source, /setPatientForm\\(\\{ name: "", phone: "" \\}\\)/);
-  assert.match(source, /Patient contact details added\\./);
-  assert.match(source, /assistantRequest\\("\\/v1\\/dental\\/assistant\\/patients"/);
+  assert.ok(source.includes('setPatientForm({ name: "", phone: "" })'));
+  assert.ok(source.includes("Patient contact details added."));
+  assert.ok(source.includes('assistantRequest("/v1/dental/assistant/patients"'));
 });
 
 test("live staging contract probe writes only one idempotent synthetic booking after database identity verification", () => {
