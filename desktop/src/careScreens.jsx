@@ -5,7 +5,6 @@ import {
   HeartPulse,
   Upload,
   Download,
-  Share2,
   ShieldCheck,
   RefreshCw,
   Plus,
@@ -13,8 +12,6 @@ import {
   AlertCircle,
   MessageCircle,
   Send,
-  Eye,
-  EyeOff,
 } from "lucide-react";
 import { dentalApi } from "./api.js";
 import { normaliseList } from "./data.js";
@@ -187,7 +184,7 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
                   <div className="care-record-top"><div><b>{plan.title}</b><small>{plan.status.replaceAll("_", " ")} · Version {plan.version}</small></div><span className="care-pill private">{plan.patient_visible ? "Legacy share flag disabled" : "Clinic only"}</span></div>
                   {plan.summary && <p>{plan.summary}</p>}
                   <ul>{(plan.items || []).map((item) => <li key={item.id}>{item.description}{item.tooth_fdi ? ` · Tooth ${item.tooth_fdi}` : ""}</li>)}</ul>
-                  {plan.patient_visible && <small className="care-hint">Visible in the patient's linked Oralyn portal.</small>}
+                  {plan.patient_visible && <small className="care-hint">No patient access is available; this legacy visibility flag is ignored.</small>}
                 </article>
               )) : <StateMessage>No treatment plans have been created for this patient.</StateMessage>}
             </section>
