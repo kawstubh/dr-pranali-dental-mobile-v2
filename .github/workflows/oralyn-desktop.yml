@@ -33,6 +33,11 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: desktop/package-lock.json
+      - name: Verify root workspace install and audit
+        working-directory: .
+        run: |
+          npm ci --ignore-scripts
+          npm audit --audit-level=low
       - name: Install locked dependencies
         run: npm ci
       - name: Run desktop regression tests
