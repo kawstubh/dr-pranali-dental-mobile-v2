@@ -3469,45 +3469,6 @@ table { max-width: 100%; }
   min-width: 0;
   white-space: normal;
 }
-.invite-code-card {
-  display: grid;
-  gap: 7px;
-  margin-top: 9px;
-  width: 100%;
-  max-width: 280px;
-  min-width: 0;
-  box-sizing: border-box;
-  padding: 11px;
-  border: 1px solid var(--line);
-  border-radius: 11px;
-  background: #f4fbff;
-}
-.invite-code-card small {
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.45;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-.invite-code-card code {
-  display: block;
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  box-sizing: border-box;
-  padding: 8px 10px;
-  border: 1px dashed #8eb6d8;
-  border-radius: 8px;
-  background: #fff;
-  color: var(--navy);
-  font-size: clamp(12px, 1vw, 14px);
-  font-weight: 800;
-  letter-spacing: 1.2px;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  user-select: all;
-}
 .appointment-main {
   display: grid;
   min-width: 0;
