@@ -40,7 +40,7 @@ jobs:
         run: npm audit --audit-level=low
       - name: Build staging-targeted desktop bundle
         run: npm run build
-      - name: Verify live synthetic staging contract (read-only)
+      - name: Verify live synthetic staging contract (idempotent synthetic booking only)
         run: node scripts/verify-staging-contract.cjs
       - name: Prepare immutable service-worker cache identity
         run: node scripts/write-build-manifest.cjs --prepare-only
