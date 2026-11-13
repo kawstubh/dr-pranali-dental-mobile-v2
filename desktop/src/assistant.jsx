@@ -418,7 +418,7 @@ export default function AssistantApp() {
             <div className="assistant-panel-heading"><div><h2>Appointment queue</h2><p>{appointments.length} active appointment{appointments.length === 1 ? "" : "s"} in this clinic. New public requests appear here for reception confirmation.</p></div><CalendarDays size={20} /></div>
             {appointments.length ? <div className="assistant-list">{appointments.map((appointment) => (
               <article className="assistant-appointment" key={appointment.id}>
-                <div className="assistant-appointment-main"><b>{appointment.patient_name || "Patient"}</b><span>{appointment.patient_phone}</span><small>{dateLabel(appointment.starts_at)} · {appointment.treatment_type}</small></div>
+                <div className="assistant-appointment-main"><b>{appointment.patient_name || "Patient"}</b><span>{appointment.patient_phone}</span><small>{dateLabel(appointment.starts_at)} · Appointment</small></div>
                 <div className="assistant-appointment-actions">
                   <span className={"assistant-status status-" + String(appointment.status).replace(/[^a-z_]/g, "")}>{String(appointment.status).replaceAll("_", " ")}</span>
                   {appointment.status !== "confirmed" && !["cancelled", "completed", "no_show"].includes(appointment.status) && <button onClick={() => changeAppointment(appointment, "confirm")} disabled={busy}><CheckCircle2 size={15} /> Confirm</button>}
