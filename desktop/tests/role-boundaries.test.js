@@ -239,6 +239,9 @@ test("Clinic Assistant reschedules only to a future India Standard Time slot", (
   assert.match(assistantAppSource, /type="date"/);
   assert.match(assistantAppSource, /type="time"/);
   assert.match(assistantAppSource, /India Standard Time/);
+  assert.match(assistantAppSource, /if \(!token \|\| busy\) return/);
+  assert.match(assistantAppSource, /if \(!draft \|\| busy\) return/);
+  assert.match(assistantAppSource, /delete updated\[appointment\.id\]/);
 });
 
 test("Clinic Assistant appointment queue shows scheduling details without clinical treatment type", () => {
