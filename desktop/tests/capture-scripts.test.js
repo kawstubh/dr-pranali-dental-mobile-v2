@@ -61,3 +61,27 @@ test("Assistant intake resets the captured form after its asynchronous save", ()
   assert.match(source, /form\.reset\(\); await loadWorkspace\(\); showMessage\(workspaceMessage,"Patient contact saved\."/);
   assert.doesNotMatch(source, /event\.currentTarget\.reset\(\)/);
 });
+
+
+test("live staging contract probe is read-only and verifies the deployed commit identities", () => {
+  const file = join(process.cwd(), "scripts", "verify-staging-contract.cjs");
+  const source = readFileSync(file, "utf8");
+
+  assert.doesNotThrow(() => new Script(source, { filename: file }));
+  assert.match(source, /method: "OPTIONS"/);
+  assert.doesNotMatch(source, /method: "POST"/);
+  assert.match(source, /database_identity_verified/);
+  assert.match(source, /ORALYN_STAGING_API_COMMIT_VERIFIED/);
+  assert.match(source, /ORALYN_STAGING_PORTAL_COMMIT_VERIFIED/);
+});
+
+test("release workflow derives live gates instead of hard-coding them true", () => {
+  const file = join(process.cwd(), "..", ".github", "workflows", "oralyn-desktop.yml");
+  const source = readFileSync(file, "utf8");
+
+  assert.match(source, /verify-staging-contract\.cjs/);
+  assert.doesNotMatch(
+    source,
+    /ORALYN_(?:BACKEND_STACK|CORS|DATABASE_IDENTITY|SECURITY_HEADERS|PATIENT_ACCOUNT_FREE|SERVICE_CATALOG_API)_VERIFIED:\s*["']true["']/,
+  );
+});
