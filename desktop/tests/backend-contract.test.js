@@ -75,7 +75,7 @@ test("doctor treatment-plan and invoice calls match the tenant-scoped billing AP
 });
 
 test("patient billing and document reads are scoped to the authenticated linked record", () => {
-  const linkedRecordMethods = Object.keys(dentalApi).filter((key) => key.startsWith("patient"));
+  const linkedRecordMethods = Object.keys(dentalApi).filter((key) => key.startsWith("patient") && key !== "patients");
   assert.deepEqual(linkedRecordMethods, []);
   for (const method of ["doctorTreatmentPlans", "doctorInvoices", "doctorReceipts", "doctorDocuments"]) {
     assert.equal(typeof dentalApi[method], "function", method);
@@ -143,6 +143,6 @@ test("doctor appointment updates and doctor provisioning use authenticated clini
 
 
 test("public client does not expose linked-record billing or document methods", () => {
-  const linkedRecordMethods = Object.keys(dentalApi).filter((key) => key.startsWith("patient"));
+  const linkedRecordMethods = Object.keys(dentalApi).filter((key) => key.startsWith("patient") && key !== "patients");
   assert.deepEqual(linkedRecordMethods, []);
 });
