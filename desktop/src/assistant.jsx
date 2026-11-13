@@ -86,6 +86,14 @@ function dateLabel(value) {
       }).format(parsed);
 }
 
+function newIdempotencyKey() {
+  if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+  if (!window.crypto?.getRandomValues) throw new Error("Secure payment request keys are unavailable in this browser.");
+  const bytes = new Uint8Array(24);
+  window.crypto.getRandomValues(bytes);
+  return Array.from(bytes, (value) => value.toString(16).padStart(2, "0")).join("");
+}
+
 function ErrorMessage({ children }) {
   return children ? <div className="assistant-alert assistant-alert-error" role="alert">{children}</div> : null;
 }
@@ -113,6 +121,7 @@ export default function AssistantApp() {
   const [patients, setPatients] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [billing, setBilling] = useState([]);
+  const [receiptDrafts, setReceiptDrafts] = useState({});
   const [patientForm, setPatientForm] = useState({ name: "", phone: "" });
   const [loginBusy, setLoginBusy] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -298,6 +307,68 @@ export default function AssistantApp() {
     return Array.isArray(result) ? result : [];
   };
 
+  const startReceiptDraft = (invoice) => {
+    try {
+      setReceiptDrafts((current) => ({
+        ...current,
+        [invoice.id]: { open: true, amount: "", method: "cash", reference: "", idempotencyKey: newIdempotencyKey() },
+      }));
+      setError("");
+    } catch (cause) {
+      setError(cause?.message || "A secure payment request key could not be created.");
+    }
+  };
+
+  const recordPayment = async (event, invoice) => {
+    event.preventDefault();
+    const draft = receiptDrafts[invoice.id];
+    if (!draft || !token) return;
+    const amountPaise = Math.round(Number(draft.amount) * 100);
+    if (!Number.isSafeInteger(amountPaise) || amountPaise <= 0) {
+      setError("Enter a valid amount already received.");
+      return;
+    }
+    if (amountPaise > Number(invoice.balance_paise || 0)) {
+      setError("The amount cannot exceed the outstanding invoice balance.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const receipt = await assistantRequest(
+        "/v1/dental/assistant/billing/invoices/" + encodeURIComponent(invoice.id) + "/receipts",
+        {
+          token,
+          method: "POST",
+          body: {
+            amount_paise: amountPaise,
+            method: draft.method,
+            reference: draft.reference.trim(),
+            idempotency_key: draft.idempotencyKey,
+          },
+        }
+      );
+      const nextPaid = Number(invoice.paid_paise || 0) + amountPaise;
+      const nextBalance = Math.max(0, Number(invoice.total_paise || 0) - nextPaid);
+      setBilling((current) => current.map((item) => item.id === invoice.id
+        ? { ...item, paid_paise: nextPaid, balance_paise: nextBalance, status: nextBalance === 0 ? "paid" : "partially_paid" }
+        : item
+      ));
+      setReceiptDrafts((current) => {
+        const next = { ...current };
+        delete next[invoice.id];
+        return next;
+      });
+      setNotice("Payment recorded. Receipt " + (receipt?.receipt_number || "saved") + ". This does not charge the patient.");
+    } catch (cause) {
+      // Keep the same idempotency key after a network error so a retry cannot
+      // record the same already-received payment twice.
+      setError(cause?.message || "The received payment could not be recorded.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (booting) {
     return <main className="assistant-shell"><div className="assistant-loading"><img src="/oralyn-logo-approved.webp" alt="Oralyn" /><p>Verifying your Clinic Assistant session…</p></div></main>;
   }
@@ -362,7 +433,7 @@ export default function AssistantApp() {
           <section className="assistant-grid">
             <div className="assistant-panel">
               <div className="assistant-panel-heading"><div><h2>Patient contacts</h2><p>{patients.length} contact{patients.length === 1 ? "" : "s"} in this clinic</p></div><Users size={20} /></div>
-              {patients.length ? <div className="assistant-list">{patients.map((patient) => <article className="assistant-patient" key={patient.id}><span className="assistant-avatar"><CircleUserRound size={19} /></span><div><b>{patient.name}</b><small>{patient.phone}</small></div></article>)}</div> : <div className="assistant-empty"><Users size={24} /><b>No patient contacts</b><span>Add a contact to start reception intake.</span></div>}
+              {patients.length ? <div className="assistant-list">{patients.map((patient) => <article className="assistant-patient" key={patient.phone || patient.name}><span className="assistant-avatar"><CircleUserRound size={19} /></span><div><b>{patient.name}</b><small>{patient.phone}</small></div></article>)}</div> : <div className="assistant-empty"><Users size={24} /><b>No patient contacts</b><span>Add a contact to start reception intake.</span></div>}
             </div>
             <div className="assistant-panel">
               <div className="assistant-panel-heading"><div><h2>New patient intake</h2><p>Only contact details are collected here.</p></div><Plus size={20} /></div>
@@ -377,13 +448,27 @@ export default function AssistantApp() {
 
         {tab === "billing" && (
           <section className="assistant-panel">
-            <div className="assistant-panel-heading"><div><h2>Billing lookup</h2><p>Issued invoice totals and outstanding balances only. Assistants cannot create, issue, void or alter invoices.</p></div><Wallet size={20} /></div>
-            {Array.isArray(billing) && billing.length ? <div className="assistant-billing-list">{billing.map((invoice) => (
-              <article className="assistant-invoice" key={invoice.id}>
-                <div className="assistant-invoice-head"><div><b>{invoice.invoice_number}</b><small>{invoice.patient_name} · {invoice.status} · Due {invoice.due_date || "not set"}</small></div><strong>{money(invoice.total_paise)}</strong></div>
-                <div className="assistant-invoice-totals"><span>Paid <b>{money(invoice.paid_paise)}</b></span><span>Balance <b>{money(invoice.balance_paise)}</b></span></div>
-              </article>
-            ))}</div> : <div className="assistant-empty"><Wallet size={24} /><b>No issued invoices</b><span>Issued invoice balances for this clinic will appear here.</span></div>}
+            <div className="assistant-panel-heading"><div><h2>Billing administration</h2><p>Review issued invoice balances and record payments already received. This does not charge a patient or create, issue or alter invoices.</p></div><Wallet size={20} /></div>
+            {Array.isArray(billing) && billing.length ? <div className="assistant-billing-list">{billing.map((invoice) => {
+              const draft = receiptDrafts[invoice.id];
+              return (
+                <article className="assistant-invoice" key={invoice.id}>
+                  <div className="assistant-invoice-head"><div><b>{invoice.invoice_number}</b><small>{invoice.patient_name} · {invoice.status} · Due {invoice.due_date || "not set"}</small></div><strong>{money(invoice.total_paise)}</strong></div>
+                  <div className="assistant-invoice-totals"><span>Paid <b>{money(invoice.paid_paise)}</b></span><span>Balance <b>{money(invoice.balance_paise)}</b></span></div>
+                  {Number(invoice.balance_paise || 0) > 0 && ["issued", "partially_paid", "overdue"].includes(invoice.status) && (
+                    draft?.open ? (
+                      <form className="assistant-receipt-form" onSubmit={(event) => recordPayment(event, invoice)}>
+                        <label>Amount received (₹)<input type="number" min="0.01" max={(Number(invoice.balance_paise) / 100).toFixed(2)} step="0.01" required value={draft.amount} onChange={(event) => setReceiptDrafts((current) => ({ ...current, [invoice.id]: { ...draft, amount: event.target.value } }))} /></label>
+                        <label>Payment method<select value={draft.method} onChange={(event) => setReceiptDrafts((current) => ({ ...current, [invoice.id]: { ...draft, method: event.target.value } }))}><option value="cash">Cash</option><option value="upi">UPI</option><option value="bank_transfer">Bank transfer</option><option value="other">Other</option></select></label>
+                        <label>Reference (optional)<input maxLength={128} value={draft.reference} onChange={(event) => setReceiptDrafts((current) => ({ ...current, [invoice.id]: { ...draft, reference: event.target.value } }))} /></label>
+                        <div className="assistant-receipt-actions"><button className="assistant-primary" type="submit" disabled={busy}>{busy ? "Saving…" : "Record received payment"}</button><button className="assistant-secondary" type="button" onClick={() => setReceiptDrafts((current) => { const next = { ...current }; delete next[invoice.id]; return next; })} disabled={busy}>Cancel</button></div>
+                        <small>Only record money the clinic has already received. The secure request key makes retries idempotent.</small>
+                      </form>
+                    ) : <button className="assistant-secondary assistant-record-payment" onClick={() => startReceiptDraft(invoice)} disabled={busy}>Record payment received</button>
+                  )}
+                </article>
+              );
+            })}</div> : <div className="assistant-empty"><Wallet size={24} /><b>No issued invoices</b><span>Issued invoice balances for this clinic will appear here.</span></div>}
           </section>
         )}
         <footer className="assistant-security-note"><ShieldCheck size={17} /><span>Clinical notes, history, odontograms, treatment plans, prescriptions, private documents and Doctor-only intelligence are not available to this role.</span></footer>
@@ -488,7 +573,7 @@ export function AssistantManagement({ token, user }) {
           </article>
         )) : <div className="assistant-empty"><Users size={22} /><b>No Clinic Assistants</b><span>Create a separate reception account when the clinic is ready.</span></div>}
       </div>
-      <div className="assistant-security-note"><ShieldCheck size={17} /><span>Assistant access is limited to contact intake, appointment coordination and read-only issued-invoice summaries. Clinical notes, AI, prescriptions, private documents and owner settings remain Doctor-only.</span></div>
+      <div className="assistant-security-note"><ShieldCheck size={17} /><span>Assistant access is limited to contact intake, appointment coordination and recording payments already received. Clinical notes, AI, prescriptions, private documents and owner settings remain Doctor-only.</span></div>
     </section>
   );
 }
