@@ -289,6 +289,15 @@ async function captureAssistantAdminGate() {
       "Sign in with your clinic doctor account",
       "doctor-login"
     );
+    fontResults.assistantLogin = await navigate(
+      "/assistant/",
+      "Clinic Assistant",
+      "assistant-login"
+    );
+    await send("Page.navigate", { url: baseUrl + "/doctor/dashboard" });
+    await waitFor(() => evaluate(
+      'location.pathname === "/doctor/dashboard" && document.body.innerText.includes("Sign in with your clinic doctor account")'
+    ));
     const switchedToPatient = await evaluate(
       "(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').trim().includes('Continue to patient portal')); if (!button) return false; button.click(); return true; })()"
     );
@@ -311,6 +320,12 @@ async function captureAssistantAdminGate() {
       'location.pathname === "/patient/home/" && document.body.innerText.includes("Your smile, your care.")'
     ));
     fontResults.patientHome = await captureCurrent("Your smile, your care.", "patient-home");
+
+    await send("Page.navigate", { url: baseUrl + "/patient/login" });
+    await waitFor(() => evaluate(
+      'location.pathname === "/patient/home/" && document.body.innerText.includes("Your smile, your care.")'
+    ));
+    fontResults.patientLegacyLoginRedirect = true;
 
     fontResults.patientBooking = await navigate(
       "/patient/booking/",
@@ -337,6 +352,8 @@ async function captureAssistantAdminGate() {
       "pwa_cache_name_present=" + fontResults.doctorLogin.pwa.cachePresent,
       "pwa_api_cache_entries=" + fontResults.doctorLogin.pwa.forbidden.length,
       "synthetic_patient_data=none",
+      "assistant_login_screen_captured=" + Boolean(fontResults.assistantLogin),
+      "patient_login_redirect=" + Boolean(fontResults.patientLegacyLoginRedirect),
       "authenticated_screens=false",
       "mobile_viewport=390x844",
       "assistant_admin_gate=passed",
