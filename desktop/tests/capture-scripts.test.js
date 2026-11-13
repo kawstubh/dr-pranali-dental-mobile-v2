@@ -110,7 +110,7 @@ test("preview server stays alive for responsive and synthetic UI captures in one
   const end = source.indexOf("Record responsive browser acceptance gates", start);
   assert.ok(start >= 0 && end > start);
   const captureStep = source.slice(start, end);
-  assert.match(captureStep, /setsid npm run preview/);
+  assert.match(captureStep, /node_modules\/\.bin\/vite preview/);
   assert.match(captureStep, /trap cleanup_preview EXIT/);
   assert.match(captureStep, /verify-portal-security-headers\.cjs/);
   assert.match(captureStep, /capture-actual-desktop\.cjs/);
