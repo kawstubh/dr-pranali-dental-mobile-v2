@@ -6,9 +6,9 @@ on:
     paths:
       - 'desktop/**'
       - '.github/workflows/oralyn-desktop.yml'
-  # Feature-branch commits are validated by the PR event; avoid duplicate browser runs.
+  # Run the rebased Assistant integration branch directly because its PR targets a feature branch.
   push:
-    branches: [master]
+    branches: [master, feat/oralyn-assistant-ui-rebased-20261113]
     paths:
       - 'desktop/**'
       - '.github/workflows/oralyn-desktop.yml'
