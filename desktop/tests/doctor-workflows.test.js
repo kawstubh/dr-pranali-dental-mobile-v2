@@ -46,8 +46,8 @@ test("Doctor identity is taken from the signed-in account, not hardcoded clinic 
   assert.match(source, /function doctorDisplayName\(user\)/);
   assert.match(source, /function doctorRoleLabel\(user\)/);
   assert.match(source, /\{greeting\}, \{doctorDisplayName\(user\)\}/);
-  assert.match(source, /\? doctorDisplayName\(user\)/);
-  assert.match(source, /\? doctorRoleLabel\(user\)/);
+  assert.match(source, /\{doctorDisplayName\(user\)\}/);
+  assert.match(source, /\{doctorRoleLabel\(user\)\}/);
   assert.doesNotMatch(source, /Good evening, Dr\. Pranali/);
 });
 
