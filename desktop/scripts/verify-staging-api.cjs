@@ -82,10 +82,9 @@ async function main() {
 
   const verified = [
     "ORALYN_BACKEND_STACK_VERIFIED=true",
-    "ORALYN_DATABASE_IDENTITY_VERIFIED=true",
     "ORALYN_CORS_VERIFIED=true",
     "ORALYN_SECURITY_HEADERS_VERIFIED=true",
-  ].join("\\n") + "\\n";
+  ].join("\n") + "\n";
   if (process.env.GITHUB_ENV) fs.appendFileSync(process.env.GITHUB_ENV, verified);
   console.log(JSON.stringify({
     staging_api: apiBase,
