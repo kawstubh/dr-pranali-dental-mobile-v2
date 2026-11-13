@@ -49,7 +49,7 @@ test("Doctor bearer token is memory-only and never persisted in browser storage"
   assert.doesNotMatch(source, /localStorage|sessionStorage|oralyn_doctor_token/);
   assert.match(source, /setToken\(result\.access_token\)/);
   assert.match(source, /setToken\(accessToken\)/);
-  assert.match(source, /Your session stays in this tab/);
+  assert.match(source, /setToken\(""\)/);
 });
 
 test("CI records Doctor token storage hardening only after the regression suite", () => {
