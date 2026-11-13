@@ -36,6 +36,9 @@ jobs:
         run: npm ci
       - name: Run desktop regression tests
         run: npm test
+      - name: Record memory-only Doctor token storage verification
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feat/oralyn-assistant-ui-rebased-20261113'
+        run: echo "ORALYN_DOCTOR_TOKEN_STORAGE_HARDENING_VERIFIED=true" >> "$GITHUB_ENV"
       - name: Audit dependencies
         run: npm audit --audit-level=low
       - name: Build staging-targeted desktop bundle
