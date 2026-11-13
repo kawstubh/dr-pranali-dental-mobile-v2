@@ -99,7 +99,8 @@ test("browser font acceptance attaches a Playfair probe and verifies both local 
   assert.match(captureScript, /Oralyn Display Font Probe/);
   assert.match(captureScript, /\/fonts\/PlusJakartaSans-Variable\.ttf/);
   assert.match(captureScript, /\/fonts\/PlayfairDisplay-Variable\.ttf/);
-  assert.match(captureScript, /document\.fonts\.load\('400 32px "Playfair Display"'/);
+  assert.match(captureScript, /document\.fonts\.load\('600 32px "Playfair Display"'/);
   assert.match(captureScript, /contentType/);
   assert.match(captureScript, /matchingFaces/);
+  assert.match(captureScript, /fontFaceRules/);
 });
