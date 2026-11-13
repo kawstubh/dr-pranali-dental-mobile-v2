@@ -102,7 +102,6 @@ jobs:
           test -x "$CHROME_BIN" || { echo "::error::Configured Chrome path is not executable: $CHROME_BIN"; exit 1; }
           node scripts/capture-synthetic-assistant.cjs
       - name: Upload synthetic Assistant UI evidence (not staging acceptance)
-        if: github.event.pull_request.head.ref == 'feat/oralyn-assistant-ui-20261113' || github.ref_name == 'feat/oralyn-assistant-ui-20261113'
         uses: actions/upload-artifact@v4
         with:
           name: oralyn-assistant-synthetic-ui
