@@ -1,5 +1,6 @@
 name: Oralyn Desktop
 on:
+  workflow_dispatch:
   pull_request:
     branches: [master, feat/oralyn-desktop-app]
     paths:
@@ -19,14 +20,8 @@ jobs:
     env:
       VITE_DENTAL_API_URL: https://oralyn-staging-api-assistant.onrender.com
       ORALYN_PORTAL_ORIGIN: https://oralyn-web-portal-spa.onrender.com
-      ORALYN_BACKEND_STACK_VERIFIED: "true"
-      ORALYN_CORS_VERIFIED: "true"
-      ORALYN_DATABASE_IDENTITY_VERIFIED: "true"
-      ORALYN_SECURITY_HEADERS_VERIFIED: "true"
-      ORALYN_MOBILE_BROWSER_E2E_VERIFIED: "true"
-      ORALYN_SERVICE_CATALOG_UI_VERIFIED: "true"
-      ORALYN_SERVICE_CATALOG_API_VERIFIED: "true"
-      ORALYN_PATIENT_ACCOUNT_FREE_VERIFIED: "true"
+      ORALYN_ENVIRONMENT: staging
+      ORALYN_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     defaults:
       run:
         working-directory: desktop
@@ -45,10 +40,10 @@ jobs:
         run: npm audit --audit-level=low
       - name: Build staging-targeted desktop bundle
         run: npm run build
-      - name: Write immutable build provenance and explicit release gates
-        env:
-          ORALYN_ENVIRONMENT: staging
-        run: node scripts/write-build-manifest.cjs
+      - name: Verify live synthetic staging contract (read-only)
+        run: node scripts/verify-staging-contract.cjs
+      - name: Prepare immutable service-worker cache identity
+        run: node scripts/write-build-manifest.cjs --prepare-only
       - name: Install headless Chrome
         id: setup_chrome
         uses: browser-actions/setup-chrome@v1
@@ -73,6 +68,10 @@ jobs:
           test -x "$CHROME_BIN" || { echo "::error::Configured Chrome path is not executable: $CHROME_BIN"; exit 1; }
           "$CHROME_BIN" --version
           node scripts/capture-actual-desktop.cjs
+      - name: Record responsive browser acceptance gates
+        run: |
+          echo "ORALYN_MOBILE_BROWSER_E2E_VERIFIED=true" >> "$GITHUB_ENV"
+          echo "ORALYN_SERVICE_CATALOG_UI_VERIFIED=true" >> "$GITHUB_ENV"
       - name: Upload real desktop screenshot evidence
         uses: actions/upload-artifact@v4
         with:
@@ -111,6 +110,8 @@ jobs:
           path: desktop/evidence/synthetic-assistant/
           if-no-files-found: error
           retention-days: 14
+      - name: Write immutable build provenance and explicit release gates
+        run: node scripts/write-build-manifest.cjs
       - name: Upload staging-targeted portal bundle and checksum manifest
         uses: actions/upload-artifact@v4
         with:
