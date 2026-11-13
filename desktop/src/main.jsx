@@ -2214,6 +2214,7 @@ const currentPath = window.location.pathname;
 const normalizedPath = currentPath.replace(/\/+$/, "") || "/";
 const publicPatientPaths = new Set(["/patient/home", "/patient/booking"]);
 const isAssistantRoute = /^\/assistant(?:\/|$)/.test(currentPath);
+const isLegacyAssistantAdminRoute = /^\/assistant-admin(?:\/|$)/.test(currentPath);
 const isPublicPatientAlias = publicPatientPaths.has(normalizedPath) && !currentPath.endsWith("/");
 const isDisabledPatientRoute =
   /^\/patient(?:\/|$)/.test(currentPath) && !publicPatientPaths.has(normalizedPath);
@@ -2227,12 +2228,13 @@ if (redirectPatientRoute) {
         : "/patient/home/"
   );
 }
+if (isLegacyAssistantAdminRoute) window.location.replace("/doctor/settings");
 createRoot(document.getElementById("root")).render(
   <ErrorBoundary>
     {isAssistantRoute ? (
       <AssistantApp />
-    ) : redirectPatientRoute ? (
-      <main className="redirect-screen" role="status">Opening the public clinic page…</main>
+    ) : redirectPatientRoute || isLegacyAssistantAdminRoute ? (
+      <main className="redirect-screen" role="status">Opening the secure clinic workspace…</main>
     ) : (
       <App />
     )}
