@@ -107,10 +107,11 @@ form.addEventListener("submit", async (event) => {
         idempotency_key: idempotencyKey,
         name: String(data.get("name")).trim(),
         phone: String(data.get("phone")).trim(),
-        starts_at: startsAt.toISOString(),
+        starts_at: localDateTime + "+05:30",
         treatment_type: String(data.get("treatment_type")),
         note: String(data.get("note") || "").trim(),
-        intelligence_request: false
+        intelligence_request: false,
+        website: String(data.get("website") || "").trim()
       })
     });
     const result = await response.json().catch(() => ({}));
@@ -122,7 +123,9 @@ form.addEventListener("submit", async (event) => {
     dateInput.value = localToday;
     rotateIdempotencyKey();
     message.className = "msg success";
-    message.textContent = "Your appointment request has been received. Dr Pranali Dental Clinic will contact you to confirm the date and time.";
+    message.textContent = result.status === "already_received"
+      ? (result.message || "A similar request was already received. The clinic will contact you to confirm.")
+      : `${result.message || "Your appointment request has been received."}${result.reference ? " Reference: " + result.reference + "." : ""}`;
   } catch (error) {
     message.className = "msg error";
     message.textContent = error.message || "Network error. Please try again or call the clinic.";
