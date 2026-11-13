@@ -10,7 +10,7 @@ const chromePath = process.env.CHROME_BIN || "google-chrome";
 const port = Number(process.env.CDP_PORT || 19321);
 const baseUrl = process.env.ORALYN_PREVIEW_URL || "http://127.0.0.1:4176";
 const profile = path.join(os.tmpdir(), "oralyn-synthetic-doctor-" + process.pid);
-const commit = process.env.GITHUB_SHA || "unknown";
+const commit = process.env.ORALYN_COMMIT_SHA || process.env.GITHUB_SHA || "unknown";
 const assetsDir = path.join(root, "dist", "assets");
 const jsFile = fs.readdirSync(assetsDir).find((name) => name.endsWith(".js"));
 if (!jsFile) throw new Error("Production JavaScript bundle was not found.");
@@ -24,7 +24,7 @@ const chrome = spawn(chromePath, [
   "--remote-debugging-address=127.0.0.1", "--remote-debugging-port=" + port, "--remote-allow-origins=*",
   "--disable-dev-shm-usage", "--disable-background-networking", "--disable-extensions",
   "--no-first-run", "--user-data-dir=" + profile,
-  "--window-size=1440,1000", "about:blank",
+  "--window-size=1440,1000", baseUrl + "/doctor/dashboard",
 ], { stdio: ["ignore", "ignore", "pipe"], windowsHide: true });
 chrome.stderr.on("data", (chunk) => {
   const line = chunk.toString();
@@ -104,9 +104,14 @@ async function capture(name, width = 1440, height = 1000, mobile = false) {
 
 async function navigate(route, expectedText) {
   await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
-  await send("Page.navigate", { url: baseUrl + route });
-  await waitFor(() => evaluate('document.readyState === "complete"'));
+  const changed = await evaluate("(() => { history.pushState({ oralynPortal: true }, '', " + JSON.stringify(route) + "); window.dispatchEvent(new PopStateEvent('popstate')); return true; })()");
+  if (!changed) throw new Error("Could not navigate within the authenticated Doctor workspace.");
   await waitFor(() => evaluate("document.body && document.body.innerText.includes(" + JSON.stringify(expectedText) + ")"));
+}
+
+async function submitDoctorLogin(email = "doctor.synthetic@example.test", password = "synthetic-doctor-password") {
+  const submitted = await evaluate("(() => { const form = document.querySelector('.authcard form'); const emailInput = form?.querySelector('input[type=email]'); const passwordInput = form?.querySelector('input[type=password]'); if (!form || !emailInput || !passwordInput) return false; const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; const set = (input, value) => { setter.call(input, value); input.dispatchEvent(new Event('input', { bubbles: true })); input.dispatchEvent(new Event('change', { bubbles: true })); }; set(emailInput, " + JSON.stringify(email) + "); set(passwordInput, " + JSON.stringify(password) + "); form.requestSubmit(); return true; })()");
+  if (!submitted) throw new Error("Doctor sign-in form was not available to the synthetic browser fixture.");
 }
 
 const fixtureSource = [
@@ -128,7 +133,6 @@ const fixtureSource = [
   "  const summaryFor = (clinicId) => ({ patient_count: clinicId === clinicThree ? 0 : 1, appointment_count: clinicId === clinicOne ? 1 : 0, issued_invoice_count: 0, active_treatment_plan_count: 0, pending_appointment_requests: 0, invoiced_total_paise: 0, collected_total_paise: 0, outstanding_balance_paise: 0 });",
   "  const appointmentFor = (patient) => ({ id: 'appointment-' + patient.id, patient_id: patient.id, patient_name: patient.name, starts_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(), treatment_type: 'Dental check-up', status: 'confirmed', note: 'Synthetic CI fixture' });",
   "  if (!localStorage.getItem('oralyn_synthetic_bootstrapped')) {",
-  "    localStorage.setItem('oralyn_doctor_token', tokenOne);",
   "    localStorage.setItem('oralyn_active_workspace_id', clinicOne);",
   "    localStorage.setItem('oralyn_synthetic_bootstrapped', 'true');",
   "  }",
@@ -150,6 +154,12 @@ const fixtureSource = [
   "    const clinicId = activeToken === tokenTwo ? clinicTwo : activeToken === tokenThree ? clinicThree : clinicOne;",
   "    const patient = clinicId === clinicOne ? patientOne : clinicId === clinicTwo ? patientTwo : null;",
   "    if (url.pathname === '/v1/dental/health') return json({ result: { status: 'ok', fixture: true } });",
+    "    if (url.pathname === '/v1/dental/auth/password/login' && method === 'POST') {",
+    "      let body = {}; try { body = JSON.parse(init.body || '{}'); } catch {}",
+    "      if (body.email === 'doctor.synthetic@example.test' && body.password === 'synthetic-doctor-password') { recordWrite('doctor-login'); return json({ access_token: tokenOne, user: userFor(clinicOne) }); }",
+    "      if (body.email === 'expired.synthetic@example.test' && body.password === 'expired-synthetic-password') { recordWrite('doctor-login-expired'); return json({ access_token: 'expired-synthetic-token', user: userFor(clinicOne) }); }",
+    "      return json({ detail: { message: 'Synthetic doctor login denied' } }, 401);",
+    "    }",
   "    if (url.pathname === '/v1/dental/auth/me') {",
   "      if (!validDoctor) return json({ detail: { message: 'Synthetic doctor session expired', code: 'INVALID_DOCTOR_SESSION' } }, 401);",
   "      return json({ user: userFor(clinicId) });",
@@ -217,17 +227,18 @@ async function main() {
   await send("Log.enable");
   await send("Page.addScriptToEvaluateOnNewDocument", { source: fixtureSource });
   await send("Page.navigate", { url: baseUrl + "/doctor/dashboard" });
-  await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Dr Pranali Dental Clinic")'));
-  await waitFor(() => evaluate('document.body.innerText.includes("Dr Synthetic")'));
-  await waitFor(() => evaluate('document.body.innerText.includes("Ananya Synthetic")'));
+  await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Sign in with your clinic doctor account")'));
   await waitFor(() => evaluate("(async () => { const registration = await navigator.serviceWorker?.getRegistration('/'); return Boolean(registration?.active && registration.active.state === 'activated'); })()"), 30000);
   let pwaControlled = await evaluate("Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)");
   if (!pwaControlled) {
-    await send("Page.navigate", { url: baseUrl + "/doctor/dashboard" });
-    await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Dr Pranali Dental Clinic") && Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)'), 20000);
+    await send("Page.reload", { ignoreCache: true });
+    await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Sign in with your clinic doctor account") && Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)'), 20000);
     pwaControlled = await evaluate("Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)");
   }
   if (!pwaControlled) throw new Error("Synthetic Doctor capture is not controlled by the Oralyn PWA service worker.");
+  await submitDoctorLogin();
+  await waitFor(() => evaluate('document.body.innerText.includes("Dr Synthetic")'));
+  await waitFor(() => evaluate('document.body.innerText.includes("Ananya Synthetic")'));
   const fontStatus = await evaluate('({plusJakartaSans:document.fonts.check("400 16px \\"Plus Jakarta Sans\\""),playfairDisplay:document.fonts.check("600 32px \\"Playfair Display\\"")})');
   if (!fontStatus.plusJakartaSans || !fontStatus.playfairDisplay) throw new Error("Bundled Oralyn fonts failed in synthetic Doctor session: " + JSON.stringify(fontStatus));
 
@@ -257,7 +268,7 @@ async function main() {
   await capture("doctor-appointments-390x844.png", 390, 844, true);
 
   await navigate("/doctor/files", "Private documents");
-  await waitFor(() => evaluate('document.body.innerText.includes("Uploads, downloads, review and patient sharing are disabled")'));
+  await waitFor(() => evaluate('document.body.innerText.includes("Uploads, downloads and review are disabled")'));
   const privateDocumentControls = await evaluate("(() => ({fileInput:Boolean(document.querySelector('input[type=file]')),uploadButton:[...document.querySelectorAll('button')].some((item)=>(item.innerText||'').includes('Upload securely')),shareButton:[...document.querySelectorAll('button')].some((item)=>(item.innerText||'').includes('Share with patient')),downloadButton:[...document.querySelectorAll('button')].some((item)=>(item.innerText||'').includes('Download'))}))()");
   if (Object.values(privateDocumentControls).some(Boolean)) throw new Error("Private document actions must remain disabled until storage and scanning are verified: " + JSON.stringify(privateDocumentControls));
   await capture("doctor-private-documents-disabled-1440x1000.png");
@@ -283,30 +294,30 @@ async function main() {
   await waitFor(() => evaluate('document.body.innerText.includes("Ananya Synthetic")'));
 
   await send("Page.reload", { ignoreCache: true });
-  await waitFor(() => evaluate('document.body.innerText.includes("Dr Pranali Dental Clinic") && document.body.innerText.includes("Ananya Synthetic")'));
-  const restore = await evaluate('localStorage.getItem("oralyn_doctor_token") === "synthetic-doctor-token"');
-  if (!restore) throw new Error("Doctor session was not restored from localStorage after reload.");
+  await waitFor(() => evaluate('document.body.innerText.includes("Sign in with your clinic doctor account")'));
+  const noPersistentTokenAfterReload = await evaluate('!localStorage.getItem("oralyn_doctor_token") && !sessionStorage.getItem("oralyn_doctor_token")');
+  if (!noPersistentTokenAfterReload) throw new Error("Doctor bearer token was persisted across a page reload.");
+  await capture("doctor-login-after-refresh-1440x1000.png");
+  await submitDoctorLogin();
+  await waitFor(() => evaluate('document.body.innerText.includes("Dr Synthetic") && document.body.innerText.includes("Ananya Synthetic")'));
 
-  await send("Page.navigate", { url: baseUrl + "/doctor/settings" });
-  await waitFor(() => evaluate('document.body.innerText.includes("Manage Clinic Assistant accounts") && document.body.innerText.includes("Sign out securely")'));
-  const assistantAdminClicked = await evaluate("(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').includes('Manage Clinic Assistant accounts')); if (!button) return false; button.click(); return true; })()");
-  if (!assistantAdminClicked) throw new Error("Owner/admin Clinic Assistant account-management link was not available.");
-  await waitFor(() => evaluate('document.body.innerText.includes("Clinic Assistant accounts") && document.body.innerText.includes("Create Assistant account")'));
+  await navigate("/doctor/settings", "Clinic assistants");
+  await waitFor(() => evaluate('document.body.innerText.includes("Create Clinic Assistant") && document.body.innerText.includes("Sign out securely")'));
+  const assistantManagementFormVisible = await evaluate('Boolean(document.querySelector(".assistant-management-form"))');
+  if (!assistantManagementFormVisible) throw new Error("Owner/admin Clinic Assistant management form was not available.");
   await capture("doctor-assistant-admin-owner-1440x1000.png");
-  await send("Page.navigate", { url: baseUrl + "/doctor/settings" });
-  await waitFor(() => evaluate('document.body.innerText.includes("Sign out securely")'));
+  await navigate("/doctor/settings", "Sign out securely");
   const signout = await evaluate("(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').trim() === 'Sign out securely'); if (!button) return false; button.click(); return true; })()");
   if (!signout) throw new Error("Doctor sign-out action was not found.");
   await waitFor(() => evaluate('document.body.innerText.includes("Sign in with your clinic doctor account")'));
-  const logoutCleared = await evaluate('!localStorage.getItem("oralyn_doctor_token")');
-  if (!logoutCleared) throw new Error("Doctor logout did not clear the local session token.");
+  const logoutCleared = await evaluate('!localStorage.getItem("oralyn_doctor_token") && !sessionStorage.getItem("oralyn_doctor_token")');
+  if (!logoutCleared) throw new Error("Doctor logout left a persistent token in browser storage.");
   await capture("doctor-logout-1440x1000.png");
 
-  await evaluate('localStorage.setItem("oralyn_doctor_token", "expired-synthetic-token")');
-  await send("Page.navigate", { url: baseUrl + "/doctor/dashboard" });
-  await waitFor(() => evaluate('document.body.innerText.includes("Your session expired. Please sign in again.")'));
-  const expiryCleared = await evaluate('!localStorage.getItem("oralyn_doctor_token")');
-  if (!expiryCleared) throw new Error("Expired Doctor session was not cleared.");
+  await submitDoctorLogin("expired.synthetic@example.test", "expired-synthetic-password");
+  await waitFor(() => evaluate('document.body.innerText.includes("Sign in with your clinic doctor account") && document.body.innerText.includes("Your session expired. Please sign in again.")'));
+  const expiryCleared = await evaluate('!localStorage.getItem("oralyn_doctor_token") && !sessionStorage.getItem("oralyn_doctor_token")');
+  if (!expiryCleared) throw new Error("Expired Doctor session was not cleared from memory and browser storage.");
   await capture("doctor-session-expired-1440x1000.png");
 
   const evidence = await evaluate("({writes:window.__ORALYN_SYNTHETIC_WRITES || [],unhandled:window.__ORALYN_SYNTHETIC_UNHANDLED || []})");
@@ -326,8 +337,9 @@ async function main() {
     "authenticated_ui_fixture=true",
     "staging_authenticated_e2e=false",
     "doctor_password_login_verified=false",
-    "doctor_session_restore=passed",
-    "doctor_session_expiry=passed",
+    "doctor_token_storage=memory_only",
+    "doctor_session_reload=requires_login",
+    "doctor_session_expiry=passed_fixture",
     "doctor_logout=passed",
     "doctor_clinic_switching=passed_fixture",
     "doctor_empty_workspace=passed_fixture",
