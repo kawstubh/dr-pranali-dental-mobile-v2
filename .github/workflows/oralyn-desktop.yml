@@ -83,6 +83,7 @@ jobs:
       - name: Capture authenticated Doctor UI with CI-only synthetic fixtures
         env:
           CHROME_BIN: ${{ steps.setup_chrome.outputs.chrome-path }}
+          CDP_PORT: "19321"
           ORALYN_PREVIEW_URL: http://127.0.0.1:4176
           ORALYN_CAPTURE_OUTPUT: evidence/synthetic-doctor
         run: |
