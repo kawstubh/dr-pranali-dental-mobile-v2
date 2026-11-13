@@ -264,9 +264,9 @@ async function verifyPublicBookingForm() {
 async function captureAssistantAdminGate() {
   await send("Page.navigate", { url: baseUrl + "/assistant-admin/" });
   await waitFor(() => evaluate(
-    'location.pathname === "/doctor/settings" && document.body.innerText.includes("Sign in with your clinic-issued account")'
+    'location.pathname === "/doctor/settings" && document.body.innerText.includes("Sign in with your clinic-issued email and password")'
   ));
-  const state = await evaluate('(() => ({ redirectedToDoctorSettings: location.pathname === "/doctor/settings", doctorSignInVisible: document.body.innerText.includes("Sign in with your clinic-issued account"), assistantManagementFormVisible: Boolean(document.querySelector(".assistant-management-form")) }))()');
+  const state = await evaluate('(() => ({ redirectedToDoctorSettings: location.pathname === "/doctor/settings", doctorSignInVisible: document.body.innerText.includes("Sign in with your clinic-issued email and password"), assistantManagementFormVisible: Boolean(document.querySelector(".assistant-management-form")) }))()');
   if (!state.redirectedToDoctorSettings || !state.doctorSignInVisible || state.assistantManagementFormVisible) {
     throw new Error("Legacy Assistant admin route did not fail closed to Doctor authentication: " + JSON.stringify(state));
   }
@@ -329,7 +329,7 @@ async function captureAssistantAdminGate() {
 
     const fontResults = {};
     fontResults.doctorLogin = await captureCurrent(
-      "Sign in with your clinic-issued account",
+      "Sign in with your clinic-issued email and password",
       "doctor-login"
     );
     const approvedLogoAssets = await evaluate(`(() => {
@@ -350,7 +350,7 @@ async function captureAssistantAdminGate() {
     );
     await send("Page.navigate", { url: baseUrl + "/doctor/dashboard" });
     await waitFor(() => evaluate(
-      'location.pathname === "/doctor/dashboard" && document.body.innerText.includes("Sign in with your clinic-issued account")'
+      'location.pathname === "/doctor/dashboard" && document.body.innerText.includes("Sign in with your clinic-issued email and password")'
     ));
     const switchedToPatient = await evaluate(
       "(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').trim().includes('Patient services & appointment requests')); if (!button) return false; button.click(); return true; })()"
@@ -367,7 +367,7 @@ async function captureAssistantAdminGate() {
     ));
     await evaluate("history.back()");
     await waitFor(() => evaluate(
-      'location.pathname === "/doctor/dashboard" && document.body.innerText.includes("Sign in with your clinic-issued account")'
+      'location.pathname === "/doctor/dashboard" && document.body.innerText.includes("Sign in with your clinic-issued email and password")'
     ));
     await evaluate("history.forward()");
     await waitFor(() => evaluate(
