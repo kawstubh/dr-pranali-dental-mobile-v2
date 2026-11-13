@@ -127,8 +127,7 @@ export default function AssistantApp() {
     ]);
     const nextPatients = Array.isArray(patientResult) ? patientResult : [];
     const nextAppointments = Array.isArray(appointmentResult) ? appointmentResult : [];
-    setPatients(nextPatients);
-    setAppointments(nextAppointments);
+    return { patients: nextPatients, appointments: nextAppointments };
   };
 
   useEffect(() => {
@@ -145,12 +144,19 @@ export default function AssistantApp() {
         const me = await assistantRequest("/v1/dental/assistant/me", { token });
         if (!live) return;
         setUser(me?.user || null);
-        await loadData(token);
+        const loaded = await loadData(token);
+        if (!live) return;
+        setPatients(loaded.patients);
+        setAppointments(loaded.appointments);
       } catch (cause) {
         if (!live) return;
         if (cause?.status === 401) {
           setToken("");
           setUser(null);
+          setPatients([]);
+          setAppointments([]);
+          setBilling([]);
+          setReceiptDrafts({});
         }
         setError(cause?.message || "Assistant session could not be verified.");
       } finally {
@@ -166,9 +172,19 @@ export default function AssistantApp() {
     setBusy(true);
     setError("");
     loadBilling(token)
+      .then((rows) => {
+        if (live) setBilling(rows);
+      })
       .catch((cause) => {
         if (!live) return;
-        if (cause?.status === 401) setToken("");
+        if (cause?.status === 401) {
+          setToken("");
+          setUser(null);
+          setPatients([]);
+          setAppointments([]);
+          setBilling([]);
+          setReceiptDrafts({});
+        }
         setError(cause?.message || "Billing summaries could not be loaded.");
       })
       .finally(() => {
@@ -214,6 +230,7 @@ export default function AssistantApp() {
     setPatients([]);
     setAppointments([]);
     setBilling([]);
+    setReceiptDrafts({});
     setError("");
     setNotice("");
   };
@@ -223,8 +240,10 @@ export default function AssistantApp() {
     setBusy(true);
     setError("");
     try {
-      await loadData(token);
-      if (tab === "billing") await loadBilling(token);
+      const loaded = await loadData(token);
+      setPatients(loaded.patients);
+      setAppointments(loaded.appointments);
+      if (tab === "billing") setBilling(await loadBilling(token));
       setNotice("Reception data refreshed.");
     } catch (cause) {
       if (cause?.status === 401) await signOut();
@@ -276,7 +295,7 @@ export default function AssistantApp() {
 
   const loadBilling = async (accessToken = token) => {
     const result = await assistantRequest("/v1/dental/assistant/billing/invoices", { token: accessToken });
-    setBilling(Array.isArray(result) ? result : []);
+    return Array.isArray(result) ? result : [];
   };
 
   if (booting) {
