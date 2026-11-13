@@ -3537,3 +3537,97 @@ table { max-width: 100%; }
   font-family: "Playfair Display", Georgia, serif !important;
   font-weight: 600;
 }
+
+
+/* ORALYN PREMIUM DOCTOR SIGN-IN — approved brand assets, responsive split layout */
+body:has(.oralyn-auth-layout) { background:#071f3b; }
+main.oralyn-auth-layout {
+  margin:0 !important; min-height:100vh; width:100%; display:grid;
+  grid-template-columns:minmax(0,1.04fr) minmax(470px,.96fr);
+  color:#fff; overflow:hidden; background:
+    radial-gradient(ellipse at 14% 85%,rgba(0,198,200,.18),transparent 34%),
+    radial-gradient(ellipse at 65% 12%,rgba(10,132,232,.22),transparent 36%),
+    linear-gradient(135deg,#061b34 0%,#0a3158 55%,#08294c 100%);
+}
+.oralyn-auth-story {
+  min-height:100vh; padding:clamp(34px,5vw,76px) clamp(32px,6vw,92px);
+  display:flex; flex-direction:column; justify-content:space-between; position:relative; isolation:isolate;
+}
+.oralyn-auth-story:before,.oralyn-auth-story:after {
+  content:"";position:absolute;z-index:-1;pointer-events:none;border-radius:50%;
+  border:1px solid rgba(0,198,200,.16);width:620px;height:620px;right:-300px;bottom:-390px;
+}
+.oralyn-auth-story:after {width:760px;height:760px;right:-370px;bottom:-460px;border-color:rgba(10,132,232,.2)}
+.oralyn-auth-brand img {display:block;width:min(300px,70%);height:auto;object-fit:contain;object-position:left center}
+.oralyn-auth-copy {max-width:690px;margin:54px 0 42px}
+.oralyn-auth-kicker,.oralyn-auth-label {font-size:11px;letter-spacing:2.4px;font-weight:800;color:#65e5e2}
+.oralyn-auth-copy h1 {font:700 clamp(38px,4.2vw,62px)/1.12 "Plus Jakarta Sans",sans-serif;letter-spacing:-2.2px;color:#fff;margin:18px 0 20px;max-width:680px}
+.oralyn-auth-copy h1 em {font-style:normal;color:#36d7dc}
+.oralyn-auth-intro {max-width:570px;color:#c5d8eb;font-size:17px;line-height:1.75;margin:0 0 34px}
+.oralyn-auth-features {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;max-width:650px}
+.oralyn-auth-features article {display:flex;align-items:center;gap:14px;min-height:86px;padding:15px 16px;border:1px solid rgba(157,207,235,.19);border-radius:15px;background:linear-gradient(120deg,rgba(255,255,255,.09),rgba(255,255,255,.035));backdrop-filter:blur(10px)}
+.oralyn-feature-icon {width:44px;height:44px;flex:0 0 44px;display:grid;place-items:center;border-radius:13px;background:linear-gradient(145deg,#0dbfc8,#087bd2);color:white;font-size:26px;font-weight:700;box-shadow:0 8px 20px rgba(0,198,200,.17)}
+.oralyn-auth-features b,.oralyn-auth-features small {display:block}
+.oralyn-auth-features b {font-size:14px;color:#fff;margin-bottom:4px}
+.oralyn-auth-features small {font-size:11px;line-height:1.5;color:#b8cfe4}
+.oralyn-auth-footnote {font-size:12px;letter-spacing:.3px;color:#8eacc8}
+.oralyn-auth-panel {display:flex;align-items:center;justify-content:center;padding:clamp(24px,4vw,64px);background:rgba(3,18,36,.24)}
+.oralyn-auth-card {width:min(100%,510px);padding:clamp(28px,3.2vw,46px);border:1px solid rgba(255,255,255,.82);border-radius:25px;background:#fff;color:#143553;box-shadow:0 28px 90px rgba(0,10,30,.28);animation:oralyn-auth-arrive .55s ease both}
+.oralyn-auth-appmark {display:block;width:74px;height:74px;object-fit:contain;margin:0 auto 17px;border-radius:19px}
+.oralyn-auth-label {display:block;text-align:center;color:#087bd2;font-size:10px;letter-spacing:2.4px}
+.oralyn-auth-card h2 {font:750 32px/1.2 "Plus Jakarta Sans",sans-serif;letter-spacing:-1px;text-align:center;color:#102f4d;margin:12px 0 8px}
+.oralyn-auth-subtitle {text-align:center;color:#71859a;font-size:13px;margin:0 0 28px}
+.oralyn-field {display:flex;flex-direction:column;gap:8px;margin:0 0 18px;color:#183b5b;font-size:13px;font-weight:750}
+.oralyn-field input {width:100%;height:54px;border:1px solid #d7e4ef;border-radius:12px;background:#f8fbfe;padding:0 15px;color:#173653;font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s}
+.oralyn-field input:focus {border-color:#0a84e8;box-shadow:0 0 0 4px rgba(10,132,232,.11)}
+.oralyn-field input::placeholder {color:#9aabba}
+.oralyn-password-wrap {display:flex;position:relative}
+.oralyn-password-wrap input {padding-right:65px}
+.oralyn-password-toggle {position:absolute;right:9px;top:8px;height:38px;padding:0 10px;border:0;border-radius:8px;background:transparent;color:#087bd2;font-size:12px;font-weight:750}
+.oralyn-signin {width:100%;min-height:54px;margin-top:5px;border:0;border-radius:12px;background:linear-gradient(100deg,#087fe0,#0756c7);color:#fff;font-size:15px;font-weight:800;box-shadow:0 10px 22px rgba(7,105,207,.2);transition:transform .18s,box-shadow .18s}
+.oralyn-signin:hover {transform:translateY(-1px);box-shadow:0 14px 26px rgba(7,105,207,.27)}
+.oralyn-signin:disabled {opacity:.7;cursor:wait}
+.oralyn-auth-divider {display:flex;align-items:center;gap:13px;margin:25px 0 13px;color:#8b9caf;font-size:9px;letter-spacing:1.5px;font-weight:800}
+.oralyn-auth-divider:before,.oralyn-auth-divider:after {content:"";height:1px;flex:1;background:#e5edf4}
+.oralyn-team-link,.oralyn-patient-link {width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 2px;border:0;background:transparent;color:#086fc8;font-size:13px;font-weight:750;text-align:left}
+.oralyn-team-link span,.oralyn-patient-link span {font-size:18px}
+.oralyn-auth-notice {margin:13px 0 7px;padding:12px 13px;border:1px solid #e4edf4;border-radius:10px;background:#f7fbfe;color:#62788e;font-size:11px;line-height:1.55}
+.oralyn-auth-notice span {color:#00a9a9;margin-right:7px}
+.oralyn-patient-link {justify-content:center;border-top:1px solid #edf2f6;margin-top:12px;padding-top:17px;font-size:12px}
+.oralyn-auth-card .autherror {margin:0 0 17px}
+.oralyn-auth-card .auth-session-note {display:block;max-width:none;margin:15px 0 0;text-align:center;color:#8495a6;font-size:10px;line-height:1.5}
+@media(max-width:1050px) {
+  main.oralyn-auth-layout {grid-template-columns:minmax(0,1fr) minmax(420px,.9fr)}
+  .oralyn-auth-story {padding:38px 34px}
+  .oralyn-auth-features {grid-template-columns:1fr;max-width:520px}
+  .oralyn-auth-copy {margin:38px 0}
+}
+@media(max-width:760px) {
+  main.oralyn-auth-layout {grid-template-columns:1fr;overflow:visible}
+  .oralyn-auth-story {min-height:auto;padding:28px 24px 18px}
+  .oralyn-auth-brand img {width:210px}
+  .oralyn-auth-copy {margin:35px 0 24px}
+  .oralyn-auth-copy h1 {font-size:38px;letter-spacing:-1.4px}
+  .oralyn-auth-intro {font-size:14px;margin-bottom:22px}
+  .oralyn-auth-features {grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .oralyn-auth-features article {min-height:76px;padding:11px;gap:10px}
+  .oralyn-feature-icon {width:36px;height:36px;flex-basis:36px;font-size:21px}
+  .oralyn-auth-features b {font-size:12px}
+  .oralyn-auth-features small {font-size:10px}
+  .oralyn-auth-footnote {display:none}
+  .oralyn-auth-panel {padding:18px 18px 34px;background:transparent}
+  .oralyn-auth-card {max-width:520px}
+}
+@media(max-width:430px) {
+  .oralyn-auth-story {padding:23px 18px 12px}
+  .oralyn-auth-copy h1 {font-size:32px}
+  .oralyn-auth-features {grid-template-columns:1fr}
+  .oralyn-auth-features article {min-height:66px}
+  .oralyn-auth-panel {padding:14px 12px 28px}
+  .oralyn-auth-card {padding:25px 20px;border-radius:19px}
+  .oralyn-auth-card h2 {font-size:27px}
+}
+@media(prefers-reduced-motion:reduce) {
+  .oralyn-auth-card {animation:none}
+  .oralyn-signin,.oralyn-field input {transition:none}
+}
