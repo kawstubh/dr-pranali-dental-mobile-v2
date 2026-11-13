@@ -8,7 +8,7 @@ One responsive React/Vite portal for desktop, tablet and mobile browsers. The po
 - **Public booking:** name, Indian mobile number, approved service, preferred date and time. Requests are not confirmed appointments until the clinic contacts the patient. The public API is scoped to the configured Dr Pranali master clinic.
 - **Private records:** public patient pages never expose clinical notes, history, odontograms, prescriptions, treatment plans, invoices, receipts or private documents. Patients contact the clinic for copies of records.
 - **Doctor workspace:** clinic-issued Doctor authentication is mandatory. Clinical records, billing, workspace administration and Doctor-only clinical intelligence remain server-authenticated and tenant-scoped.
-- **Clinic Assistant:** separate identity and sign-in with least-privilege reception, appointment and approved payment-receipt permissions. Assistants cannot use Doctor clinical or AI routes.
+- **Clinic Assistant:** separate identity and sign-in with least-privilege reception, appointment and approved payment-receipt permissions. The appointment queue exposes patient contact, requested time and status only; it does not expose procedure/treatment type or clinical notes. Assistants cannot use Doctor clinical or AI routes.
 - **AI:** clinical intelligence is Doctor-only. No patient-facing diagnosis, triage or self-diagnosis.
 - **Google Business Profile:** discovery/referral entry point only. No booking-link change is claimed.
 - **Staging data:** use synthetic records only. Never connect this portal to production or recovery data without separate approval.
@@ -31,4 +31,4 @@ The Vite development server proxies `/v1` to the configured API. Production buil
 
 ## Release gates
 
-Private document uploads/sharing stay disabled until a private object-storage bucket and fail-closed malware scanning are provisioned and verified. Live Doctor and Assistant login with API-backed persistence, cross-tenant staging E2E, backup/restore, monitoring/alerting, rollback rehearsal, production database/domain and release approval are still required. A green CI build is not production release approval.
+Private document uploads/sharing stay disabled until a private object-storage bucket and fail-closed malware scanning are provisioned and verified. Doctor authentication currently persists a 30-day bearer token in browser localStorage; hardened token persistence must be reviewed and verified before production. Live Doctor and Assistant login with API-backed persistence, cross-tenant staging E2E, backup/restore, monitoring/alerting, rollback rehearsal, production database/domain and release approval are still required. A green CI build is not production release approval.
