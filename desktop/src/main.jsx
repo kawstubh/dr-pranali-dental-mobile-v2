@@ -485,6 +485,31 @@ function App() {
     </div>
   );
 }
+function OralynToothMark({ compact = false }) {
+  return (
+    <svg viewBox="0 0 96 104" role="img" aria-label="Oralyn tooth symbol" className={compact ? "oralyn-vector-tooth compact" : "oralyn-vector-tooth"}>
+      <defs>
+        <linearGradient id="oralyn-tooth-fill" x1="18" y1="8" x2="78" y2="94" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#FFFFFF"/><stop offset="1" stopColor="#C8F5FF"/>
+        </linearGradient>
+        <linearGradient id="oralyn-tooth-line" x1="8" y1="8" x2="90" y2="92" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#39E5F0"/><stop offset="1" stopColor="#168BFF"/>
+        </linearGradient>
+      </defs>
+      <path d="M48 13C36 4 18 8 12 23C4 43 17 58 22 76C25 87 28 97 35 97C43 97 41 69 49 69C57 69 55 97 63 97C70 97 73 87 76 76C81 58 94 43 86 23C80 8 61 4 48 13Z" fill="url(#oralyn-tooth-fill)" stroke="url(#oralyn-tooth-line)" strokeWidth="3.5" strokeLinejoin="round"/>
+      <path d="M18 28C26 15 39 18 47 25C56 17 70 15 78 27" fill="none" stroke="#38DCEB" strokeWidth="4" strokeLinecap="round"/>
+      <path d="M72 48C78 45 83 47 86 52M70 59C76 56 81 58 84 63" fill="none" stroke="#168BFF" strokeWidth="3.2" strokeLinecap="round"/>
+      <path d="M8 17C16 5 30 1 42 4" fill="none" stroke="#54E8F0" strokeWidth="2.6" strokeLinecap="round"/>
+      <circle cx="85" cy="13" r="2.3" fill="#55EAF3"/>
+    </svg>
+  );
+}
+function OralynVectorBrand() {
+  return <div className="oralyn-vector-brand" aria-label="Oralyn Dental Clinic Management">
+    <OralynToothMark />
+    <div className="oralyn-vector-wordmark"><strong>oralyn</strong><span>DENTAL CLINIC MANAGEMENT</span></div>
+  </div>;
+}
 function LoginScreen({ loading, error, onLogin, onPatient, onAssistant }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -493,58 +518,48 @@ function LoginScreen({ loading, error, onLogin, onPatient, onAssistant }) {
   return (
     <main className="oralyn-auth-layout">
       <section className="oralyn-auth-story" aria-label="About Oralyn">
-        <div className="oralyn-auth-brand">
-          <img src="/oralyn-logo-approved.webp" alt="Oralyn — official approved logo" />
-        </div>
+        <header className="oralyn-auth-brand"><OralynVectorBrand /></header>
         <div className="oralyn-auth-copy">
-          <span className="oralyn-auth-kicker">DENTAL CLINIC MANAGEMENT</span>
-          <h1>Everything your dental clinic needs, <em>in one place.</em></h1>
-          <p className="oralyn-auth-intro">A calmer, more connected way to run your clinic — from the first appointment to the treatment journey.</p>
-          <div className="oralyn-auth-features">
-            <article><span className="oralyn-feature-icon">▦</span><div><b>Appointments</b><small>Organise schedules and manage daily visits.</small></div></article>
-            <article><span className="oralyn-feature-icon">＋</span><div><b>Patient records</b><small>Keep essential patient information structured.</small></div></article>
-            <article><span className="oralyn-feature-icon">◇</span><div><b>Treatment plans</b><small>Follow care progress in one workspace.</small></div></article>
-            <article><span className="oralyn-feature-icon">✓</span><div><b>Secure workflows</b><small>Role-based access for your clinic team.</small></div></article>
+          <span className="oralyn-auth-kicker">THE INTELLIGENT DENTAL WORKSPACE</span>
+          <h1>Smarter dental care,<br/><em>beautifully organized.</em></h1>
+          <p className="oralyn-auth-intro">A connected workspace for your clinic — from appointments and patient records to treatment planning and everyday team workflows.</p>
+          <div className="oralyn-auth-features" aria-label="Oralyn features">
+            <article><span className="oralyn-feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2" fill="none" stroke="currentColor" strokeWidth="1.7"/><path d="M8 3v4M16 3v4M4 10h16M8 14h3M8 17h6" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg></span><div><b>Appointments</b><small>Scheduling & daily visits</small></div></article>
+            <article><span className="oralyn-feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3" fill="none" stroke="currentColor" strokeWidth="1.7"/><path d="M3.5 19c.5-3.2 2.4-5 5.5-5s5 1.8 5.5 5M16 7h5M18.5 4.5v5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg></span><div><b>Patients</b><small>Clear, organized records</small></div></article>
+            <article><span className="oralyn-feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg></span><div><b>Treatment plans</b><small>Care progress at a glance</small></div></article>
+            <article><span className="oralyn-feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12l5 5L20 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.5"/></svg></span><div><b>Clinic workflows</b><small>Connected team operations</small></div></article>
           </div>
         </div>
-        <div className="oralyn-auth-footnote">Designed for focused, connected dental care.</div>
+        <footer className="oralyn-auth-footnote"><span className="oralyn-footnote-dot"/> A clearer view of your clinic. A more connected way to care.</footer>
       </section>
       <section className="oralyn-auth-panel" aria-label="Doctor sign in">
         <div className="oralyn-auth-card">
-          <img className="oralyn-auth-appmark" src="/oralyn-app-icon-approved.webp" alt="Oralyn app mark" />
+          <div className="oralyn-app-squircle"><OralynToothMark compact /></div>
           <span className="oralyn-auth-label">DOCTOR PORTAL</span>
           <h2>Welcome back</h2>
           <p className="oralyn-auth-subtitle">Sign in with your clinic-issued account.</p>
           {error && <div className="autherror" role="alert">{error}</div>}
           <form onSubmit={async (e) => {
-            e.preventDefault();
-            setBusy(true);
-            try { await onLogin(email, password); }
-            finally { setBusy(false); }
+            e.preventDefault(); setBusy(true);
+            try { await onLogin(email, password); } finally { setBusy(false); }
           }}>
-            <label className="oralyn-field">Clinic email
-              <input type="email" autoComplete="username" required value={email}
-                placeholder="doctor@yourclinic.com" onChange={(e) => setEmail(e.target.value)} />
+            <label className="oralyn-field"><span>Clinic email</span>
+              <span className="oralyn-input-wrap"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" strokeWidth="1.6"/><path d="m4 7 8 6 8-6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <input type="email" autoComplete="username" required value={email} placeholder="doctor@yourclinic.com" onChange={(e) => setEmail(e.target.value)} /></span>
             </label>
-            <label className="oralyn-field">Password
-              <span className="oralyn-password-wrap">
-                <input type={showPassword ? "text" : "password"} autoComplete="current-password"
-                  required value={password} placeholder="Enter your password"
-                  onChange={(e) => setPassword(e.target.value)} />
-                <button type="button" className="oralyn-password-toggle" onClick={() => setShowPassword(v => !v)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? "Hide" : "Show"}</button>
+            <label className="oralyn-field"><span>Password</span>
+              <span className="oralyn-password-wrap"><svg className="oralyn-input-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2" fill="none" stroke="currentColor" strokeWidth="1.6"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
+                <input type={showPassword ? "text" : "password"} autoComplete="current-password" required value={password} placeholder="Enter your password" onChange={(e) => setPassword(e.target.value)} />
+                <button type="button" className="oralyn-password-toggle" onClick={() => setShowPassword(v => !v)} aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? "Hide" : "Show"}</button>
               </span>
             </label>
-            <button className="oralyn-signin" disabled={busy || loading}>
-              {(busy || loading) && <span className="oralyn-spinner" aria-hidden="true" />}
-              {busy || loading ? "Verifying securely…" : "Sign in securely"}
-            </button>
+            <button className="oralyn-signin" disabled={busy || loading}>{(busy || loading) && <span className="oralyn-spinner" aria-hidden="true" />}{busy || loading ? "Verifying securely…" : "Sign in securely"}<span className="oralyn-signin-arrow">→</span></button>
           </form>
           <div className="oralyn-auth-divider"><span>CLINIC TEAM ACCESS</span></div>
           <button className="oralyn-team-link" onClick={onAssistant}>Clinic Assistant sign in <span>→</span></button>
-          <div className="oralyn-auth-notice"><span>●</span> Accounts are created and managed by your clinic administrator. No public sign-up.</div>
+          <div className="oralyn-auth-notice"><span>●</span> Access is managed by your clinic administrator. No public sign-up.</div>
           <button className="oralyn-patient-link" onClick={onPatient}>Patient services &amp; appointment requests <span>→</span></button>
-          <small className="auth-session-note">For security, your session stays in this tab. Closing or refreshing it signs you out.</small>
+          <small className="auth-session-note">Secure clinic access · Your session stays in this tab.</small>
         </div>
       </section>
     </main>
