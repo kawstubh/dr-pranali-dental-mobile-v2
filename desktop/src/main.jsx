@@ -485,30 +485,9 @@ function App() {
     </div>
   );
 }
-function OralynToothMark({ compact = false }) {
-  return (
-    <svg viewBox="0 0 96 104" role="img" aria-label="Oralyn tooth symbol" className={compact ? "oralyn-vector-tooth compact" : "oralyn-vector-tooth"}>
-      <defs>
-        <linearGradient id="oralyn-tooth-fill" x1="18" y1="8" x2="78" y2="94" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#FFFFFF"/><stop offset="1" stopColor="#C8F5FF"/>
-        </linearGradient>
-        <linearGradient id="oralyn-tooth-line" x1="8" y1="8" x2="90" y2="92" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#39E5F0"/><stop offset="1" stopColor="#168BFF"/>
-        </linearGradient>
-      </defs>
-      <path d="M48 13C36 4 18 8 12 23C4 43 17 58 22 76C25 87 28 97 35 97C43 97 41 69 49 69C57 69 55 97 63 97C70 97 73 87 76 76C81 58 94 43 86 23C80 8 61 4 48 13Z" fill="url(#oralyn-tooth-fill)" stroke="url(#oralyn-tooth-line)" strokeWidth="3.5" strokeLinejoin="round"/>
-      <path d="M18 28C26 15 39 18 47 25C56 17 70 15 78 27" fill="none" stroke="#38DCEB" strokeWidth="4" strokeLinecap="round"/>
-      <path d="M72 48C78 45 83 47 86 52M70 59C76 56 81 58 84 63" fill="none" stroke="#168BFF" strokeWidth="3.2" strokeLinecap="round"/>
-      <path d="M5 37C13 8 45 -1 69 10C82 16 88 29 87 42" fill="none" stroke="url(#oralyn-tooth-line)" strokeWidth="2.8" strokeLinecap="round"/>
-      <path d="M79 7v10M74 12h10" fill="none" stroke="#54E8F0" strokeWidth="2.3" strokeLinecap="round"/>
-      <circle cx="87" cy="42" r="2.2" fill="#55EAF3"/>
-    </svg>
-  );
-}
 function OralynVectorBrand() {
   return <div className="oralyn-vector-brand" aria-label="Oralyn Dental Clinic Management">
-    <OralynToothMark />
-    <div className="oralyn-vector-wordmark"><strong>oralyn</strong><span>DENTAL CLINIC MANAGEMENT</span></div>
+    <img src="/oralyn-logo-approved.webp" alt="Oralyn approved logo" />
   </div>;
 }
 function LoginScreen({ loading, error, onLogin, onPatient, onAssistant }) {
@@ -535,7 +514,7 @@ function LoginScreen({ loading, error, onLogin, onPatient, onAssistant }) {
       </section>
       <section className="oralyn-auth-panel" aria-label="Doctor sign in">
         <div className="oralyn-auth-card">
-          <div className="oralyn-app-squircle"><OralynToothMark compact /></div>
+          <div className="oralyn-app-squircle"><img src="/oralyn-app-icon-approved.webp" alt="Oralyn approved app icon" /></div>
           <span className="oralyn-auth-label">DOCTOR PORTAL</span>
           <h2>Welcome back</h2>
           <p className="oralyn-auth-subtitle">Sign in with your clinic-issued account.</p>
