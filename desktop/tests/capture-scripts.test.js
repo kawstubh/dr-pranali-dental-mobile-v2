@@ -108,7 +108,7 @@ test("live staging contract probe writes only one idempotent synthetic booking a
   const source = readFileSync(file, "utf8");
 
   assert.doesNotThrow(() => new Script(source, { filename: file }));
-  const identityGate = source.indexOf('if (health?.database_identity_verified === true && branchIdentityOk && expectedApiCommit)');
+  const identityGate = source.indexOf('if (health?.database_identity_verified === true && branchIdentityOk && health?.deployment_commit === expectedApiCommit && expectedApiCommit)');
   const postMethod = source.indexOf('method: "POST"');
   assert.ok(identityGate >= 0 && postMethod > identityGate);
   assert.equal((source.match(/method: "POST"/g) || []).length, 2);
