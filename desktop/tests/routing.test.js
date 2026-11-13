@@ -14,27 +14,16 @@ test("the portal root resolves to the Doctor dashboard", () => {
   });
 });
 
-test("the public patient surface exposes only home and guest booking", () => {
-  assert.deepEqual(resolvePortalRoute("/patient"), {
-    role: "patient",
-    page: "home",
-  });
-  assert.deepEqual(resolvePortalRoute("/patient/home/"), {
-    role: "patient",
-    page: "home",
-  });
-  assert.deepEqual(resolvePortalRoute("/patient/booking/"), {
-    role: "patient",
-    page: "booking",
-  });
-  assert.deepEqual(resolvePortalRoute("/patient/records"), {
-    role: "patient",
-    page: "home",
-  });
-  assert.deepEqual(resolvePortalRoute("/patient/invoices"), {
-    role: "patient",
-    page: "home",
-  });
+test("all patient SPA paths redirect to the account-free static pages", () => {
+  const home = { role: "doctor", page: "dashboard", redirectTo: "/patient/home/" };
+  const booking = { role: "doctor", page: "dashboard", redirectTo: "/patient/booking/" };
+  assert.deepEqual(resolvePortalRoute("/patient"), home);
+  assert.deepEqual(resolvePortalRoute("/patient/home"), home);
+  assert.deepEqual(resolvePortalRoute("/patient/home/"), home);
+  assert.deepEqual(resolvePortalRoute("/patient/records"), home);
+  assert.deepEqual(resolvePortalRoute("/patient/invoices"), home);
+  assert.deepEqual(resolvePortalRoute("/patient/booking"), booking);
+  assert.deepEqual(resolvePortalRoute("/patient/booking/"), booking);
 });
 
 test("Doctor clinical routes resolve to the matching workspace page", () => {
@@ -48,10 +37,11 @@ test("Doctor clinical routes resolve to the matching workspace page", () => {
   });
 });
 
-test("unknown role or page segments fail closed to the role's home page", () => {
+test("unknown role or page segments fail closed to the Doctor dashboard or public home", () => {
   assert.deepEqual(resolvePortalRoute("/patient/not-a-page"), {
-    role: "patient",
-    page: "home",
+    role: "doctor",
+    page: "dashboard",
+    redirectTo: "/patient/home/",
   });
   assert.deepEqual(resolvePortalRoute("/unknown/clinical"), {
     role: "doctor",
@@ -59,17 +49,26 @@ test("unknown role or page segments fail closed to the role's home page", () => 
   });
 });
 
-test("portal paths are canonical and cannot cross the role page allow-list", () => {
-  assert.equal(portalPath("patient", "records"), "/patient/home");
+test("portal paths use static public patient pages and Doctor allow-list", () => {
+  assert.equal(portalPath("patient", "home"), "/patient/home/");
+  assert.equal(portalPath("patient", "booking"), "/patient/booking/");
+  assert.equal(portalPath("patient", "records"), "/patient/home/");
   assert.equal(portalPath("doctor", "clinical"), "/doctor/clinical");
-  assert.equal(portalPath("patient", "clinical"), "/patient/home");
+  assert.equal(portalPath("patient", "clinical"), "/patient/home/");
   assert.equal(portalPath("doctor", "../../patient"), "/doctor/dashboard");
 });
 
-test("browser back and forward events restore the correct role and page", () => {
+test("patient navigation performs a full load of public pages; Doctor history remains SPA", () => {
   const listeners = new Map();
+  const assigned = [];
   const fakeWindow = {
-    location: { pathname: "/" },
+    location: {
+      pathname: "/",
+      assign(path) {
+        assigned.push(path);
+        fakeWindow.location.pathname = path;
+      },
+    },
     history: {
       pushState(_state, _title, path) {
         fakeWindow.location.pathname = path;
@@ -86,15 +85,21 @@ test("browser back and forward events restore the correct role and page", () => 
   const router = createPortalNavigator(fakeWindow, (route) => routes.push(route));
 
   router.navigate("patient", "home");
-  assert.equal(fakeWindow.location.pathname, "/patient/home");
+  assert.equal(fakeWindow.location.pathname, "/patient/home/");
   router.navigate("patient", "booking");
-  assert.equal(fakeWindow.location.pathname, "/patient/booking");
+  assert.equal(fakeWindow.location.pathname, "/patient/booking/");
+  assert.deepEqual(assigned, ["/patient/home/", "/patient/booking/"]);
+
   fakeWindow.location.pathname = "/doctor/appointments";
   listeners.get("popstate")();
   assert.deepEqual(routes.at(-1), {
     role: "doctor",
     page: "appointments",
   });
+
+  fakeWindow.location.pathname = "/patient/records";
+  listeners.get("popstate")();
+  assert.equal(assigned.at(-1), "/patient/home/");
 
   router.dispose();
   assert.equal(listeners.has("popstate"), false);
