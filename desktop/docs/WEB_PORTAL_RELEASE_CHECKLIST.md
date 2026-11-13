@@ -365,3 +365,28 @@ This decision supersedes earlier patient-authentication requirements in this che
 - [ ] Doctor/staff login, session lifecycle, workspace membership, tenant isolation and audit logging pass end-to-end.
 - [ ] Doctor clinical workflows and private document permissions pass using synthetic data.
 - [ ] Desktop, tablet and mobile browser captures reflect the same tested commit.
+
+
+## Autonomous release watch — 13 November 2026
+
+### Verified in this run
+
+- Product remains one responsive web portal/PWA. The legacy Patient/Doctor APK workflows are manual `workflow_dispatch` only; no APK build or release was triggered.
+- Frontend PR #18 remains Draft at `ad383caec49fb8a479d0d1b0778f6a9603f49bad`. CI [#43347445678](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43347445678) passed **78/78 tests**, dependency audit **0 vulnerabilities**, production build, manifest, PWA and real browser capture.
+- The real browser capture covers Doctor sign-in, public Patient home, public booking and the owner/admin Assistant-management sign-in gate. Assistant admin gate screenshots were captured at 1440×1000, 768×1024 and 390×844. The signed-out gate was visible, admin workspace hidden, create form not visible, font loaded and browser runtime errors were empty.
+- Public Patient home and booking routes load without Patient login. The Assistant login is a separate route. Private Patient record/profile routes did not expose data while signed out.
+- Frontend Render staging service is live on `ad383caec49fb8a479d0d1b0778f6a9603f49bad` at https://oralyn-web-portal-spa.onrender.com.
+- Release manifest now correctly keeps `doctor_auth_e2e_verified=false`: Doctor login/navigation has been observed, but API-backed create/read/update persistence acceptance has not been performed. The manifest remains `BLOCKED`.
+- Backend PR #60 remains Draft at `a874a940257a031323749495075a5b3d95a7ff91`. PostgreSQL CI [#43347841959](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43347841959) passed **229 tests**; Engine CI [#43347841900](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43347841900) passed **228 tests, 1 expected skip**.
+- PR #60 tests now explicitly deny Assistant access to clinical-note create/update, treatment-plan update, invoice create/issue/void, document upload/review/visibility, Doctor-only AI endpoints, owner/workspace/membership administration, and prescription-signing routes (none are published). Tests also prove a non-admin Doctor cannot manage Assistants and Assistant account management is clinic-scoped.
+- Synthetic Neon staging project `silent-king-54610898`, branch `br-steep-bonus-a1yqarg7`, database `oralyn_staging`, remains at Alembic `0011_document_clinical_review`. Aggregate counts match the known synthetic fixture: one Patient row and one guest appointment; no clinical notes, documents, invoices, receipts, chart entries, periodontal entries, treatment plans, patient invites/messages or patient AI rows. No production database was queried or changed.
+- Staging API health/readiness returned 200; Dental health reported PostgreSQL and UIE configured. Unauthenticated Patient and appointment list APIs returned 401. The current API deployment remains on PR #56 commit `3234ee25ec00e0040e31084db72010f0cdb8f7d6`.
+
+### Not yet accepted / release blockers
+
+- PR #60 is **not deployed**. Render's synthetic API service still tracks `feat/oralyn-backend-release-integration-20261113` at commit `3234ee25ec00e0040e31084db72010f0cdb8f7d6`; the Assistant endpoints and migration `0012`, plus public-booking idempotency migration `0013`, are therefore not live. The Render dashboard requires a signed-in browser profile to change the service branch; no branch or deployment change was attempted.
+- Assistant role/API implementation has passing CI but no live staging login, 403/tenant E2E or API-backed admin-page acceptance yet. The `/assistant-admin/` page is deliberately unlinked from ordinary Doctor navigation and fails closed when the Assistant API is absent.
+- Private document storage bucket and fail-closed malware scanner are not provisioned; document upload/sharing remains disabled.
+- Cross-tenant real staging E2E, Doctor API-backed create/read/update persistence acceptance, backup/restore, error monitoring and rollback verification remain outstanding.
+- Production database/domain and production deployment remain unapproved and untouched. Google Business Profile booking/referral link has not been changed or claimed as changed.
+- The current Patient booking catalogue has six available service choices plus “Other”. The historical 20-service brief and 20 Patient image assets do not include an approved name/description mapping in the recovered project records; do not invent the remaining 14. Keep the limitation explicit until the clinic-approved catalogue is recovered.
