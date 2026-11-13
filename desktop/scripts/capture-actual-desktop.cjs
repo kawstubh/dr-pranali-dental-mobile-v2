@@ -91,7 +91,7 @@ async function verifyFonts() {
     const probe = document.createElement("span");
     probe.textContent = "Oralyn Display Font Probe";
     probe.setAttribute("aria-hidden", "true");
-    probe.style.cssText = "position:fixed;left:-10000px;top:0;font-family:'Playfair Display',serif;font-size:32px;font-weight:400;white-space:nowrap;";
+    probe.style.cssText = "position:fixed;left:-10000px;top:0;font-family:'Playfair Display',serif;font-size:32px;font-weight:600;white-space:nowrap;";
     document.body.appendChild(probe);
     const [bodyResponse, displayResponse] = await Promise.all([
       fetch("/fonts/PlusJakartaSans-Variable.ttf", { cache: "no-store" }),
@@ -103,9 +103,16 @@ async function verifyFonts() {
     ]);
     const [bodyFaces, displayFaces] = await Promise.all([
       document.fonts.load('400 16px "Plus Jakarta Sans"', probe.textContent),
-      document.fonts.load('400 32px "Playfair Display"', probe.textContent),
+      document.fonts.load('600 32px "Playfair Display"', probe.textContent),
     ]);
     await document.fonts.ready;
+    const fontFaceRules = [...document.styleSheets].flatMap((sheet) => {
+      try { return [...sheet.cssRules]; } catch { return []; }
+    }).filter((rule) => rule.type === 5).map((rule) => ({
+      family: String(rule.style.fontFamily || "").replaceAll('"', ""),
+      weight: rule.style.fontWeight,
+      src: rule.style.src,
+    }));
     const faceRows = [...document.fonts].map((face) => ({
       family: face.family.replaceAll('"', ""),
       weight: face.weight,
@@ -119,6 +126,7 @@ async function verifyFonts() {
         playfairDisplay: { status: displayResponse.status, contentType: displayResponse.headers.get("content-type"), bytes: displayBytes.byteLength },
       },
       matchingFaces: faceRows.filter((face) => face.family === "Playfair Display" || face.family === "Plus Jakarta Sans"),
+      fontFaceRules: fontFaceRules.filter((face) => face.family === "Playfair Display" || face.family === "Plus Jakarta Sans"),
       probeFontFamily: getComputedStyle(probe).fontFamily,
     };
     probe.remove();
