@@ -92,7 +92,10 @@ test("Clinic Assistant has a separate least-privilege workspace", () => {
   assert.match(assistantSource, /assistant\/patients/);
   assert.match(assistantSource, /assistant\/appointments/);
   assert.match(assistantSource, /assistant\/billing\/invoices/);
-  assert.match(assistantSource, /sessionStorage/);
+  assert.match(assistantSource, /sessionStorage/); // receipt idempotency only
+  assert.doesNotMatch(assistantSource, /oralyn_assistant_session/);
+  assert.doesNotMatch(assistantSource, /sessionStorage\.(?:getItem|setItem|removeItem)\(tokenKey/);
+  assert.match(assistantSource, /Assistant bearer tokens remain memory-only/);
   assert.doesNotMatch(assistantSource, /\/v1\/dental\/(?:intelligence|doctor|patients|appointments)(?:\/|["?])/);
   const script = assistantSource.match(/<script>([\s\S]*?)<\/script>/)?.[1];
   assert.ok(script, "assistant page script must be present");
