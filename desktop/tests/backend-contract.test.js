@@ -162,9 +162,10 @@ test("public client does not expose linked-record billing or document methods", 
 test("staging contract requires exact Neon branch identity before synthetic booking", () => {
   assert.match(stagingContractSource, /database_branch_identity_verified === true/);
   assert.match(stagingContractSource, /ORALYN_STAGING_DATABASE_BRANCH_VERIFIED/);
-  assert.match(
-    stagingContractSource,
-    /database_identity_verified === true && branchIdentityOk && expectedApiCommit/,
+  assert.ok(
+    stagingContractSource.includes(
+      "if (health?.database_identity_verified === true && branchIdentityOk && health?.deployment_commit === expectedApiCommit && expectedApiCommit)",
+    ),
   );
 });
 
