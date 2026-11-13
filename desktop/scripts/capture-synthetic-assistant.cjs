@@ -28,6 +28,7 @@ let ws;
 let sequence = 0;
 const pending = new Map();
 const runtimeErrors = [];
+const failedResponses = [];
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function waitFor(fn, timeoutMs = 30000) {
@@ -157,6 +158,8 @@ async function main() {
     const message = JSON.parse(event.data);
     if (message.method === "Runtime.exceptionThrown") runtimeErrors.push(message.params.exceptionDetails?.text || "runtime exception");
     if (message.method === "Log.entryAdded" && message.params.entry?.level === "error") runtimeErrors.push(message.params.entry.text);
+    if (message.method === "Network.responseReceived" && Number(message.params.response?.status) >= 400) failedResponses.push({ status: message.params.response.status, url: message.params.response.url, type: message.params.type });
+    if (message.method === "Network.loadingFailed") failedResponses.push({ error: message.params.errorText, url: message.params.requestId });
     if (message.id && pending.has(message.id)) {
       const request = pending.get(message.id);
       pending.delete(message.id);
@@ -287,7 +290,7 @@ async function main() {
   await waitFor(() => evaluate('document.body.innerText.includes("Clinic Assistant sign in") && !sessionStorage.getItem("oralyn_assistant_session")'));
   await capture("assistant-logout-1440x1000.png", 1440, 1000);
 
-  if (runtimeErrors.length) throw new Error("Synthetic Assistant browser runtime errors: " + runtimeErrors.join(" | "));
+  if (runtimeErrors.length || failedResponses.length) throw new Error("Synthetic Assistant browser runtime errors: " + runtimeErrors.join(" | ") + " | HTTP/resource failures: " + JSON.stringify(failedResponses));
   const metadata = [
     "commit=" + commit,
     "environment=CI_SYNTHETIC_ONLY",
