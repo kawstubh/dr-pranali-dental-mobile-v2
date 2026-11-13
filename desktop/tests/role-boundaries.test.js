@@ -46,6 +46,13 @@ test("Doctor bearer token is memory-only and never persisted in browser storage"
   assert.match(source, /this sign-in stays in memory in this tab/);
 });
 
+test("CI records Doctor token storage hardening only after the regression suite", () => {
+  const testsIndex = assistantWorkflowSource.indexOf("Run desktop regression tests");
+  const gateIndex = assistantWorkflowSource.indexOf("Record memory-only Doctor token storage verification");
+  assert.ok(testsIndex >= 0 && gateIndex > testsIndex);
+  assert.match(assistantWorkflowSource, /ORALYN_DOCTOR_TOKEN_STORAGE_HARDENING_VERIFIED=true/);
+});
+
 test("public patient journey is served only by account-free static pages", () => {
   assert.doesNotMatch(source, /function Patient\(|patientSession|patientLinks|patientInviteCode|oralyn_patient_record_id/);
   assert.match(patientHomeSource, /No patient account, password or OTP is needed/);
