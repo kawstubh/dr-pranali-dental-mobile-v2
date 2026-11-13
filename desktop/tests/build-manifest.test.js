@@ -40,6 +40,7 @@ test("staging manifest records verified public gates without claiming live booki
         ORALYN_DATABASE_IDENTITY_VERIFIED: "true",
         ORALYN_SECURITY_HEADERS_VERIFIED: "true",
         ORALYN_GUEST_BOOKING_E2E_VERIFIED: "false",
+        ORALYN_DOCTOR_API_PERSISTENCE_E2E_VERIFIED: "false",
         ORALYN_MOBILE_BROWSER_E2E_VERIFIED: "true",
         ORALYN_SERVICE_CATALOG_UI_VERIFIED: "true",
         ORALYN_SERVICE_CATALOG_API_VERIFIED: "true",
@@ -66,6 +67,7 @@ test("staging manifest records verified public gates without claiming live booki
     assert.equal(manifest.checks.database_identity_verified, true);
     assert.equal(manifest.checks.https_security_headers_verified, true);
     assert.equal(manifest.checks.doctor_auth_e2e_verified, false);
+    assert.equal(manifest.checks.doctor_api_persistence_e2e_verified, false);
     assert.equal(manifest.checks.patient_guest_booking_e2e_verified, false);
     assert.equal(manifest.checks.mobile_browser_e2e_verified, true);
     assert.equal(manifest.checks.public_service_catalog_ui_verified, true);
@@ -87,6 +89,7 @@ test("staging manifest records verified public gates without claiming live booki
       "error_monitoring_verified",
       "rollback_plan_verified",
       "doctor_auth_e2e_verified",
+      "doctor_api_persistence_e2e_verified",
       "assistant_role_e2e_verified",
       "guest_booking_idempotency_verified",
       "assistant_ui_api_verified",
