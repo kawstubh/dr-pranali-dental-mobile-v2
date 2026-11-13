@@ -4,12 +4,15 @@
 
 Last refreshed: 13 November 2026.
 
-## Latest CI/runtime follow-up — 13 November 2026
+## Latest CI/runtime verification — 13 November 2026
 
-- Frontend head `8643f1cb4ca09ddbef77b7aa5e537d28bdeebf8d` upgrades checkout/setup-node/upload-artifact to Node 24-compatible action releases and Chrome setup to `browser-actions/setup-chrome@v2.2.0` with the latest Chrome channel. Backend PR #60 head `68898259171c2880057e3d07e24d2006e836ff3e` upgrades checkout/setup-python to Node 24-compatible action releases.
-- Backend PostgreSQL CI #43387808995 passed 237 tests; Engine Tests #43387809059 passed 236 tests with one expected skip. The Node 20 action-runtime deprecation warnings are gone; one non-blocking Starlette/httpx TestClient deprecation warning remains.
-- Frontend CI #43387803904 passed 93/93 tests, audits (0 vulnerabilities), build, live synthetic booking checks, and desktop/tablet/mobile browser captures with no browser runtime errors. Its manifest was generated while the API deployment was still rolling, so it correctly retained a temporary `staging_api_commit_verified` blocker.
-- Synthetic staging API deploy `dep-dbrbvpmi0phs73fdju8g` is now LIVE on exact backend PR #60 head `68898259171c2880057e3d07e24d2006e836ff3e`. A fresh frontend CI run is required to regenerate the manifest against this completed deployment; no production resources were touched.
+- Frontend head `5fc3f1ba0529849be56090ea1e04d0397443e4a8` upgrades checkout/setup-node/upload-artifact to Node 24-compatible action releases and Chrome setup to `browser-actions/setup-chrome@v2.2.0` with the latest Chrome channel. Backend PR #60 head `68898259171c2880057e3d07e24d2006e836ff3e` upgrades checkout/setup-python to Node 24-compatible action releases.
+- Frontend CI [#43388248907](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43388248907) passed **93/93 tests**, root/desktop dependency audits (**0 vulnerabilities**), production build, the live synthetic staging contract, and headless-Chrome desktop/tablet/mobile captures. Public-page capture reported `runtimeErrors=[]`; required-field and past-time submissions made no API calls; all 20 catalogue labels, local fonts and PWA shell checks passed.
+- The live staging contract passed exact-origin CORS, API/portal security headers, Neon database identity, public account-free routes, protected Doctor/Assistant API denials, 20-service API/UI catalogue, guest booking without private IDs, idempotency replay, and exact deployed portal/API commit matching.
+- Backend PostgreSQL CI [#43387808995](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43387808995) passed **237 tests**; Engine Tests [#43387809059](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43387809059) passed **236 tests, 1 expected skip**. Node 20 action-runtime deprecation warnings are gone; one non-blocking Starlette/httpx TestClient deprecation warning remains.
+- Staging API deploy `dep-dbrbvpmi0phs73fdju8g` is LIVE on exact backend head `68898259171c2880057e3d07e24d2006e836ff3e`. Staging portal deploy `dep-dbrc10e7bikc73epuhs0` and static alias deploy `dep-dbrc10e7bikc73epui00` are LIVE on frontend head `5fc3f1ba0529849be56090ea1e04d0397443e4a8`. The static alias remains secondary until its deep-route behavior is independently verified.
+- The release manifest remains **BLOCKED on exactly ten genuine gates**: private document storage, malware scanning, backup/restore, error monitoring, rollback rehearsal, real Doctor login/API persistence, real Assistant login/role acceptance, Assistant UI-to-live-API acceptance, live cross-tenant E2E, and authenticated Doctor/Assistant screenshots. Mocked CI fixtures are not counted as authenticated acceptance.
+- Synthetic Neon remains at Alembic `0013_public_booking_idempotency`: 4 patients, 4 appointments, 3 public booking requests, 0 Assistant accounts, 0 Assistant sessions, 0 receipts, 0 documents and 5 audit events. The latest idempotency replay did not create another booking. Synthetic-only; no real patient data.
 
 ## Product decisions
 
