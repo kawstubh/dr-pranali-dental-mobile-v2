@@ -2,7 +2,7 @@
 
 **Status: BLOCKED — synthetic staging is operational, but production hosting, authenticated acceptance and security infrastructure are not release-ready.**
 
-Last refreshed: 13 November 2026, 12:36 UTC.
+Last refreshed: 13 November 2026, 17:41 UTC.
 
 ## Product decisions
 
@@ -23,7 +23,7 @@ Last refreshed: 13 November 2026, 12:36 UTC.
 - Render service: srv-dbr2ttsipgvc739a4tmg
 - Type/plan: Node/Vite web service, Free
 - Branch: feat/oralyn-desktop-app
-- Deployed commit: 7452e65d664cfc4e820cd564b303eb4425a7e610
+- Deployed commit: d532d067cb1dc7c5b3d4978d9d0c3fa46b1338a0 (deploy dep-dbrk758874rs73ft3d5g, LIVE)
 - The public patient landing, booking page and Doctor deep route load after the service wakes.
 - The service spins down after 15 minutes without inbound traffic and can return a temporary 503 on the first request while it restarts. Render documents a roughly one-minute wake-up. This is a staging preview only, not production hosting or an uptime guarantee.
 - Do not upgrade or spend money without approval.
@@ -42,8 +42,8 @@ Last refreshed: 13 November 2026, 12:36 UTC.
 - URL: https://oralyn-staging-api-assistant.onrender.com
 - Render service: srv-dbr8m159fdbs73dl404g
 - Branch: feat/oralyn-clinic-assistant-rbac
-- Draft backend PR #60 head and latest LIVE deployment: b9e3efe31c1f78b0169fbb2d0d39cf3bcd7ad2ef
-- Deploy: dep-dbrg3jjm8hqs73cun52g
+- Draft backend PR #60 head and latest LIVE deployment: 39ed30ee82b9aa792fc19ea01639ee37268f1f49
+- Deploy: dep-dbrjkrui0phs73822v1g
 - Fresh uncached checks after deployment: /health=200, /ready=200, /v1/dental/health=200; database=PostgreSQL, database identity verified=true, UIE configured=true, deployment commit matches the live head.
 - Unauthenticated GET /v1/dental/patients, /v1/dental/appointments and /v1/dental/assistant/patients returned 401. Public booking GET returned 405 (POST-only). Legacy patient-record and patient-AI prefixes returned 404.
 - Live OpenAPI includes Doctor and separate Assistant routes, but no patient-account/login paths and no patient-AI operation paths. An unused legacy PatientAIIn schema component remains; it is not an operation.
@@ -55,27 +55,25 @@ Last refreshed: 13 November 2026, 12:36 UTC.
 
 - Repository: kawstubh/dr-pranali-dental-mobile-v2
 - Branch: feat/oralyn-desktop-app
-- Current head: 7452e65d664cfc4e820cd564b303eb4425a7e610
-- [Frontend CI #43388571558](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43388571558) passed 93/93 tests, zero dependency vulnerabilities, production build, live staging contract and desktop/tablet/mobile browser captures.
+- Current head: d532d067cb1dc7c5b3d4978d9d0c3fa46b1338a0
+- [Frontend CI #43469465006](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43469465006) passed 112/112 tests, npm audit reported zero vulnerabilities, production build, live synthetic staging contract, read-only Assistant API contract, responsive desktop/tablet/mobile browser captures, approved-brand assets and PWA/font checks. Browser evidence is synthetic UI fixtures, not real authenticated Doctor/Assistant acceptance.
 - The live patient pages display the full 20-service catalogue plus Other dental concern. No patient account, password or OTP is required.
 - The live Doctor route serves the workspace entry; the CI Doctor fixture is synthetic and does not prove live authenticated CRUD persistence.
 
-### Clinic Assistant React UI — Draft PR #21
+### Clinic Assistant React UI — integrated in Draft PR #18
 
-- Branch: feat/oralyn-assistant-ui-rebased-20261113
-- Head: d2e3be0416ad3e19490e968f577b401e36382e97
-- [Assistant UI CI #43422232513](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43422232513) passed.
-- The live portal currently serves the older static Assistant page from PR #18 at /assistant/. It uses only /v1/dental/assistant/* routes and holds the bearer token in page memory; sessionStorage is used only for receipt idempotency keys.
-- PR #21 is the newer React Assistant UI. Its live staging contract step was deliberately skipped because it is not the canonical deployed branch. Treat its screenshots as synthetic UI evidence, not real authentication acceptance.
-- Older PR #20 is superseded by PR #21; do not merge PR #20.
+- The canonical portal now routes `/assistant/` through the React `AssistantApp` in the same responsive SPA.
+- The Assistant bearer token remains in component memory; sessionStorage is used only for receipt idempotency keys. The UI calls only `/v1/dental/assistant/*` endpoints.
+- CI #43469465006 captured synthetic Assistant screens and verified no Doctor clinical AI is shown. The fixture metadata explicitly records `staging_assistant_login_verified=false`; no real Assistant account/session exists in staging.
+- PR #21 is superseded by the integrated UI and remains Draft/unmerged. Do not merge PR #21 or older PR #20.
 
 ### Backend — Draft PR #60
 
 - Repository: kawstubh/universal-intelligence-engine
 - Branch: feat/oralyn-clinic-assistant-rbac
-- Head: b9e3efe31c1f78b0169fbb2d0d39cf3bcd7ad2ef
-- Engine and PostgreSQL CI workflows #43418656816 and #43418656822 passed.
-- The exact head is now deployed to the isolated synthetic staging API, and fresh health/authorization checks passed.
+- Head: 39ed30ee82b9aa792fc19ea01639ee37268f1f49
+- [Engine CI #43446614361](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43446614361) passed 234 tests with 3 expected skips; [PostgreSQL CI #43446614469](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43446614469) passed 237 tests.
+- The exact head is LIVE on the isolated synthetic staging API. Frontend CI #43469465006 verified the exact API commit, PostgreSQL identity, UIE, exact-origin CORS, security headers and unauthenticated private API denials.
 
 ### Expired private-upload cleanup — Draft PR #61
 
@@ -108,10 +106,10 @@ Last refreshed: 13 November 2026, 12:36 UTC.
 - Branch: br-steep-bonus-a1yqarg7
 - Database: oralyn_staging
 - Current migration: 0013_public_booking_idempotency
-- Fresh aggregate counts: 6 patients, 6 appointments, 5 public booking requests, 0 Assistant accounts, 0 Assistant sessions, 0 receipts, 0 documents and 7 audit events.
+- Fresh aggregate counts on the source branch: 8 patients (all 8 names explicitly test/synthetic-marked), 8 appointments, 7 public booking requests, 0 Assistant accounts, 0 Assistant sessions, 0 receipts, 0 documents and 9 audit events. No patient names, phone numbers or clinical content were read.
 - All six patient names are explicitly test/synthetic-marked; appointment and booking rows link to those synthetic patients. No patient record values were copied into this checklist.
 - The private bucket oralyn-private-documents exists and is empty.
-- Public connections remain enabled, HIPAA is disabled, history retention is six hours, and no snapshot schedule or snapshots are present.
+- Public connections remain enabled, HIPAA is disabled and history retention is six hours. A manual snapshot `snap-late-surf-a1j1sljm` was created at 17:12 UTC and restored to branch `br-proud-scene-a1g7g3qo` with `restore_status=finalized`. Aggregate counts and migration `0013_public_booking_idempotency` match the source branch (8 patients, 8 appointments, 7 public requests, 0 Assistant accounts/sessions, 0 documents, 0 receipts and 9 audit events). The automatic snapshot schedule is still empty; no application-level failover test has been performed, so the backup/restore release gate remains false.
 - Never copy recovery or production patient data into this project.
 
 ## Documents and malware scanning
@@ -143,26 +141,30 @@ Backend tests cover allowed writes, 403 denials, cross-clinic isolation, Doctor-
 
 ## Release manifest and hard blockers
 
-The build manifest now explicitly requires all of the following to be verified:
+The exact-commit CI manifest for d532d067cb1dc7c5b3d4978d9d0c3fa46b1338a0 remains **BLOCKED**. Staging checks are not production approval.
 
-1. Private document storage and its API credentials.
-2. Persistent malware scanner in isolated staging.
-3. Backup and restore rehearsal.
+The remaining 16 gates are:
+
+1. Private document storage API integration and verified credentials.
+2. Persistent fail-closed malware scanning and quarantine lifecycle.
+3. Backup/restore rehearsal beyond the current manual snapshot-and-branch aggregate comparison; automatic snapshot schedule and application-level recovery are not verified.
 4. Error monitoring and alerting.
 5. Rollback rehearsal.
 6. Real Doctor login and API-backed create/read/update persistence.
-7. Real Assistant login and least-privilege acceptance.
-8. Assistant UI-to-live-API acceptance.
-9. Live cross-tenant staging E2E.
-10. Authenticated Doctor and Assistant screenshots.
-11. Production always-on hosting.
-12. Production database verification.
-13. Production custom-domain verification.
-14. Explicit production deployment approval.
+7. Real Clinic Assistant login and least-privilege acceptance.
+8. Shared/distributed production guest-booking rate limiting (the current limiter is in-process and single-instance only).
+9. Assistant UI-to-live-API authenticated acceptance.
+10. Live Assistant data-minimization acceptance.
+11. Authenticated cross-tenant staging E2E.
+12. Real authenticated Doctor and Assistant screenshots.
+13. Always-on production hosting.
+14. Production database verification.
+15. Production custom-domain verification.
+16. Explicit production deployment approval.
 
-The staging Vite preview is a Free web service and sleeps after 15 minutes idle. It is not production hosting. The static alias is not canonical because the Doctor deep route returns 404. Do not mark production hosting verified based on either staging URL.
+The free Render preview is staging only and may sleep after 15 minutes idle. The public build manifest is conservative; use the exact-commit GitHub Actions manifest artifact for staging evidence. Never set flags manually to make a release appear ready.
 
-Never change manifest flags manually to make a release appear ready. All four production gates default to false until independently verified. The Render-hosted build manifest is generated without GitHub Actions verification environment variables, so it conservatively marks CI-only checks false. Use the GitHub Actions manifest artifact for the exact commit as the authoritative staging evidence; do not interpret the Render copy as a failed test run. Production gates remain false in both.
+Clinic confirmation of the exact production wording of the 20 catalogue labels is also required before publishing the live production catalogue. The labels were recovered from repository assets; do not invent or silently rename services.
 
 ## Operational restrictions
 
@@ -172,3 +174,18 @@ Never change manifest flags manually to make a release appear ready. All four pr
 - Do not enable public patient record access or patient-specific share links.
 - Do not change Google Business Profile booking links without authorized access and confirmation.
 - A green CI build or mocked screenshot is not production release approval.
+
+
+## Latest verified release-watch update — 13 November 2026, 17:41 UTC
+
+- Portal PR #18 is open, Draft and unmerged at `d532d067cb1dc7c5b3d4978d9d0c3fa46b1338a0`. CI #43469465006 completed successfully: 112/112 tests, zero npm audit vulnerabilities, production build, live synthetic staging contract, read-only Assistant API contract, responsive browser captures, PWA/fonts, approved logo assets and zero captured browser runtime errors.
+- Render portal service `srv-dbr2ttsipgvc739a4tmg` deploy `dep-dbrk758874rs73ft3d5g` is LIVE on the same d532d commit. It is a Free service, not an uptime-backed production host.
+- The CI browser capture verifies required fields, India-time future-date validation, no network request for empty/past submissions, 20 catalogue options plus Other, and no patient account requirement. The 20 repository labels are: Dental Check-up & Consultation; Scaling & Cleaning; Teeth Whitening; Tooth Filling; Root Canal Treatment (RCT); Dental Crowns & Caps; Dental Implants; Tooth Extraction; Braces Treatment; Clear Aligners (Invisible Braces); Dentures (Full / Partial); Veneers (Smile Makeover); Gum Treatment (Periodontal Care); Kids Dentistry (Child Care); Emergency Dental Care; Tooth Sensitivity Treatment; Dental Sealants (Cavity Prevention); Oral Hygiene Education; Smile Makeover (Cosmetic Dentistry); TMJ & Jaw Pain Treatment.
+- The CI Doctor and Assistant screenshots/writes are synthetic fixtures. Metadata explicitly says `staging_authenticated_e2e=false`, `doctor_password_login_verified=false` and `staging_assistant_login_verified=false`. Do not treat these as real authenticated acceptance.
+- Backend PR #60 remains Draft at `39ed30ee82b9aa792fc19ea01639ee37268f1f49`; Engine CI passed 234 tests with 3 skips and PostgreSQL CI passed 237 tests. Render API service `srv-dbr8m159fdbs73dl404g`, deploy `dep-dbrjkrui0phs73822v1g`, is LIVE on the exact same commit.
+- The staging API contract verified PostgreSQL identity, UIE configuration, exact-origin CORS, security headers and 401 responses for unauthenticated private APIs. Assistant API permissions are enforced in backend tests: allowed reception/intake/appointment coordination and approved payment receipt recording; 403 denials for clinical notes, odontograms, clinical intelligence, prescriptions, owner settings, Doctor-account management and private documents; tenancy isolation, revocation, audit logging and idempotency. No Assistant account/session is persisted in staging.
+- Read-only Render log queries from 17:10–17:41 UTC returned no app error/fatal logs and no 5xx request logs.
+- Read-only Neon comparison of the source branch and finalized restored branch matched at migration `0013_public_booking_idempotency`: 8 explicitly test/synthetic-marked patients, 8 appointments, 7 public booking requests, 0 Assistant accounts/sessions, 0 receipts, 0 documents and 9 audit events. Snapshot `snap-late-surf-a1j1sljm` exists and the restore branch is finalized. This is partial backup/restore evidence only; automatic snapshots and application-level restore/failover remain unverified.
+- The private `oralyn-private-documents` bucket exists and is empty. A scoped Neon storage credential exists, but backend API integration is not verified. No persistent ClamAV scanner or cleanup runner is provisioned. Uploads and sharing remain disabled.
+- Live third-party browser-agent capture could not start because its wallet balance is negative; no top-up or spend was made. The GitHub Actions headless Chrome capture above passed. Do not use paid browser tooling without explicit approval.
+- No production deployment, production migration, production secret change, paid resource, real booking, patient-data transfer or Google Business Profile change was performed.
