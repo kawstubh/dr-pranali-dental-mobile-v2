@@ -19,7 +19,7 @@ fs.mkdirSync(output, { recursive: true });
 
 const chrome = spawn(chromePath, [
   "--headless=new", "--no-sandbox", "--disable-gpu", "--hide-scrollbars",
-  "--remote-debugging-port=" + port, "--remote-allow-origins=*",
+  "--remote-debugging-address=127.0.0.1", "--remote-debugging-port=" + port, "--remote-allow-origins=*",
   "--disable-dev-shm-usage", "--user-data-dir=" + profile,
   "--window-size=1440,1000", baseUrl + "/assistant/",
 ], { stdio: "ignore", windowsHide: true });
@@ -78,7 +78,7 @@ async function capture(name, width = 1440, height = 1000, mobile = false) {
 
 const fixtureSource = [
   "(() => {",
-  "  window.ORALYN_API_BASE = 'https://oralyn-staging-api-synthetic.onrender.com';",
+  "  window.ORALYN_API_BASE = 'https://oralyn-staging-api-assistant.onrender.com';",
   "  const token = 'synthetic-assistant-token';",
   "  const assistant = { id: 'assistant-synthetic-001', email: 'reception.synthetic@example.test', role: 'assistant', clinic_id: 'clinic-synthetic-001' };",
   "  const state = {",
@@ -147,10 +147,10 @@ async function main() {
     const response = await fetch("http://127.0.0.1:" + port + "/json/list").catch(() => null);
     if (!response || !response.ok) return false;
     const targets = await response.json();
-    return targets.find((item) => item.type === "page" && item.webSocketDebuggerUrl && item.url.startsWith(baseUrl));
+    return targets.find((item) => item.type === "page" && item.webSocketDebuggerUrl);
   });
   const targets = await (await fetch("http://127.0.0.1:" + port + "/json/list")).json();
-  const target = targets.find((item) => item.type === "page" && item.webSocketDebuggerUrl && item.url.startsWith(baseUrl));
+  const target = targets.find((item) => item.type === "page" && item.webSocketDebuggerUrl);
   if (!target) throw new Error("Chrome page target not found");
 
   ws = new WebSocket(target.webSocketDebuggerUrl);
