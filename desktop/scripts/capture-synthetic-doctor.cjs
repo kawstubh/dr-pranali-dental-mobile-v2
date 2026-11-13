@@ -41,7 +41,7 @@ const pending = new Map();
 const runtimeErrors = [];
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function waitFor(fn, timeoutMs = 30000) {
+async function waitFor(fn, timeoutMs = 30000, label = "browser condition") {
   const end = Date.now() + timeoutMs;
   let lastError = "";
   while (Date.now() < end) {
@@ -53,7 +53,7 @@ async function waitFor(fn, timeoutMs = 30000) {
     }
     if (chromeExit) {
       throw new Error(
-        "Chrome exited before DevTools became ready (code=" + chromeExit.code +
+        "Chrome exited while waiting for " + label + " (code=" + chromeExit.code +
         ", signal=" + chromeExit.signal + ", port=" + port + "). " +
         chromeLogs.join("").slice(-4000)
       );
@@ -61,8 +61,8 @@ async function waitFor(fn, timeoutMs = 30000) {
     await sleep(250);
   }
   throw new Error(
-    "Timed out waiting for Chrome DevTools on 127.0.0.1:" + port +
-    " for " + baseUrl + ". Last check: " + (lastError || "no CDP target") +
+    "Timed out waiting for " + label + " at " + baseUrl +
+    ". Last check: " + (lastError || "condition not met") +
     ". Chrome stderr: " + chromeLogs.join("").slice(-4000)
   );
 }
@@ -203,7 +203,7 @@ async function main() {
     const created = await fetch("http://127.0.0.1:" + port + "/json/new?about:blank", { method: "PUT" });
     if (created.ok) return await created.json();
     return null;
-  });
+  }, 45000, "Chrome DevTools page target");
   const targets = await (await fetch("http://127.0.0.1:" + port + "/json/list")).json();
   const target = targets.find((item) => item.type === "page" && item.webSocketDebuggerUrl);
   if (!target) throw new Error("Chrome page target not found");
@@ -232,7 +232,16 @@ async function main() {
   let pwaControlled = await evaluate("Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)");
   if (!pwaControlled) {
     await send("Page.reload", { ignoreCache: true });
-    await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Sign in with your clinic-issued email and password") && Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)'), 20000);
+    try {
+      await waitFor(
+        () => evaluate('document.readyState === "complete" && document.body.innerText.includes("Sign in with your clinic-issued email and password") && Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)'),
+        30000,
+        "service-worker-controlled Doctor page",
+      );
+    } catch (error) {
+      const pwaState = await evaluate("({path:location.pathname,controller:Boolean(navigator.serviceWorker && navigator.serviceWorker.controller),registration:(async()=>{const r=await navigator.serviceWorker?.getRegistration('/');return r?{scope:r.scope,activeState:r.active?.state||null}:null})()})").catch(() => null);
+      throw new Error(error.message + " PWA state=" + JSON.stringify(pwaState));
+    }
     pwaControlled = await evaluate("Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)");
   }
   if (!pwaControlled) throw new Error("Synthetic Doctor capture is not controlled by the Oralyn PWA service worker.");
