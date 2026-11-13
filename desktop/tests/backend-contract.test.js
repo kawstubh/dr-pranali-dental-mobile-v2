@@ -153,3 +153,9 @@ test("doctor appointment updates and doctor provisioning use authenticated clini
     role: "doctor",
   });
 });
+
+
+test("public client does not expose linked-record billing or document methods", () => {
+  const linkedRecordMethods = Object.keys(dentalApi).filter((key) => key.startsWith("patient"));
+  assert.deepEqual(linkedRecordMethods, []);
+});
