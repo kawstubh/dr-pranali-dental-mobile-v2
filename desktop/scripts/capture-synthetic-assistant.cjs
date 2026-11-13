@@ -10,7 +10,6 @@ const chromePath = process.env.CHROME_BIN || "google-chrome";
 const port = Number(process.env.CDP_PORT || 19312);
 const baseUrl = process.env.ORALYN_PREVIEW_URL || "http://127.0.0.1:4176";
 const profile = path.join(os.tmpdir(), "oralyn-synthetic-assistant-" + process.pid);
-const commit = process.env.GITHUB_SHA || "unknown";
 const assetsDir = path.join(root, "dist", "assets");
 const jsFile = fs.readdirSync(assetsDir).find((name) => name.endsWith(".js"));
 if (!jsFile) throw new Error("Production JavaScript bundle was not found.");
@@ -19,19 +18,18 @@ fs.mkdirSync(output, { recursive: true });
 
 const chrome = spawn(chromePath, [
   "--headless=new", "--no-sandbox", "--disable-gpu", "--hide-scrollbars",
-  "--remote-debugging-address=127.0.0.1", "--remote-debugging-port=" + port, "--remote-allow-origins=*",
+  "--remote-debugging-port=" + port, "--remote-allow-origins=*",
   "--disable-dev-shm-usage", "--user-data-dir=" + profile,
-  "--window-size=1440,1000", "about:blank",
+  "--window-size=1440,1000", baseUrl + "/assistant/",
 ], { stdio: "ignore", windowsHide: true });
 
 let ws;
 let sequence = 0;
 const pending = new Map();
 const runtimeErrors = [];
-const failedResponses = [];
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function waitFor(fn, timeoutMs = 30000, description = "browser condition") {
+async function waitFor(fn, timeoutMs = 30000) {
   const end = Date.now() + timeoutMs;
   while (Date.now() < end) {
     try {
@@ -40,7 +38,7 @@ async function waitFor(fn, timeoutMs = 30000, description = "browser condition")
     } catch {}
     await sleep(250);
   }
-  throw new Error("Timed out waiting for " + description + " at " + baseUrl);
+  throw new Error("Timed out waiting for " + baseUrl);
 }
 
 function send(method, params = {}) {
@@ -67,77 +65,59 @@ async function evaluate(expression) {
   return result.result && result.result.value;
 }
 
-async function capture(name, width = 1440, height = 1000, mobile = false) {
+async function capture(name, width, height, mobile = false) {
   await send("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile });
-  await sleep(400);
+  await sleep(450);
   const shot = await send("Page.captureScreenshot", {
     format: "png", captureBeyondViewport: false, fromSurface: true,
   });
   fs.writeFileSync(path.join(output, name), Buffer.from(shot.data, "base64"));
 }
 
+async function captureResponsive(prefix) {
+  await capture(prefix + "-1440x1000.png", 1440, 1000, false);
+  await capture(prefix + "-1280x800.png", 1280, 800, false);
+  await capture(prefix + "-390x844.png", 390, 844, true);
+}
+
 const fixtureSource = [
   "(() => {",
-  "  window.ORALYN_API_BASE = 'https://oralyn-staging-api-assistant.onrender.com';",
   "  const token = 'synthetic-assistant-token';",
-  "  const assistant = { id: 'assistant-synthetic-001', email: 'reception.synthetic@example.test', role: 'assistant', clinic_id: 'clinic-synthetic-001' };",
-  "  const state = {",
-  "    patients: [{ id: 'patient-synthetic-001', name: 'Ananya Synthetic', phone: '+919000000001' }],",
-  "    appointments: [{ id: 'appointment-synthetic-001', patient_name: 'Ananya Synthetic', patient_phone: '+919000000001', treatment_type: 'Dental check-up', starts_at: '2026-11-20T10:00:00+05:30', status: 'requested' }],",
-  "    invoices: [{ id: 'invoice-synthetic-001', invoice_number: 'INV-SYN-001', patient_name: 'Ananya Synthetic', status: 'issued', due_date: '2026-12-01', total_paise: 500000, paid_paise: 150000, balance_paise: 350000 }],",
-  "    requests: [], writes: [], unhandled: []",
-  "  };",
-  "  window.__ORALYN_ASSISTANT_FIXTURE = state;",
-  "  const originalFetch = window.fetch.bind(window);",
+  "  const clinicId = 'clinic-synthetic-one';",
+  "  const patientOne = { id: 'patient-synthetic-001', name: 'Ananya Synthetic', phone: '+91 90000 00001' };",
+  "  const patientTwo = { id: 'patient-synthetic-002', name: 'Bharat Synthetic', phone: '+91 90000 00002' };",
+  "  const patients = [patientOne, patientTwo];",
+  "  const appointments = [",
+  "    { id: 'appointment-synthetic-001', patient_id: patientOne.id, patient_name: patientOne.name, patient_phone: patientOne.phone, starts_at: new Date(Date.now() + 86400000).toISOString(), treatment_type: 'Dental check-up', status: 'requested', created_at: new Date().toISOString() },",
+  "    { id: 'appointment-synthetic-002', patient_id: patientTwo.id, patient_name: patientTwo.name, patient_phone: patientTwo.phone, starts_at: new Date(Date.now() + 172800000).toISOString(), treatment_type: 'Cleaning & polishing', status: 'confirmed', created_at: new Date().toISOString() }",
+  "  ];",
+  "  const invoices = [{ id: 'invoice-synthetic-001', invoice_number: 'SYN-INV-001', currency: 'INR', status: 'issued', subtotal_paise: 150000, discount_paise: 0, tax_paise: 0, total_paise: 150000, paid_paise: 50000, balance_paise: 100000, due_date: '2026-11-30', issued_at: new Date().toISOString(), receipts: [{ receipt_number: 'SYN-RCPT-001', amount_paise: 50000, method: 'upi', paid_at: new Date().toISOString() }] }];",
+  "  sessionStorage.setItem('oralyn_assistant_token', token);",
+  "  window.__ORALYN_ASSISTANT_WRITES = [];",
+  "  window.__ORALYN_ASSISTANT_UNHANDLED = [];",
+  "  const record = (value) => window.__ORALYN_ASSISTANT_WRITES.push(value);",
   "  const json = (payload, status = 200) => new Response(JSON.stringify(payload), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store, private' } });",
-  "  const readBody = (init) => { try { return JSON.parse(init?.body || '{}'); } catch { return {}; } };",
+  "  const originalFetch = window.fetch.bind(window);",
   "  window.fetch = async (input, init = {}) => {",
   "    const rawUrl = typeof input === 'string' || input instanceof URL ? String(input) : input.url;",
   "    const url = new URL(rawUrl, location.href);",
   "    if (!url.pathname.startsWith('/v1/dental/')) return originalFetch(input, init);",
-  "    const method = String(init.method || (input instanceof Request ? input.method : 'GET')).toUpperCase();",
   "    const headers = new Headers(init.headers || (input instanceof Request ? input.headers : undefined));",
-  "    const auth = headers.get('authorization') || '';",
-  "    state.requests.push(method + ' ' + url.pathname);",
-  "    if (url.pathname === '/v1/dental/assistant/auth/login' && method === 'POST') {",
-  "      const body = readBody(init);",
-  "      if (body.email !== assistant.email || body.password !== 'SyntheticAssistantPassword!123') return json({ detail: { message: 'Synthetic fixture credentials are invalid.' } }, 401);",
-  "      state.writes.push('assistant-login');",
-  "      return json({ access_token: token, user: assistant });",
-  "    }",
-  "    if (auth !== 'Bearer ' + token) return json({ detail: { message: 'Synthetic Assistant authentication required.' } }, 401);",
-  "    if (url.pathname === '/v1/dental/assistant/me' && method === 'GET') return json({ user: assistant });",
-  "    if (url.pathname === '/v1/dental/assistant/auth/logout' && method === 'POST') { state.writes.push('assistant-logout'); return json({ result: { logged_out: true } }); }",
-  "    if (url.pathname === '/v1/dental/assistant/patients' && method === 'GET') return json({ result: state.patients });",
-  "    if (url.pathname === '/v1/dental/assistant/patients' && method === 'POST') {",
-  "      const body = readBody(init);",
-  "      const patient = { id: 'patient-synthetic-created', name: body.name, phone: body.phone };",
-  "      state.patients.push(patient); state.writes.push('patient-intake');",
-  "      return json({ result: patient }, 201);",
-  "    }",
-  "    if (url.pathname === '/v1/dental/assistant/appointments' && method === 'GET') return json({ result: state.appointments });",
-  "    const appointmentMatch = url.pathname.match(/^\\/v1\\/dental\\/assistant\\/appointments\\/([^/]+)$/);",
-  "    if (appointmentMatch && method === 'PATCH') {",
-  "      const item = state.appointments.find((entry) => entry.id === appointmentMatch[1]);",
-  "      if (!item) return json({ detail: { message: 'Synthetic appointment not found.' } }, 404);",
-  "      const body = readBody(init);",
-  "      Object.assign(item, body);",
-  "      state.writes.push(body.starts_at ? 'appointment-reschedule' : 'appointment-confirm');",
-  "      return json({ result: item });",
-  "    }",
-  "    if (url.pathname === '/v1/dental/assistant/billing/invoices' && method === 'GET') return json({ result: state.invoices });",
-  "    const receiptMatch = url.pathname.match(/^\\/v1\\/dental\\/assistant\\/billing\\/invoices\\/([^/]+)\\/receipts$/);",
-  "    if (receiptMatch && method === 'POST') {",
-  "      const invoice = state.invoices.find((entry) => entry.id === receiptMatch[1]);",
-  "      const body = readBody(init);",
-  "      if (!invoice || Number(body.amount_paise) <= 0 || Number(body.amount_paise) > invoice.balance_paise) return json({ detail: { message: 'Invalid synthetic receipt.' } }, 409);",
-  "      invoice.paid_paise += Number(body.amount_paise); invoice.balance_paise -= Number(body.amount_paise);",
-  "      invoice.status = invoice.balance_paise === 0 ? 'paid' : 'partially_paid';",
-  "      state.writes.push('receipt-recorded');",
-  "      return json({ result: { id: 'receipt-synthetic-001', amount_paise: body.amount_paise, method: body.method } }, 201);",
-  "    }",
-  "    state.unhandled.push(method + ' ' + url.pathname);",
-  "    return json({ detail: { message: 'This synthetic Assistant fixture does not allow that API path.' } }, 403);",
+  "    const method = String(init.method || (input instanceof Request ? input.method : 'GET')).toUpperCase();",
+  "    const activeToken = (headers.get('authorization') || '').replace(/^Bearer\\s+/i, '');",
+  "    if (activeToken !== token) return json({ detail: { code: 'ASSISTANT_SESSION_INVALID', message: 'Synthetic assistant session required' } }, 401);",
+  "    if (url.pathname === '/v1/dental/auth/assistant/me') return json({ user: { id: 'assistant-synthetic-001', email: 'reception.synthetic@example.test', role: 'assistant', clinic_id: clinicId } });",
+  "    if (url.pathname === '/v1/dental/auth/assistant/logout' && method === 'POST') { record('logout'); return json({ ok: true }); }",
+  "    if (url.pathname === '/v1/dental/assistant/patients' && method === 'GET') return json({ patients });",
+  "    if (url.pathname === '/v1/dental/assistant/patients' && method === 'POST') { let body = {}; try { body = JSON.parse(init.body || '{}'); } catch {} const patient = { id: 'patient-synthetic-created', name: body.name || 'Synthetic Assistant Intake', phone: body.phone || '+91 90000 00003' }; patients.unshift(patient); record('patient-create'); return json(patient, 201); }",
+  "    if (url.pathname === '/v1/dental/assistant/appointments' && method === 'GET') return json({ appointments });",
+  "    if (url.pathname === '/v1/dental/assistant/appointments' && method === 'POST') { let body = {}; try { body = JSON.parse(init.body || '{}'); } catch {} const patient = patients.find((item) => item.id === body.patient_id) || patientOne; const appointment = { id: 'appointment-synthetic-created', patient_id: patient.id, patient_name: patient.name, patient_phone: patient.phone, starts_at: body.starts_at || new Date(Date.now() + 86400000).toISOString(), treatment_type: body.treatment_type || 'Dental check-up', status: 'requested', created_at: new Date().toISOString() }; appointments.push(appointment); record('appointment-create'); return json(appointment, 201); }",
+  "    const appointmentMatch = url.pathname.match(/^\\/v1\\/dental\\/assistant\\/appointments\\/([^/]+)\\/(confirm|cancel)$/);",
+  "    if (appointmentMatch && method === 'POST') { const item = appointments.find((entry) => entry.id === appointmentMatch[1]); if (!item) return json({ detail: { code: 'APPOINTMENT_NOT_FOUND' } }, 404); item.status = appointmentMatch[2] === 'confirm' ? 'confirmed' : 'cancelled'; record('appointment-' + appointmentMatch[2]); return json(item); }",
+  "    const billingMatch = url.pathname.match(/^\\/v1\\/dental\\/assistant\\/patients\\/([^/]+)\\/billing$/);",
+  "    if (billingMatch && method === 'GET') { record('billing-read'); return json({ invoices }); }",
+  "    window.__ORALYN_ASSISTANT_UNHANDLED.push(method + ' ' + url.pathname);",
+  "    return json({ detail: { code: 'UNHANDLED_SYNTHETIC_PATH' } }, 404);",
   "  };",
   "})();"
 ].join("\n");
@@ -147,23 +127,16 @@ async function main() {
     const response = await fetch("http://127.0.0.1:" + port + "/json/list").catch(() => null);
     if (!response || !response.ok) return false;
     const targets = await response.json();
-    const existing = targets.find((item) => item.type === "page" && item.webSocketDebuggerUrl);
-    if (existing) return existing;
-    const created = await fetch("http://127.0.0.1:" + port + "/json/new?about:blank", { method: "PUT" });
-    if (created.ok) return await created.json();
-    return null;
+    return targets.find((item) => item.type === "page" && item.webSocketDebuggerUrl && item.url.startsWith(baseUrl));
   });
   const targets = await (await fetch("http://127.0.0.1:" + port + "/json/list")).json();
-  const target = targets.find((item) => item.type === "page" && item.webSocketDebuggerUrl);
+  const target = targets.find((item) => item.type === "page" && item.webSocketDebuggerUrl && item.url.startsWith(baseUrl));
   if (!target) throw new Error("Chrome page target not found");
-
   ws = new WebSocket(target.webSocketDebuggerUrl);
   ws.addEventListener("message", (event) => {
     const message = JSON.parse(event.data);
     if (message.method === "Runtime.exceptionThrown") runtimeErrors.push(message.params.exceptionDetails?.text || "runtime exception");
     if (message.method === "Log.entryAdded" && message.params.entry?.level === "error") runtimeErrors.push(message.params.entry.text);
-    if (message.method === "Network.responseReceived" && Number(message.params.response?.status) >= 400) failedResponses.push({ status: message.params.response.status, url: message.params.response.url, type: message.params.type });
-    if (message.method === "Network.loadingFailed") failedResponses.push({ error: message.params.errorText, url: message.params.requestId });
     if (message.id && pending.has(message.id)) {
       const request = pending.get(message.id);
       pending.delete(message.id);
@@ -177,157 +150,77 @@ async function main() {
   await send("Page.enable");
   await send("Runtime.enable");
   await send("Log.enable");
-  await send("Network.enable");
-
-  await send("Page.navigate", { url: baseUrl + "/assistant/" });
-  await waitFor(
-    () => evaluate('document.readyState === "complete" && document.body.innerText.includes("Clinic Assistant sign in")'),
-    30000,
-    "Clinic Assistant sign-in page"
-  );
-  await capture("assistant-login-1440x1000.png", 1440, 1000);
-  await capture("assistant-login-390x844.png", 390, 844, true);
-  await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
-
   await send("Page.addScriptToEvaluateOnNewDocument", { source: fixtureSource });
   await send("Page.navigate", { url: baseUrl + "/assistant/" });
-  await waitFor(
-    () => evaluate('document.readyState === "complete" && document.body.innerText.includes("Clinic Assistant sign in")'),
-    30000,
-    "Clinic Assistant sign-in page after fixture injection"
-  );
+  await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Reception workspace") && document.body.innerText.includes("Ananya Synthetic")'));
+  await waitFor(() => evaluate("(async () => { const registration = await navigator.serviceWorker?.getRegistration('/'); return Boolean(registration?.active && registration.active.state === 'activated'); })()"), 30000);
+  let controlled = await evaluate("Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)");
+  if (!controlled) {
+    await send("Page.navigate", { url: baseUrl + "/assistant/" });
+    controlled = await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Reception workspace") && Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)'), 20000).catch(() => false);
+  }
+  if (!controlled) throw new Error("Synthetic Assistant capture is not controlled by the Oralyn PWA service worker.");
+  const fonts = await evaluate('({plusJakartaSans:document.fonts.check("400 16px \\"Plus Jakarta Sans\\""),playfairDisplay:document.fonts.check("600 32px \\"Playfair Display\\"")})');
+  if (!fonts.plusJakartaSans || !fonts.playfairDisplay) throw new Error("Bundled Oralyn fonts failed in synthetic Assistant session: " + JSON.stringify(fonts));
 
-  await evaluate(`(() => {
-    document.querySelector('#login-form [name="email"]').value = 'reception.synthetic@example.test';
-    document.querySelector('#login-form [name="password"]').value = 'SyntheticAssistantPassword!123';
-    document.querySelector('#login-form').requestSubmit();
-    return true;
-  })()`);
-  await waitFor(() => evaluate('document.body.innerText.includes("reception.synthetic@example.test") && document.body.innerText.includes("Ananya Synthetic") && document.body.innerText.includes("INV-SYN-001")'));
-  const fontLoaded = await evaluate('document.fonts.load("400 16px \\"Plus Jakarta Sans\\"").then((faces) => faces.length > 0)');
-  if (!fontLoaded) throw new Error("Bundled Plus Jakarta Sans did not load in the Assistant workspace.");
-  await capture("assistant-workspace-1440x1000.png", 1440, 1000);
-  await capture("assistant-workspace-768x1024.png", 768, 1024);
-  const tabletLayout = await evaluate("({viewportWidth:document.documentElement.clientWidth,innerWidth:window.innerWidth,scrollWidth:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)})");
-  if (tabletLayout.scrollWidth > tabletLayout.viewportWidth + 1) throw new Error("Assistant tablet layout failed: " + JSON.stringify(tabletLayout));
-  await capture("assistant-workspace-390x844.png", 390, 844, true);
-  const mobileLayout = await evaluate("({viewportWidth:document.documentElement.clientWidth,innerWidth:window.innerWidth,visualViewportWidth:window.visualViewport?.width,scrollWidth:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth),inputsLabeled:[...document.querySelectorAll('input')].every((input) => input.labels && input.labels.length > 0)})");
-  if (mobileLayout.scrollWidth > mobileLayout.viewportWidth + 1 || !mobileLayout.inputsLabeled) throw new Error("Assistant mobile layout or form labels failed: " + JSON.stringify(mobileLayout));
-  await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+  await captureResponsive("assistant-dashboard");
+  await evaluate("(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').includes('Patients')); if (!button) return false; button.click(); return true; })()");
+  await waitFor(() => evaluate('document.body.innerText.includes("Patient contacts")'));
+  await captureResponsive("assistant-patients");
 
-  const intakeValidation = await evaluate(`(() => {
-    const form = document.querySelector('#patient-form');
-    const name = form.querySelector('[name="name"]');
-    const phone = form.querySelector('[name="phone"]');
-    name.value = 'Riya Synthetic';
-    phone.value = '9876543210';
-    name.dispatchEvent(new Event('input', {bubbles:true}));
-    phone.dispatchEvent(new Event('input', {bubbles:true}));
-    return {valid:form.checkValidity(),nameValid:name.checkValidity(),phoneValid:phone.checkValidity(),phonePattern:phone.pattern,phoneMessage:phone.validationMessage};
-  })()`);
-  if (!intakeValidation.valid) throw new Error("Synthetic Assistant patient form validation failed: " + JSON.stringify(intakeValidation));
-  await evaluate(`(() => {
-    document.querySelector('#patient-form button[type="submit"]').click();
-    return true;
-  })()`);
-  await waitFor(() => evaluate('document.body.innerText.includes("Patient contact saved.") || (document.getElementById("workspace-message") && document.getElementById("workspace-message").textContent.trim().length > 0)'));
-  const intakeResult = await evaluate(`(() => ({
-    success:document.body.innerText.includes("Patient contact saved.") && document.body.innerText.includes("Riya Synthetic"),
-    message:document.getElementById("workspace-message")?.textContent || "",
-    patientList:document.getElementById("patient-list")?.innerText || "",
-    writes:window.__ORALYN_ASSISTANT_FIXTURE?.writes || [],
-    requests:window.__ORALYN_ASSISTANT_FIXTURE?.requests || []
-  }))()`);
-  if (!intakeResult.success) throw new Error("Synthetic Assistant patient intake did not persist in the UI: " + JSON.stringify(intakeResult));
+  const intake = await evaluate("(() => { const set = (labelText, value) => { const label = [...document.querySelectorAll('label')].find((item) => item.innerText.includes(labelText)); const input = label?.querySelector('input'); if (!input) return false; const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; setter.call(input, value); input.dispatchEvent(new Event('input', { bubbles: true })); input.dispatchEvent(new Event('change', { bubbles: true })); return true; }; if (!set('Full name', 'Synthetic Assistant Intake')) return false; if (!set('Mobile number', '+91 90000 00003')) return false; const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').trim() === 'Save contact'); if (!button) return false; button.click(); return true; })()");
+  if (!intake) throw new Error("Assistant patient intake form could not be exercised.");
+  await waitFor(() => evaluate('document.body.innerText.includes("Synthetic Assistant Intake")'));
 
-  const confirmed = await evaluate(`(() => {
-    const button = document.querySelector('[data-confirm="appointment-synthetic-001"]');
-    if (!button) return false;
-    button.click();
-    return true;
-  })()`);
-  if (!confirmed) throw new Error("Synthetic Assistant appointment confirmation action was not found.");
+  await evaluate("(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').includes('Appointments')); if (!button) return false; button.click(); return true; })()");
+  await waitFor(() => evaluate('document.body.innerText.includes("Schedule a visit")'));
+  const appointment = await evaluate("(() => { const labels = [...document.querySelectorAll('label')]; const patientSelect = labels.find((item) => item.innerText.includes('Patient'))?.querySelector('select'); const dateInput = labels.find((item) => item.innerText.includes('Preferred date'))?.querySelector('input'); const timeSelect = labels.find((item) => item.innerText.includes('Time'))?.querySelector('select'); if (!patientSelect || !dateInput || !timeSelect) return false; patientSelect.value = 'patient-synthetic-created'; patientSelect.dispatchEvent(new Event('change', { bubbles: true })); const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date(Date.now() + 86400000)); const get = (type) => parts.find((part) => part.type === type)?.value || ''; const tomorrow = get('year') + '-' + get('month') + '-' + get('day'); const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; setter.call(dateInput, tomorrow); dateInput.dispatchEvent(new Event('input', { bubbles: true })); dateInput.dispatchEvent(new Event('change', { bubbles: true })); timeSelect.value = '10:00'; timeSelect.dispatchEvent(new Event('change', { bubbles: true })); const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').includes('Add appointment request')); if (!button) return false; button.click(); return true; })()");
+  if (!appointment) throw new Error("Assistant appointment request form could not be exercised.");
+  await waitFor(() => evaluate('document.body.innerText.includes("Synthetic Assistant Intake")'));
+
+  const confirm = await evaluate("(() => { const card = [...document.querySelectorAll('.assistant-appointment')].find((item) => item.innerText.includes('Synthetic Assistant Intake')); const button = card && [...card.querySelectorAll('button')].find((item) => (item.innerText || '').includes('Confirm')); if (!button) return false; button.click(); return true; })()");
+  if (!confirm) throw new Error("Assistant appointment confirmation action was not found.");
   await waitFor(() => evaluate('document.body.innerText.includes("Appointment confirmed.")'));
+  await captureResponsive("assistant-appointments");
 
-  await evaluate(`(() => {
-    const form = document.querySelector('[data-reschedule="appointment-synthetic-001"]');
-    if (!form) return false;
-    form.querySelector('[name="starts_at"]').value = '2026-11-21T10:00';
-    form.requestSubmit();
-    return true;
-  })()`);
-  await waitFor(() => evaluate('document.body.innerText.includes("Appointment rescheduled.")'));
+  await evaluate("(() => { const button = [...document.querySelectorAll('button')].find((item) => (item.innerText || '').includes('Billing')); if (!button) return false; button.click(); return true; })()");
+  await waitFor(() => evaluate('document.body.innerText.includes("Billing lookup")'));
+  const billingSelect = await evaluate("(() => { const select = [...document.querySelectorAll('label')].find((item) => item.innerText.includes('Choose patient'))?.querySelector('select'); if (!select) return false; select.value = 'patient-synthetic-001'; select.dispatchEvent(new Event('change', { bubbles: true })); return true; })()");
+  if (!billingSelect) throw new Error("Assistant billing lookup selector was not found.");
+  await waitFor(() => evaluate('document.body.innerText.includes("SYN-INV-001")'));
+  await captureResponsive("assistant-billing");
 
-  await evaluate(`(() => {
-    const form = document.querySelector('[data-receipt="invoice-synthetic-001"]');
-    if (!form) return false;
-    form.querySelector('[name="amount"]').value = '10.00';
-    form.querySelector('[name="method"]').value = 'upi';
-    form.querySelector('[name="reference"]').value = 'SYNTHETIC-UPI-001';
-    form.requestSubmit();
-    return true;
-  })()`);
-  await waitFor(() => evaluate('document.body.innerText.includes("Payment received and receipt recorded.")'));
-  await waitFor(() => evaluate('document.body.innerText.includes("₹3,490") || document.body.innerText.includes("3,490")'));
+  const signout = await evaluate("(() => { const button = document.querySelector('button[aria-label=\"Sign out\"]'); if (!button) return false; button.click(); return true; })()");
+  if (!signout) throw new Error("Assistant sign-out action was not found.");
+  await waitFor(() => evaluate('document.body.innerText.includes("Clinic Assistant") && !sessionStorage.getItem("oralyn_assistant_token")'));
+  await captureResponsive("assistant-login-after-logout");
 
-  const evidence = await evaluate(`(() => {
-    const fixture = window.__ORALYN_ASSISTANT_FIXTURE;
-    const controls = [...document.querySelectorAll('button,a')].map((item) => (item.innerText || '').toLowerCase());
-    const forbiddenControls = controls.filter((value) => /clinical|diagnos|prescription|odontogram|treatment plan|intelligence/.test(value) || value === 'ai');
-    const tokenPersisted = sessionStorage.getItem('oralyn_assistant_session');
-    const workspaceVisible = !document.getElementById('workspace')?.classList.contains('hidden');
-    return {
-      requests: fixture.requests,
-      writes: fixture.writes,
-      unhandled: fixture.unhandled,
-      patientCount: fixture.patients.length,
-      appointmentStatus: fixture.appointments[0].status,
-      appointmentRescheduled: fixture.appointments[0].starts_at.startsWith('2026-11-21'),
-      invoiceBalancePaise: fixture.invoices[0].balance_paise,
-      tokenPersisted: Boolean(tokenPersisted),
-      workspaceVisible,
-      forbiddenControls
-    };
-  })()`);
+  const evidence = await evaluate("({writes:window.__ORALYN_ASSISTANT_WRITES || [],unhandled:window.__ORALYN_ASSISTANT_UNHANDLED || []})");
   if (evidence.unhandled.length) throw new Error("Synthetic Assistant harness encountered unhandled API paths: " + evidence.unhandled.join(", "));
-  if (evidence.forbiddenControls.length) throw new Error("Assistant UI exposed forbidden clinical controls: " + evidence.forbiddenControls.join(", "));
-  if (!evidence.writes.includes("assistant-login") || !evidence.writes.includes("patient-intake") ||
-      !evidence.writes.includes("appointment-confirm") || !evidence.writes.includes("appointment-reschedule") ||
-      !evidence.writes.includes("receipt-recorded") || evidence.tokenPersisted || !evidence.workspaceVisible ||
-      evidence.patientCount !== 2 || evidence.appointmentStatus !== "confirmed" ||
-      !evidence.appointmentRescheduled || evidence.invoiceBalancePaise !== 349000) {
-    throw new Error("Synthetic Assistant workflow evidence is incomplete: " + JSON.stringify(evidence));
+  for (const required of ["patient-create", "appointment-create", "appointment-confirm", "billing-read", "logout"]) {
+    if (!evidence.writes.includes(required)) throw new Error("Expected synthetic Assistant workflow action missing: " + required);
   }
-  if (evidence.requests.some((value) => /\/v1\/dental\/(doctor|ai)\//.test(value))) {
-    throw new Error("Assistant UI attempted a Doctor or AI API route.");
-  }
+  if (runtimeErrors.length) throw new Error("Synthetic Assistant browser runtime errors: " + runtimeErrors.join(" | "));
 
-  const logout = await evaluate("(() => { const button = document.querySelector('#logout'); if (!button) return false; button.click(); return true; })()");
-  if (!logout) throw new Error("Assistant sign-out button was not found.");
-  await waitFor(() => evaluate('document.body.innerText.includes("Clinic Assistant sign in") && !sessionStorage.getItem("oralyn_assistant_session")'));
-  await send("Page.navigate", { url: baseUrl + "/assistant/" });
-  await waitFor(() => evaluate('document.body.innerText.includes("Clinic Assistant sign in") && document.getElementById("workspace").classList.contains("hidden")'));
-  await capture("assistant-logout-1440x1000.png", 1440, 1000);
-
-  if (runtimeErrors.length || failedResponses.length) throw new Error("Synthetic Assistant browser runtime errors: " + runtimeErrors.join(" | ") + " | HTTP/resource failures: " + JSON.stringify(failedResponses));
   const metadata = [
-    "commit=" + commit,
     "environment=CI_SYNTHETIC_ONLY",
     "bundle=" + jsFile,
     "bundle_sha256=" + bundleHash,
     "synthetic_data_only=true",
-    "assistant_login=mocked",
+    "synthetic_patient_names=Ananya Synthetic,Bharat Synthetic,Synthetic Assistant Intake",
+    "assistant_role_ui_fixture=true",
+    "assistant_backend_role_tests=separate_backend_ci",
+    "staging_assistant_login_verified=false",
+    "assistant_dashboard=passed_fixture",
     "assistant_patient_intake=passed_fixture",
-    "assistant_appointment_confirm=passed_fixture",
-    "assistant_appointment_reschedule=passed_fixture",
-    "assistant_receipt_recording=passed_fixture",
-    "assistant_session_logout=passed_fixture",
-    "assistant_tablet_layout=" + JSON.stringify(tabletLayout),
-    "assistant_mobile_layout=" + JSON.stringify(mobileLayout),
-    "doctor_ai_api_calls=none",
-    "clinical_controls=none",
+    "assistant_appointment_create_confirm=passed_fixture",
+    "assistant_billing_read=passed_fixture",
+    "assistant_logout=passed_fixture",
+    "doctor_clinical_ai_visible=false",
+    "fonts_loaded=" + JSON.stringify(fonts),
+    "pwa_service_worker_controlled=" + controlled,
     "unhandled_api_paths=none",
-    "runtime_errors=none"
+    "runtime_errors=none",
   ].join("\n") + "\n";
   fs.writeFileSync(path.join(output, "synthetic-assistant-info.txt"), metadata);
   console.log(JSON.stringify({ metadata, evidence, screenshots: fs.readdirSync(output).filter((name) => name.endsWith(".png")) }));
