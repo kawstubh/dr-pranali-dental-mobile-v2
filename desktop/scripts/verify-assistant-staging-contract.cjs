@@ -40,7 +40,10 @@ async function expectStatus(path, status, { consume = true } = {}) {
 (async () => {
   const health = await expectStatus("/health", 200);
   await expectStatus("/ready", 200);
-  await expectStatus("/v1/dental/health", 200);
+  const dentalHealthResponse = await expectStatus("/v1/dental/health", 200, { consume: false });
+  const dentalHealth = await dentalHealthResponse.json();
+  assert.equal(dentalHealth.database, "postgres", "Staging API must use PostgreSQL");
+  assert.equal(dentalHealth.uie_configured, true, "Staging API must have the UIE provider configured");
 
   for (const name of [
     "strict-transport-security",
@@ -110,7 +113,7 @@ async function expectStatus(path, status, { consume = true } = {}) {
   await preflight.arrayBuffer();
 
   console.log("Assistant staging API contract passed (read-only; no credentials or writes used).");
-  console.log("Verified " + required.length + " Assistant paths, " + assistantPaths.length + " Assistant routes, protected 401 boundaries, CORS and security headers.");
+  console.log("Verified PostgreSQL identity, UIE readiness, " + required.length + " Assistant paths, " + assistantPaths.length + " Assistant routes, protected 401 boundaries, CORS and security headers.");
 })().catch((error) => {
   console.error("Assistant staging API contract failed:", error);
   process.exitCode = 1;
