@@ -232,7 +232,7 @@ test("portal security header probe is a read-only GET check", () => {
 
 test("Clinic Assistant reschedules only to a future India Standard Time slot", () => {
   assert.match(assistantAppSource, /function appointmentInstant\(date, time\)/);
-  assert.match(assistantAppSource, /new Date\(date \+ "T" \+ time \+ ":00\\+05:30"\)/);
+  assert.match(assistantAppSource, /new Date\(date \+ "T" \+ time \+ ":00\+05:30"\)/);
   assert.match(assistantAppSource, /value <= new Date\(\)/);
   assert.match(assistantAppSource, /status: "rescheduled", starts_at: startsAt/);
   assert.match(assistantAppSource, /openReschedule\(appointment\)/);
