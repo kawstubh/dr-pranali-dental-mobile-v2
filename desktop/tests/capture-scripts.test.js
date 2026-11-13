@@ -20,46 +20,47 @@ test("synthetic Doctor capture uses a safely quoted clinic workspace selector", 
 });
 
 
-test("real browser capture verifies the gated Assistant admin page at desktop, tablet and mobile sizes", () => {
+test("real browser capture verifies Assistant login and legacy admin redirect at desktop, tablet and mobile sizes", () => {
   const file = join(process.cwd(), "scripts", "capture-actual-desktop.cjs");
   const source = readFileSync(file, "utf8");
 
   assert.doesNotThrow(() => new Script(source, { filename: file }));
+  assert.match(source, /assistantLogin/);
+  assert.match(source, /patientLegacyLoginRedirect/);
   assert.match(source, /\/assistant-admin\//);
-  assert.match(source, /assistant_admin_gate=passed/);
-  assert.match(source, /assistant-admin-gate-1440x1000\.png/);
-  assert.match(source, /assistant-admin-gate-768x1024\.png/);
-  assert.match(source, /assistant-admin-gate-390x844\.png/);
-  assert.match(source, /adminWorkspaceHidden/);
-  assert.match(source, /createFormVisible/);
+  assert.match(source, /assistant_admin_redirect_gate=passed/);
+  assert.match(source, /assistant-admin-redirect-gate-1440x1000\.png/);
+  assert.match(source, /assistant-admin-redirect-gate-768x1024\.png/);
+  assert.match(source, /assistant-admin-redirect-gate-390x844\.png/);
+  assert.match(source, /assistantManagementFormVisible/);
 });
 
 
-test("synthetic Assistant capture covers reception, appointment and billing without Doctor AI APIs", () => {
+test("synthetic Assistant capture exercises memory-only login, reception and appointment workflows", () => {
   const file = join(process.cwd(), "scripts", "capture-synthetic-assistant.cjs");
   const source = readFileSync(file, "utf8");
 
   assert.doesNotThrow(() => new Script(source, { filename: file }));
-  assert.match(source, /assistant\/auth\/login/);
-  assert.match(source, /ORALYN_API_BASE = 'https:\/\/oralyn-staging-api-assistant\.onrender\.com'/);
-  assert.match(source, /form\.checkValidity\(\)/);
-  assert.match(source, /phone\.value = '9876543210'/);
-  assert.match(source, /Synthetic Assistant patient intake did not persist in the UI/);
-  assert.match(source, /assistant\/patients/);
-  assert.match(source, /assistant\/appointments/);
-  assert.match(source, /assistant\/billing\/invoices/);
-  assert.match(source, /assistant_mobile_layout/);
-  assert.match(source, /doctor_ai_api_calls=none/);
-  assert.match(source, /clinical_controls=none/);
+  assert.match(source, /v1\/dental\/auth\/assistant\/login/);
+  assert.match(source, /reception\.synthetic@example\.test/);
+  assert.match(source, /assistant-login/);
+  assert.match(source, /patient-create/);
+  assert.match(source, /appointment-create/);
+  assert.match(source, /appointment-confirm/);
+  assert.match(source, /billing-read/);
+  assert.match(source, /UNHANDLED_SYNTHETIC_PATH/);
+  assert.match(source, /staging_assistant_login_verified=false/);
+  assert.match(source, /doctor_clinical_ai_visible=false/);
   assert.match(source, /unhandled_api_paths=none/);
+  assert.doesNotMatch(source, /sessionStorage\.setItem/);
 });
 
-test("Assistant intake resets the captured form after its asynchronous save", () => {
-  const file = join(process.cwd(), "public", "assistant", "index.html");
+test("Assistant intake clears contact fields after the API-backed save resolves", () => {
+  const file = join(process.cwd(), "src", "assistant.jsx");
   const source = readFileSync(file, "utf8");
-  assert.match(source, /const form = event\.currentTarget; const data = new FormData\(form\);/);
-  assert.match(source, /form\.reset\(\); await loadWorkspace\(\); showMessage\(workspaceMessage,"Patient contact saved\."/);
-  assert.doesNotMatch(source, /event\.currentTarget\.reset\(\)/);
+  assert.match(source, /setPatientForm\(\{ name: "", phone: "" \}\)/);
+  assert.match(source, /Patient contact details added\./);
+  assert.match(source, /assistantRequest\("\/v1\/dental\/assistant\/patients"/);
 });
 
 
