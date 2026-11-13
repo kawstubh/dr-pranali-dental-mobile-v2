@@ -15,7 +15,6 @@ const careSource = fs.readFileSync(path.join(root, "src", "careScreens.jsx"), "u
 const apiSource = fs.readFileSync(path.join(root, "src", "api.js"), "utf8");
 const assistantAppSource = fs.readFileSync(path.join(root, "src", "assistant.jsx"), "utf8");
 const bookingSource = fs.readFileSync(path.join(root, "public", "patient", "booking", "index.html"), "utf8");
-const assistantSource = fs.readFileSync(path.join(root, "public", "assistant", "index.html"), "utf8");
 const viteSource = fs.readFileSync(path.join(root, "vite.config.js"), "utf8");
 const packageManifest = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
 const patientHomeSource = fs.readFileSync(path.join(root, "public", "patient", "home", "index.html"), "utf8");
@@ -107,35 +106,12 @@ test("patient private records are not rendered in the public account-free experi
 });
 
 
-test("Clinic Assistant has a separate least-privilege workspace", () => {
-  assert.match(assistantSource, /Clinic Assistant sign in/);
-  assert.match(assistantSource, /assistant\/auth\/login/);
-  assert.match(assistantSource, /assistant\/auth\/logout/);
-  assert.match(assistantSource, /assistant\/patients/);
-  assert.match(assistantSource, /assistant\/appointments/);
-  assert.match(assistantSource, /assistant\/billing\/invoices/);
-  assert.match(assistantSource, /sessionStorage/); // receipt idempotency only
-  assert.doesNotMatch(assistantSource, /oralyn_assistant_session/);
-  assert.doesNotMatch(assistantSource, /sessionStorage\.(?:getItem|setItem|removeItem)\(tokenKey/);
-  assert.match(assistantSource, /Assistant bearer tokens remain memory-only/);
-  assert.doesNotMatch(assistantSource, /\/v1\/dental\/(?:intelligence|doctor|patients|appointments)(?:\/|["?])/);
-  const script = assistantSource.match(/<script>([\s\S]*?)<\/script>/)?.[1];
-  assert.ok(script, "assistant page script must be present");
-  assert.doesNotThrow(() => new vm.Script(script));
-});
 
 test("Doctor patient directory has no patient-account invitation action", () => {
   assert.doesNotMatch(source, /createPatientInvite|Create invite|invite-code-card/);
   assert.doesNotMatch(apiSource, /createPatientInvite/);
 });
 
-test("owner/admin settings expose the separate Clinic Assistant account page", () => {
-  assert.match(source, /canManageAssistants/);
-  assert.match(source, /accountRole === "owner" \|\| accountRole === "admin"/);
-  assert.match(source, /assistant-admin\/index\.html/);
-  assert.match(viteSource, /configurePreviewServer/);
-  assert.match(viteSource, /assistant-admin\/index\.html/);
-});
 
 test("Doctor clinical records remain scoped to Doctor-authenticated APIs", () => {
   assert.match(apiSource, /doctorTreatmentPlans:/);
@@ -176,36 +152,14 @@ test("public patient booking remains separate from Doctor identity and tenant AP
 });
 
 
-const assistantAdminSource = fs.readFileSync(
-  path.join(root, "public", "assistant-admin", "index.html"),
-  "utf8",
-);
-
-test("Clinic Assistant account management is gated by the Doctor owner/admin session", () => {
-  assert.match(assistantAdminSource, /oralyn_doctor_token/);
-  assert.match(assistantAdminSource, /\/v1\/dental\/auth\/me/);
-  assert.match(assistantAdminSource, /\["owner","admin"\]/);
-  assert.match(assistantAdminSource, /\/v1\/dental\/clinic-assistants/);
-  assert.match(assistantAdminSource, /method:"POST"/);
-  assert.match(assistantAdminSource, /method:"PATCH"/);
-  assert.match(assistantAdminSource, /name="password_confirm"/);
-  assert.match(assistantAdminSource, /The passwords do not match/);
-  assert.match(assistantAdminSource, /credentials:"omit"/);
-  assert.match(assistantAdminSource, /cache:"no-store"/);
-  assert.match(assistantAdminSource, /Assistant account deactivated and existing sessions revoked/);
-  assert.doesNotMatch(assistantAdminSource, /oralyn_assistant_session/);
-  assert.doesNotMatch(assistantAdminSource, /\/v1\/dental\/assistant\//);
-  const script = assistantAdminSource.match(/<script>([\s\S]*?)<\/script>/)?.[1];
-  assert.ok(script, "Assistant admin page script must be present");
-  assert.doesNotThrow(() => new vm.Script(script));
-});
 
 
 test("Clinic Assistant has a distinct route, identity and session namespace", () => {
   assert.ok(source.includes('import AssistantApp, { AssistantManagement } from "./assistant.jsx";'));
   assert.ok(source.includes("isAssistantRoute"));
   assert.ok(assistantAppSource.includes("/v1/dental/auth/assistant/login"));
-  assert.ok(assistantAppSource.includes("oralyn_assistant_token"));
+  assert.ok(!assistantAppSource.includes("sessionStorage"));
+  assert.ok(!assistantAppSource.includes("localStorage"));
   assert.ok(assistantAppSource.includes('role !== "assistant"'));
 });
 
@@ -236,4 +190,18 @@ test("legacy patient-linked API methods are absent from the shipped client", () 
     "patientInvoices:", "patientReceipts:", "patientDocuments:",
     "patientDocumentDownloadIntent:",
   ]) assert.ok(!apiSource.includes(method), method);
+});
+
+
+test("Clinic Assistant route is served by the main SPA rather than a legacy static page", () => {
+  assert.equal(fs.existsSync(path.join(root, "public", "assistant", "index.html")), false);
+  assert.equal(fs.existsSync(path.join(root, "public", "assistant-admin", "index.html")), false);
+  assert.ok(source.includes("isAssistantRoute"));
+  assert.ok(source.includes("isLegacyAssistantAdminRoute"));
+});
+
+test("Doctor settings embeds the real owner/admin-gated Assistant management component", () => {
+  assert.ok(source.includes("<AssistantManagement token={token} user={user} />"));
+  assert.ok(assistantAppSource.includes('const allowed = ["owner", "admin"]'));
+  assert.ok(assistantAppSource.includes("/v1/dental/auth/assistants"));
 });
