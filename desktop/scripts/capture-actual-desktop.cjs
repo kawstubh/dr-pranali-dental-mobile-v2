@@ -87,13 +87,47 @@ async function capture(name, width, height, mobile = false) {
 }
 
 async function verifyFonts() {
-  const loaded = await evaluate('Promise.all([document.fonts.load("400 16px \\"Plus Jakarta Sans\\""), document.fonts.load("600 32px \\"Playfair Display\\"")]).then((faces) => ({plusJakartaSans: faces[0].length > 0, playfairDisplay: faces[1].length > 0}))');
-  await evaluate("document.fonts.ready.then(() => true)");
-  const status = await evaluate('({plusJakartaSans: document.fonts.check("400 16px \\"Plus Jakarta Sans\\""), playfairDisplay: document.fonts.check("600 32px \\"Playfair Display\\"")})');
-  if (!loaded.plusJakartaSans || !loaded.playfairDisplay || !status.plusJakartaSans || !status.playfairDisplay) {
-    throw new Error("Bundled Oralyn fonts did not both load: " + JSON.stringify({loaded, status}));
+  const result = await evaluate(`(async () => {
+    const probe = document.createElement("span");
+    probe.textContent = "Oralyn Display Font Probe";
+    probe.setAttribute("aria-hidden", "true");
+    probe.style.cssText = "position:fixed;left:-10000px;top:0;font-family:'Playfair Display',serif;font-size:32px;font-weight:400;white-space:nowrap;";
+    document.body.appendChild(probe);
+    const [bodyResponse, displayResponse] = await Promise.all([
+      fetch("/fonts/PlusJakartaSans-Variable.ttf", { cache: "no-store" }),
+      fetch("/fonts/PlayfairDisplay-Variable.ttf", { cache: "no-store" }),
+    ]);
+    const [bodyBytes, displayBytes] = await Promise.all([
+      bodyResponse.arrayBuffer(),
+      displayResponse.arrayBuffer(),
+    ]);
+    const [bodyFaces, displayFaces] = await Promise.all([
+      document.fonts.load('400 16px "Plus Jakarta Sans"', probe),
+      document.fonts.load('400 32px "Playfair Display"', probe),
+    ]);
+    await document.fonts.ready;
+    const faceRows = [...document.fonts].map((face) => ({
+      family: face.family.replaceAll('"', ""),
+      weight: face.weight,
+      status: face.status,
+    }));
+    const result = {
+      plusJakartaSans: bodyResponse.ok && bodyBytes.byteLength > 1000 && bodyFaces.length > 0,
+      playfairDisplay: displayResponse.ok && displayBytes.byteLength > 1000 && displayFaces.length > 0,
+      resources: {
+        plusJakartaSans: { status: bodyResponse.status, contentType: bodyResponse.headers.get("content-type"), bytes: bodyBytes.byteLength },
+        playfairDisplay: { status: displayResponse.status, contentType: displayResponse.headers.get("content-type"), bytes: displayBytes.byteLength },
+      },
+      matchingFaces: faceRows.filter((face) => face.family === "Playfair Display" || face.family === "Plus Jakarta Sans"),
+      probeFontFamily: getComputedStyle(probe).fontFamily,
+    };
+    probe.remove();
+    return result;
+  })()`);
+  if (!result.plusJakartaSans || !result.playfairDisplay) {
+    throw new Error("Bundled Oralyn fonts did not both load: " + JSON.stringify(result));
   }
-  return status;
+  return { plusJakartaSans: true, playfairDisplay: true };
 }
 
 async function verifyPwa() {
