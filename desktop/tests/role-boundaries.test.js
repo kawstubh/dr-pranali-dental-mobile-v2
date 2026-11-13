@@ -43,7 +43,7 @@ test("Doctor bearer token is memory-only and never persisted in browser storage"
   assert.doesNotMatch(source, /localStorage|sessionStorage|oralyn_doctor_token/);
   assert.match(source, /setToken\(result\.access_token\)/);
   assert.match(source, /setToken\(accessToken\)/);
-  assert.match(source, /this sign-in stays in memory in this tab/);
+  assert.match(source, /For security, your session stays in this tab/);
 });
 
 test("CI records Doctor token storage hardening only after the regression suite", () => {
@@ -57,8 +57,8 @@ test("public patient journey is served only by account-free static pages", () =>
   assert.doesNotMatch(source, /function Patient\(|patientSession|patientLinks|patientInviteCode|oralyn_patient_record_id/);
   assert.match(patientHomeSource, /No patient account, password or OTP is needed/);
   assert.match(bookingSource, /No account or OTP is required/);
-  assert.match(source, /Public patient services/);
-  assert.match(source, /No account or OTP required/);
+  assert.match(source, /Patient services &amp; appointment requests/);
+  assert.match(source, /window.location.assign\("\/patient\/home\/"\)/);
   assert.doesNotMatch(source, /Continue to patient portal/);
   assert.match(patientHomeSource, /href="\/patient\/booking\//);
   const route = resolvePortalRoute("/patient/login");
