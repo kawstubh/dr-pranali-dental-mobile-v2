@@ -1,82 +1,126 @@
 # Oralyn Web Portal — Release Checklist
 
-**Status: BLOCKED — the responsive portal and synthetic staging contract are passing; production release is not approved.**
+**Status: BLOCKED — synthetic staging is operational, but production hosting, authenticated acceptance and security infrastructure are not release-ready.**
 
-Last refreshed: 13 November 2026.
-
-## Latest CI/runtime verification — 13 November 2026
-
-- Frontend head `5fc3f1ba0529849be56090ea1e04d0397443e4a8` upgrades checkout/setup-node/upload-artifact to Node 24-compatible action releases and Chrome setup to `browser-actions/setup-chrome@v2.2.0` with the latest Chrome channel. Backend PR #60 head `68898259171c2880057e3d07e24d2006e836ff3e` upgrades checkout/setup-python to Node 24-compatible action releases.
-- Frontend CI [#43388248907](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43388248907) passed **93/93 tests**, root/desktop dependency audits (**0 vulnerabilities**), production build, the live synthetic staging contract, and headless-Chrome desktop/tablet/mobile captures. Public-page capture reported `runtimeErrors=[]`; required-field and past-time submissions made no API calls; all 20 catalogue labels, local fonts and PWA shell checks passed.
-- The live staging contract passed exact-origin CORS, API/portal security headers, Neon database identity, public account-free routes, protected Doctor/Assistant API denials, 20-service API/UI catalogue, guest booking without private IDs, idempotency replay, and exact deployed portal/API commit matching.
-- Backend PostgreSQL CI [#43387808995](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43387808995) passed **237 tests**; Engine Tests [#43387809059](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43387809059) passed **236 tests, 1 expected skip**. Node 20 action-runtime deprecation warnings are gone; one non-blocking Starlette/httpx TestClient deprecation warning remains.
-- Staging API deploy `dep-dbrbvpmi0phs73fdju8g` is LIVE on exact backend head `68898259171c2880057e3d07e24d2006e836ff3e`. Staging portal deploy `dep-dbrc10e7bikc73epuhs0` and static alias deploy `dep-dbrc10e7bikc73epui00` are LIVE on frontend head `5fc3f1ba0529849be56090ea1e04d0397443e4a8`. The static alias remains secondary until its deep-route behavior is independently verified.
-- The release manifest remains **BLOCKED on exactly ten genuine gates**: private document storage, malware scanning, backup/restore, error monitoring, rollback rehearsal, real Doctor login/API persistence, real Assistant login/role acceptance, Assistant UI-to-live-API acceptance, live cross-tenant E2E, and authenticated Doctor/Assistant screenshots. Mocked CI fixtures are not counted as authenticated acceptance.
-- Synthetic Neon remains at Alembic `0013_public_booking_idempotency`: 4 patients, 4 appointments, 3 public booking requests, 0 Assistant accounts, 0 Assistant sessions, 0 receipts, 0 documents and 5 audit events. The latest idempotency replay did not create another booking. Synthetic-only; no real patient data.
+Last refreshed: 13 November 2026, 12:36 UTC.
 
 ## Product decisions
 
-- One responsive web portal for desktop, tablet and mobile browsers. PWA installation is optional. Native apps and APKs are not part of the product or release.
-- Patient discovery, clinic information and appointment requests are public and account-free. No patient account, password, OTP, signup/login, Supabase patient auth or linked-record session.
-- A public appointment request is not a confirmed appointment; the clinic contacts the patient to confirm.
+- One responsive web portal for desktop, tablet and mobile browsers. PWA installation is optional. No separate native apps or APK release.
+- Patient discovery, clinic information and appointment requests are public and account-free. No patient accounts, password, OTP, signup/login or Supabase patient auth.
+- Public appointment requests are not confirmed bookings. The clinic team contacts the patient to confirm.
 - Doctor authentication remains mandatory.
-- Clinic Assistant has a separate identity, sign-in and least-privilege API. Never map Assistant to Doctor.
-- Clinical intelligence remains Doctor-only. No patient-facing diagnosis, self-diagnosis, triage or clinical AI for Assistants.
+- Clinic Assistant has a separate identity and least-privilege API. Never map Assistant to Doctor.
+- Clinical intelligence is Doctor-only. No patient-facing diagnosis, self-diagnosis or clinical AI for Assistants.
 - Google Business Profile is a discovery/referral entry point only. No booking-link change is claimed without authorized access and confirmation.
-- Patient-specific no-login record sharing is deferred. Public booking references are not access tokens.
+- Public booking references do not grant access to patient records. Patient-specific no-login record sharing remains deferred.
 
-## Repositories and current verification
+## Current staging architecture and runtime
 
-### Frontend
+### Canonical synthetic staging portal
+
+- URL: https://oralyn-web-portal-spa.onrender.com
+- Render service: srv-dbr2ttsipgvc739a4tmg
+- Type/plan: Node/Vite web service, Free
+- Branch: feat/oralyn-desktop-app
+- Deployed commit: 7452e65d664cfc4e820cd564b303eb4425a7e610
+- The public patient landing, booking page and Doctor deep route load after the service wakes.
+- The service spins down after 15 minutes without inbound traffic and can return a temporary 503 on the first request while it restarts. Render documents a roughly one-minute wake-up. This is a staging preview only, not production hosting or an uptime guarantee.
+- Do not upgrade or spend money without approval.
+
+### Secondary static alias — not canonical
+
+- URL: https://oralyn-web-portal-staging.onrender.com
+- Render service: srv-dbr2qgek1f9s73dq82j0
+- Type/plan: Static site, Free
+- Branch/commit: feat/oralyn-desktop-app / 7452e65d664cfc4e820cd564b303eb4425a7e610
+- The public patient home, booking and static Assistant pages load.
+- Live test of /doctor/dashboard/ returned 404. Keep this alias secondary until deep-route fallback is fixed and the full Doctor workspace is independently verified.
+
+### Synthetic staging API
+
+- URL: https://oralyn-staging-api-assistant.onrender.com
+- Render service: srv-dbr8m159fdbs73dl404g
+- Branch: feat/oralyn-clinic-assistant-rbac
+- Draft backend PR #60 head and latest LIVE deployment: b9e3efe31c1f78b0169fbb2d0d39cf3bcd7ad2ef
+- Deploy: dep-dbrg3jjm8hqs73cun52g
+- Fresh uncached checks after deployment: /health=200, /ready=200, /v1/dental/health=200; database=PostgreSQL, database identity verified=true, UIE configured=true, deployment commit matches the live head.
+- Unauthenticated GET /v1/dental/patients, /v1/dental/appointments and /v1/dental/assistant/patients returned 401. Public booking GET returned 405 (POST-only). Legacy patient-record and patient-AI prefixes returned 404.
+- Live OpenAPI includes Doctor and separate Assistant routes, but no patient-account/login paths and no patient-AI operation paths. An unused legacy PatientAIIn schema component remains; it is not an operation.
+- No booking POST or clinical-data write was performed during this check.
+
+## Current PRs and CI evidence
+
+### Main portal — Draft PR #18
 
 - Repository: kawstubh/dr-pranali-dental-mobile-v2
-- Draft PR: [#18](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/pull/18)
 - Branch: feat/oralyn-desktop-app
-- Latest verified portal code head before this documentation-only refresh: 97c6d6e45972064212fd0dca0b2e37244a1a3bb6.
-- Latest completed CI: [#43384878404](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43384878404) — **93/93 tests passed**, root workspace npm install/audit passed, desktop npm audit reported 0 vulnerabilities, production build passed, live synthetic staging contract passed, and headless-Chrome desktop/tablet/mobile captures passed.
-- The workflow now verifies the root workspace lockfile and dependency audit before installing the active desktop package.
-- Root package dependencies have been retired. The root workspace no longer declares Expo, React Native, Supabase or Google sign-in dependencies; root build/test commands delegate to desktop/. A local root npm ci and offline npm audit also passed with zero dependencies and zero vulnerabilities.
-- The active desktop package is the only portal application. Legacy native source files are reference-only; no Android APK workflow remains in this PR.
-- The shared clinic catalogue contains 20 approved service labels plus Other dental concern. Public booking validates required fields and future India-time date/time.
+- Current head: 7452e65d664cfc4e820cd564b303eb4425a7e610
+- [Frontend CI #43388571558](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43388571558) passed 93/93 tests, zero dependency vulnerabilities, production build, live staging contract and desktop/tablet/mobile browser captures.
+- The live patient pages display the full 20-service catalogue plus Other dental concern. No patient account, password or OTP is required.
+- The live Doctor route serves the workspace entry; the CI Doctor fixture is synthetic and does not prove live authenticated CRUD persistence.
 
-### Backend
+### Clinic Assistant React UI — Draft PR #21
+
+- Branch: feat/oralyn-assistant-ui-rebased-20261113
+- Head: d2e3be0416ad3e19490e968f577b401e36382e97
+- [Assistant UI CI #43422232513](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43422232513) passed.
+- The live portal currently serves the older static Assistant page from PR #18 at /assistant/. It uses only /v1/dental/assistant/* routes and holds the bearer token in page memory; sessionStorage is used only for receipt idempotency keys.
+- PR #21 is the newer React Assistant UI. Its live staging contract step was deliberately skipped because it is not the canonical deployed branch. Treat its screenshots as synthetic UI evidence, not real authentication acceptance.
+- Older PR #20 is superseded by PR #21; do not merge PR #20.
+
+### Backend — Draft PR #60
 
 - Repository: kawstubh/universal-intelligence-engine
-- Draft PR: [#60](https://github.com/kawstubh/universal-intelligence-engine/pull/60)
 - Branch: feat/oralyn-clinic-assistant-rbac
-- Head: e6bae0850e6a686e4cc6ae5080497e1b9751ab8c
-- [PostgreSQL CI #43375965593](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43375965593): **237 passed**.
-- [Engine Tests #43375965660](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43375965660): **236 passed, 1 expected skip**.
-- PR #60 is cleanly mergeable but remains Draft and unmerged.
-- Synthetic staging API: https://oralyn-staging-api-assistant.onrender.com, service srv-dbr8m159fdbs73dl404g.
-- Latest reported staging deployment dep-dbrb4dv6km5c73c831ag is LIVE on exact backend PR #60 head.
+- Head: b9e3efe31c1f78b0169fbb2d0d39cf3bcd7ad2ef
+- Engine and PostgreSQL CI workflows #43418656816 and #43418656822 passed.
+- The exact head is now deployed to the isolated synthetic staging API, and fresh health/authorization checks passed.
 
-## Latest live synthetic contract evidence
+### Expired private-upload cleanup — Draft PR #61
 
-Frontend CI #43384878404 recorded PASS for:
+- Branch: feat/oralyn-expired-upload-cleanup-20261113
+- Head: 87aa068b2759a60130722f28ea43815227c92d56
+- [Engine Tests #43424740289](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43424740289): 241 passed, 3 skipped.
+- [PostgreSQL CI #43424740181](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43424740181): 244 passed. Migration head 0014_document_quarantine_cleanup and nullable upload_object_key verified.
+- Cleanup is dry-run by default; destructive mode requires DENTAL_DOCUMENTS_CLEANUP_ENABLED=true and explicit --apply. It rejects only old pending/verifying rows, deletes only the exact document-scoped pending object key, never selects verified object keys, and retries failed deletes.
+- No Render Cron job is provisioned. Render Cron has a minimum $1/month charge per job, so no paid job was created. The lifecycle attestation remains false and document uploads remain disabled.
 
-- API health, readiness, Postgres, UIE configuration and live database identity.
-- Exact portal-origin CORS POST preflight.
-- API and portal security headers: HSTS, nosniff, frame protection, referrer policy, permissions policy; portal CSP and API no-store.
-- No patient-auth OpenAPI routes; unauthenticated Doctor and Assistant protected reads return 401; disabled legacy patient routes return 404; public booking GET returns 405.
-- Shared API/UI service catalogue: 20 approved labels plus Other.
-- Synthetic public booking POST and idempotency replay returned the same opaque reference without patient or appointment identifiers.
-- Live portal manifest matched frontend head 97c6d6e45972064212fd0dca0b2e37244a1a3bb6.
-- Live API deployment commit matched backend PR #60 head e6bae0850e6a686e4cc6ae5080497e1b9751ab8c.
+### Superseded patient/native work
 
-The CI booking contract creates one synthetic request per backend commit per India-local day and replays the same idempotency key. It does not create duplicate rows. These are synthetic test records, not real patient bookings.
+- PR #17 (native Patient UI) and PR #19 (authenticated Patient records) are superseded. Do not merge them.
+- Android APK workflows are not part of the Oralyn product.
 
-The CI-verified portal origin is https://oralyn-web-portal-spa.onrender.com. The separate static alias https://oralyn-web-portal-staging.onrender.com is not the current CI contract origin and remains secondary until its live manifest/routes are independently checked.
+## Public patient journey and booking
 
-## Synthetic staging database
+- Google Search/Maps/Business Profile -> public clinic home -> service/date/time request -> minimum contact details -> clinic confirmation.
+- Public pages expose no clinical records, prescriptions, invoices, odontograms or guessable patient IDs.
+- Twenty approved service labels and local images are present, plus Other dental concern.
+- Required fields and future India-time validation are covered by CI browser tests.
+- The public endpoint is POST-only; GET returns 405.
+- Idempotency replay returns the same opaque reference and does not create a duplicate.
+- Rate limiting is currently in-process and suitable only for single-instance staging. Production multi-instance deployment requires shared/distributed rate limiting or a trusted edge/WAF policy.
+- Do not submit test bookings except through the synthetic CI contract and isolated synthetic database.
 
-- Neon project: silent-king-54610898
+## Synthetic-only Neon database
+
+- Project: silent-king-54610898
 - Branch: br-steep-bonus-a1yqarg7
 - Database: oralyn_staging
-- Current Alembic revision: 0013_public_booking_idempotency
-- Read-only aggregate counts: 3 synthetic patients, 3 appointments, 2 public booking requests, 0 Assistant accounts, 0 Assistant sessions, 0 receipts, 0 documents, 4 audit events.
+- Current migration: 0013_public_booking_idempotency
+- Fresh aggregate counts: 6 patients, 6 appointments, 5 public booking requests, 0 Assistant accounts, 0 Assistant sessions, 0 receipts, 0 documents and 7 audit events.
+- All six patient names are explicitly test/synthetic-marked; appointment and booking rows link to those synthetic patients. No patient record values were copied into this checklist.
+- The private bucket oralyn-private-documents exists and is empty.
+- Public connections remain enabled, HIPAA is disabled, history retention is six hours, and no snapshot schedule or snapshots are present.
+- Never copy recovery or production patient data into this project.
 
-The Neon project currently permits public connections, has HIPAA disabled and has six-hour history retention. It is strictly synthetic-only. Never copy recovery or production patient data into it.
+## Documents and malware scanning
+
+- Backend code implements private S3-compatible storage, signed URLs, quarantine-to-verified promotion, checksum/file-signature checks, fail-closed ClamAV scanning and Doctor review before any patient visibility.
+- The private Neon bucket exists but no API storage credential/endpoint integration is verified.
+- CI starts the pinned ClamAV 1.5.4 service, verifies a clean payload and detects Eicar-Test-Signature. This is CI evidence only; no persistent staging scanner service is provisioned.
+- PR #61 implements cleanup code, but no scheduled runner is deployed. Keep DENTAL_DOCUMENTS_LIFECYCLE_CLEANUP_VERIFIED=false.
+- Document uploads and sharing remain disabled.
 
 ## Clinic Assistant permission matrix
 
@@ -95,60 +139,36 @@ Denied operations:
 - Invoice creation, issue, edit or void.
 - Patient account creation, linking or record sharing.
 
-Backend tests cover allowed writes, 403 denial on Doctor/owner operations, cross-clinic isolation, Doctor-token rejection by Assistant endpoints, session logout/deactivation, receipt idempotency and audit behavior. These are CI/API tests. The current staging database has no Assistant account or Assistant session, so live Assistant sign-in and persistence acceptance remain open.
+Backend tests cover allowed writes, 403 denials, cross-clinic isolation, Doctor-token rejection by Assistant endpoints, session logout/deactivation and receipt idempotency. The live staging database has zero Assistant accounts/sessions, so real Assistant login and persistence acceptance remain open.
 
-## Doctor and Assistant acceptance
+## Release manifest and hard blockers
 
-- CI Doctor and Assistant screenshots are headless-Chrome synthetic fixtures.
-- The CI Doctor fixture reports password login not verified and cross-organisation denial as fixture-only.
-- The CI Assistant fixture uses a mocked login and fixture-backed writes.
-- These screenshots prove UI layout and fixture interactions only; they do not prove live authenticated API persistence.
-- Do not mark Doctor or Assistant authenticated acceptance complete until real staging credentials are used and create/read/update persistence plus server-side role and tenant boundaries are verified.
+The build manifest now explicitly requires all of the following to be verified:
 
-## Public booking requirements
+1. Private document storage and its API credentials.
+2. Persistent malware scanner in isolated staging.
+3. Backup and restore rehearsal.
+4. Error monitoring and alerting.
+5. Rollback rehearsal.
+6. Real Doctor login and API-backed create/read/update persistence.
+7. Real Assistant login and least-privilege acceptance.
+8. Assistant UI-to-live-API acceptance.
+9. Live cross-tenant staging E2E.
+10. Authenticated Doctor and Assistant screenshots.
+11. Production always-on hosting.
+12. Production database verification.
+13. Production custom-domain verification.
+14. Explicit production deployment approval.
 
-- Public clinic page and booking page load without a patient account.
-- Minimum contact details and one of the 20 approved services or Other.
-- Required fields and future India-time date/time validation.
-- Timezone-aware API input.
-- HMAC-keyed contact/request fingerprints, idempotency and duplicate prevention.
-- Anti-abuse rate limit, exact-origin CORS and safe success/error responses.
-- Public response contains an opaque request reference only; no patient ID, appointment ID, clinical note or record access.
-- Never submit test requests except through the synthetic CI contract and isolated synthetic database.
+The staging Vite preview is a Free web service and sleeps after 15 minutes idle. It is not production hosting. The static alias is not canonical because the Doctor deep route returns 404. Do not mark production hosting verified based on either staging URL.
 
-The current in-process rate limiter is suitable only for the present single-instance staging service. Production multi-instance deployment requires shared/distributed rate limiting or a trusted edge/WAF policy.
-
-## Documents and storage
-
-Backend code implements:
-- Private S3-compatible storage configuration with no Render filesystem fallback.
-- Private-bucket attestation and short-lived signed URLs.
-- Quarantine-to-verified object promotion, checksum and file-signature checks.
-- Fail-closed private ClamAV scanning, with tests for clean, malware, missing/unsafe configuration, public/link-local targets, timeout and invalid scanner replies.
-- Doctor review before patient visibility.
-
-A private object-storage bucket and ClamAV service are not provisioned in staging. Document uploads and sharing remain disabled. Implemented fail-closed code is not evidence that infrastructure is ready.
-
-## Remaining release blockers
-
-1. Provision and verify private document storage.
-2. Provision and verify the private ClamAV service and fail-closed scan path in staging.
-3. Complete real authenticated Doctor login and API-backed create/read/update persistence acceptance.
-4. Create and verify a real staging Assistant account/session; exercise allowed writes and denied 403 operations through the live UI/API.
-5. Complete live cross-tenant staging E2E with separate synthetic clinics.
-6. Capture authenticated Doctor and Assistant screenshots from real staging sessions.
-7. Complete backup and restore rehearsal.
-8. Configure error monitoring and alerting.
-9. Complete rollback rehearsal and document the tested rollback path.
-10. Approve and configure production database/domain, security controls and deployment plan; production migration/deployment remains separately gated.
-
-The CI release manifest remains BLOCKED on these gates. Never change manifest flags manually to make a release appear ready.
+Never change manifest flags manually to make a release appear ready. All four production gates default to false until independently verified. The Render-hosted build manifest is generated without GitHub Actions verification environment variables, so it conservatively marks CI-only checks false. Use the GitHub Actions manifest artifact for the exact commit as the authoritative staging evidence; do not interpret the Render copy as a failed test run. Production gates remain false in both.
 
 ## Operational restrictions
 
-- Keep PR #18 and PR #60 Draft and unmerged.
+- Keep PR #18, #21, #60 and #61 Draft and unmerged.
 - Do not deploy production, migrate Neon main/recovery databases, change production secrets, spend money, resume paid infrastructure or delete patient/user data.
 - Use synthetic data only in staging.
-- Do not enable patient record access through public links.
+- Do not enable public patient record access or patient-specific share links.
 - Do not change Google Business Profile booking links without authorized access and confirmation.
 - A green CI build or mocked screenshot is not production release approval.
