@@ -66,6 +66,28 @@ function appointmentInstant(date, time) {
   return value.toISOString();
 }
 
+function appointmentParts(value) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return { date: clinicToday(), time: "" };
+  const dateParts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(parsed);
+  const timeParts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kolkata",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(parsed);
+  const get = (parts, type) => parts.find((part) => part.type === type)?.value || "";
+  return {
+    date: [get(dateParts, "year"), get(dateParts, "month"), get(dateParts, "day")].join("-"),
+    time: [get(timeParts, "hour"), get(timeParts, "minute")].join(":"),
+  };
+}
+
 function money(paise) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -122,6 +144,7 @@ export default function AssistantApp() {
   const [appointments, setAppointments] = useState([]);
   const [billing, setBilling] = useState([]);
   const [receiptDrafts, setReceiptDrafts] = useState({});
+  const [rescheduleDrafts, setRescheduleDrafts] = useState({});
   const [patientForm, setPatientForm] = useState({ name: "", phone: "" });
   const [loginBusy, setLoginBusy] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -166,6 +189,8 @@ export default function AssistantApp() {
           setAppointments([]);
           setBilling([]);
           setReceiptDrafts({});
+    setRescheduleDrafts({});
+          setRescheduleDrafts({});
         }
         setError(cause?.message || "Assistant session could not be verified.");
       } finally {
@@ -193,6 +218,8 @@ export default function AssistantApp() {
           setAppointments([]);
           setBilling([]);
           setReceiptDrafts({});
+    setRescheduleDrafts({});
+          setRescheduleDrafts({});
         }
         setError(cause?.message || "Billing summaries could not be loaded.");
       })
@@ -240,6 +267,7 @@ export default function AssistantApp() {
     setAppointments([]);
     setBilling([]);
     setReceiptDrafts({});
+    setRescheduleDrafts({});
     setError("");
     setNotice("");
   };
@@ -283,22 +311,57 @@ export default function AssistantApp() {
     }
   };
 
-  const changeAppointment = async (appointment, action) => {
+  const changeAppointment = async (appointment, action, startsAt = null) => {
     if (!token) return;
     setBusy(true);
     setError("");
-    const status = action === "confirm" ? "confirmed" : "cancelled";
+    const body = action === "reschedule"
+      ? { status: "rescheduled", starts_at: startsAt }
+      : { status: action === "confirm" ? "confirmed" : "cancelled" };
     try {
       const next = await assistantRequest(
         "/v1/dental/assistant/appointments/" + encodeURIComponent(appointment.id),
-        { token, method: "PATCH", body: { status } }
+        { token, method: "PATCH", body }
       );
       setAppointments((current) => current.map((item) => item.id === appointment.id ? { ...item, ...next } : item));
-      setNotice(action === "confirm" ? "Appointment confirmed." : "Appointment cancelled.");
+      if (action === "reschedule") {
+        setRescheduleDrafts((current) => {
+          const updated = { ...current };
+          delete updated[appointment.id];
+          return updated;
+        });
+      }
+      setNotice(
+        action === "confirm"
+          ? "Appointment confirmed."
+          : action === "cancel"
+            ? "Appointment cancelled."
+            : "Appointment rescheduled to " + dateLabel(next?.starts_at || startsAt) + "."
+      );
     } catch (cause) {
       setError(cause?.message || "Appointment status could not be changed.");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const openReschedule = (appointment) => {
+    setRescheduleDrafts((current) => ({
+      ...current,
+      [appointment.id]: { open: true, ...appointmentParts(appointment.starts_at) },
+    }));
+    setError("");
+  };
+
+  const saveReschedule = (event, appointment) => {
+    event.preventDefault();
+    const draft = rescheduleDrafts[appointment.id];
+    if (!draft) return;
+    try {
+      const startsAt = appointmentInstant(draft.date, draft.time);
+      void changeAppointment(appointment, "reschedule", startsAt);
+    } catch (cause) {
+      setError(cause?.message || "Choose a valid future appointment time.");
     }
   };
 
@@ -421,9 +484,48 @@ export default function AssistantApp() {
                 <div className="assistant-appointment-main"><b>{appointment.patient_name || "Patient"}</b><span>{appointment.patient_phone}</span><small>{dateLabel(appointment.starts_at)} · Appointment</small></div>
                 <div className="assistant-appointment-actions">
                   <span className={"assistant-status status-" + String(appointment.status).replace(/[^a-z_]/g, "")}>{String(appointment.status).replaceAll("_", " ")}</span>
-                  {appointment.status !== "confirmed" && !["cancelled", "completed", "no_show"].includes(appointment.status) && <button onClick={() => changeAppointment(appointment, "confirm")} disabled={busy}><CheckCircle2 size={15} /> Confirm</button>}
-                  {!["cancelled", "completed", "no_show"].includes(appointment.status) && <button className="assistant-danger-button" onClick={() => changeAppointment(appointment, "cancel")} disabled={busy}><XCircle size={15} /> Cancel</button>}
+                  {appointment.status !== "confirmed" && !["cancelled", "completed", "no_show"].includes(appointment.status) && <button type="button" onClick={() => changeAppointment(appointment, "confirm")} disabled={busy}><CheckCircle2 size={15} /> Confirm</button>}
+                  {!["cancelled", "completed", "no_show"].includes(appointment.status) && <button type="button" onClick={() => openReschedule(appointment)} disabled={busy}><CalendarDays size={15} /> Reschedule</button>}
+                  {!["cancelled", "completed", "no_show"].includes(appointment.status) && <button type="button" className="assistant-danger-button" onClick={() => changeAppointment(appointment, "cancel")} disabled={busy}><XCircle size={15} /> Cancel</button>}
                 </div>
+                {rescheduleDrafts[appointment.id]?.open && (
+                  <form className="assistant-reschedule-form" onSubmit={(event) => saveReschedule(event, appointment)}>
+                    <div className="assistant-form-row">
+                      <label>New date (India Standard Time)
+                        <input
+                          type="date"
+                          min={clinicToday()}
+                          required
+                          value={rescheduleDrafts[appointment.id].date}
+                          onChange={(event) => setRescheduleDrafts((current) => ({
+                            ...current,
+                            [appointment.id]: { ...current[appointment.id], date: event.target.value },
+                          }))}
+                        />
+                      </label>
+                      <label>New time (India Standard Time)
+                        <input
+                          type="time"
+                          required
+                          value={rescheduleDrafts[appointment.id].time}
+                          onChange={(event) => setRescheduleDrafts((current) => ({
+                            ...current,
+                            [appointment.id]: { ...current[appointment.id], time: event.target.value },
+                          }))}
+                        />
+                      </label>
+                    </div>
+                    <small>Only future times are accepted. The clinic stores appointment times with the Asia/Kolkata timezone.</small>
+                    <div className="assistant-reschedule-actions">
+                      <button className="assistant-primary" type="submit" disabled={busy}>Save new time</button>
+                      <button className="assistant-secondary" type="button" disabled={busy} onClick={() => setRescheduleDrafts((current) => {
+                        const updated = { ...current };
+                        delete updated[appointment.id];
+                        return updated;
+                      })}>Keep current time</button>
+                    </div>
+                  </form>
+                )}
               </article>
             ))}</div> : <div className="assistant-empty"><ClipboardList size={24} /><b>No appointments yet</b><span>New public requests will appear here after submission.</span></div>}
           </section>
