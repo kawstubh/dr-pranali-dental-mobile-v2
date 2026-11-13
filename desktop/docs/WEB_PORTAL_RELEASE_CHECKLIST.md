@@ -242,3 +242,12 @@ No PR was merged. No production deployment, production migration, production sec
 - Render app error/fatal and request 5xx log queries were empty for both services from 18:40–19:42 UTC. HTTP request/latency metrics returned no samples, so no uptime or latency claim is made.
 - Two read-only external fetch attempts for the API health and public portal pages returned HTTP 503, while Render still reports both deploys LIVE and no matching Render 5xx logs. Free-tier cold-start/fetcher behavior is possible, but a fresh external live response was not confirmed. The last successful browser evidence is the exact-head GitHub Actions capture.
 - TinyFish wallet balance is `-$0.072`; no browser-agent run or top-up was attempted. No production resources, secrets or data were changed.
+
+
+## Exact staging database branch verification — 14 November 2026
+
+- The staging API health contract now reports a boolean `database_branch_identity_verified`, computed from PostgreSQL `current_setting('neon.branch_id', true)` against `DENTAL_EXPECTED_NEON_BRANCH_ID`. The expected synthetic staging branch is `br-steep-bonus-a1yqarg7`; this identifier is not a credential.
+- Synthetic booking is gated on all three conditions: host/database identity, exact Neon branch identity, and the live API deployment commit matching Draft PR #60 head. If any condition is missing or mismatched, the probe does not POST a booking.
+- Frontend CI no longer overrides backend-stack, database-identity, CORS, or account-free gates with unconditional `true`; these flags are written only by the live staging contract checks.
+- Backend Engine CI #43503951195 and PostgreSQL CI #43503951035 passed on commit `5f4adba355b56f69427f554925ad8cdaa7f81d40`.
+- Render synthetic staging API deploy `dep-dbrndeom7kps73cplcag` is LIVE on that exact commit. The expected-branch setting has been added to the staging service. Exact live branch acceptance remains pending the next frontend staging-contract run; do not mark this gate passed until that run confirms it.
