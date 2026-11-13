@@ -24,7 +24,7 @@ input,select{display:block;width:100%;margin-top:6px;border:1px solid #cbdbe5;bo
 button{border:0;border-radius:10px;padding:11px 15px;background:#0a84e8;color:white;font:inherit;font-size:13px;font-weight:800;cursor:pointer}
 button.secondary{background:#eaf5fa;color:#0c3b82;border:1px solid #cfe2ee}button.danger{background:#fff1ef;color:#a33b30;border:1px solid #f4d3cf}
 button:disabled{opacity:.55;cursor:wait}.wide{width:100%;margin-top:10px}
-.topline{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}.topline>div{min-width:0;flex:1}#assistant-email{display:inline-block;max-width:100%;overflow-wrap:anywhere;word-break:break-word}
+.topline{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}.topline>div{min-width:0;flex:1}#assistant-email{display:block;max-width:100%;overflow-wrap:anywhere;word-break:normal;margin:4px 0 8px}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:18px}
 .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .item{border:1px solid #e3edf3;border-radius:13px;padding:14px;margin:10px 0}
@@ -35,7 +35,7 @@ button:disabled{opacity:.55;cursor:wait}.wide{width:100%;margin-top:10px}
 .message.error{display:block;background:#fff1ef;color:#9a3025}.message.success{display:block;background:#e9faf7;color:#075f56}
 .empty{padding:20px;text-align:center;color:#718698;border:1px dashed #cbdbe5;border-radius:12px}
 .hidden{display:none!important}.note{font-size:12px;color:#718698}
-@media(max-width:760px){.grid,.cards{grid-template-columns:minmax(0,1fr)}.wrap{margin:18px auto;padding:0 12px;width:100%;max-width:100%}.panel,.card{padding:17px;min-width:0;max-width:100%}.topline{display:grid;grid-template-columns:minmax(0,1fr);align-items:stretch;gap:12px}.topline>div{min-width:0;width:100%;flex:none}.topline h1{font-size:clamp(22px,6vw,28px);line-height:1.2;overflow-wrap:anywhere;word-break:normal}.topline #assistant-email{display:inline;max-width:100%;overflow-wrap:anywhere;word-break:normal}.topline button{width:100%;min-width:0}.inline{grid-template-columns:minmax(0,1fr)}.item,.item form,.item label{min-width:0;max-width:100%}.item strong,.item p,.item div{overflow-wrap:anywhere}input,select{min-width:0;max-width:100%}}@media(max-width:420px){header{padding:12px 14px;gap:10px}header img{width:138px;max-width:44vw}header .status{font-size:10px;padding:4px 7px}.panel,.card{padding:14px}.topline{gap:10px}.topline h1{font-size:24px}.item{padding:12px}}
+@media(max-width:760px){.grid,.cards{grid-template-columns:minmax(0,1fr)}.wrap{margin:18px auto;padding:0 12px;width:100%;max-width:100%}.panel,.card{padding:17px;min-width:0;max-width:100%}.topline{display:grid;grid-template-columns:minmax(0,1fr);align-items:stretch;gap:12px}.topline>div{min-width:0;width:100%;flex:none}.topline h1{font-size:clamp(22px,6vw,28px);line-height:1.2;overflow-wrap:anywhere;word-break:normal}.topline #assistant-email{display:block;max-width:100%;overflow-wrap:anywhere;word-break:normal}.topline button{width:100%;min-width:0}.inline{grid-template-columns:minmax(0,1fr)}.item,.item form,.item label{min-width:0;max-width:100%}.item strong,.item p,.item div{overflow-wrap:anywhere}input,select{min-width:0;max-width:100%}}@media(max-width:420px){header{padding:12px 14px;gap:10px}header img{width:138px;max-width:44vw}header .status{font-size:10px;padding:4px 7px}.panel,.card{padding:14px}.topline{gap:10px}.topline h1{font-size:24px}.item{padding:12px}}
 </style>
 </head>
 <body>
@@ -56,7 +56,7 @@ button:disabled{opacity:.55;cursor:wait}.wide{width:100%;margin-top:10px}
 </section>
 <section id="workspace" class="hidden">
   <div class="topline panel">
-    <div><div class="eyebrow">Reception workspace</div><h1>Welcome, <span id="assistant-email">Clinic Assistant</span></h1><p class="note">Only reception, appointment queue and approved billing collection are enabled.</p></div>
+    <div><div class="eyebrow">Reception workspace</div><h1>Welcome, Clinic Assistant</h1><p id="assistant-email" class="note">Signed in as Clinic Assistant</p><p class="note">Only reception, appointment queue and approved billing collection are enabled.</p></div>
     <button class="secondary" id="refresh">Refresh</button><button class="danger" id="logout">Sign out</button>
   </div>
   <div id="workspace-message" class="message" role="status" aria-live="polite"></div>
@@ -115,7 +115,7 @@ const request = async (path, options = {}) => {
 };
 const setSignedIn = (user) => {
   assistantUser = user;
-  document.getElementById("assistant-email").textContent = user?.email || "Clinic Assistant";
+  document.getElementById("assistant-email").textContent = user?.email ? "Signed in as " + user.email : "Signed in";
   login.classList.add("hidden"); workspace.classList.remove("hidden");
 };
 const loadWorkspace = async () => {
