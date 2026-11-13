@@ -56,8 +56,8 @@ test("public patient pages ship without Supabase or patient account credentials"
   assert.equal(packageManifest.dependencies?.["@supabase/supabase-js"], undefined);
   assert.equal(fs.existsSync(path.join(root, "src", "supabase.js")), false);
   for (const page of [patientHomeSource, bookingSource]) {
-    assert.doesNotMatch(page, /<input\\b[^>]*type=["']password/i);
-    assert.doesNotMatch(page, /patient\\/(?:login|signup|register)/i);
+    assert.doesNotMatch(page, /<input\b[^>]*type=["']password/i);
+    assert.doesNotMatch(page, /patient\/(?:login|signup|register)/i);
     assert.doesNotMatch(page, /supabase/i);
   }
 });
