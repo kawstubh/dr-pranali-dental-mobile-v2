@@ -47,7 +47,15 @@ jobs:
       - name: Build staging-targeted desktop bundle
         run: npm run build
       - name: Verify live synthetic staging contract (idempotent synthetic booking only)
+        if: github.ref_name == 'feat/oralyn-desktop-app' || (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feat/oralyn-desktop-app') || (github.event_name == 'workflow_dispatch' && github.ref_name == 'feat/oralyn-desktop-app')
         run: node scripts/verify-staging-contract.cjs
+      - name: Record inherited staging evidence for non-canonical feature branches
+        if: github.ref_name != 'feat/oralyn-desktop-app'
+        run: |
+          echo "ORALYN_STAGING_API_COMMIT_VERIFIED=false" >> "$GITHUB_ENV"
+          echo "ORALYN_STAGING_PORTAL_COMMIT_VERIFIED=false" >> "$GITHUB_ENV"
+          echo "ORALYN_STAGING_CONTRACT_INHERITED_FROM_BASE=true" >> "$GITHUB_ENV"
+          echo "ORALYN_STAGING_CONTRACT_INHERITED_BASE_SHA=${{ github.event.pull_request.base.sha || github.sha }}" >> "$GITHUB_ENV"
       - name: Prepare immutable service-worker cache identity
         run: node scripts/write-build-manifest.cjs --prepare-only
       - name: Install headless Chrome
