@@ -22,17 +22,17 @@
 <form id="booking">
 <div class="grid">
 <label>Full name *<input name="name" autocomplete="name" minlength="2" maxlength="200" required placeholder="Your name"></label>
-<label>Mobile number *<input name="phone" type="tel" inputmode="tel" autocomplete="tel" minlength="7" maxlength="20" required pattern="[+0-9 ()-]{7,20}" placeholder="Your contact number"></label>
+<label>Mobile number *<input name="phone" id="phone" type="tel" inputmode="tel" autocomplete="tel" minlength="10" maxlength="15" required aria-describedby="phone-error" placeholder="10-digit Indian mobile number"><small id="phone-error" class="note" role="status" aria-live="polite"></small></label>
 </div>
 <label>Dental service *
 <select name="treatment_type" required>
 <option value="Dental check-up">Dental check-up</option><option value="Cleaning & polishing">Cleaning & polishing</option><option value="Tooth pain consultation">Tooth pain consultation</option><option value="Root canal treatment">Root canal treatment</option><option value="Braces & aligners">Braces & aligners</option><option value="Dental implants">Dental implants</option><option value="Other dental concern">Other dental concern</option>
 </select></label>
 <div class="grid">
-<label>Preferred date *<input name="date" id="date" type="date" required></label>
-<label>Preferred time *<select name="time" required><option value="">Choose a time</option><option>10:00</option><option>11:00</option><option>12:00</option><option>13:00</option><option>17:00</option><option>18:00</option><option>19:00</option><option>20:00</option></select></label>
+<label>Preferred date *<input name="date" id="date" type="date" min="2026-11-13" required></label>
+<label>Preferred time (IST) *<select name="time" required><option value="">Choose a time</option><option>10:00</option><option>11:00</option><option>12:00</option><option>13:00</option><option>17:00</option><option>18:00</option><option>19:00</option><option>20:00</option></select></label>
 </div>
-<p class="note">Times are shown in India Standard Time (IST · Asia/Kolkata).</p>
+<p class="note"><strong>All appointment times are shown in India Standard Time (IST, Asia/Kolkata).</strong></p>
 <label class="hp" aria-hidden="true">Leave this field empty<input name="website" tabindex="-1" autocomplete="off"></label>
 <button class="btn" id="submit" type="submit">Send appointment request</button>
 <div id="message" class="msg" role="status" aria-live="polite"></div>
@@ -45,6 +45,8 @@ const API_BASE = "https://oralyn-staging-api-synthetic.onrender.com";
 const form = document.getElementById("booking");
 const message = document.getElementById("message");
 const dateInput = document.getElementById("date");
+const phoneInput = document.getElementById("phone");
+const phoneError = document.getElementById("phone-error");
 const idempotencyStorageKey = "oralyn_public_booking_idempotency";
 const pendingStorageKey = "oralyn_public_booking_pending";
 const newIdempotencyKey = () => {
@@ -80,6 +82,22 @@ const localToday = clinicPart("year") + "-" + clinicPart("month") + "-" + clinic
 dateInput.min = localToday;
 dateInput.setAttribute("min", localToday);
 dateInput.value = localToday;
+dateInput.addEventListener("change", () => {
+  dateInput.setCustomValidity(dateInput.value && dateInput.value < localToday
+    ? "Please choose today or a future date." : "");
+});
+const validateIndianMobile = () => {
+  const raw = phoneInput.value.trim();
+  const digits = raw.replace(/\D/g, "");
+  const valid = !raw || /^[6-9][0-9]{9}$/.test(digits)
+    || /^91[6-9][0-9]{9}$/.test(digits);
+  phoneInput.setCustomValidity(valid ? "" : "Enter a valid 10-digit Indian mobile number.");
+  phoneError.textContent = raw && !valid
+    ? "Enter a valid 10-digit Indian mobile number (or +91 followed by 10 digits)." : "";
+  return valid;
+};
+phoneInput.addEventListener("input", validateIndianMobile);
+phoneInput.addEventListener("blur", validateIndianMobile);
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   message.className = "msg";
@@ -87,10 +105,8 @@ form.addEventListener("submit", async (event) => {
   if (!form.reportValidity()) return;
   const data = new FormData(form);
   if (String(data.get("website") || "").trim()) return;
-  const phoneDigits = String(data.get("phone") || "").replace(/\D/g, "");
-  if (phoneDigits.length < 7 || phoneDigits.length > 15) {
-    message.className = "msg error";
-    message.textContent = "Please enter a valid mobile number with 7 to 15 digits.";
+  if (!validateIndianMobile()) {
+    phoneInput.reportValidity();
     return;
   }
   const localDateTime = String(data.get("date")) + "T" + String(data.get("time")) + ":00";
