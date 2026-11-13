@@ -4162,7 +4162,7 @@ main.oralyn-reference-layout {
 .oralyn-reference-story .oralyn-auth-brand,
 .oralyn-reference-story .oralyn-auth-copy,
 .oralyn-reference-story .oralyn-auth-footnote {position:relative;z-index:2;}
-.oralyn-reference-card .oralyn-app-squircle img {display:none!important;}
+.oralyn-reference-card .oralyn-app-squircle img {display:block!important;}
 .oralyn-reference-card .oralyn-app-squircle {overflow:hidden;}
 @media(max-width:760px) {
   .oralyn-reference-clinic-art {inset:0 0 0 0;width:100%;height:100%;opacity:.5;background-position:60% center;}
