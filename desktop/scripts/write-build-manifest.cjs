@@ -110,6 +110,7 @@ const checks = {
   patient_guest_booking_e2e_verified: flag(process.env.ORALYN_GUEST_BOOKING_E2E_VERIFIED),
   patient_account_routes_disabled_verified: flag(process.env.ORALYN_PATIENT_ACCOUNT_FREE_VERIFIED),
   guest_booking_idempotency_verified: flag(process.env.ORALYN_GUEST_BOOKING_IDEMPOTENCY_VERIFIED),
+  production_guest_rate_limiting_verified: flag(process.env.ORALYN_PRODUCTION_RATE_LIMITING_VERIFIED),
   assistant_ui_api_verified: flag(process.env.ORALYN_ASSISTANT_UI_API_VERIFIED),
   assistant_data_minimization_live_verified: flag(process.env.ORALYN_ASSISTANT_DATA_MINIMIZATION_LIVE_VERIFIED),
   cross_tenant_e2e_verified: flag(process.env.ORALYN_CROSS_TENANT_E2E_VERIFIED),
