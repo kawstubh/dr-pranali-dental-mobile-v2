@@ -38,7 +38,6 @@ test("staging build manifest records verified account-free booking gates without
         ORALYN_CORS_VERIFIED: "true",
         ORALYN_DATABASE_IDENTITY_VERIFIED: "true",
         ORALYN_SECURITY_HEADERS_VERIFIED: "true",
-        ORALYN_DOCTOR_AUTH_E2E_VERIFIED: "true",
         ORALYN_GUEST_BOOKING_E2E_VERIFIED: "true",
         ORALYN_MOBILE_BROWSER_E2E_VERIFIED: "true",
       },
@@ -62,7 +61,7 @@ test("staging build manifest records verified account-free booking gates without
     assert.equal(manifest.checks.cors_verified_for_portal_origin, true);
     assert.equal(manifest.checks.database_identity_verified, true);
     assert.equal(manifest.checks.https_security_headers_verified, true);
-    assert.equal(manifest.checks.doctor_auth_e2e_verified, true);
+    assert.equal(manifest.checks.doctor_auth_e2e_verified, false);
     assert.equal(manifest.checks.patient_guest_booking_e2e_verified, true);
     assert.equal(manifest.checks.mobile_browser_e2e_verified, true);
     assert.equal(Object.hasOwn(manifest.checks, "supabase_auth_configured"), false);
@@ -76,6 +75,7 @@ test("staging build manifest records verified account-free booking gates without
       "backup_restore_verified",
       "error_monitoring_verified",
       "rollback_plan_verified",
+      "doctor_auth_e2e_verified",
       "assistant_role_e2e_verified",
       "patient_account_routes_disabled_verified",
       "guest_booking_idempotency_verified",
