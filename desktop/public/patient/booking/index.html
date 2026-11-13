@@ -22,7 +22,7 @@
 <form id="booking">
 <div class="grid">
 <label>Full name *<input name="name" autocomplete="name" minlength="2" maxlength="200" required placeholder="Your name"></label>
-<label>Mobile number *<input name="phone" type="tel" autocomplete="tel" minlength="7" maxlength="40" required pattern="[+0-9 ()-]{7,40}" placeholder="Your contact number"></label>
+<label>Mobile number *<input name="phone" type="tel" inputmode="tel" autocomplete="tel" minlength="7" maxlength="20" required pattern="[+0-9 ()-]{7,20}" placeholder="Your contact number"></label>
 </div>
 <label>Dental service *
 <select name="treatment_type" required>
@@ -33,7 +33,6 @@
 <label>Preferred time *<select name="time" required><option value="">Choose a time</option><option>10:00</option><option>11:00</option><option>12:00</option><option>13:00</option><option>17:00</option><option>18:00</option><option>19:00</option><option>20:00</option></select></label>
 </div>
 <p class="note">Times are shown in India Standard Time (IST · Asia/Kolkata).</p>
-<label>Note (optional)<textarea name="note" maxlength="2000" placeholder="Briefly tell us what you need help with"></textarea></label>
 <label class="hp" aria-hidden="true">Leave this field empty<input name="website" tabindex="-1" autocomplete="off"></label>
 <button class="btn" id="submit" type="submit">Send appointment request</button>
 <div id="message" class="msg" role="status" aria-live="polite"></div>
@@ -79,6 +78,7 @@ const clinicParts = new Intl.DateTimeFormat("en-GB", {timeZone:"Asia/Kolkata",ye
 const clinicPart = (type) => clinicParts.find((part) => part.type === type)?.value || "";
 const localToday = clinicPart("year") + "-" + clinicPart("month") + "-" + clinicPart("day");
 dateInput.min = localToday;
+dateInput.setAttribute("min", localToday);
 dateInput.value = localToday;
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -87,6 +87,12 @@ form.addEventListener("submit", async (event) => {
   if (!form.reportValidity()) return;
   const data = new FormData(form);
   if (String(data.get("website") || "").trim()) return;
+  const phoneDigits = String(data.get("phone") || "").replace(/\D/g, "");
+  if (phoneDigits.length < 7 || phoneDigits.length > 15) {
+    message.className = "msg error";
+    message.textContent = "Please enter a valid mobile number with 7 to 15 digits.";
+    return;
+  }
   const localDateTime = String(data.get("date")) + "T" + String(data.get("time")) + ":00";
   const startsAt = new Date(localDateTime + "+05:30");
   if (Number.isNaN(startsAt.getTime()) || startsAt <= new Date()) {
@@ -109,7 +115,6 @@ form.addEventListener("submit", async (event) => {
         phone: String(data.get("phone")).trim(),
         starts_at: localDateTime + "+05:30",
         treatment_type: String(data.get("treatment_type")),
-        note: String(data.get("note") || "").trim(),
         intelligence_request: false,
         website: String(data.get("website") || "").trim()
       })
