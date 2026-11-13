@@ -19,6 +19,10 @@ import {
 import { dentalApi } from "./api.js";
 import { normaliseList } from "./data.js";
 
+const PRIVATE_DOCUMENTS_READY =
+  import.meta.env.VITE_PRIVATE_DOCUMENT_STORAGE_READY === "true" &&
+  import.meta.env.VITE_DOCUMENT_MALWARE_SCANNING_READY === "true";
+
 const inr = (paise) =>
   new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -333,6 +337,10 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
 
   const uploadDocument = async (event) => {
     event.preventDefault();
+    if (!PRIVATE_DOCUMENTS_READY) {
+      setError("Private document uploads and sharing are disabled until secure storage and malware scanning are configured and verified.");
+      return;
+    }
     if (!uploadFile) {
       ping("Choose a PDF or image document first.");
       return;
@@ -372,6 +380,7 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
     }
   };
   const reviewDocument = async (document) => {
+    if (!PRIVATE_DOCUMENTS_READY) return;
     setBusy(true);
     setError("");
     try {
@@ -385,6 +394,7 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
     }
   };
   const shareDocument = async (document, visible) => {
+    if (!PRIVATE_DOCUMENTS_READY) return;
     setBusy(true);
     try {
       await dentalApi.setDocumentVisibility(token, document.id, visible);
@@ -397,6 +407,7 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
     }
   };
   const downloadDocument = async (document) => {
+    if (!PRIVATE_DOCUMENTS_READY) return;
     const popup = window.open("about:blank", "_blank");
     try {
       const response = await dentalApi.doctorDocumentDownloadIntent(token, document.id);
@@ -415,7 +426,7 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
   };
   return (
     <>
-      <CareHeader eyebrow="SECURE CLINICAL FILES" title="Private documents" description={`Verified, tenant-scoped files for ${patientLabel}. A doctor must review each file before patient sharing is enabled.`} action={<button className="outline" onClick={refresh}><RefreshCw size={16} /> Refresh</button>} />
+      <CareHeader eyebrow="SECURE CLINICAL FILES" title="Private documents" description={PRIVATE_DOCUMENTS_READY ? `Verified, tenant-scoped files for ${patientLabel}. A doctor must review each file before patient sharing is enabled.` : `Secure storage and fail-closed malware scanning are not enabled for ${patientLabel}. Upload, download, review and patient-sharing actions are disabled.`} action={<button className="outline" onClick={refresh}><RefreshCw size={16} /> Refresh</button>} />
       {error && <StateMessage error>{error}</StateMessage>}
       <div className="care-grid">
         <section className="panel care-panel">
@@ -424,21 +435,27 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
             <article className="care-record" key={document.id}>
               <div className="care-record-top"><div><b>{document.file_name}</b><small>{document.content_type} · {Math.ceil(document.size_bytes / 1024)} KB · {dateLabel(document.created_at)}</small></div><span className={document.patient_visible ? "care-pill shared" : "care-pill private"}>{document.patient_visible ? "Patient shared" : document.reviewed_at ? "Reviewed · clinic only" : document.status === "available" ? "Review required" : document.status.replaceAll("_", " ")}</span></div>
               <div className="care-actions">
-                {document.status === "available" && <button className="outline" onClick={() => downloadDocument(document)}><Download size={15} /> Download</button>}
-                {document.status === "available" && !document.reviewed_at && <button className="outline" disabled={busy} onClick={() => reviewDocument(document)}><ShieldCheck size={15} /> Mark as reviewed</button>}
-                {document.status === "available" && document.reviewed_at && <button className="outline" disabled={busy} onClick={() => shareDocument(document, !document.patient_visible)}><Share2 size={15} /> {document.patient_visible ? "Unshare" : "Share with patient"}</button>}
+                {PRIVATE_DOCUMENTS_READY && document.status === "available" && <button className="outline" onClick={() => downloadDocument(document)}><Download size={15} /> Download</button>}
+                {PRIVATE_DOCUMENTS_READY && document.status === "available" && !document.reviewed_at && <button className="outline" disabled={busy} onClick={() => reviewDocument(document)}><ShieldCheck size={15} /> Mark as reviewed</button>}
+                {PRIVATE_DOCUMENTS_READY && document.status === "available" && document.reviewed_at && <button className="outline" disabled={busy} onClick={() => shareDocument(document, !document.patient_visible)}><Share2 size={15} /> {document.patient_visible ? "Unshare" : "Share with patient"}</button>}
               </div>
             </article>
           )) : <StateMessage>No documents have been uploaded for this patient.</StateMessage>}
         </section>
         <section className="panel care-panel">
-          <div className="care-panel-heading"><Upload /><div><h2>Upload a document</h2><p>PDF, JPEG, PNG or WebP · Maximum 10 MB</p></div></div>
-          <form className="care-form" onSubmit={uploadDocument}>
-            <label>Choose file<input type="file" accept=".pdf,image/jpeg,image/png,image/webp" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} /></label>
-            {uploadFile && <small className="care-hint">{uploadFile.name} · {Math.ceil(uploadFile.size / 1024)} KB</small>}
-            <button className="primary" disabled={busy || !uploadFile}><Upload size={16} /> Upload securely</button>
-          </form>
-          <StateMessage>Uploads remain private after verification. A doctor must explicitly review the file before the separate patient-sharing action becomes available. If private storage is not configured, the API returns 503 and no public or local-file fallback is used.</StateMessage>
+          <div className="care-panel-heading"><Upload /><div><h2>{PRIVATE_DOCUMENTS_READY ? "Upload a document" : "Document storage disabled"}</h2><p>{PRIVATE_DOCUMENTS_READY ? "PDF, JPEG, PNG or WebP · Maximum 10 MB" : "Uploads and sharing are unavailable in this environment"}</p></div></div>
+          {PRIVATE_DOCUMENTS_READY ? (
+            <>
+              <form className="care-form" onSubmit={uploadDocument}>
+                <label>Choose file<input type="file" accept=".pdf,image/jpeg,image/png,image/webp" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} /></label>
+                {uploadFile && <small className="care-hint">{uploadFile.name} · {Math.ceil(uploadFile.size / 1024)} KB</small>}
+                <button className="primary" disabled={busy || !uploadFile}><Upload size={16} /> Upload securely</button>
+              </form>
+              <StateMessage>Uploads remain private after verification. A doctor must explicitly review the file before the separate patient-sharing action becomes available.</StateMessage>
+            </>
+          ) : (
+            <StateMessage>Uploads, downloads, review and patient sharing are disabled until secure private storage and fail-closed malware scanning are configured and verified. No file upload or patient-sharing action is available in this environment.</StateMessage>
+          )}
         </section>
       </div>
     </>
