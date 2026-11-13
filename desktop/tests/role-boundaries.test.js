@@ -38,6 +38,14 @@ test("Doctor workspace still requires a verified Doctor session", () => {
   assert.match(source, /window\.addEventListener\("oralyn:doctor-session-expired"/);
 });
 
+test("Doctor bearer token is memory-only and never persisted in browser storage", () => {
+  assert.match(source, /\[token, setToken\] = useState\(""/);
+  assert.doesNotMatch(source, /localStorage|sessionStorage|oralyn_doctor_token/);
+  assert.match(source, /setToken\(result\.access_token\)/);
+  assert.match(source, /setToken\(accessToken\)/);
+  assert.match(source, /this sign-in stays in memory in this tab/);
+});
+
 test("public patient journey is served only by account-free static pages", () => {
   assert.doesNotMatch(source, /function Patient\(|patientSession|patientLinks|patientInviteCode|oralyn_patient_record_id/);
   assert.match(patientHomeSource, /No patient account, password or OTP is needed/);
