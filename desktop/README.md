@@ -31,4 +31,11 @@ The Vite development server proxies `/v1` to the configured API. Production buil
 
 ## Release gates
 
-Private document uploads/sharing stay disabled until a private object-storage bucket and fail-closed malware scanning are provisioned and verified. Doctor authentication currently persists a 30-day bearer token in browser localStorage; hardened token persistence must be reviewed and verified before production. Live Doctor and Assistant login with API-backed persistence, cross-tenant staging E2E, backup/restore, monitoring/alerting, rollback rehearsal, production database/domain and release approval are still required. A green CI build is not production release approval.
+- The public booking catalogue contains 20 clinic-approved service labels plus Other dental concern. Do not invent additional services.
+- Guest booking uses India-time future validation, idempotency and anti-abuse rate limiting. The current limiter is in-process and is suitable only for the single-instance staging service. Production multi-instance hosting must use shared/distributed rate limiting or a trusted edge/WAF policy; the manifest keeps `production_guest_rate_limiting_verified` false until that is tested.
+- Doctor bearer tokens are held in component memory only. They are not written to localStorage or sessionStorage, and refreshing the page signs the Doctor out. This is intentional; live Doctor login and API-backed create/read/update acceptance are still required.
+- Clinic Assistant is a separate identity and API role. CI verifies allowed reception/payment-receipt operations, HTTP 403 denials for clinical/owner operations, cross-clinic isolation, revocation and receipt idempotency. No real Assistant account/session or authenticated UI-to-live-API persistence acceptance exists in staging yet.
+- Private document uploads, downloads and sharing remain disabled until the private bucket is connected to the API and persistent fail-closed malware scanning is verified. The staging bucket is private and empty; CI ClamAV tests are not a persistent scanner deployment.
+- Backup/restore rehearsal, error monitoring and alerting, rollback rehearsal, authenticated Doctor/Assistant screenshots, always-on production hosting, production database, production custom domain and explicit production deployment approval remain outstanding.
+
+A green CI build or synthetic fixture is not production release approval.
