@@ -10,6 +10,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, "..");
 const source = fs.readFileSync(path.join(root, "src", "main.jsx"), "utf8");
 const assistantContractSource = fs.readFileSync(path.join(root, "scripts", "verify-assistant-staging-contract.cjs"), "utf8");
+const assistantWorkflowSource = fs.readFileSync(path.join(root, "..", ".github", "workflows", "oralyn-desktop.yml"), "utf8");
 const careSource = fs.readFileSync(path.join(root, "src", "careScreens.jsx"), "utf8");
 const apiSource = fs.readFileSync(path.join(root, "src", "api.js"), "utf8");
 const assistantAppSource = fs.readFileSync(path.join(root, "src", "assistant.jsx"), "utf8");
@@ -213,6 +214,6 @@ test("Assistant staging contract verification is read-only and never creates a b
   assert.match(assistantContractSource, /method: "OPTIONS"/);
   assert.match(assistantContractSource, /method: "GET"/);
   assert.doesNotMatch(assistantContractSource, /method: "(?:POST|PATCH|DELETE)"/);
-  assert.match(assistantContractSource, /ORALYN_ASSISTANT_UI_API_VERIFIED=true/);
+  assert.match(assistantWorkflowSource, /ORALYN_ASSISTANT_UI_API_VERIFIED=true/);
   assert.match(assistantContractSource, /no credentials or writes used/);
 });
