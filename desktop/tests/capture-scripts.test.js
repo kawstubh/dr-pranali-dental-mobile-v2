@@ -32,6 +32,17 @@ test("synthetic Doctor capture proves memory-only token behavior across refresh 
   assert.doesNotMatch(source, /localStorage\.setItem\('oralyn_doctor_token'/);
 });
 
+test("synthetic Doctor capture uses SPA navigation while the bearer token is memory-only", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-synthetic-doctor.cjs"), "utf8");
+  const start = source.indexOf("async function navigate(route, expectedText)");
+  const end = source.indexOf("async function submitDoctorLogin", start);
+  assert.ok(start >= 0 && end > start);
+  const helper = source.slice(start, end);
+  assert.match(helper, /history\.pushState/);
+  assert.match(helper, /PopStateEvent\('popstate'\)/);
+  assert.doesNotMatch(helper, /Page\.navigate/);
+});
+
 
 test("real browser capture verifies Assistant login and legacy admin redirect at desktop, tablet and mobile sizes", () => {
   const file = join(process.cwd(), "scripts", "capture-actual-desktop.cjs");
