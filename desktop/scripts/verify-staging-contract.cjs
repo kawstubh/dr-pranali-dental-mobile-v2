@@ -220,7 +220,7 @@ async function main() {
 
   // One synthetic request per backend commit per IST day. The idempotency key
   // is stable across hourly CI runs, so retries cannot create duplicate rows.
-  if (health?.database_identity_verified === true && branchIdentityOk && expectedApiCommit) {
+  if (health?.database_identity_verified === true && branchIdentityOk && health?.deployment_commit === expectedApiCommit && expectedApiCommit) {
     const istParts = new Intl.DateTimeFormat("en-GB", {
       timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
     }).formatToParts(new Date());
