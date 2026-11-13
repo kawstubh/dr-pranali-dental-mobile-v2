@@ -44,10 +44,9 @@ test("synthetic Assistant capture exercises memory-only login, reception and app
   assert.match(source, /v1\/dental\/assistant\/auth\/login/);
   assert.match(source, /reception\.synthetic@example\.test/);
   assert.match(source, /assistant-login/);
-  assert.match(source, /v1\\/dental\\/assistant\\/auth\\/logout/);
+  assert.match(source, /v1\/dental\/assistant\/auth\/logout/);
   assert.match(source, /result: patients/);
   assert.match(source, /patient-create/);
-  assert.match(source, /appointment-confirm/);
   assert.match(source, /appointment-confirm/);
   assert.match(source, /billing-read/);
   assert.match(source, /UNHANDLED_SYNTHETIC_PATH/);
