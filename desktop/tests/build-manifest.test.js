@@ -40,7 +40,7 @@ test("staging build manifest records verified account-free booking gates without
         ORALYN_SECURITY_HEADERS_VERIFIED: "true",
         ORALYN_GUEST_BOOKING_E2E_VERIFIED: "true",
         ORALYN_MOBILE_BROWSER_E2E_VERIFIED: "true",
-        ORALYN_SERVICE_CATALOG_VERIFIED: "true",
+        ORALYN_SERVICE_CATALOG_UI_VERIFIED: "true",
       },
       stdio: "pipe",
     });
@@ -65,14 +65,16 @@ test("staging build manifest records verified account-free booking gates without
     assert.equal(manifest.checks.doctor_auth_e2e_verified, false);
     assert.equal(manifest.checks.patient_guest_booking_e2e_verified, true);
     assert.equal(manifest.checks.mobile_browser_e2e_verified, true);
-    assert.equal(manifest.checks.public_service_catalog_verified, true);
+    assert.equal(manifest.checks.public_service_catalog_ui_verified, true);
+    assert.equal(manifest.checks.public_service_catalog_api_verified, false);
     assert.equal(Object.hasOwn(manifest.checks, "supabase_auth_configured"), false);
     assert.equal(manifest.patient_ai_enabled, false);
     assert.equal(manifest.native_apk_required_for_release, false);
     assert.equal(manifest.release_status, "BLOCKED");
     assert.ok(!manifest.blockers.includes("supabase_auth_configured"));
     assert.ok(!manifest.blockers.includes("isolated_portal_origin_assigned"));
-    assert.ok(!manifest.blockers.includes("public_service_catalog_verified"));
+    assert.ok(!manifest.blockers.includes("public_service_catalog_ui_verified"));
+    assert.ok(manifest.blockers.includes("public_service_catalog_api_verified"));
     assert.ok(!manifest.blockers.includes("cors_verified_for_portal_origin"));
     for (const gate of [
       "backup_restore_verified",
@@ -86,6 +88,7 @@ test("staging build manifest records verified account-free booking gates without
       "cross_tenant_e2e_verified",
       "authenticated_screenshots_verified",
       "private_document_storage_verified",
+      "public_service_catalog_api_verified",
     ]) {
       assert.equal(manifest.checks[gate], false, gate);
       assert.ok(manifest.blockers.includes(gate), gate);
