@@ -4,6 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
+import { resolvePortalRoute } from "../src/routing.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, "..");
@@ -14,9 +15,16 @@ const careSource = fs.readFileSync(path.join(root, "src", "careScreens.jsx"), "u
 const apiSource = fs.readFileSync(path.join(root, "src", "api.js"), "utf8");
 const bookingSource = fs.readFileSync(path.join(root, "public", "patient", "booking", "index.html"), "utf8");
 const assistantSource = fs.readFileSync(path.join(root, "public", "assistant", "index.html"), "utf8");
+const viteSource = fs.readFileSync(path.join(root, "vite.config.js"), "utf8");
 
 test("global patient search is rendered only in the Doctor workspace", () => {
   assert.match(source, /\{role === "doctor" && \(\s*<div className="search">/);
+});
+
+test("legacy patient login routes redirect to the public patient journey", () => {
+  const route = resolvePortalRoute("/patient/login");
+  assert.equal(route.role, "doctor");
+  assert.equal(route.redirectTo, "/patient/home/");
 });
 
 test("Doctor workspace still requires a verified Doctor session", () => {
@@ -102,6 +110,19 @@ test("Clinic Assistant has a separate least-privilege workspace", () => {
   assert.doesNotThrow(() => new vm.Script(script));
 });
 
+test("Doctor patient directory has no patient-account invitation action", () => {
+  assert.doesNotMatch(source, /createPatientInvite|Create invite|invite-code-card/);
+  assert.doesNotMatch(apiSource, /createPatientInvite/);
+});
+
+test("owner/admin settings expose the separate Clinic Assistant account page", () => {
+  assert.match(source, /canManageAssistants/);
+  assert.match(source, /accountRole === "owner" \|\| accountRole === "admin"/);
+  assert.match(source, /assistant-admin\/index\.html/);
+  assert.match(viteSource, /configurePreviewServer/);
+  assert.match(viteSource, /assistant-admin\/index\.html/);
+});
+
 test("Doctor clinical records remain scoped to Doctor-authenticated APIs", () => {
   assert.match(apiSource, /doctorTreatmentPlans:/);
   assert.match(apiSource, /doctorInvoices:/);
@@ -115,10 +136,13 @@ test("Doctor-only intelligence is not exposed in the Patient component", () => {
   assert.doesNotMatch(patientSource, /AI diagnosis|self-diagnosis|diagnose yourself/i);
 });
 
-test("private clinical documents require Doctor review before any future patient sharing", () => {
-  assert.match(apiSource, /reviewDocument:/);
-  assert.match(careSource, /Mark as reviewed/);
-  assert.match(careSource, /A doctor must review each file before patient sharing is enabled/);
+test("private document actions remain fail-closed until storage and malware scanning are verified", () => {
+  assert.match(careSource, /VITE_PRIVATE_DOCUMENT_STORAGE_READY/);
+  assert.match(careSource, /VITE_DOCUMENT_MALWARE_SCANNING_READY/);
+  assert.match(careSource, /PRIVATE_DOCUMENTS_READY/);
+  assert.match(careSource, /Uploads, downloads, review and patient sharing are disabled/);
+  assert.match(careSource, /PRIVATE_DOCUMENTS_READY && document\.status === "available"/);
+  assert.match(apiSource, /createDocumentUploadIntent/);
 });
 
 test("patient session and account-linking flows are not required or initialized", () => {
