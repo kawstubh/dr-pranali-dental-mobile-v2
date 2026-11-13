@@ -69,6 +69,10 @@ test("staging manifest records verified public gates without claiming live booki
     assert.equal(manifest.staging_contract.verified_for_this_commit, false);
     assert.equal(manifest.staging_contract.inherited_from_base, true);
     assert.equal(manifest.staging_contract.inherited_base_sha, "base-portal-commit-456");
+    assert.equal(manifest.checks.staging_api_commit_verified, false);
+    assert.equal(manifest.checks.staging_portal_commit_verified, false);
+    assert.ok(manifest.blockers.includes("staging_api_commit_verified"));
+    assert.ok(manifest.blockers.includes("staging_portal_commit_verified"));
     assert.equal(manifest.checks.backend_stack_verified, true);
     assert.equal(manifest.checks.cors_verified_for_portal_origin, true);
     assert.equal(manifest.checks.database_identity_verified, true);
