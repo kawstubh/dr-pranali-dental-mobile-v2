@@ -113,3 +113,18 @@ test("release workflow derives live gates instead of hard-coding them true", () 
     /ORALYN_(?:BACKEND_STACK|CORS|DATABASE_IDENTITY|SECURITY_HEADERS|PATIENT_ACCOUNT_FREE|SERVICE_CATALOG_API)_VERIFIED:\s*["']true["']/,
   );
 });
+
+
+test("all capture evidence records the exact PR head commit instead of the synthetic merge ref", () => {
+  const scripts = [
+    "capture-actual-desktop.cjs",
+    "capture-synthetic-doctor.cjs",
+    "capture-synthetic-assistant.cjs",
+  ];
+  for (const name of scripts) {
+    const source = readFileSync(join(process.cwd(), "scripts", name), "utf8");
+    assert.match(source, /process\\.env\\.ORALYN_COMMIT_SHA\\s*\\|\\|\\s*process\\.env\\.GITHUB_SHA/);
+  }
+  const assistantSource = readFileSync(join(process.cwd(), "scripts", "capture-synthetic-assistant.cjs"), "utf8");
+  assert.match(assistantSource, /"commit=" \\+ commit/);
+});
