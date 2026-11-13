@@ -14,14 +14,14 @@ test("the portal root resolves to the Doctor dashboard", () => {
   });
 });
 
-test("patient routes survive direct navigation and page refresh", () => {
+test("patient routes allow only public home and booking pages", () => {
   assert.deepEqual(resolvePortalRoute("/patient"), {
     role: "patient",
     page: "home",
   });
   assert.deepEqual(resolvePortalRoute("/patient/records"), {
     role: "patient",
-    page: "records",
+    page: "home",
   });
   assert.deepEqual(resolvePortalRoute("/patient/booking"), {
     role: "patient",
@@ -52,7 +52,7 @@ test("unknown role or page segments fail closed to the role's home page", () => 
 });
 
 test("portal paths are canonical and cannot cross the role page allow-list", () => {
-  assert.equal(portalPath("patient", "records"), "/patient/records");
+  assert.equal(portalPath("patient", "records"), "/patient/home");
   assert.equal(portalPath("doctor", "clinical"), "/doctor/clinical");
   assert.equal(portalPath("patient", "clinical"), "/patient/home");
   assert.equal(portalPath("doctor", "../../patient"), "/doctor/dashboard");
@@ -80,7 +80,7 @@ test("browser back and forward events restore the correct role and page", () => 
   router.navigate("patient", "home");
   assert.equal(fakeWindow.location.pathname, "/patient/home");
   router.navigate("patient", "records");
-  assert.equal(fakeWindow.location.pathname, "/patient/records");
+  assert.equal(fakeWindow.location.pathname, "/patient/home");
   fakeWindow.location.pathname = "/doctor/appointments";
   listeners.get("popstate")();
   assert.deepEqual(routes.at(-1), {
