@@ -4,6 +4,8 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
 const main = read("../src/main.jsx");
+const patientHome = read("../public/patient/home/index.html");
+const patientBooking = read("../public/patient/booking/index.html");
 const css = read("../src/styles.css");
 const html = read("../index.html");
 const fontsDoc = read("../docs/FONTS.md");
@@ -38,7 +40,7 @@ test("the approved Oralyn wordmark and app mark are used; provisional artwork is
     assert.ok(existsSync(new URL(path, import.meta.url)), path + " must exist");
     assert.ok(statSync(new URL(path, import.meta.url)).size > 1000);
   }
-  assert.match(main, /src="\/oralyn-app-icon-approved\.webp"/);
+  assert.ok(patientHome.includes('href="/oralyn-app-icon-approved.webp"'));
   assert.match(main, /src="\/oralyn-logo-approved\.webp"/);
   assert.match(html, /href="\/oralyn-app-icon-approved\.webp"/);
   assert.doesNotMatch(main + html, /oralyn-app-icon\.png|oralyn-mark\.png|oralyn-logo-recovered\.jpg/);
@@ -68,13 +70,14 @@ test("the Doctor dashboard uses live normalized data and does not fabricate tota
   assert.doesNotMatch(main, /^const people = \[\];|^const appts = \[\];/m);
 });
 
-test("Patient UI has no diagnosis feature and booking slots respect clinic hours", () => {
-  const patient = main.slice(main.indexOf("function Patient({"));
-  assert.doesNotMatch(patient, /dentalApi\.intelligence|AI diagnosis|self-diagnosis/i);
-  assert.match(patient, /10:00 AM/);
-  assert.match(patient, /08:30 PM/);
-  assert.doesNotMatch(patient, /09:00 AM/);
-  assert.match(patient, /localDateTimeFromParts/);
+test("public patient pages have no diagnosis feature and booking slots respect clinic hours", () => {
+  assert.doesNotMatch(main, /function Patient\(/);
+  assert.doesNotMatch(patientHome + patientBooking, /AI diagnosis|self-diagnosis|clinical intelligence/i);
+  assert.match(patientBooking, /10:00/);
+  assert.match(patientBooking, /20:00/);
+  assert.doesNotMatch(patientBooking, /09:00/);
+  assert.match(patientBooking, /Asia\/Kolkata/);
+  assert.match(patientBooking, /\+05:30/);
 });
 
 test("Doctor workspace administration stays scoped to the active organisation", () => {
