@@ -102,8 +102,8 @@ async function verifyFonts() {
       displayResponse.arrayBuffer(),
     ]);
     const [bodyFaces, displayFaces] = await Promise.all([
-      document.fonts.load('400 16px "Plus Jakarta Sans"', probe),
-      document.fonts.load('400 32px "Playfair Display"', probe),
+      document.fonts.load('400 16px "Plus Jakarta Sans"', probe.textContent),
+      document.fonts.load('400 32px "Playfair Display"', probe.textContent),
     ]);
     await document.fonts.ready;
     const faceRows = [...document.fonts].map((face) => ({
