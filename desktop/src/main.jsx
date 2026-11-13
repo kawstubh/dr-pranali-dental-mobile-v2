@@ -40,6 +40,7 @@ import { dentalApi } from "./api.js";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import { normaliseList, normaliseUser, formatTime, isSameLocalDay } from "./data.js";
 import { DoctorCareManagement, DoctorClinicalNotes, PatientCommunication } from "./careScreens.jsx";
+import { AssistantManagement } from "./assistant.jsx";
 import { createPortalNavigator, resolvePortalRoute } from "./routing.js";
 import { createControllerChangeHandler } from "./serviceWorkerLifecycle.js";
 function doctorDisplayName(user) {
@@ -1288,6 +1289,7 @@ function Doctor({
   if (page === "settings")
     return (
       <>
+        <AssistantManagement token={token} user={user} />
         <AccountSettings user={user} activeWorkspace={activeWorkspace} onSignOut={onSignOut} />
       </>
     );
