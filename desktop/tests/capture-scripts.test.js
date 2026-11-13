@@ -50,3 +50,11 @@ test("synthetic Assistant capture covers reception, appointment and billing with
   assert.match(source, /clinical_controls=none/);
   assert.match(source, /unhandled_api_paths=none/);
 });
+
+test("Assistant intake resets the captured form after its asynchronous save", () => {
+  const file = join(process.cwd(), "public", "assistant", "index.html");
+  const source = readFileSync(file, "utf8");
+  assert.match(source, /const form = event\.currentTarget; const data = new FormData\(form\);/);
+  assert.match(source, /form\.reset\(\); showMessage\(workspaceMessage,"Patient contact saved\."/);
+  assert.doesNotMatch(source, /event\.currentTarget\.reset\(\)/);
+});
