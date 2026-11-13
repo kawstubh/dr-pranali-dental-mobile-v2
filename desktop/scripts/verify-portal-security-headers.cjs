@@ -22,6 +22,7 @@ const assert = require("node:assert/strict");
   assert.match(response.headers.get("strict-transport-security"), /max-age=31536000/i);
   assert.match(response.headers.get("x-frame-options"), /^DENY$/i);
   assert.match(response.headers.get("content-security-policy"), /frame-ancestors 'none'/);
+  assert.match(response.headers.get("content-security-policy"), /img-src 'self' data: blob: https:\/\/static\\.wixstatic\\.com/);
   assert.match(response.headers.get("content-security-policy"), /connect-src 'self' https:\/\/oralyn-staging-api-assistant\.onrender\.com/);
   await response.arrayBuffer();
   console.log("Oralyn portal preview security headers passed.");
