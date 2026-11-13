@@ -13,7 +13,7 @@ const patientStart = source.indexOf("function Patient(");
 const patientSource = patientStart >= 0 ? source.slice(patientStart) : "";
 const careSource = fs.readFileSync(path.join(root, "src", "careScreens.jsx"), "utf8");
 const apiSource = fs.readFileSync(path.join(root, "src", "api.js"), "utf8");
-const assistantSource = fs.readFileSync(path.join(root, "src", "assistant.jsx"), "utf8");
+const assistantAppSource = fs.readFileSync(path.join(root, "src", "assistant.jsx"), "utf8");
 const bookingSource = fs.readFileSync(path.join(root, "public", "patient", "booking", "index.html"), "utf8");
 const assistantSource = fs.readFileSync(path.join(root, "public", "assistant", "index.html"), "utf8");
 const viteSource = fs.readFileSync(path.join(root, "vite.config.js"), "utf8");
@@ -204,28 +204,28 @@ test("Clinic Assistant account management is gated by the Doctor owner/admin ses
 test("Clinic Assistant has a distinct route, identity and session namespace", () => {
   assert.ok(source.includes('import AssistantApp, { AssistantManagement } from "./assistant.jsx";'));
   assert.ok(source.includes("isAssistantRoute"));
-  assert.ok(assistantSource.includes("/v1/dental/auth/assistant/login"));
-  assert.ok(assistantSource.includes("oralyn_assistant_token"));
-  assert.ok(assistantSource.includes('role !== "assistant"'));
+  assert.ok(assistantAppSource.includes("/v1/dental/auth/assistant/login"));
+  assert.ok(assistantAppSource.includes("oralyn_assistant_token"));
+  assert.ok(assistantAppSource.includes('role !== "assistant"'));
 });
 
 test("Clinic Assistant UI calls only its dedicated reception and assistant-auth API namespace", () => {
-  const apiPaths = [...assistantSource.matchAll(/["']([^"']*\/v1\/dental\/[^"']*)["']/g)].map((match) => match[1]);
+  const apiPaths = [...assistantAppSource.matchAll(/["']([^"']*\/v1\/dental\/[^"']*)["']/g)].map((match) => match[1]);
   assert.ok(apiPaths.length >= 8, "expected explicit Assistant API calls");
   assert.ok(apiPaths.every((route) =>
     route.startsWith("/v1/dental/assistant/") ||
     route.startsWith("/v1/dental/auth/assistant") ||
     route.startsWith("/v1/dental/auth/assistants")
   ));
-  assert.ok(!assistantSource.includes("/v1/dental/doctor/"));
-  assert.ok(!assistantSource.includes("/v1/dental/ai/"));
-  assert.ok(!assistantSource.includes("/v1/dental/intelligence/"));
+  assert.ok(!assistantAppSource.includes("/v1/dental/doctor/"));
+  assert.ok(!assistantAppSource.includes("/v1/dental/ai/"));
+  assert.ok(!assistantAppSource.includes("/v1/dental/intelligence/"));
 });
 
 test("Assistant account management is restricted to owner and admin identities", () => {
-  assert.ok(assistantSource.includes('const allowed = ["owner", "admin"]'));
-  assert.ok(assistantSource.includes("/v1/dental/auth/assistants"));
-  assert.ok(assistantSource.includes("/deactivate"));
+  assert.ok(assistantAppSource.includes('const allowed = ["owner", "admin"]'));
+  assert.ok(assistantAppSource.includes("/v1/dental/auth/assistants"));
+  assert.ok(assistantAppSource.includes("/deactivate"));
 });
 
 test("legacy patient-linked API methods are absent from the shipped client", () => {
