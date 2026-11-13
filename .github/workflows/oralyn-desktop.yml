@@ -50,7 +50,7 @@ jobs:
         if: github.ref_name == 'feat/oralyn-desktop-app' || (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feat/oralyn-desktop-app') || (github.event_name == 'workflow_dispatch' && github.ref_name == 'feat/oralyn-desktop-app')
         run: node scripts/verify-staging-contract.cjs
       - name: Record inherited staging evidence for non-canonical feature branches
-        if: github.ref_name != 'feat/oralyn-desktop-app'
+        if: (github.event_name == 'pull_request' && github.event.pull_request.head.ref != 'feat/oralyn-desktop-app') || (github.event_name != 'pull_request' && github.ref_name != 'feat/oralyn-desktop-app')
         run: |
           echo "ORALYN_STAGING_API_COMMIT_VERIFIED=false" >> "$GITHUB_ENV"
           echo "ORALYN_STAGING_PORTAL_COMMIT_VERIFIED=false" >> "$GITHUB_ENV"
