@@ -25,6 +25,8 @@ jobs:
       ORALYN_SECURITY_HEADERS_VERIFIED: "true"
       ORALYN_MOBILE_BROWSER_E2E_VERIFIED: "true"
       ORALYN_SERVICE_CATALOG_UI_VERIFIED: "true"
+      ORALYN_SERVICE_CATALOG_API_VERIFIED: "true"
+      ORALYN_PATIENT_ACCOUNT_FREE_VERIFIED: "true"
     defaults:
       run:
         working-directory: desktop
