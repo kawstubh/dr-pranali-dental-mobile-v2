@@ -187,6 +187,71 @@ async function navigate(route, expectedText, screenshotName) {
   return captureCurrent(expectedText, screenshotName);
 }
 
+async function verifyKeyboardFocus() {
+  await evaluate("document.activeElement?.blur?.()");
+  await send("Input.dispatchKeyEvent", {
+    type: "keyDown", key: "Tab", code: "Tab",
+    windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9,
+  });
+  await send("Input.dispatchKeyEvent", {
+    type: "keyUp", key: "Tab", code: "Tab",
+    windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9,
+  });
+  const state = await evaluate(`(() => {
+    const active = document.activeElement;
+    if (!active) return { focused: false };
+    const style = getComputedStyle(active);
+    const visibleIndicator =
+      (style.outlineStyle !== "none" && parseFloat(style.outlineWidth) > 0 &&
+        style.outlineColor !== "transparent") ||
+      style.boxShadow !== "none";
+    return {
+      focused: active !== document.body && active !== document.documentElement,
+      interactive: active.matches('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'),
+      focusVisible: active.matches(":focus-visible"),
+      visibleIndicator,
+      tag: active.tagName.toLowerCase(),
+      label: active.getAttribute("aria-label") || active.getAttribute("name") ||
+        active.getAttribute("placeholder") || (active.innerText || "").trim().slice(0, 80),
+    };
+  })()`);
+  if (!state.focused || !state.interactive || !state.focusVisible || !state.visibleIndicator) {
+    throw new Error("Keyboard Tab did not reach an interactive control with a visible focus indicator: " + JSON.stringify(state));
+  }
+  await evaluate("document.activeElement?.blur?.()");
+  return state;
+}
+
+async function verifyReducedMotion() {
+  await send("Emulation.setEmulatedMedia", {
+    features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+  });
+  try {
+    const state = await evaluate(`(() => {
+      const card = document.querySelector(".oralyn-auth-card,.oralyn-reference-card");
+      const signIn = document.querySelector(".oralyn-signin");
+      const cardStyle = card ? getComputedStyle(card) : null;
+      const signInStyle = signIn ? getComputedStyle(signIn) : null;
+      return {
+        preferenceHonored: matchMedia("(prefers-reduced-motion: reduce)").matches,
+        cardFound: Boolean(card),
+        signInFound: Boolean(signIn),
+        cardAnimation: cardStyle?.animationName || null,
+        signInTransition: signInStyle?.transitionProperty || null,
+      };
+    })()`);
+    if (!state.preferenceHonored || !state.cardFound || !state.signInFound ||
+        state.cardAnimation !== "none" || state.signInTransition !== "none") {
+      throw new Error("Reduced-motion preference was not honored by the Doctor sign-in UI: " + JSON.stringify(state));
+    }
+    return state;
+  } finally {
+    await send("Emulation.setEmulatedMedia", {
+      features: [{ name: "prefers-reduced-motion", value: "no-preference" }],
+    });
+  }
+}
+
 async function verifyPublicBookingForm() {
   const state = await evaluate(`(() => {
     const form = document.querySelector("#booking");
@@ -340,6 +405,9 @@ async function captureAssistantAdminGate() {
       "Sign in with your clinic-issued email and password",
       "doctor-login"
     );
+    const accessibilityResults = {};
+    accessibilityResults.doctorKeyboardFocus = await verifyKeyboardFocus();
+    accessibilityResults.reducedMotion = await verifyReducedMotion();
     const approvedLogoAssets = await evaluate(`(() => {
       const wordmark = document.querySelector(".oralyn-vector-brand img");
       const appIcon = document.querySelector(".oralyn-app-squircle img");
@@ -356,6 +424,7 @@ async function captureAssistantAdminGate() {
       "Clinic Assistant",
       "assistant-login"
     );
+    accessibilityResults.assistantKeyboardFocus = await verifyKeyboardFocus();
     await send("Page.navigate", { url: baseUrl + "/doctor/dashboard" });
     await waitFor(() => evaluate(
       'location.pathname === "/doctor/dashboard" && document.body.innerText.includes("Sign in with your clinic-issued email and password")'
@@ -394,6 +463,7 @@ async function captureAssistantAdminGate() {
       "Request an appointment",
       "patient-booking"
     );
+    accessibilityResults.guestBookingKeyboardFocus = await verifyKeyboardFocus();
     fontResults.patientBookingValidation = await verifyPublicBookingForm();
     fontResults.assistantAdmin = await captureAssistantAdminGate();
 
@@ -427,13 +497,17 @@ async function captureAssistantAdminGate() {
       "assistant_admin_management_form_visible=" + fontResults.assistantAdmin.assistantManagementFormVisible,
       "assistant_admin_plus_jakarta_sans_loaded=" + fontResults.assistantAdmin.plusJakartaSans,
       "role_route_refresh_back_forward=passed",
+      "keyboard_focus_doctor_login=passed",
+      "keyboard_focus_assistant_login=passed",
+      "keyboard_focus_guest_booking=passed",
+      "reduced_motion_preference=passed",
       "runtime_errors=none",
     ].join("\n") + "\n";
     fs.writeFileSync(path.join(output, "build-info.txt"), metadata);
     fs.writeFileSync(path.join(output, "runtime-errors.txt"), "none observed during signed-out public-route capture\n");
     console.log(JSON.stringify({
       commit, environment, baseUrl, apiBase, bundle: jsFile, bundleHash,
-      fontResults, approvedLogoAssets, pwa: fontResults.doctorLogin.pwa, runtimeErrors,
+      fontResults, accessibilityResults, approvedLogoAssets, pwa: fontResults.doctorLogin.pwa, runtimeErrors,
       screenshots: fs.readdirSync(output).filter((name) => name.endsWith(".png")),
     }));
   } finally {
