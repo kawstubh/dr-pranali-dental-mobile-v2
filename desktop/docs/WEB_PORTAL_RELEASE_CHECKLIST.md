@@ -1,6 +1,6 @@
 # Oralyn Web Portal — Current Release Checklist
 
-**Last verified:** 14 November 2026, 16:08 UTC. All timestamps below are UTC.
+**Last verified:** 14 November 2026, 17:29 UTC. All timestamps below are UTC.
 **Release decision: BLOCKED for production.** This is a synthetic staging release candidate. All PRs remain open, Draft and unmerged.
 
 ## Product contract
@@ -300,3 +300,31 @@ Do not merge PRs, deploy production, apply production migrations, change product
 - The current run did not perform a new authenticated Doctor or Assistant login. Doctor and Assistant browser artifacts remain synthetic fixtures. The release manifest still requires real Doctor login/CRUD, real Assistant login/least-privilege UI/API acceptance, authenticated cross-tenant testing and authenticated screenshots.
 - Branch-protection state could not be freshly queried: the GitHub connector does not expose repository administration/branch-protection operations. No protection settings were changed. Require an administrator to verify required CI, review and force-push restrictions before production.
 - Production remains BLOCKED on 18 gates. No production deployment, migration, secret change, real patient-data transfer, paid infrastructure activation, service deletion or PR merge occurred.
+
+
+## Latest hourly verification — 14 Nov 2026 17:29 UTC
+
+### GitHub and CI
+- Frontend PR #18 remains open, Draft and unmerged at `1e5db539c9ea231e2bdc9b5cb549b3c4d14e0d4d`. The exact-head workflow [#43614164928](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43614164928) completed successfully: all 20 workflow validation steps passed; 125/125 regression tests passed; three npm audit invocations reported zero vulnerabilities; staging build, synthetic guest-booking/idempotency contract, read-only Assistant API contract, responsive headless-Chrome capture and all four artifact uploads passed.
+- Current browser artifacts from #43614164928: [desktop/tablet/mobile captures](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14121203609), [Doctor synthetic UI](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14121004507), [Assistant synthetic UI](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14121158833), and [staging build/checksum](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14121019289). Artifacts expire 28 Nov 2026 around 16:13 UTC. Doctor/Assistant captures are fixtures, not authenticated acceptance.
+- Backend PR #60 remains open, Draft and unmerged at `fce527d034ccafe420f568d1216bb6e31a6a9327`. Engine #43593700789 completed with 236 passed, 3 skipped; PostgreSQL #43593700798 completed with 239 passed. The deployed runtime `5f4adba355b56f69427f554925ad8cdaa7f81d40` is the direct parent of the backend PR head; the only intervening file is `docs/DENTAL_PRIVATE_DOCUMENTS.md`, so no backend application redeploy is required.
+- Fresh GitHub branch metadata explicitly reports `protected=false` and required status-check enforcement `off` for both `feat/oralyn-desktop-app` and `feat/oralyn-clinic-assistant-rbac`. No branch protection settings were changed. Require administrator action before production.
+
+### Render
+- Canonical frontend service `srv-dbr2ttsipgvc739a4tmg`, deployment `dep-dbs8futckfvc73db1pp0`, is LIVE on `1e5db539c9ea231e2bdc9b5cb549b3c4d14e0d4d`.
+- Canonical API service `srv-dbr8m159fdbs73dl404g`, deployment `dep-dbrngjnf3r2c7391c5v0`, is LIVE on application commit `5f4adba355b56f69427f554925ad8cdaa7f81d40`.
+- Both services are Free plan, Singapore region, one instance, auto-deploy enabled, and have empty Render-native `healthCheckPath` settings. API `/health` and `/ready` are exercised by CI, but native Render health checks are not configured.
+- Bounded Render log queries for 14 Nov 2026 17:00–17:28 UTC returned no app error/fatal entries and no request 5xx entries. This is a bounded observation, not an uptime guarantee. A separate public fetch through the web-access tool could not reach the portal or API; no independent public-browser acceptance is claimed.
+
+### Neon synthetic database and recovery
+- Project `silent-king-54610898`, database `oralyn_staging`, Singapore region, PostgreSQL 17.12. Fresh read-only SQL on both branches reports migration `0013_public_booking_idempotency` and matching aggregate counts: 9 patients, 9 appointments, 8 public requests, 0 Assistant accounts, 0 Assistant sessions, 0 clinical notes, 0 chart entries, 0 periodontal entries, 0 treatment plans, 0 invoices, 0 receipts, 0 documents and 10 audit events. No patient names, contact details or clinical contents were retrieved.
+- Snapshot source branch `br-steep-bonus-a1yqarg7` is named `oralyn-staging-restore-rehearsal-2026-11-13 (1)`; default/primary branch `br-proud-scene-a1g7g3qo` is named `main` and is restored from manual snapshot `snap-late-surf-a1j1sljm`. Both branches are ready; neither is Neon-protected.
+- Source branch has private bucket `oralyn-private-documents` with zero objects and a branch-scoped `storage:read`/`storage:write` credential. The credential secret was not retrieved and is not installed in Render. Default/main branch has no corresponding bucket.
+- One manual snapshot exists; automatic snapshot schedules are empty on both branches. Persistent malware scanning/quarantine, lifecycle cleanup and application restore/failover remain unverified. Keep document upload/download/sharing disabled.
+- The Neon project is synthetic-only and provider HIPAA setting is false; this is not a compliance assessment. Never transfer real patient data.
+
+### Acceptance boundary and release decision
+- Public account-free Patient journey, all 20 approved service options plus Other, required-field/future-IST checks, synthetic booking and same-key idempotency are covered by the passing staging contract.
+- Doctor and Assistant UI captures remain synthetic fixtures. Real Doctor login/CRUD, real Assistant login/least-privilege UI/API acceptance, authenticated cross-tenant browser E2E and authenticated screenshots remain unverified.
+- Production release remains BLOCKED on 18 top-level gates. Keep all PRs Draft/unmerged and all document actions disabled. Do not mark production gates true from fixtures or staging CI alone.
+- No production deployment/migration, production secret change, paid infrastructure activation, real patient-data transfer, service retirement, object deletion or PR merge occurred.
