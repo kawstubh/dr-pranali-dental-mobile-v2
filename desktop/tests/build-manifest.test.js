@@ -45,6 +45,7 @@ test("staging manifest records verified public gates without claiming live booki
         ORALYN_BACKEND_STACK_VERIFIED: "true",
         ORALYN_CORS_VERIFIED: "true",
         ORALYN_DATABASE_IDENTITY_VERIFIED: "true",
+        ORALYN_PRODUCTION_DATA_RESIDENCY_PRIVACY_REVIEW_VERIFIED: "false",
         ORALYN_SECURITY_HEADERS_VERIFIED: "true",
         ORALYN_GUEST_BOOKING_E2E_VERIFIED: "false",
         ORALYN_MOBILE_BROWSER_E2E_VERIFIED: "true",
