@@ -191,4 +191,7 @@ test("real browser capture verifies keyboard-visible focus and reduced-motion be
   assert.match(source, /keyboard_focus_assistant_login=passed/);
   assert.match(source, /keyboard_focus_guest_booking=passed/);
   assert.match(source, /reduced_motion_preference=passed/);
+  assert.match(source, /accessibleName/);
+  assert.match(source, /requiredLabelFields/);
+  assert.match(source, /guest_booking_required_field_labels=passed/);
 });
