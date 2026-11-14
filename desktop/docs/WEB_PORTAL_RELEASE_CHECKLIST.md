@@ -22,12 +22,13 @@ Last verified: 14 November 2026. Timestamps in CI and Render evidence are UTC.
 
 - Repository: kawstubh/dr-pranali-dental-mobile-v2
 - Branch: feat/oralyn-desktop-app; canonical PR #18 remains open and Draft.
-- Latest product-code commit: a45d297441b68e2857d97082e6bd9bbb90b09e7f
-- Render service: srv-dbr2ttsipgvc739a4tmg
+- Latest PR head: `5d5fb02477f0262765af6d4c0f8d9271c405b4a0` (documentation-only release-checklist refresh).
+- Latest product-code commit: `a45d297441b68e2857d97082e6bd9bbb90b09e7f`.
+- Render service: `srv-dbr2ttsipgvc739a4tmg`.
 - URL: https://oralyn-web-portal-spa.onrender.com
-- Deployment: dep-dbrqlm6q1p3s73e3rne0 — LIVE on the exact product-code commit.
+- Current deployment: `dep-dbrqngvf3r2c73dmi3q0` — LIVE on the exact current PR head `5d5fb02477f0262765af6d4c0f8d9271c405b4a0`. The earlier product-code deployment `dep-dbrqlm6q1p3s73e3rne0` is deactivated.
 - Plan: Free; may sleep and is not an always-on production host.
-- Exact-head CI #43534271565: 120 tests passed, 0 failed; npm audits reported 0 vulnerabilities; build, staging contracts, browser captures, manifest and artifacts passed.
+- Product-code CI #43534271565 and current PR-head documentation CI #43534712980 both passed. The PR-head validation job completed all 20 steps: **120 tests passed, 0 failed**, npm audits reported 0 vulnerabilities, and build, staging contracts, browser captures, manifest and artifacts passed.
 
 ### Backend
 
@@ -104,7 +105,7 @@ Other dental concern is a free-text choice, not a twenty-first service. The clin
 
 ## Browser and design evidence
 
-Exact-head CI #43534271565 captured desktop, tablet and mobile states for Doctor login, Assistant login, public Patient home, public booking and the Assistant admin route denial.
+Exact current PR-head CI #43534712980 captured desktop, tablet and mobile states for Doctor login, Assistant login, public Patient home, public booking and the Assistant admin route denial.
 
 Verified:
 - Approved Oralyn wordmark and app icon loaded.
@@ -158,8 +159,10 @@ These are backend tests and synthetic UI fixtures. Staging contains zero persist
 
 ## Runtime observations
 
-- Render log query 14 Nov 2026 00:27:40–00:30:00 UTC: no app error/fatal entries and no request 5xx entries for the frontend or API.
-- This is a bounded log check, not an uptime guarantee.
+- Render log query 14 Nov 2026 00:15:00–00:52:00 UTC: no app error/fatal entries and no request 5xx entries for either canonical service.
+- The API emitted successful `/health`, `/ready` and `/v1/dental/health` responses at 00:31:42 UTC; unauthenticated private Doctor/Assistant routes returned 401, the legacy linked-record route returned 404, and public booking remained POST-only (GET returned 405). The CI synthetic booking and idempotent replay both returned 200.
+- The API instance logged a graceful shutdown at 00:46:45 UTC; no subsequent restart appeared in this bounded log window. The Render deployment remains marked LIVE and the free service is not suspended, but this is not continuous-uptime evidence.
+- This is a bounded log check, not an uptime guarantee. External page-fetch attempts were unavailable during this run; GitHub Actions headless Chrome provided the responsive browser evidence.
 - The separate paid browser-agent wallet was not used or topped up. GitHub Actions headless Chrome supplies current browser evidence.
 
 ## Release manifest — BLOCKED on 17 gates
