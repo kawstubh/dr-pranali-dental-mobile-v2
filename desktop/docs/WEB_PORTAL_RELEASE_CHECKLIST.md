@@ -1,6 +1,6 @@
 # Oralyn Web Portal — Current Release Checklist
 
-**Last verified:** 14 November 2026, 12:09 UTC. All timestamps below are UTC.
+**Last verified:** 14 November 2026, 12:38 UTC. All timestamps below are UTC.
 **Release decision: BLOCKED for production.** This is a synthetic staging release candidate. All PRs remain open, Draft and unmerged.
 
 ## Product contract
@@ -20,14 +20,14 @@
 ### Frontend — PR #18
 - Repository: kawstubh/dr-pranali-dental-mobile-v2
 - Branch: feat/oralyn-desktop-app; base: master.
-- Exact head: c90061d4001db1d5995c381b8e37148a529981ed.
+- Latest application/product-code commit: `c90061d4001db1d5995c381b8e37148a529981ed`; latest release-verification/test-harness commit before this checklist refresh: `ef436c13ab675b13664d2625d7e9d4e6e81a42ea` (CI pending).
 - PR: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/pull/18
 - State: open, Draft, unmerged.
 
 ### Backend — PR #60
 - Repository: kawstubh/universal-intelligence-engine
 - Branch: feat/oralyn-clinic-assistant-rbac; base: feat/oralyn-backend-release-integration-20261113.
-- Exact head: 5f4adba355b56f69427f554925ad8cdaa7f81d40.
+- Latest PR #60 head: `fce527d034ccafe420f568d1216bb6e31a6a9327` (documentation-only); deployed application-code commit: `5f4adba355b56f69427f554925ad8cdaa7f81d40`.
 - PR: https://github.com/kawstubh/universal-intelligence-engine/pull/60
 - State: open, Draft, unmerged.
 
@@ -45,7 +45,7 @@
 - Branch: feat/oralyn-desktop-app; repository kawstubh/dr-pranali-dental-mobile-v2.
 - Service type: web service; plan: Free; region: Singapore; auto-deploy: enabled.
 - Render health-check path is currently unset.
-- Deployment dep-dbrtj6p9aqoc739kibog is LIVE on exact commit c90061d4001db1d5995c381b8e37148a529981ed.
+- Last confirmed LIVE deployment: `dep-dbs5bvs9v7es73bgk7l0` on release-harness commit `5523a8d28deaaa023e7bdaa1ca745ae9bce88771`; newer deploy for `a633d38cf6b99e31ab0291570b9fcb82c08a05fd` was building, and the latest `ef436c13ab675b13664d2625d7e9d4e6e81a42ea` deploy was queued at 12:38 UTC. These commits modify release checks/tests/workflow only; application UI code remains at product commit `c90061d4`.
 - The current service instance started its Vite preview process at 12:00:39 UTC on 14 Nov 2026.
 - Free plan may sleep and is not an always-on production host.
 
@@ -55,7 +55,7 @@
 - Branch: feat/oralyn-clinic-assistant-rbac; repository kawstubh/universal-intelligence-engine.
 - Service type: web service; plan: Free; region: Singapore; auto-deploy: enabled.
 - Render health-check path is currently unset; the API exposes /health and /ready and the frontend CI read-only contract checks both.
-- Deployment dep-dbrngjnf3r2c7391c5v0 is LIVE on exact backend head 5f4adba355b56f69427f554925ad8cdaa7f81d40.
+- Deployment `dep-dbrngjnf3r2c7391c5v0` remains LIVE on backend application commit `5f4adba355b56f69427f554925ad8cdaa7f81d40`. GitHub compare confirms the only intervening PR #60 change to head `fce527d0` is `docs/DENTAL_PRIVATE_DOCUMENTS.md`; no runtime redeploy was forced.
 - Render logs show the previous API process shut down gracefully at 11:16:03 UTC and a new process completed startup at 12:01:21 UTC on 14 Nov 2026. This is consistent with the Free service sleeping/restarting; LIVE deployment metadata does not guarantee continuous uptime.
 
 ## CI and browser evidence
@@ -74,11 +74,11 @@
 - Chrome emitted D-Bus/UPower environment warnings in the container; these did not fail the browser job or produce application runtime errors.
 - Build manifest reports RELEASE BLOCKED with 18 false release gates. Do not interpret successful CI as production approval.
 
-### Current frontend artifacts (expire 28 Nov 2026)
-- Actual desktop/tablet/mobile browser captures: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14097451008
-- Synthetic Doctor UI fixture: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14097351137
-- Synthetic Assistant UI fixture: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14097057905
-- Staging bundle and checksum manifest: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14097241564
+### Current frontend artifacts (CI #43595421110; expire 28 Nov 2026)
+- Actual desktop/tablet/mobile browser captures: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14114780019
+- Synthetic Doctor UI fixture: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14113624994
+- Synthetic Assistant UI fixture: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14114790022
+- Staging bundle and checksum manifest: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14114077662
 - Actual browser screenshot artifact SHA-256: eac05d5cc75ee5424af77ef87168d970914e9ba92cd6b4266339f59a68b76669.
 
 ### Backend CI
@@ -221,7 +221,7 @@ The two CueScene services are unrelated to Oralyn. No non-canonical service has 
 
 ## Runtime observations — 14 Nov 2026
 
-Render log query window: 11:05:00–12:08:00 UTC for both canonical services.
+Render log query window: 12:00:00–12:28:00 UTC for both canonical services.
 - No request 5xx entries or application error/fatal entries were returned in this bounded window.
 - API instance logged graceful shutdown at 11:16:03 UTC and new instance startup completed at 12:01:21 UTC.
 - Frontend Vite preview process started at 12:00:39 UTC.
@@ -257,3 +257,18 @@ The CI build manifest also contains additional staging evidence checks. A succes
 Routine code edits, tests, commits and pushes to these existing feature branches, Draft PR updates and free synthetic staging checks are allowed.
 
 Do not merge PRs, deploy production, apply production migrations, change production secrets, transfer real patient data, activate paid infrastructure, top up third-party wallets, delete patient/user data, suspend legacy Render services or change the Google Business Profile booking link without explicit approval.
+
+
+## Release-watch correction — 14 Nov 2026 12:38 UTC
+
+- Latest completed frontend code/test-harness run before this checklist refresh: [#43595421110](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43595421110), on `838d341dbd69cf45f7db7c63b8a1b0d56cf92b5a`. It completed successfully with **125/125 tests**, 0 failures, three npm audit invocations reporting 0 vulnerabilities, build success, read-only Assistant API contract success, responsive desktop/tablet/mobile captures, visible keyboard focus, reduced-motion support, approved logo/fonts, PWA active/controlling and zero captured runtime errors.
+- That run's live booking probe did **not** write. The API health endpoint reported PostgreSQL ready, expected database host/name verified and expected Neon branch identity verified. The staging script could not retrieve PR #60 head because it queried GitHub without an authenticated token; it correctly left `ORALYN_STAGING_API_COMMIT_VERIFIED`, guest booking E2E and idempotency false. No booking POST request was sent by this run.
+- Root cause was corrected without weakening gates: `verify-staging-contract.cjs` now uses a read-only GitHub Actions token for PR and compare reads; the workflow grants only `contents: read` and `pull-requests: read` and passes `GITHUB_TOKEN` only to the staging-contract step. GitHub compare allows the deployed API ancestor only when every intervening file is Markdown under `docs/`; source/config changes, divergence, incomplete compare or missing token fail closed. The synthetic idempotency key uses the actual deployed runtime commit.
+- Added `desktop/scripts/staging-commit-equivalence.cjs` and four focused tests for docs-only acceptance and fail-closed rejection of runtime/config changes, divergent/truncated/malformed comparisons.
+- The first token-permission regression run [#43595752698](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43595752698) failed one test because `capture-scripts.test.js` asserted workflow permissions against the script source instead of the workflow file. The assertion was corrected in commit `ef436c13ab675b13664d2625d7e9d4e6e81a42ea`. No application code was changed. CI for this corrected head was not yet visible at 12:38 UTC.
+- Backend PR #60 current head is documentation-only `fce527d034ccafe420f568d1216bb6e31a6a9327`; compare against deployed runtime `5f4adba355b56f69427f554925ad8cdaa7f81d40` confirms the only changed path is `docs/DENTAL_PRIVATE_DOCUMENTS.md`. Backend documentation-head CI passed: Engine #43593700789 (236 passed, 3 skipped) and PostgreSQL #43593700798 (239 passed). The canonical API remains LIVE on the deployed application commit; no docs-only deployment was forced.
+- Current API read-only health response reports `database_ready=true`, `database_identity_verified=true`, `database_branch_identity_verified=true`, and deployment commit `5f4adba355b56f69427f554925ad8cdaa7f81d40`. Render app logs for 12:30–12:36 UTC show successful `/health`, `/ready`, and `/v1/dental/health` responses; unauthenticated protected Doctor/Assistant routes returned 401 as expected; legacy patient-linked records returned 404 and public appointment GET returned 405 (POST-only). No request 5xx or app error/fatal entries were returned in the filtered window.
+- Actual browser capture metadata from #43595421110 confirms Patient home, guest booking, Doctor login and Assistant login all had the PWA active and controlling, one shell cache with no forbidden entries, both approved fonts loaded, approved logo/app icon, visible keyboard focus, reduced motion honored and zero runtime errors. Doctor/Assistant UI fixture writes remain synthetic; `staging_authenticated_e2e=false`, `doctor_password_login_verified=false`, and `staging_assistant_login_verified=false`.
+- Latest artifact ZIP digests: browser captures `sha256:783dfcf8e85563fe2c730b01ffb11116b555f7e4ae77eaf1a29ed3f63bac67db`; Doctor fixture `sha256:4dce3da86c22909296a4319c3fa6f0c01d332e3b4e873b10bf4cdff1d6be7226`; Assistant fixture `sha256:34edfcbcee5653cef3c96b507da19e1ec7992e5a3682291a185af361395f2dba`; build `sha256:6d7f378f4ea46439130d23ae3d743a8ab8f14013e725e2cabb9d2083efb00d1a`. Artifacts expire 28 Nov 2026 12:36 UTC.
+- Render-native `healthCheckPath` is unset on both canonical services. The API exposes `/health` and `/ready`, but no Render-native health-check path is configured. No service configuration was changed in this run.
+- Production release remains BLOCKED on 18 top-level gates. Keep private document actions disabled, all PRs Draft/unmerged, and all synthetic databases free of real patient data.
