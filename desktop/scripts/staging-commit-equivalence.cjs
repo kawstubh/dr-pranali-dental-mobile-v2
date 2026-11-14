@@ -1,6 +1,6 @@
 "use strict";
 
-function isDocsOnlyCompare(compare) {
+function isRuntimeEquivalentCompare(compare) {
   if (
     !compare ||
     compare.status !== "ahead" ||
@@ -16,9 +16,15 @@ function isDocsOnlyCompare(compare) {
 
   return compare.files.every((file) => {
     const filename = typeof file?.filename === "string" ? file.filename : "";
-    if (!filename.startsWith("docs/") || !filename.endsWith(".md")) return false;
-    return !filename.split("/").some((part) => !part || part === "." || part === "..");
+    if (!filename || filename.startsWith("/") || filename.includes("\\")) return false;
+    const parts = filename.split("/");
+    if (parts.some((part) => !part || part === "." || part === "..")) return false;
+
+    const root = parts[0];
+    const extension = parts[parts.length - 1].toLowerCase();
+    return (root === "docs" && extension.endsWith(".md")) ||
+      (root === "tests" && extension.endsWith(".py"));
   });
 }
 
-module.exports = { isDocsOnlyCompare };
+module.exports = { isRuntimeEquivalentCompare };

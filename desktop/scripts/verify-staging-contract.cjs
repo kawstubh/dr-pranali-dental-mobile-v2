@@ -1,5 +1,5 @@
 const fs = require("node:fs");
-const { isDocsOnlyCompare } = require("./staging-commit-equivalence.cjs");
+const { isRuntimeEquivalentCompare } = require("./staging-commit-equivalence.cjs");
 
 const apiOrigin = new URL(process.env.VITE_DENTAL_API_URL || "").origin;
 const portalOrigin = new URL(process.env.ORALYN_PORTAL_ORIGIN || "").origin;
@@ -98,7 +98,7 @@ async function backendCommitMatchesPr(repo, deployedCommit, prHeadCommit) {
   }
 
   const compareBody = await jsonBody(comparison.response);
-  if (isDocsOnlyCompare(compareBody)) {
+  if (isRuntimeEquivalentCompare(compareBody)) {
     return {
       ok: true,
       detail: "live API runtime commit " + deployedCommit + " is an ancestor of PR #60 head " +
