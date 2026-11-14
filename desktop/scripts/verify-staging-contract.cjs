@@ -102,7 +102,7 @@ async function backendCommitMatchesPr(repo, deployedCommit, prHeadCommit) {
     return {
       ok: true,
       detail: "live API runtime commit " + deployedCommit + " is an ancestor of PR #60 head " +
-        prHeadCommit + "; GitHub confirms every intervening change is a Markdown file under docs/",
+        prHeadCommit + "; GitHub confirms every intervening change is a Markdown file under docs/ or a Python test under tests/, with no runtime or configuration changes",
     };
   }
   return {
