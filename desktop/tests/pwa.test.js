@@ -71,6 +71,13 @@ test("mobile navigation backdrop is rendered without stray escaped newline text"
 test("build manifest stamps a unique service-worker cache before checksumming output", () => {
   const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "oralyn-pwa-build-"));
   try {
+    const bookingDir = path.join(outputDir, "patient", "booking");
+    fs.mkdirSync(bookingDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(bookingDir, "index.html"),
+      '<meta name="oralyn-api-origin" content="__ORALYN_API_ORIGIN__">',
+      "utf8",
+    );
     fs.writeFileSync(
       path.join(outputDir, "sw.js"),
       'const CACHE_NAME = "oralyn-portal-shell-__ORALYN_BUILD_ID__";\n',
@@ -104,6 +111,10 @@ test("build manifest stamps a unique service-worker cache before checksumming ou
 
     const buildManifest = JSON.parse(
       fs.readFileSync(path.join(outputDir, "oralyn-build-manifest.json"), "utf8"),
+    );
+    assert.match(
+      fs.readFileSync(path.join(bookingDir, "index.html"), "utf8"),
+      /<meta name="oralyn-api-origin" content="">/,
     );
     assert.equal(
       buildManifest.service_worker_cache_name,
