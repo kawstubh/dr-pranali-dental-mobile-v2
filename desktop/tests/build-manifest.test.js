@@ -222,7 +222,7 @@ test("build manifest accepts an already-injected booking API origin on repeated 
   );
   fs.writeFileSync(
     path.join(outputDir, "sw.js"),
-    'const CACHE_NAME = "oralyn-portal-shell-idempotent-build";\\n',
+    'const CACHE_NAME = "oralyn-portal-shell-__ORALYN_BUILD_ID__";\\n',
     "utf8",
   );
   try {
@@ -260,7 +260,7 @@ test("production API origin attestation remains false until independently verifi
   );
   fs.writeFileSync(
     path.join(outputDir, "sw.js"),
-    'const CACHE_NAME = "oralyn-portal-shell-production-attestation";\\n',
+    'const CACHE_NAME = "oralyn-portal-shell-__ORALYN_BUILD_ID__";\\n',
     "utf8",
   );
   try {
