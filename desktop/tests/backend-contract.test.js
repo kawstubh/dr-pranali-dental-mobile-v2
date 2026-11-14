@@ -164,6 +164,8 @@ test("staging contract requires exact Neon branch identity and verified runtime-
   assert.match(stagingContractSource, /ORALYN_STAGING_DATABASE_BRANCH_VERIFIED/);
   assert.match(stagingContractSource, /backendCommitMatchesPr/);
   assert.match(stagingContractSource, /isDocsOnlyCompare/);
+  assert.match(stagingContractSource, /process\.env\.GITHUB_TOKEN/);
+  assert.match(stagingContractSource, /Authorization: "Bearer " \+ token/);
   assert.ok(
     stagingContractSource.includes(
       "if (health?.database_identity_verified === true && branchIdentityOk && apiCommitOk && apiRuntimeCommit)",
