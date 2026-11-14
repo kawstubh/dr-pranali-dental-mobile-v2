@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0C3B82">
+<meta name="oralyn-api-origin" content="__ORALYN_API_ORIGIN__">
 <link rel="icon" type="image/webp" href="/oralyn-app-icon-approved.webp">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/oralyn-pwa-192.png">
@@ -50,7 +51,16 @@
 </section>
 </main>
 <script>
-const API_BASE = "https://oralyn-staging-api-assistant.onrender.com";
+const API_BASE = (() => {
+  const configured = document.querySelector('meta[name="oralyn-api-origin"]')?.content?.trim() || "";
+  try {
+    const parsed = new URL(configured);
+    if (parsed.protocol !== "https:" || parsed.origin !== configured || parsed.username || parsed.password) return "";
+    return parsed.origin;
+  } catch {
+    return "";
+  }
+})();
 const form = document.getElementById("booking");
 const message = document.getElementById("message");
 const dateInput = document.getElementById("date");
@@ -133,6 +143,11 @@ form.addEventListener("submit", async (event) => {
   message.className = "msg";
   message.textContent = "";
   if (!form.reportValidity()) return;
+  if (!API_BASE) {
+    message.className = "msg error";
+    message.textContent = "Appointment requests are temporarily unavailable. Please call the clinic.";
+    return;
+  }
   const data = new FormData(form);
   if (String(data.get("website") || "").trim()) return;
   if (!validateIndianMobile()) {

@@ -83,18 +83,46 @@ function walk(directory, prefix = "") {
 }
 
 const environment = process.env.ORALYN_ENVIRONMENT || (process.env.RENDER_GIT_COMMIT ? "staging" : "local");
-const requireHttpsOrigins = ["staging", "production"].includes(environment.toLowerCase());
+const environmentName = environment.toLowerCase();
+const requireHttpsOrigins = ["staging", "production"].includes(environmentName);
 const portalOrigin = originOf(process.env.ORALYN_PORTAL_ORIGIN || "", {
   requireHttps: requireHttpsOrigins,
   label: "Portal origin",
 });
-const apiOrigin = originOf(process.env.VITE_DENTAL_API_URL || "", {
+const configuredApiOrigin = originOf(process.env.VITE_DENTAL_API_URL || "", {
   requireHttps: requireHttpsOrigins,
   label: "Portal API origin",
 });
+const stagingApiOrigin = "https://oralyn-staging-api-assistant.onrender.com";
+const apiOrigin = configuredApiOrigin || (environmentName === "staging" ? stagingApiOrigin : null);
+
+if (environmentName === "staging" && apiOrigin !== stagingApiOrigin) {
+  throw new Error("Staging portal builds must target the isolated synthetic staging API.");
+}
+if (environmentName === "production" && (!apiOrigin || apiOrigin === stagingApiOrigin)) {
+  throw new Error("Production portal builds require an explicit non-staging HTTPS API origin.");
+}
+
+const bookingPagePath = path.join(outputDir, "patient", "booking", "index.html");
+if (!fs.existsSync(bookingPagePath)) {
+  throw new Error("Public booking page is missing from the portal build.");
+}
+const bookingMarker = '<meta name="oralyn-api-origin" content="__ORALYN_API_ORIGIN__">';
+const bookingHtml = fs.readFileSync(bookingPagePath, "utf8");
+if (!bookingHtml.includes(bookingMarker)) {
+  throw new Error("Public booking API origin marker is missing; refusing to ship an unconfigured booking page.");
+}
+fs.writeFileSync(
+  bookingPagePath,
+  bookingHtml.replace(bookingMarker, '<meta name="oralyn-api-origin" content="' + (apiOrigin || "") + '">'),
+  "utf8",
+);
 
 const checks = {
   isolated_portal_origin_assigned: Boolean(portalOrigin),
+  public_booking_api_origin_configured: Boolean(apiOrigin),
+  production_public_booking_api_origin_verified:
+    environmentName === "production" && Boolean(apiOrigin) && apiOrigin !== stagingApiOrigin,
   backend_stack_verified: flag(process.env.ORALYN_BACKEND_STACK_VERIFIED),
   cors_verified_for_portal_origin: flag(process.env.ORALYN_CORS_VERIFIED),
   private_document_storage_verified: flag(process.env.ORALYN_PRIVATE_STORAGE_VERIFIED),
@@ -157,6 +185,8 @@ process.stdout.write([
   "Commit: " + manifest.commit_sha,
   "Service worker cache: " + serviceWorkerCacheName,
   "API origin: " + (manifest.api_origin || "not configured"),
+  "Public booking API origin: " + (manifest.checks.public_booking_api_origin_configured ? "configured" : "not configured"),
+  "Production API origin: " + (manifest.checks.production_public_booking_api_origin_verified ? "verified" : "not verified"),
   "Patient authentication: intentionally not required",
   "Release status: " + manifest.release_status,
   "Release blockers: " + (blockers.length ? blockers.join(", ") : "none"),

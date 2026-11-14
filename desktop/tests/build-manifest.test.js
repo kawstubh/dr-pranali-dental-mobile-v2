@@ -14,7 +14,14 @@ const scriptPath = path.join(desktopRoot, "scripts", "write-build-manifest.cjs")
 test("staging manifest records verified public gates without claiming live booking acceptance", () => {
   const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "oralyn-build-manifest-"));
   const assetDir = path.join(outputDir, "assets");
+  const bookingDir = path.join(outputDir, "patient", "booking");
   fs.mkdirSync(assetDir);
+  fs.mkdirSync(bookingDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(bookingDir, "index.html"),
+    '<meta name="oralyn-api-origin" content="__ORALYN_API_ORIGIN__">',
+    "utf8",
+  );
   const asset = Buffer.from("synthetic static portal asset");
   fs.writeFileSync(path.join(assetDir, "app.js"), asset);
   fs.writeFileSync(
@@ -61,6 +68,12 @@ test("staging manifest records verified public gates without claiming live booki
     );
     assert.equal(manifest.api_origin, "https://oralyn-staging-api-assistant.onrender.com");
     assert.equal(manifest.portal_origin, "https://oralyn-web-portal-spa.onrender.com");
+    assert.equal(manifest.checks.public_booking_api_origin_configured, true);
+    assert.equal(manifest.checks.production_public_booking_api_origin_verified, false);
+    assert.match(
+      fs.readFileSync(path.join(bookingDir, "index.html"), "utf8"),
+      /<meta name="oralyn-api-origin" content="https:\/\/oralyn-staging-api-assistant\.onrender\.com">/,
+    );
     assert.equal(manifest.checks.backend_stack_verified, true);
     assert.equal(manifest.checks.cors_verified_for_portal_origin, true);
     assert.equal(manifest.checks.database_identity_verified, true);
@@ -85,6 +98,7 @@ test("staging manifest records verified public gates without claiming live booki
     assert.ok(!manifest.blockers.includes("cors_verified_for_portal_origin"));
     for (const gate of [
       "production_hosting_always_on_verified",
+      "production_public_booking_api_origin_verified",
       "production_database_verified",
       "production_custom_domain_verified",
       "production_deployment_approval_verified",
@@ -117,6 +131,13 @@ test("staging manifest records verified public gates without claiming live booki
 test("staging manifests reject insecure or non-canonical API origins", () => {
   const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "oralyn-build-manifest-insecure-"));
   fs.writeFileSync(path.join(outputDir, "index.html"), "<!doctype html>");
+  const bookingDir = path.join(outputDir, "patient", "booking");
+  fs.mkdirSync(bookingDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(bookingDir, "index.html"),
+    '<meta name="oralyn-api-origin" content="__ORALYN_API_ORIGIN__">',
+    "utf8",
+  );
   fs.writeFileSync(
     path.join(outputDir, "sw.js"),
     'const CACHE_NAME = "oralyn-portal-shell-__ORALYN_BUILD_ID__";\n',
@@ -146,4 +167,44 @@ test("staging manifests reject insecure or non-canonical API origins", () => {
   } finally {
     fs.rmSync(outputDir, { recursive: true, force: true });
   }
+});
+
+
+test("production builds reject the staging API origin", () => {
+  const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "oralyn-build-manifest-production-"));
+  const bookingDir = path.join(outputDir, "patient", "booking");
+  fs.mkdirSync(bookingDir, { recursive: true });
+  fs.writeFileSync(path.join(outputDir, "index.html"), "<!doctype html>");
+  fs.writeFileSync(
+    path.join(bookingDir, "index.html"),
+    '<meta name="oralyn-api-origin" content="__ORALYN_API_ORIGIN__">',
+    "utf8",
+  );
+  fs.writeFileSync(
+    path.join(outputDir, "sw.js"),
+    'const CACHE_NAME = "oralyn-portal-shell-__ORALYN_BUILD_ID__";\\n',
+    "utf8",
+  );
+  try {
+    assert.throws(() => execFileSync(process.execPath, [scriptPath], {
+      cwd: desktopRoot,
+      env: {
+        ...process.env,
+        ORALYN_BUILD_DIR: outputDir,
+        ORALYN_ENVIRONMENT: "production",
+        VITE_DENTAL_API_URL: "https://oralyn-staging-api-assistant.onrender.com",
+        ORALYN_PORTAL_ORIGIN: "https://oralyn.example.test",
+      },
+      stdio: "pipe",
+    }), /Production portal builds require an explicit non-staging HTTPS API origin/);
+  } finally {
+    fs.rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("public booking API origin is injected at build time and never hardcoded in source", () => {
+  const source = fs.readFileSync(path.join(desktopRoot, "public", "patient", "booking", "index.html"), "utf8");
+  assert.match(source, /<meta name="oralyn-api-origin" content="__ORALYN_API_ORIGIN__">/);
+  assert.ok(!source.includes("https://oralyn-staging-api-assistant.onrender.com"));
+  assert.match(source, /if \(!API_BASE\)/);
 });
