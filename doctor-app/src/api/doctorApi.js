@@ -1,13 +1,11 @@
-import { DOCTOR_API_URL } from './apiConfig';
-
-const API_URL = DOCTOR_API_URL;
+import { requireDoctorApiUrl } from './apiConfig';
 
 export async function request(path, token, options = {}) {
   const { timeoutMs = 15000, ...fetchOptions } = options;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(API_URL + path, {
+    const response = await fetch(requireDoctorApiUrl() + path, {
       ...fetchOptions,
       signal: controller.signal,
       headers: {
