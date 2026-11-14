@@ -123,6 +123,8 @@ test("live staging contract probe writes only one idempotent synthetic booking a
   assert.match(source, /ORALYN_GUEST_BOOKING_IDEMPOTENCY_VERIFIED/);
   assert.match(source, /ORALYN_STAGING_API_COMMIT_VERIFIED/);
   assert.match(source, /ORALYN_STAGING_PORTAL_COMMIT_VERIFIED/);
+  assert.match(source, /pull-requests: read/);
+  assert.match(source, /GITHUB_TOKEN: \$\{\{ github\.token \}\}/);
 });
 
 test("preview server stays alive for responsive and synthetic UI captures in one CI step", () => {
