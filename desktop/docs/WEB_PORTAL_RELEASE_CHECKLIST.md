@@ -1,6 +1,6 @@
 # Oralyn Web Portal — Current Release Checklist
 
-**Last verified:** 14 November 2026, 12:41 UTC. All timestamps below are UTC.
+**Last verified:** 14 November 2026, 16:08 UTC. All timestamps below are UTC.
 **Release decision: BLOCKED for production.** This is a synthetic staging release candidate. All PRs remain open, Draft and unmerged.
 
 ## Product contract
@@ -20,7 +20,7 @@
 ### Frontend — PR #18
 - Repository: kawstubh/dr-pranali-dental-mobile-v2
 - Branch: feat/oralyn-desktop-app; base: master.
-- Latest application/product-code commit: `c90061d4001db1d5995c381b8e37148a529981ed`; latest release-verification/test-harness commit verified before this checklist refresh: `13bcc4263f0db9b4affd863d9cad41ea7440e8d1` (CI #43595896642 passed).
+- Latest application/product-code commit: `c90061d4001db1d5995c381b8e37148a529981ed`; latest release-checklist commit verified before this refresh: `a5809407213105f5eec1f53baeb1680777807fa6` (CI #43596130348 passed).
 - PR: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/pull/18
 - State: open, Draft, unmerged.
 
@@ -45,7 +45,7 @@
 - Branch: feat/oralyn-desktop-app; repository kawstubh/dr-pranali-dental-mobile-v2.
 - Service type: web service; plan: Free; region: Singapore; auto-deploy: enabled.
 - Render health-check path is currently unset.
-- Deployment `dep-dbs5cvtbedkc73bpfp80` is LIVE on release-checklist commit `13bcc4263f0db9b4affd863d9cad41ea7440e8d1`. These commits modify release checks/tests/workflow/documentation only; application UI code remains at product commit `c90061d4`.
+- Deployment `dep-dbs5ebm417fc73f4772g` is LIVE on release-checklist commit `a5809407213105f5eec1f53baeb1680777807fa6`. These commits modify release checks/tests/workflow/documentation only; application UI code remains at product commit `c90061d4`.
 - The current service instance started its Vite preview process at 12:00:39 UTC on 14 Nov 2026.
 - Free plan may sleep and is not an always-on production host.
 
@@ -61,11 +61,11 @@
 ## CI and browser evidence
 
 ### Frontend exact-head workflow
-- Workflow: Oralyn Desktop #43553354035.
+- Workflow: Oralyn Desktop #43596130348.
 - URL: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43553354035
-- Exact PR head: c90061d4001db1d5995c381b8e37148a529981ed.
+- Exact PR head: a5809407213105f5eec1f53baeb1680777807fa6.
 - One validation job completed successfully; all 20 primary validation steps passed.
-- Node test runner: 121 tests, 121 passed, 0 failed, 0 skipped.
+- Node test runner: 125 tests, 125 passed, 0 failed, 0 skipped.
 - Three npm audit invocations reported 0 vulnerabilities.
 - Staging-targeted production build passed.
 - Live synthetic booking/idempotency contract passed.
@@ -75,11 +75,11 @@
 - Build manifest reports RELEASE BLOCKED with 18 false release gates. Do not interpret successful CI as production approval.
 
 ### Current frontend artifacts (CI #43595896642; expire 28 Nov 2026 12:41 UTC)
-- Actual desktop/tablet/mobile browser captures: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14114292259
-- Synthetic Doctor UI fixture: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14115060156
-- Synthetic Assistant UI fixture: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14114890570
-- Staging bundle and checksum manifest: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14114044451
-- Actual browser screenshot artifact SHA-256: eac05d5cc75ee5424af77ef87168d970914e9ba92cd6b4266339f59a68b76669.
+- Actual desktop/tablet/mobile browser captures: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14114507099
+- Synthetic Doctor UI fixture: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14114547073
+- Synthetic Assistant UI fixture: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14114586790
+- Staging bundle and checksum manifest: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14115070675
+- Browser artifact ZIP SHA-256: `c15cb02bea9c6aad76543065071f89963c309f914b4e80e65d08333dd6f8e0ea`; Doctor fixture: `867015fc8e7da3e1cb0f993ea27a019a6cfdae4e76051023d3e2b2c31653beec`; Assistant fixture: `ff6d4873fbf40df1cb2a48525c62bf5f13d852c3914b205965af5a366dfb09de`; build: `091e91d7a150799b74d12e943dbb60acd13c80420cf7f23c24fbcdaf9471771d`. Artifacts expire 28 Nov 2026 12:44 UTC.
 
 ### Backend CI
 - Engine #43503951195: 236 passed, 3 skipped, 1 warning.
@@ -221,7 +221,7 @@ The two CueScene services are unrelated to Oralyn. No non-canonical service has 
 
 ## Runtime observations — 14 Nov 2026
 
-Render log query window: 12:38:00–12:41:00 UTC for both canonical services.
+Render log query window: 15:50:00–16:08:00 UTC for both canonical services.
 - No request 5xx entries or application error/fatal entries were returned in this bounded window.
 - API instance logged graceful shutdown at 11:16:03 UTC and new instance startup completed at 12:01:21 UTC.
 - Frontend Vite preview process started at 12:00:39 UTC.
@@ -287,3 +287,16 @@ Do not merge PRs, deploy production, apply production migrations, change product
 - Render logs 12:38–12:41 UTC: no application error/fatal entries and no request 5xx entries for either canonical service. API log entries include the expected 401 responses for unauthenticated protected routes; legacy linked-record GET is 404 and public appointment GET is 405 because the public booking route is POST-only. The four synthetic POSTs returned 200.
 - Canonical frontend deployment is LIVE on `13bcc426`; canonical API remains LIVE on application commit `5f4adba3`. No production deployment, migration, secret change or real patient-data transfer occurred.
 - Production release remains BLOCKED on the same 18 top-level gates. Keep document actions disabled, PRs Draft/unmerged and synthetic data isolated.
+
+
+## Latest exact-head verification — 14 Nov 2026 16:08 UTC
+
+- GitHub branch comparison confirms PR #18 branch `feat/oralyn-desktop-app` is exactly at `a5809407213105f5eec1f53baeb1680777807fa6` (no ahead/behind commits). The exact-head workflow [#43596130348](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43596130348) completed successfully: **125/125 tests passed**, 0 failures; all three npm audit invocations reported 0 vulnerabilities; staging build, live synthetic booking/idempotency contract, read-only Assistant API contract, responsive browser capture and all artifact uploads passed. Workflow token permissions in the job log are Contents: read, Metadata: read and PullRequests: read; no token value was logged.
+- GitHub branch comparison confirms backend PR #60 branch `feat/oralyn-clinic-assistant-rbac` is exactly at `fce527d034ccafe420f568d1216bb6e31a6a9327`. The deployed runtime `5f4adba355b56f69427f554925ad8cdaa7f81d40` is its direct parent; the only intervening change is `docs/DENTAL_PRIVATE_DOCUMENTS.md` (one documentation file). Backend Engine #43593700789 (236 passed, 3 skipped) and PostgreSQL #43593700798 (239 passed) completed successfully. No backend runtime redeployment was required.
+- Canonical frontend Render deployment `dep-dbs5ebm417fc73f4772g` is LIVE on `a5809407213105f5eec1f53baeb1680777807fa6`. Canonical API deployment `dep-dbrngjnf3r2c7391c5v0` remains LIVE on application commit `5f4adba355b56f69427f554925ad8cdaa7f81d40`. Both services are Free plan, Singapore region, one instance, auto-deploy enabled and not suspended. Render-native healthCheckPath remains unset on both.
+- Render log query for both canonical services, 15:50–16:08 UTC, returned no log entries. This is a bounded empty result, not continuous uptime evidence.
+- Fresh read-only SQL on both Neon branches returned matching aggregates: 9 patients, 9 appointments, 8 public booking requests, 0 Assistant accounts, 0 Assistant sessions, 0 clinical notes, 0 treatment plans, 0 invoices, 0 receipts, 0 documents and 10 audit events. Source branch `br-steep-bonus-a1yqarg7`; restored/default branch `br-proud-scene-a1g7g3qo`. No individual patient or clinical content was retrieved.
+- Source branch private bucket `oralyn-private-documents` is private and has zero objects. Restored/default branch has no corresponding bucket. Source branch has an existing credential with `storage:read` and `storage:write` scopes; its secret was not retrieved and it is not installed in Render. Keep all document actions disabled.
+- The current run did not perform a new authenticated Doctor or Assistant login. Doctor and Assistant browser artifacts remain synthetic fixtures. The release manifest still requires real Doctor login/CRUD, real Assistant login/least-privilege UI/API acceptance, authenticated cross-tenant testing and authenticated screenshots.
+- Branch-protection state could not be freshly queried: the GitHub connector does not expose repository administration/branch-protection operations. No protection settings were changed. Require an administrator to verify required CI, review and force-push restrictions before production.
+- Production remains BLOCKED on 18 gates. No production deployment, migration, secret change, real patient-data transfer, paid infrastructure activation, service deletion or PR merge occurred.
