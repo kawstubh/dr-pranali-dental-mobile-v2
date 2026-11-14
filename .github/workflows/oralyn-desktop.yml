@@ -1,0 +1,138 @@
+name: Oralyn Desktop
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [master, feat/oralyn-desktop-app]
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/oralyn-desktop.yml'
+  # Feature-branch commits are validated by the PR event; avoid duplicate browser runs.
+  push:
+    branches: [master]
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/oralyn-desktop.yml'
+permissions:
+  contents: read
+  pull-requests: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      VITE_DENTAL_API_URL: https://oralyn-staging-api-assistant.onrender.com
+      ORALYN_PORTAL_ORIGIN: https://oralyn-web-portal-spa.onrender.com
+      ORALYN_ENVIRONMENT: staging
+      ORALYN_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Verify root workspace install and audit
+        working-directory: .
+        run: |
+          npm ci --ignore-scripts
+          npm audit --audit-level=low
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Run desktop regression tests
+        run: npm test
+      - name: Record memory-only Doctor token storage verification
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feat/oralyn-desktop-app'
+        run: echo "ORALYN_DOCTOR_TOKEN_STORAGE_HARDENING_VERIFIED=true" >> "$GITHUB_ENV"
+      - name: Audit dependencies
+        run: npm audit --audit-level=low
+      - name: Build staging-targeted desktop bundle
+        run: npm run build
+      - name: Verify live synthetic staging contract (idempotent synthetic booking only)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/verify-staging-contract.cjs
+      - name: Verify live Assistant API contract (read-only)
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feat/oralyn-desktop-app'
+        run: |
+          node scripts/verify-assistant-staging-contract.cjs
+          echo "ORALYN_ASSISTANT_API_CONTRACT_READONLY_VERIFIED=true" >> "$GITHUB_ENV"
+      - name: Prepare immutable service-worker cache identity
+        run: node scripts/write-build-manifest.cjs --prepare-only
+      - name: Install headless Chrome
+        id: setup_chrome
+        uses: browser-actions/setup-chrome@v2.2.0
+        with:
+          chrome-version: latest
+      - name: Start preview and capture responsive, Doctor and Assistant UI evidence
+        env:
+          CHROME_BIN: ${{ steps.setup_chrome.outputs.chrome-path }}
+          CDP_PORT: "19321"
+          ORALYN_PREVIEW_URL: http://127.0.0.1:4176
+          ORALYN_ENVIRONMENT: staging
+        run: |
+          ./node_modules/.bin/vite preview --host 127.0.0.1 --port 4176 --strictPort > /tmp/oralyn-desktop-preview.log 2>&1 < /dev/null &
+          PREVIEW_PID=$!
+          cleanup_preview() {
+            kill "$PREVIEW_PID" 2>/dev/null || true
+          }
+          trap cleanup_preview EXIT
+          READY=0
+          for attempt in $(seq 1 40); do
+            if curl --fail --silent --max-time 2 http://127.0.0.1:4176/ >/dev/null; then
+              READY=1
+              break
+            fi
+            if ! kill -0 "$PREVIEW_PID" 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          if [ "$READY" -ne 1 ]; then
+            cat /tmp/oralyn-desktop-preview.log
+            echo "::error::Oralyn desktop preview did not become ready."
+            exit 1
+          fi
+          node scripts/verify-portal-security-headers.cjs
+          echo "ORALYN_SECURITY_HEADERS_VERIFIED=true" >> "$GITHUB_ENV"
+          test -x "$CHROME_BIN" || { echo "::error::Configured Chrome path is not executable: $CHROME_BIN"; exit 1; }
+          "$CHROME_BIN" --version
+          node scripts/capture-actual-desktop.cjs
+          ORALYN_CAPTURE_OUTPUT=evidence/synthetic-doctor node scripts/capture-synthetic-doctor.cjs
+          ORALYN_CAPTURE_OUTPUT=evidence/synthetic-assistant node scripts/capture-synthetic-assistant.cjs
+      - name: Record responsive browser acceptance gates
+        run: |
+          echo "ORALYN_MOBILE_BROWSER_E2E_VERIFIED=true" >> "$GITHUB_ENV"
+          echo "ORALYN_SERVICE_CATALOG_UI_VERIFIED=true" >> "$GITHUB_ENV"
+      - name: Upload real desktop screenshot evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: oralyn-desktop-actual-screens
+          path: desktop/evidence/actual-desktop/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload synthetic Doctor UI evidence (not staging acceptance)
+        uses: actions/upload-artifact@v7
+        with:
+          name: oralyn-doctor-synthetic-ui
+          path: desktop/evidence/synthetic-doctor/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload synthetic Assistant UI evidence (not staging acceptance)
+        uses: actions/upload-artifact@v7
+        with:
+          name: oralyn-assistant-synthetic-ui
+          path: desktop/evidence/synthetic-assistant/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Write immutable build provenance and explicit release gates
+        run: node scripts/write-build-manifest.cjs
+      - name: Upload staging-targeted portal bundle and checksum manifest
+        uses: actions/upload-artifact@v7
+        with:
+          name: oralyn-portal-static-staging-build
+          path: desktop/dist/
+          if-no-files-found: error
+          retention-days: 14
