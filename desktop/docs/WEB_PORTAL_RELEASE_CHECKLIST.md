@@ -2,7 +2,7 @@
 
 **Release decision: BLOCKED for production.** This is a staging-only release candidate. All PRs remain Draft and unmerged.
 
-Last verified: 14 November 2026. Timestamps in CI and Render evidence are UTC.
+Last verified: 14 November 2026 02:21 UTC. Timestamps in CI and Render evidence are UTC.
 
 ## Product contract
 
@@ -21,12 +21,12 @@ Last verified: 14 November 2026. Timestamps in CI and Render evidence are UTC.
 ### Frontend
 - Last verified product-code commit: `a45d297441b68e2857d97082e6bd9bbb90b09e7f`.
 - Browser accessibility QA change: `35b6194ea297fe2c01e627f435e52bcb373e8011`; source-assertion correction: `9d7e365e99b05bb1cfba36c5d1e235ab3667c7c4`.
-- Last verified PR head at 14 Nov 2026 01:01 UTC: `9d7e365e99b05bb1cfba36c5d1e235ab3667c7c4`. Current PR head, current Render deployment ID/status and later workflow runs are maintained in [PR #18](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/pull/18) to avoid duplicating volatile deployment metadata in this static checklist.
+- Latest verified PR head at 14 Nov 2026 01:10 UTC: `1cb2983e94d97c24dee79110242779f7100ffc83`. CI artifact metadata confirms branch `feat/oralyn-desktop-app` and this exact head SHA.
 - Render service: `srv-dbr2ttsipgvc739a4tmg`.
 - URL: https://oralyn-web-portal-spa.onrender.com
-- At 14 Nov 2026 01:01 UTC, Render reported deployment `dep-dbrr4799aqoc739iu6sg` LIVE on QA commit `9d7e365e99b05bb1cfba36c5d1e235ab3667c7c4`.
+- At 14 Nov 2026 01:11 UTC, Render reported deployment `dep-dbrr9v1lodes739au84g` LIVE on commit `1cb2983e94d97c24dee79110242779f7100ffc83`.
 - Plan: Free; may sleep and is not an always-on production host.
-- Product-code CI #43534271565 and prior PR-head CI #43534712980 passed; the latter completed all 20 steps with **120/120 tests**, 0 npm audit vulnerabilities, build, staging contracts and browser captures. Latest accessibility-enhanced CI #43537615227 on the QA commit completed all 20 steps successfully: **121/121 tests passed**, both npm audits found 0 vulnerabilities, build and live staging/Assistant contracts passed, and keyboard/reduced-motion browser checks plus responsive captures passed.
+- Product-code CI #43534271565 and prior PR-head CI #43534712980 passed. Latest exact-head CI #43538942558 on `1cb2983e94d97c24dee79110242779f7100ffc83` completed all 20 validation steps successfully: **121/121 tests passed**, both npm audits found 0 vulnerabilities, production build and live staging/Assistant contracts passed, and keyboard/reduced-motion browser checks plus responsive captures passed.
 
 ### Backend
 
@@ -102,7 +102,7 @@ Repository and browser evidence confirms 20 unique service IDs, 20 home-page lin
 Other dental concern is a free-text choice, not a twenty-first service. The clinic must confirm final production wording before launch; no missing services have been invented.
 
 ## Browser and design evidence
-Accessibility-enhanced exact-head CI #43537615227 captured desktop, tablet and mobile states for Doctor login, Assistant login, public Patient home, public booking and the Assistant admin route denial.
+Accessibility-enhanced exact-head CI #43538942558 captured desktop, tablet and mobile states for Doctor login, Assistant login, public Patient home, public booking and the Assistant admin route denial.
 
 Verified in the real headless Chrome capture:
 - Approved Oralyn wordmark and app icon loaded.
@@ -118,7 +118,7 @@ Verified in the real headless Chrome capture:
 
 Doctor and Assistant workspace screenshots remain synthetic CI fixtures, not real authenticated staging acceptance. The Doctor fixture records UI interactions and memory-only token behavior, but not live authenticated persistence; the Assistant fixture records reception/appointment/billing UI flows and explicitly reports staging_assistant_login_verified=false.
 
-Latest CI #43537615227 artifacts: [real-browser desktop/tablet/mobile captures](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14090761870), [synthetic Doctor fixture](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14090637065), [synthetic Assistant fixture](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14090926590), [staging bundle and checksum manifest](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14090991172).
+Latest CI #43538942558 artifacts (expire 28 Nov 2026): [real-browser desktop/tablet/mobile captures](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14091385226), [synthetic Doctor fixture](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14090424765), [synthetic Assistant fixture](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14091185620), [staging bundle and checksum manifest](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14091285490).
 
 ## Clinic Assistant authorization
 
@@ -161,12 +161,13 @@ These are backend tests and synthetic UI fixtures. Staging contains zero persist
 **Keep document upload, download, sharing and patient-specific document links disabled.**
 
 ## Runtime observations
-- Render log query 14 Nov 2026 00:15:00–00:52:00 UTC: no app error/fatal entries and no request 5xx entries for either canonical service.
-- The API instance gracefully shut down at 00:46:45 UTC and restarted at 00:55:23 UTC when the next CI contract check woke the free service.
-- From 00:55:23–01:01:00 UTC, no app error/fatal entries or request 5xx entries were found. /health, /ready and /v1/dental/health returned 200; unauthenticated Doctor and Assistant private reads returned 401; the legacy patient-linked-record route returned 404; public booking GET returned 405; synthetic booking and idempotent replay each returned 200.
-- Source branch booking rows and distinct idempotency-key hashes remained 8/8 after the replay.
-- The API is a free service and may sleep; Render LIVE deploy status is not an uptime guarantee. External page-fetch attempts were unavailable, so the successful headless Chrome CI capture is the browser evidence for this run.
-
+- Render log query 14 Nov 2026 01:20:00–02:21:00 UTC: no application error/fatal entries and no request 5xx entries for either canonical service.
+- The API instance logged a graceful shutdown at 01:26:44 UTC; the frontend preview process started at 01:53:01 UTC. The API is a free service and may sleep while idle; LIVE deployment metadata does not guarantee an active process or uptime.
+- Latest successful live API contract evidence is CI #43538942558 (01:10–01:13 UTC): branch identity gate passed, read-only Assistant API contract passed, and one synthetic idempotent booking/replay passed. No additional live API request was sent during the later idle window.
+- Direct public HTTP fetches of the API health endpoints and Patient booking page were unavailable at 02:20 UTC. The successful headless Chrome CI capture remains the browser evidence for this run.
+- Read-only aggregate SQL on source and restored branches matched: 9 test-marked patients, 9 appointments, 8 public requests, 0 clinical notes, 0 treatment plans, 0 invoices, 0 receipts, 0 documents, 0 Assistant accounts/sessions and 10 audit events. Source booking rows and distinct idempotency-key hashes remained 8/8.
+- The source branch has one private `oralyn-private-documents` bucket with zero objects. The branch-scoped default storage credential has `storage:read` and `storage:write`; its secret was not read, and Render API integration remains unverified.
+- Automatic snapshot schedule remains empty; one manual snapshot exists. The API is a free service and may sleep; Render LIVE deploy status is not an uptime guarantee.
 ## Release manifest — BLOCKED on 17 gates
 
 1. production_public_booking_api_origin_verified
