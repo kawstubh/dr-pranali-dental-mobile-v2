@@ -19,16 +19,14 @@ Last verified: 14 November 2026. Timestamps in CI and Render evidence are UTC.
 ## Canonical staging services
 
 ### Frontend
-
-- Repository: kawstubh/dr-pranali-dental-mobile-v2
-- Branch: feat/oralyn-desktop-app; canonical PR #18 remains open and Draft.
-- Latest PR head: `5d5fb02477f0262765af6d4c0f8d9271c405b4a0` (documentation-only release-checklist refresh).
-- Latest product-code commit: `a45d297441b68e2857d97082e6bd9bbb90b09e7f`.
+- Last verified product-code commit: `a45d297441b68e2857d97082e6bd9bbb90b09e7f`.
+- Browser accessibility QA change: `35b6194ea297fe2c01e627f435e52bcb373e8011`; source-assertion correction: `9d7e365e99b05bb1cfba36c5d1e235ab3667c7c4`.
+- Last verified PR head at 14 Nov 2026 01:01 UTC: `9d7e365e99b05bb1cfba36c5d1e235ab3667c7c4`. Current PR head, current Render deployment ID/status and later workflow runs are maintained in [PR #18](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/pull/18) to avoid duplicating volatile deployment metadata in this static checklist.
 - Render service: `srv-dbr2ttsipgvc739a4tmg`.
 - URL: https://oralyn-web-portal-spa.onrender.com
-- Current deployment: `dep-dbrqngvf3r2c73dmi3q0` — LIVE on the exact current PR head `5d5fb02477f0262765af6d4c0f8d9271c405b4a0`. The earlier product-code deployment `dep-dbrqlm6q1p3s73e3rne0` is deactivated.
+- At 14 Nov 2026 01:01 UTC, Render reported deployment `dep-dbrr4799aqoc739iu6sg` LIVE on QA commit `9d7e365e99b05bb1cfba36c5d1e235ab3667c7c4`.
 - Plan: Free; may sleep and is not an always-on production host.
-- Product-code CI #43534271565 and current PR-head documentation CI #43534712980 both passed. The PR-head validation job completed all 20 steps: **120 tests passed, 0 failed**, npm audits reported 0 vulnerabilities, and build, staging contracts, browser captures, manifest and artifacts passed.
+- Product-code CI #43534271565 and prior PR-head CI #43534712980 passed; the latter completed all 20 steps with **120/120 tests**, 0 npm audit vulnerabilities, build, staging contracts and browser captures. Latest accessibility-enhanced CI #43537615227 on the QA commit completed all 20 steps successfully: **121/121 tests passed**, both npm audits found 0 vulnerabilities, build and live staging/Assistant contracts passed, and keyboard/reduced-motion browser checks plus responsive captures passed.
 
 ### Backend
 
@@ -104,19 +102,23 @@ Repository and browser evidence confirms 20 unique service IDs, 20 home-page lin
 Other dental concern is a free-text choice, not a twenty-first service. The clinic must confirm final production wording before launch; no missing services have been invented.
 
 ## Browser and design evidence
+Accessibility-enhanced exact-head CI #43537615227 captured desktop, tablet and mobile states for Doctor login, Assistant login, public Patient home, public booking and the Assistant admin route denial.
 
-Exact current PR-head CI #43534712980 captured desktop, tablet and mobile states for Doctor login, Assistant login, public Patient home, public booking and the Assistant admin route denial.
-
-Verified:
+Verified in the real headless Chrome capture:
 - Approved Oralyn wordmark and app icon loaded.
 - Playfair Display and Plus Jakarta Sans loaded.
-- PWA service worker was registered, active and controlling on Doctor login, Assistant login, Patient home and booking in the real browser capture.
+- PWA service worker was registered, active and controlling on Doctor login, Assistant login, Patient home and booking.
 - One shell cache was present; no authenticated/API routes or records were cached.
-- No captured browser runtime errors or unhandled API paths.
+- Keyboard Tab reached an interactive control with a visible focus indicator on Doctor login, Assistant login and guest booking; :focus-visible was true on all three.
+- Emulated prefers-reduced-motion: reduce was honored: sign-in card animation and sign-in button transitions were disabled.
+- No captured application runtime errors or unhandled API paths.
 - Patient legacy login redirects to the public Patient home.
 - Browser-verified booking API origin equals the configured staging API origin.
+- Booking form exposes five required fields, 20 catalogue choices plus Other, Asia/Kolkata future-date minimum, and blocks empty/past submissions before any network call.
 
-Doctor and Assistant workspace screenshots are synthetic CI fixtures, not real authenticated staging acceptance. The synthetic Doctor fixture records service-worker activation but does not claim PWA controller acceptance; the real browser capture independently verifies control on the actual Doctor login page.
+Doctor and Assistant workspace screenshots remain synthetic CI fixtures, not real authenticated staging acceptance. The Doctor fixture records UI interactions and memory-only token behavior, but not live authenticated persistence; the Assistant fixture records reception/appointment/billing UI flows and explicitly reports staging_assistant_login_verified=false.
+
+Latest CI #43537615227 artifacts: [real-browser desktop/tablet/mobile captures](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14090761870), [synthetic Doctor fixture](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14090637065), [synthetic Assistant fixture](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14090926590), [staging bundle and checksum manifest](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14090991172).
 
 ## Clinic Assistant authorization
 
@@ -138,7 +140,8 @@ These are backend tests and synthetic UI fixtures. Staging contains zero persist
 - Actual PostgreSQL neon.branch_id: br-steep-bonus-a1yqarg7
 - Restored default branch: br-proud-scene-a1g7g3qo (separate)
 - Branch identity is checked server-side against DENTAL_EXPECTED_NEON_BRANCH_ID.
-- Latest aggregate-only SQL: 9 patients, 9 appointments, 8 public booking requests, 0 Assistant accounts, 0 Assistant sessions, 0 receipts, 0 documents and 10 audit events.
+- Latest aggregate-only SQL on source and restored branches matched: 9 patients, 9 appointments, 8 public booking requests, 0 Assistant accounts/sessions, 0 clinical notes, 0 chart entries, 0 periodontal entries, 0 treatment plans, 0 invoices, 0 receipts, 0 documents and 10 audit events.
+- After the latest synthetic idempotency replay, source branch still had 8 booking rows and 8 unique idempotency-key hashes; replay did not create a duplicate.
 - All 9 patient rows are test/synthetic-marked.
 - No patient names, phone numbers, clinical notes or records were retrieved.
 - Never copy real patient data into this project.
@@ -158,12 +161,11 @@ These are backend tests and synthetic UI fixtures. Staging contains zero persist
 **Keep document upload, download, sharing and patient-specific document links disabled.**
 
 ## Runtime observations
-
 - Render log query 14 Nov 2026 00:15:00–00:52:00 UTC: no app error/fatal entries and no request 5xx entries for either canonical service.
-- The API emitted successful `/health`, `/ready` and `/v1/dental/health` responses at 00:31:42 UTC; unauthenticated private Doctor/Assistant routes returned 401, the legacy linked-record route returned 404, and public booking remained POST-only (GET returned 405). The CI synthetic booking and idempotent replay both returned 200.
-- The API instance logged a graceful shutdown at 00:46:45 UTC; no subsequent restart appeared in this bounded log window. The Render deployment remains marked LIVE and the free service is not suspended, but this is not continuous-uptime evidence.
-- This is a bounded log check, not an uptime guarantee. External page-fetch attempts were unavailable during this run; GitHub Actions headless Chrome provided the responsive browser evidence.
-- The separate paid browser-agent wallet was not used or topped up. GitHub Actions headless Chrome supplies current browser evidence.
+- The API instance gracefully shut down at 00:46:45 UTC and restarted at 00:55:23 UTC when the next CI contract check woke the free service.
+- From 00:55:23–01:01:00 UTC, no app error/fatal entries or request 5xx entries were found. /health, /ready and /v1/dental/health returned 200; unauthenticated Doctor and Assistant private reads returned 401; the legacy patient-linked-record route returned 404; public booking GET returned 405; synthetic booking and idempotent replay each returned 200.
+- Source branch booking rows and distinct idempotency-key hashes remained 8/8 after the replay.
+- The API is a free service and may sleep; Render LIVE deploy status is not an uptime guarantee. External page-fetch attempts were unavailable, so the successful headless Chrome CI capture is the browser evidence for this run.
 
 ## Release manifest — BLOCKED on 17 gates
 
