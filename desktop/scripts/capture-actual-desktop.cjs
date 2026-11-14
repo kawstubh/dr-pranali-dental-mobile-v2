@@ -212,7 +212,7 @@ async function verifyKeyboardFocus() {
       visibleIndicator,
       tag: active.tagName.toLowerCase(),
       accessibleName: active.getAttribute("aria-label") ||
-        (active.getAttribute("aria-labelledby") || "").split(/\\s+/).map((id) =>
+        (active.getAttribute("aria-labelledby") || "").split(/\s+/).map((id) =>
           document.getElementById(id)?.innerText || ""
         ).join(" ").trim() ||
         (active.labels ? [...active.labels].map((item) => item.innerText || item.textContent || "").join(" ").trim() : "") ||
