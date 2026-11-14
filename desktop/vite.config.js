@@ -7,7 +7,7 @@ export default defineConfig({
     host: "0.0.0.0",
     proxy: {
       "/v1": {
-        target: "https://oralyn-multitenant-staging.onrender.com",
+        target: "https://oralyn-staging-api-assistant.onrender.com",
         changeOrigin: true,
         secure: true,
       },
