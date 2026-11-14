@@ -7,6 +7,13 @@ import { dentalApi, resolveApiBase } from "../src/api.js";
 const apiSource = readFileSync(new URL("../src/api.js", import.meta.url), "utf8");
 const captureSource = readFileSync(new URL("../scripts/capture-actual-desktop.cjs", import.meta.url), "utf8");
 
+test("unified deployment uses the portal origin for the shared Oralyn API", () => {
+  assert.deepEqual(resolveApiBase({ VITE_DENTAL_API_URL: "same-origin" }), {
+    base: "",
+    error: null,
+  });
+});
+
 test("production API configuration accepts only a canonical HTTPS origin", () => {
   assert.deepEqual(resolveApiBase({ VITE_DENTAL_API_URL: "https://api.oralyn.example" }), {
     base: "https://api.oralyn.example",
