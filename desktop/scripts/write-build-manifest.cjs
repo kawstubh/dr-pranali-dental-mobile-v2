@@ -154,6 +154,7 @@ const checks = {
   staging_portal_commit_verified: flag(process.env.ORALYN_STAGING_PORTAL_COMMIT_VERIFIED),
   production_hosting_always_on_verified: flag(process.env.ORALYN_PRODUCTION_HOSTING_VERIFIED),
   production_database_verified: flag(process.env.ORALYN_PRODUCTION_DATABASE_VERIFIED),
+  production_data_residency_privacy_review_verified: flag(process.env.ORALYN_PRODUCTION_DATA_RESIDENCY_PRIVACY_REVIEW_VERIFIED),
   production_custom_domain_verified: flag(process.env.ORALYN_PRODUCTION_DOMAIN_VERIFIED),
   production_deployment_approval_verified: flag(process.env.ORALYN_PRODUCTION_DEPLOYMENT_APPROVED),
 };
