@@ -155,13 +155,14 @@ test("synthetic Doctor and Assistant fixtures record PWA state without duplicati
   const doctor = readFileSync(join(process.cwd(), "scripts", "capture-synthetic-doctor.cjs"), "utf8");
   const assistant = readFileSync(join(process.cwd(), "scripts", "capture-synthetic-assistant.cjs"), "utf8");
   const realBrowser = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
-  assert.match(doctor, /registration\\?\\.active && registration\\.active\\.state === 'activated'/);
+  assert.ok(doctor.includes("registration?.active && registration.active.state === 'activated'"));
   assert.match(doctor, /pwa_service_worker_active=true/);
   assert.match(doctor, /pwa_service_worker_controlled=/);
   assert.doesNotMatch(doctor, /Synthetic Doctor capture is not controlled/);
-  assert.match(assistant, /registration\\?\\.active && registration\\.active\\.state === 'activated'/);
+  assert.ok(assistant.includes("registration?.active && registration.active.state === 'activated'"));
   assert.match(assistant, /pwa_service_worker_active=true/);
   assert.match(assistant, /pwa_service_worker_controlled=/);
   assert.doesNotMatch(assistant, /Synthetic Assistant capture is not controlled/);
-  assert.match(realBrowser, /controller/);
+  assert.ok(realBrowser.includes("Oralyn service worker activated but did not take control"));
+  assert.ok(realBrowser.includes("!status.controlled"));
 });;
