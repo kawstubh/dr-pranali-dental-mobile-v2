@@ -2,7 +2,7 @@
 
 **Release decision: BLOCKED for production.** This is a staging-only release candidate. All PRs remain Draft and unmerged.
 
-Last verified: 14 November 2026 02:21 UTC. Timestamps in CI and Render evidence are UTC.
+Last verified: 14 November 2026 03:44 UTC. Timestamps in CI and Render evidence are UTC.
 
 ## Product contract
 
@@ -146,6 +146,15 @@ These are backend tests and synthetic UI fixtures. Staging contains zero persist
 - No patient names, phone numbers, clinical notes or records were retrieved.
 - Never copy real patient data into this project.
 
+## Production data residency and privacy
+
+The synthetic Neon project `oralyn-staging-synthetic` (`silent-king-54610898`) reports region `aws-ap-southeast-1` (Singapore) and provider project setting `settings.hipaa=false`. It contains synthetic test data only; no real patient data may be placed there. The HIPAA setting is a provider configuration flag, not a legal or compliance assessment.
+
+Before any production patient data is introduced, require a documented review of the intended hosting/data-residency jurisdiction, applicable Indian privacy and healthcare obligations, contractual/provider terms, encryption and key ownership, access controls, retention/deletion, breach response, backups and cross-border transfer. The production database and hosting region have not been selected or approved.
+
+- Release gate: `production_data_residency_privacy_review_verified`.
+- Keep this gate false until the review is documented and approved; do not infer approval from the synthetic staging region or provider settings.
+
 ## Private storage and recovery
 
 - Private bucket oralyn-private-documents exists on the source branch and contains 0 objects.
@@ -185,8 +194,18 @@ These are backend tests and synthetic UI fixtures. Staging contains zero persist
 13. authenticated_screenshots_verified
 14. production_hosting_always_on_verified
 15. production_database_verified
-16. production_custom_domain_verified
-17. production_deployment_approval_verified
+16. production_data_residency_privacy_review_verified
+17. production_custom_domain_verified
+18. production_deployment_approval_verified
+
+## Release-watch update — 14 Nov 2026 03:44 UTC
+
+- Current frontend PR head before this update was documentation commit `9e1f66ade971f2e7b105490db4ae32db5d39b856`. Its workflow #43546083855 completed successfully; all reported validation steps completed successfully. The run did not provide a numeric test summary, so no new test count is claimed. The latest fully itemized product/browser run remains #43538942558 with 121/121 tests.
+- The current Render connector could not refresh service/deploy/log state in this non-interactive run because its workspace session was not selected. Last confirmed frontend deployment was `dep-dbrscfff3r2c73do83gg` LIVE on `9e1f66ade971f2e7b105490db4ae32db5d39b856` at 02:24 UTC; last confirmed API deployment was `dep-dbrngjnf3r2c7391c5v0` LIVE on backend head `5f4adba355b56f69427f554925ad8cdaa7f81d40`. These are last-known, not freshly revalidated statuses.
+- Neon metadata reports the synthetic staging project in Singapore (`aws-ap-southeast-1`) with provider setting `hipaa=false`. This is not a compliance assessment; the project remains synthetic-only.
+- Both source and restored branch automatic snapshot schedules are empty. One manual snapshot `snap-late-surf-a1j1sljm` exists. The private source bucket remains empty.
+- Added an explicit production data-residency/privacy review gate. No region, provider contract, legal assessment or production data transfer is approved by this update.
+- Doctor/Assistant authenticated acceptance, persistent malware quarantine, automated recovery and production deployment remain unverified. Keep document APIs disabled and all PRs Draft/unmerged.
 
 The manifest is intentionally BLOCKED. Do not set any gate true without its specific evidence.
 
