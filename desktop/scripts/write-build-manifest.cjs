@@ -109,20 +109,23 @@ if (!fs.existsSync(bookingPagePath)) {
 }
 const bookingMarker = '<meta name="oralyn-api-origin" content="__ORALYN_API_ORIGIN__">';
 const bookingHtml = fs.readFileSync(bookingPagePath, "utf8");
-if (!bookingHtml.includes(bookingMarker)) {
-  throw new Error("Public booking API origin marker is missing; refusing to ship an unconfigured booking page.");
+const configuredBookingMeta = '<meta name="oralyn-api-origin" content="' + (apiOrigin || "") + '">';
+let configuredBookingHtml = bookingHtml;
+if (bookingHtml.includes(bookingMarker)) {
+  configuredBookingHtml = bookingHtml.replace(bookingMarker, configuredBookingMeta);
+} else if (!bookingHtml.includes(configuredBookingMeta)) {
+  throw new Error("Public booking API origin is missing or does not match this build; refusing to ship.");
 }
-fs.writeFileSync(
-  bookingPagePath,
-  bookingHtml.replace(bookingMarker, '<meta name="oralyn-api-origin" content="' + (apiOrigin || "") + '">'),
-  "utf8",
-);
+fs.writeFileSync(bookingPagePath, configuredBookingHtml, "utf8");
 
 const checks = {
   isolated_portal_origin_assigned: Boolean(portalOrigin),
   public_booking_api_origin_configured: Boolean(apiOrigin),
   production_public_booking_api_origin_verified:
-    environmentName === "production" && Boolean(apiOrigin) && apiOrigin !== stagingApiOrigin,
+    environmentName === "production" &&
+    Boolean(apiOrigin) &&
+    apiOrigin !== stagingApiOrigin &&
+    flag(process.env.ORALYN_PRODUCTION_API_ORIGIN_VERIFIED),
   backend_stack_verified: flag(process.env.ORALYN_BACKEND_STACK_VERIFIED),
   cors_verified_for_portal_origin: flag(process.env.ORALYN_CORS_VERIFIED),
   private_document_storage_verified: flag(process.env.ORALYN_PRIVATE_STORAGE_VERIFIED),

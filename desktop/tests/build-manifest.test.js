@@ -208,3 +208,80 @@ test("public booking API origin is injected at build time and never hardcoded in
   assert.ok(!source.includes("https://oralyn-staging-api-assistant.onrender.com"));
   assert.match(source, /if \(!API_BASE\)/);
 });
+
+
+test("build manifest accepts an already-injected booking API origin on repeated writes", () => {
+  const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "oralyn-build-manifest-idempotent-"));
+  const bookingDir = path.join(outputDir, "patient", "booking");
+  fs.mkdirSync(bookingDir, { recursive: true });
+  fs.writeFileSync(path.join(outputDir, "index.html"), "<!doctype html>", "utf8");
+  fs.writeFileSync(
+    path.join(bookingDir, "index.html"),
+    '<meta name="oralyn-api-origin" content="https://oralyn-staging-api-assistant.onrender.com">',
+    "utf8",
+  );
+  fs.writeFileSync(
+    path.join(outputDir, "sw.js"),
+    'const CACHE_NAME = "oralyn-portal-shell-idempotent-build";\\n',
+    "utf8",
+  );
+  try {
+    execFileSync(process.execPath, [scriptPath], {
+      cwd: desktopRoot,
+      env: {
+        ...process.env,
+        ORALYN_BUILD_DIR: outputDir,
+        ORALYN_ENVIRONMENT: "staging",
+        ORALYN_BUILD_ID: "idempotent-build",
+        VITE_DENTAL_API_URL: "https://oralyn-staging-api-assistant.onrender.com",
+        ORALYN_PORTAL_ORIGIN: "https://oralyn-web-portal-spa.onrender.com",
+      },
+      stdio: "pipe",
+    });
+    const bookingHtml = fs.readFileSync(path.join(bookingDir, "index.html"), "utf8");
+    assert.equal(
+      bookingHtml,
+      '<meta name="oralyn-api-origin" content="https://oralyn-staging-api-assistant.onrender.com">',
+    );
+  } finally {
+    fs.rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("production API origin attestation remains false until independently verified", () => {
+  const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "oralyn-build-manifest-production-attestation-"));
+  const bookingDir = path.join(outputDir, "patient", "booking");
+  fs.mkdirSync(bookingDir, { recursive: true });
+  fs.writeFileSync(path.join(outputDir, "index.html"), "<!doctype html>", "utf8");
+  fs.writeFileSync(
+    path.join(bookingDir, "index.html"),
+    '<meta name="oralyn-api-origin" content="__ORALYN_API_ORIGIN__">',
+    "utf8",
+  );
+  fs.writeFileSync(
+    path.join(outputDir, "sw.js"),
+    'const CACHE_NAME = "oralyn-portal-shell-production-attestation";\\n',
+    "utf8",
+  );
+  try {
+    execFileSync(process.execPath, [scriptPath], {
+      cwd: desktopRoot,
+      env: {
+        ...process.env,
+        ORALYN_BUILD_DIR: outputDir,
+        ORALYN_ENVIRONMENT: "production",
+        ORALYN_BUILD_ID: "production-attestation",
+        VITE_DENTAL_API_URL: "https://api.oralyn.example.test",
+        ORALYN_PORTAL_ORIGIN: "https://oralyn.example.test",
+        ORALYN_PRODUCTION_API_ORIGIN_VERIFIED: "false",
+      },
+      stdio: "pipe",
+    });
+    const manifest = JSON.parse(fs.readFileSync(path.join(outputDir, "oralyn-build-manifest.json"), "utf8"));
+    assert.equal(manifest.checks.public_booking_api_origin_configured, true);
+    assert.equal(manifest.checks.production_public_booking_api_origin_verified, false);
+    assert.ok(manifest.blockers.includes("production_public_booking_api_origin_verified"));
+  } finally {
+    fs.rmSync(outputDir, { recursive: true, force: true });
+  }
+});
