@@ -274,9 +274,12 @@ async function verifyPublicBookingForm() {
       requiredLabelFields: ["name", "phone", "treatment_type", "date", "time"].map((name) => {
         const control = form.elements.namedItem(name);
         const labelText = control?.getAttribute("aria-label") ||
-          (control?.labels ? [...control.labels].map((item) => item.innerText || item.textContent || "").join(" ").trim() : "") ||
+          (control?.labels ? [...control.labels].map((item) =>
+            [...item.childNodes].filter((node) => node.nodeType === Node.TEXT_NODE)
+              .map((node) => node.textContent || "").join(" ").trim()
+          ).filter(Boolean).join(" ") : "") ||
           control?.closest("label")?.innerText?.trim() || "";
-        return { name, hasAccessibleName: Boolean(labelText), labelText };
+        return { name, hasAssociatedLabel: Boolean(labelText), labelText };
       }),
       catalogueCount: [...service.options].filter((option) =>
         option.value && option.value !== "Other dental concern"
@@ -299,7 +302,7 @@ async function verifyPublicBookingForm() {
     }));
   }
   if (state.requiredFields.length !== 5 || state.requiredLabelFields.length !== 5 ||
-      state.requiredLabelFields.some((item) => !item.hasAccessibleName) ||
+      state.requiredLabelFields.some((item) => !item.hasAssociatedLabel) ||
       state.catalogueCount !== 20 || state.otherCount !== 1 ||
       state.minDate !== state.expectedMinDate || !state.timezoneNotice || !state.accountFree) {
     throw new Error("Public booking contract verification failed: " + JSON.stringify(state));
