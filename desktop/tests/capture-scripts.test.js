@@ -174,3 +174,21 @@ test("real browser capture verifies public booking API origin matches the config
   assert.ok(capture.includes("const expectedApiOrigin = new URL(apiBase).origin;"));
   assert.ok(capture.includes("Public booking API origin does not match the configured portal API"));
 });
+
+
+test("real browser capture verifies keyboard-visible focus and reduced-motion behavior", () => {
+  const file = join(process.cwd(), "scripts", "capture-actual-desktop.cjs");
+  const source = readFileSync(file, "utf8");
+
+  assert.doesNotThrow(() => new Script(source, { filename: file }));
+  assert.match(source, /async function verifyKeyboardFocus/);
+  assert.match(source, /Input\\.dispatchKeyEvent/);
+  assert.match(source, /matches\\(":focus-visible"\\)/);
+  assert.match(source, /visibleIndicator/);
+  assert.match(source, /async function verifyReducedMotion/);
+  assert.match(source, /prefers-reduced-motion/);
+  assert.match(source, /keyboard_focus_doctor_login=passed/);
+  assert.match(source, /keyboard_focus_assistant_login=passed/);
+  assert.match(source, /keyboard_focus_guest_booking=passed/);
+  assert.match(source, /reduced_motion_preference=passed/);
+});
