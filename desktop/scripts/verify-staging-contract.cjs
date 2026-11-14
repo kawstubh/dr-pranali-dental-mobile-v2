@@ -60,10 +60,20 @@ function secureHeaders(headers, portal = false) {
   };
 }
 
+function githubApiHeaders() {
+  const token = String(process.env.GITHUB_TOKEN || "").trim();
+  if (!token) throw new Error("Staging release contract requires a read-only GitHub Actions token.");
+  return {
+    Accept: "application/vnd.github+json",
+    "User-Agent": "Oralyn-Staging-Release-Check",
+    Authorization: "Bearer " + token,
+  };
+}
+
 async function githubPullRequest(repo, number) {
   const result = await request(
     "https://api.github.com/repos/" + repo + "/pulls/" + number,
-    { headers: { Accept: "application/vnd.github+json", "User-Agent": "Oralyn-Staging-Release-Check" } },
+    { headers: githubApiHeaders() },
     2,
   );
   if (!result.response || result.response.status !== 200) return null;
@@ -80,7 +90,7 @@ async function backendCommitMatchesPr(repo, deployedCommit, prHeadCommit) {
 
   const comparison = await request(
     "https://api.github.com/repos/" + repo + "/compare/" + deployedCommit + "..." + prHeadCommit,
-    { headers: { Accept: "application/vnd.github+json", "User-Agent": "Oralyn-Staging-Release-Check" } },
+    { headers: githubApiHeaders() },
     2,
   );
   if (!comparison.response || comparison.response.status !== 200) {
