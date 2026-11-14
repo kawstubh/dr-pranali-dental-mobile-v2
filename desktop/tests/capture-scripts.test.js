@@ -182,8 +182,8 @@ test("real browser capture verifies keyboard-visible focus and reduced-motion be
 
   assert.doesNotThrow(() => new Script(source, { filename: file }));
   assert.match(source, /async function verifyKeyboardFocus/);
-  assert.match(source, /Input\\.dispatchKeyEvent/);
-  assert.match(source, /matches\\(":focus-visible"\\)/);
+  assert.ok(source.includes("Input.dispatchKeyEvent"));
+  assert.ok(source.includes('active.matches(":focus-visible")'));
   assert.match(source, /visibleIndicator/);
   assert.match(source, /async function verifyReducedMotion/);
   assert.match(source, /prefers-reduced-motion/);
