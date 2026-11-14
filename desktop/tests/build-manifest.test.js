@@ -100,6 +100,7 @@ test("staging manifest records verified public gates without claiming live booki
       "production_hosting_always_on_verified",
       "production_public_booking_api_origin_verified",
       "production_database_verified",
+      "production_data_residency_privacy_review_verified",
       "production_custom_domain_verified",
       "production_deployment_approval_verified",
       "staging_database_branch_verified",
