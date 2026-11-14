@@ -211,8 +211,16 @@ async function verifyPublicBookingForm() {
       expectedMinDate: today,
       timezoneNotice: document.body.innerText.includes("Asia/Kolkata"),
       accountFree: document.body.innerText.includes("No account or OTP is required."),
+      apiOrigin: document.querySelector('meta[name="oralyn-api-origin"]')?.content?.trim() || "",
     };
   })()`);
+  const expectedApiOrigin = new URL(apiBase).origin;
+  if (state.apiOrigin !== expectedApiOrigin) {
+    throw new Error("Public booking API origin does not match the configured portal API: " + JSON.stringify({
+      expectedApiOrigin,
+      actualApiOrigin: state.apiOrigin,
+    }));
+  }
   if (state.requiredFields.length !== 5 || state.catalogueCount !== 20 ||
       state.otherCount !== 1 || state.minDate !== state.expectedMinDate ||
       !state.timezoneNotice || !state.accountFree) {
@@ -414,6 +422,7 @@ async function captureAssistantAdminGate() {
       "mobile_viewport=390x844",
       "assistant_admin_redirect_gate=passed",
       "guest_booking_validation=passed",
+      "public_booking_api_origin=" + fontResults.patientBookingValidation.apiOrigin,
       "guest_booking_service_count=" + fontResults.patientBookingValidation.catalogueCount,
       "assistant_admin_management_form_visible=" + fontResults.assistantAdmin.assistantManagementFormVisible,
       "assistant_admin_plus_jakarta_sans_loaded=" + fontResults.assistantAdmin.plusJakartaSans,

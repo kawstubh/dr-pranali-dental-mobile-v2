@@ -166,3 +166,11 @@ test("synthetic Doctor and Assistant fixtures record PWA state without duplicati
   assert.ok(realBrowser.includes("Oralyn service worker activated but did not take control"));
   assert.ok(realBrowser.includes("!status.controlled"));
 });;
+
+
+test("real browser capture verifies public booking API origin matches the configured API", () => {
+  const capture = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.ok(capture.includes('meta[name="oralyn-api-origin"]'));
+  assert.ok(capture.includes("const expectedApiOrigin = new URL(apiBase).origin;"));
+  assert.ok(capture.includes("Public booking API origin does not match the configured portal API"));
+});
