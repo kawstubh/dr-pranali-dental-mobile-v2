@@ -1,4 +1,5 @@
 const fs = require("node:fs");
+const { isDocsOnlyCompare } = require("./staging-commit-equivalence.cjs");
 
 const apiOrigin = new URL(process.env.VITE_DENTAL_API_URL || "").origin;
 const portalOrigin = new URL(process.env.ORALYN_PORTAL_ORIGIN || "").origin;
@@ -69,6 +70,38 @@ async function githubPullRequest(repo, number) {
   return jsonBody(result.response);
 }
 
+async function backendCommitMatchesPr(repo, deployedCommit, prHeadCommit) {
+  if (!deployedCommit || !prHeadCommit) {
+    return { ok: false, detail: "deployed API commit or PR #60 head is unavailable" };
+  }
+  if (deployedCommit === prHeadCommit) {
+    return { ok: true, detail: "live API deployment commit exactly matches Draft PR #60 head " + prHeadCommit };
+  }
+
+  const comparison = await request(
+    "https://api.github.com/repos/" + repo + "/compare/" + deployedCommit + "..." + prHeadCommit,
+    { headers: { Accept: "application/vnd.github+json", "User-Agent": "Oralyn-Staging-Release-Check" } },
+    2,
+  );
+  if (!comparison.response || comparison.response.status !== 200) {
+    return { ok: false, detail: "GitHub could not verify the deployed-to-PR commit range; exact commit match is required" };
+  }
+
+  const compareBody = await jsonBody(comparison.response);
+  if (isDocsOnlyCompare(compareBody)) {
+    return {
+      ok: true,
+      detail: "live API runtime commit " + deployedCommit + " is an ancestor of PR #60 head " +
+        prHeadCommit + "; GitHub confirms every intervening change is a Markdown file under docs/",
+    };
+  }
+  return {
+    ok: false,
+    detail: "live API runtime commit " + deployedCommit + " differs from PR #60 head " + prHeadCommit +
+      " and the intervening commit range is not exclusively docs/*.md",
+  };
+}
+
 async function waitForResponse(url, predicate, options = {}, attempts = 12, delayMs = 4000) {
   let last = { response: null, body: null, error: null };
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
@@ -91,7 +124,6 @@ async function main() {
     waitForResponse(
       apiOrigin + "/v1/dental/health",
       (response, body) => response?.status === 200 &&
-        body?.deployment_commit === expectedApiCommit &&
         body?.database_identity_verified === true &&
         body?.database_branch_identity_verified === true,
       { headers: originHeaders },
@@ -142,6 +174,14 @@ async function main() {
     branchIdentityOk,
     "API verified current_setting('neon.branch_id') against the expected isolated staging branch",
   );
+
+  const apiRuntimeCommit = String(health?.deployment_commit || "");
+  const apiCommitCheck = await backendCommitMatchesPr(
+    "kawstubh/universal-intelligence-engine",
+    apiRuntimeCommit,
+    expectedApiCommit,
+  );
+  const apiCommitOk = apiCommitCheck.ok;
 
   const preflight = await request(apiOrigin + "/v1/dental/public/appointments", {
     method: "OPTIONS",
@@ -220,7 +260,7 @@ async function main() {
 
   // One synthetic request per backend commit per IST day. The idempotency key
   // is stable across hourly CI runs, so retries cannot create duplicate rows.
-  if (health?.database_identity_verified === true && branchIdentityOk && health?.deployment_commit === expectedApiCommit && expectedApiCommit) {
+  if (health?.database_identity_verified === true && branchIdentityOk && apiCommitOk && apiRuntimeCommit) {
     const istParts = new Intl.DateTimeFormat("en-GB", {
       timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
     }).formatToParts(new Date());
@@ -230,15 +270,15 @@ async function main() {
     nextUtcMidnight.setUTCDate(nextUtcMidnight.getUTCDate() + 1);
     const nextIstDay = nextUtcMidnight.toISOString().slice(0, 10);
     const startsAt = new Date(nextIstDay + "T10:00:00+05:30").toISOString();
-    const commitDigits = expectedApiCommit.slice(0, 8)
+    const commitDigits = apiRuntimeCommit.slice(0, 8)
       .split("")
       .map((character) => String(parseInt(character, 16) % 10))
       .join("");
     const syntheticPhone = "+919" + commitDigits + "0";
-    const idempotencyKey = "oralyn-staging-e2e-" + expectedApiCommit.slice(0, 12) + "-" + istToday.replaceAll("-", "");
+    const idempotencyKey = "oralyn-staging-e2e-" + apiRuntimeCommit.slice(0, 12) + "-" + istToday.replaceAll("-", "");
     const syntheticPayload = {
       idempotency_key: idempotencyKey,
-      name: "Oralyn Synthetic " + expectedApiCommit.slice(0, 8),
+      name: "Oralyn Synthetic " + apiRuntimeCommit.slice(0, 8),
       phone: syntheticPhone,
       treatment_type: "Dental Check-up & Consultation",
       starts_at: startsAt,
@@ -282,8 +322,13 @@ async function main() {
         : "staging idempotency replay was not verified",
     );
   } else {
-    record("ORALYN_GUEST_BOOKING_E2E_VERIFIED", false, "not attempted because isolated synthetic database identity was not verified");
-    record("ORALYN_GUEST_BOOKING_IDEMPOTENCY_VERIFIED", false, "not attempted because isolated synthetic database identity was not verified");
+    const bookingBlockReason = health?.database_identity_verified !== true || !branchIdentityOk
+      ? "not attempted because the isolated synthetic database identity is not verified"
+      : !apiCommitOk
+        ? "not attempted because the deployed API code does not match PR #60 or a verified docs-only descendant"
+        : "not attempted because the deployed API runtime commit is unavailable";
+    record("ORALYN_GUEST_BOOKING_E2E_VERIFIED", false, bookingBlockReason);
+    record("ORALYN_GUEST_BOOKING_IDEMPOTENCY_VERIFIED", false, bookingBlockReason);
   }
 
   const livePortalManifestResult = portalManifestWait;
@@ -291,16 +336,13 @@ async function main() {
   const portalCommitOk = Boolean(expectedPortalCommit &&
     livePortalManifestResult.response?.status === 200 &&
     livePortalManifest?.commit_sha === expectedPortalCommit);
-  const apiCommitOk = Boolean(expectedApiCommit &&
-    health?.deployment_commit &&
-    health.deployment_commit === expectedApiCommit);
   record(
     "ORALYN_STAGING_PORTAL_COMMIT_VERIFIED",
     portalCommitOk,
     "live portal manifest commit " + (livePortalManifest?.commit_sha || "unavailable") +
       " compared with expected Draft PR #18 head " + (expectedPortalCommit || "unavailable"),
   );
-  record("ORALYN_STAGING_API_COMMIT_VERIFIED", apiCommitOk, "live API deployment commit matches Draft PR #60 head");
+  record("ORALYN_STAGING_API_COMMIT_VERIFIED", apiCommitOk, apiCommitCheck.detail);
 
   const envFile = process.env.GITHUB_ENV;
   if (envFile) {
