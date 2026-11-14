@@ -14,6 +14,7 @@ on:
       - '.github/workflows/oralyn-desktop.yml'
 permissions:
   contents: read
+  pull-requests: read
 jobs:
   validate:
     runs-on: ubuntu-24.04
@@ -50,6 +51,8 @@ jobs:
       - name: Build staging-targeted desktop bundle
         run: npm run build
       - name: Verify live synthetic staging contract (idempotent synthetic booking only)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/verify-staging-contract.cjs
       - name: Verify live Assistant API contract (read-only)
         if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feat/oralyn-desktop-app'
