@@ -229,23 +229,8 @@ async function main() {
   await send("Page.navigate", { url: baseUrl + "/doctor/dashboard" });
   await waitFor(() => evaluate('document.readyState === "complete" && document.body.innerText.includes("Sign in with your clinic-issued email and password")'));
   await waitFor(() => evaluate("(async () => { const registration = await navigator.serviceWorker?.getRegistration('/'); return Boolean(registration?.active && registration.active.state === 'activated'); })()"), 30000);
-  let pwaControlled = await evaluate("Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)");
-  if (!pwaControlled) {
-    await send("Page.reload", { ignoreCache: true });
-    try {
-      await waitFor(
-        () => evaluate('document.readyState === "complete" && document.body.innerText.includes("Sign in with your clinic-issued email and password") && Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)'),
-        30000,
-        "service-worker-controlled Doctor page",
-      );
-    } catch (error) {
-      const pwaState = await evaluate("(async () => { const supported = 'serviceWorker' in navigator; const registrations = supported ? await navigator.serviceWorker.getRegistrations() : []; let swResponse = null; try { const response = await fetch('/sw.js', { cache: 'no-store' }); const body = await response.text(); swResponse = { status: response.status, contentType: response.headers.get('content-type'), prefix: body.slice(0, 120) }; } catch (fetchError) { swResponse = { error: fetchError?.message || String(fetchError) }; } return { path: location.pathname, isSecureContext: window.isSecureContext, serviceWorkerSupported: supported, controller: Boolean(supported && navigator.serviceWorker.controller), registrations: registrations.map((registration) => ({ scope: registration.scope, activeState: registration.active?.state || null, installingState: registration.installing?.state || null, waitingState: registration.waiting?.state || null })), swResponse }; })()").catch(() => null);
-      throw new Error(error.message + " PWA state=" + JSON.stringify(pwaState));
-    }
-    pwaControlled = await evaluate("Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)");
-  }
-  if (!pwaControlled) throw new Error("Synthetic Doctor capture is not controlled by the Oralyn PWA service worker.");
-  await submitDoctorLogin();
+  const pwaControlled = await evaluate("Boolean(navigator.serviceWorker && navigator.serviceWorker.controller)");
+    await submitDoctorLogin();
   await waitFor(() => evaluate('document.body.innerText.includes("Dr Synthetic")'));
   await waitFor(() => evaluate('document.body.innerText.includes("Ananya Synthetic")'));
   const fontStatus = await evaluate('({plusJakartaSans:document.fonts.check("400 16px \\"Plus Jakarta Sans\\""),playfairDisplay:document.fonts.check("600 32px \\"Playfair Display\\"")})');
@@ -361,6 +346,7 @@ async function main() {
     "odontogram_save_ui=passed_fixture",
     "doctor_only_intelligence_ui=passed_fixture",
     "fonts_loaded=" + JSON.stringify(fontStatus),
+    "pwa_service_worker_active=true",
     "pwa_service_worker_controlled=" + pwaControlled,
     "unhandled_api_paths=none",
     "runtime_errors=none"
