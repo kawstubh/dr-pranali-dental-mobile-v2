@@ -211,12 +211,17 @@ async function verifyKeyboardFocus() {
       focusVisible: active.matches(":focus-visible"),
       visibleIndicator,
       tag: active.tagName.toLowerCase(),
-      label: active.getAttribute("aria-label") || active.getAttribute("name") ||
-        active.getAttribute("placeholder") || (active.innerText || "").trim().slice(0, 80),
+      accessibleName: active.getAttribute("aria-label") ||
+        (active.getAttribute("aria-labelledby") || "").split(/\\s+/).map((id) =>
+          document.getElementById(id)?.innerText || ""
+        ).join(" ").trim() ||
+        (active.labels ? [...active.labels].map((item) => item.innerText || item.textContent || "").join(" ").trim() : "") ||
+        active.closest("label")?.innerText?.trim() ||
+        (active.matches("a,button") ? (active.innerText || "").trim() : ""),
     };
   })()`);
-  if (!state.focused || !state.interactive || !state.focusVisible || !state.visibleIndicator) {
-    throw new Error("Keyboard Tab did not reach an interactive control with a visible focus indicator: " + JSON.stringify(state));
+  if (!state.focused || !state.interactive || !state.focusVisible || !state.visibleIndicator || !state.accessibleName) {
+    throw new Error("Keyboard Tab did not reach an accessible interactive control with a visible focus indicator: " + JSON.stringify(state));
   }
   await evaluate("document.activeElement?.blur?.()");
   return state;
@@ -266,6 +271,13 @@ async function verifyPublicBookingForm() {
     return {
       requiredFields: ["name", "phone", "treatment_type", "date", "time"]
         .filter((name) => Boolean(form.elements.namedItem(name)?.required)),
+      requiredLabelFields: ["name", "phone", "treatment_type", "date", "time"].map((name) => {
+        const control = form.elements.namedItem(name);
+        const labelText = control?.getAttribute("aria-label") ||
+          (control?.labels ? [...control.labels].map((item) => item.innerText || item.textContent || "").join(" ").trim() : "") ||
+          control?.closest("label")?.innerText?.trim() || "";
+        return { name, hasAccessibleName: Boolean(labelText), labelText };
+      }),
       catalogueCount: [...service.options].filter((option) =>
         option.value && option.value !== "Other dental concern"
       ).length,
@@ -286,9 +298,10 @@ async function verifyPublicBookingForm() {
       actualApiOrigin: state.apiOrigin,
     }));
   }
-  if (state.requiredFields.length !== 5 || state.catalogueCount !== 20 ||
-      state.otherCount !== 1 || state.minDate !== state.expectedMinDate ||
-      !state.timezoneNotice || !state.accountFree) {
+  if (state.requiredFields.length !== 5 || state.requiredLabelFields.length !== 5 ||
+      state.requiredLabelFields.some((item) => !item.hasAccessibleName) ||
+      state.catalogueCount !== 20 || state.otherCount !== 1 ||
+      state.minDate !== state.expectedMinDate || !state.timezoneNotice || !state.accountFree) {
     throw new Error("Public booking contract verification failed: " + JSON.stringify(state));
   }
 
@@ -465,6 +478,7 @@ async function captureAssistantAdminGate() {
     );
     accessibilityResults.guestBookingKeyboardFocus = await verifyKeyboardFocus();
     fontResults.patientBookingValidation = await verifyPublicBookingForm();
+    accessibilityResults.guestBookingRequiredLabels = fontResults.patientBookingValidation.requiredLabelFields;
     fontResults.assistantAdmin = await captureAssistantAdminGate();
 
     if (runtimeErrors.length) {
@@ -500,6 +514,7 @@ async function captureAssistantAdminGate() {
       "keyboard_focus_doctor_login=passed",
       "keyboard_focus_assistant_login=passed",
       "keyboard_focus_guest_booking=passed",
+      "guest_booking_required_field_labels=passed",
       "reduced_motion_preference=passed",
       "runtime_errors=none",
     ].join("\n") + "\n";
