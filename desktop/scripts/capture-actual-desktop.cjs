@@ -310,7 +310,33 @@ async function verifyReducedMotion() {
   }
 }
 
+async function waitForApprovedBookingLogo() {
+  const ready = () => evaluate(`(() => {
+    const logo = document.querySelector('header img[src="/oralyn-logo-approved.webp"]');
+    return Boolean(logo && logo.complete && logo.naturalWidth > 0);
+  })()`);
+  try {
+    await waitFor(ready, 12000);
+  } catch {
+    const state = await evaluate(`(() => {
+      const logo = document.querySelector('header img[src="/oralyn-logo-approved.webp"]');
+      const rect = logo?.getBoundingClientRect();
+      return {
+        exists: Boolean(logo),
+        complete: Boolean(logo?.complete),
+        naturalWidth: logo?.naturalWidth || 0,
+        naturalHeight: logo?.naturalHeight || 0,
+        currentSrc: logo?.currentSrc || "",
+        width: rect?.width || 0,
+        height: rect?.height || 0,
+      };
+    })()`);
+    throw new Error("Approved Oralyn booking logo did not load before visibility verification: " + JSON.stringify(state));
+  }
+}
+
 async function verifyPublicBookingForm() {
+  await waitForApprovedBookingLogo();
   const state = await evaluate(`(() => {
     const form = document.querySelector("#booking");
     const service = document.querySelector("#treatment-type");
