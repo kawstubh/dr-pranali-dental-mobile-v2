@@ -60,6 +60,26 @@ test("Doctor empty workspace fixture covers zero patients and zero appointments"
   assert.match(source, /No patient records are available for this clinic account\./);
 });
 
+test("Doctor synthetic browser capture covers clinical notes, treatment plans, billing and reports on desktop and mobile", () => {
+  for (const route of ["/doctor/notes", "/doctor/treatments", "/doctor/billing", "/doctor/reports"]) {
+    assert.ok(captureSource.includes('navigate("' + route + '"'));
+  }
+  for (const screen of [
+    "doctor-clinical-notes-1440x1000.png",
+    "doctor-clinical-notes-390x844.png",
+    "doctor-treatment-plans-1440x1000.png",
+    "doctor-treatment-plans-390x844.png",
+    "doctor-billing-1440x1000.png",
+    "doctor-billing-390x844.png",
+    "doctor-reports-1440x1000.png",
+    "doctor-reports-390x844.png",
+  ]) assert.ok(captureSource.includes(screen), screen);
+  assert.ok(captureSource.includes("No clinical notes have been recorded for this patient."));
+  assert.ok(captureSource.includes("No treatment plans have been created for this patient."));
+  assert.ok(captureSource.includes("No invoices have been created for this patient."));
+  assert.ok(captureSource.includes("Outstanding balance"));
+});
+
 test("mobile workspace switcher prioritizes the clinic name over role text", () => {
   assert.match(source, /<option key=\{workspace\.id \|\| workspace\.clinic_id\} value=\{workspace\.id \|\| workspace\.clinic_id\}>\{workspace\.name\}<\/option>/);
   assert.doesNotMatch(source, /\{workspace\.name\} \| \{workspace\.role\}/);
