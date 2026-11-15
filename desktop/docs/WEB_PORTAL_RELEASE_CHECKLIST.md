@@ -623,3 +623,12 @@ This follow-up supersedes the immediately preceding note's pending guest-booking
 - Production deployment approval.
 
 The staging contract and CI success do not constitute production approval. Both PRs remain Draft/unmerged. No production changes, paid activations, secrets changes, real patient-data transfer or destructive storage actions occurred.
+
+## Browser-test execution path — 15 November 2026
+
+- TinyFish is not a dependency of Oralyn and must not be used for release acceptance.
+- Use the repository's GitHub Actions workflow `.github/workflows/oralyn-desktop.yml` as the browser and staging acceptance runner. It installs headless Chrome on a GitHub-hosted runner, captures responsive Doctor/Assistant/Patient/guest-booking screens, and uploads evidence as workflow artifacts.
+- The same workflow runs `desktop/scripts/verify-staging-contract.cjs` against the canonical staging portal and API. It verifies deployed commit identity, isolated synthetic Neon branch identity, CORS/security headers, account-free patient routes, and submits one synthetic public appointment request followed by an idempotency replay.
+- The synthetic booking key is deterministic per deployed API commit and India-local date, so reruns replay the same request instead of creating duplicate requests. The payload explicitly sets `intelligence_request=false`; no real patient details are used.
+- Trigger by updating the Draft PR branch or running the existing workflow manually from GitHub Actions. Do not add a paid browser vendor, wallet, or external browser agent.
+- Keep the PR Draft and unmerged; this CI run is staging verification only and does not authorize production release.
