@@ -1,6 +1,6 @@
 # Oralyn Web Portal — Current Release Checklist
 
-**Last verified:** 14 November 2026, 17:29 UTC. All timestamps below are UTC.
+**Last verified:** 15 November 2026, 01:08 UTC (06:38 IST). All timestamps in the verification log below are UTC unless marked IST.
 **Release decision: BLOCKED for production.** This is a synthetic staging release candidate. All PRs remain open, Draft and unmerged.
 
 ## Product contract
@@ -328,3 +328,38 @@ Do not merge PRs, deploy production, apply production migrations, change product
 - Doctor and Assistant UI captures remain synthetic fixtures. Real Doctor login/CRUD, real Assistant login/least-privilege UI/API acceptance, authenticated cross-tenant browser E2E and authenticated screenshots remain unverified.
 - Production release remains BLOCKED on 18 top-level gates. Keep all PRs Draft/unmerged and all document actions disabled. Do not mark production gates true from fixtures or staging CI alone.
 - No production deployment/migration, production secret change, paid infrastructure activation, real patient-data transfer, service retirement, object deletion or PR merge occurred.
+
+
+## Autonomous release-watch verification — 15 Nov 2026 01:08 UTC (06:38 IST)
+
+### GitHub and exact-head CI
+- Frontend PR #18 remains open, Draft and unmerged at `a145d3897e1636b80d9b29c94f8a51e7e65a7ac8`. The product/application code is unchanged from the previously identified `c90061d4001db1d5995c381b8e37148a529981ed`; this head only corrects the staging runtime-equivalence assertion wording in `desktop/scripts/verify-staging-contract.cjs`.
+- Exact-head frontend workflow [#43644047572](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43644047572) is completed/successful. Job `validate` completed all 20 primary steps. The log confirms **131/131 tests passed, 0 failed, 0 skipped**; four npm audit invocations reported zero vulnerabilities; build, synthetic guest-booking/idempotency contract, read-only Assistant contract, security-header check, headless Chrome capture and four artifact uploads passed.
+- CI Chrome emitted non-fatal D-Bus/UPower environment diagnostics, while the capture script recorded `runtime_errors=none` for both Doctor and Assistant fixtures. These are CI-local captures, not live authenticated staging sessions.
+- Backend PR #60 remains open, Draft and unmerged at `3fbfff0e387fbfc893553de47d0336cd40a9edea`. Exact-head Engine CI [#43634918023](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43634918023) passed **240 tests** with one Starlette/httpx deprecation warning. Engine Tests [#43634918034](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43634918034) passed **237**, skipped 3, with the same deprecation warning.
+- GitHub compare from deployed backend runtime `5f4adba355b56f69427f554925ad8cdaa7f81d40` to PR #60 head confirms two commits ahead, zero behind, and only `docs/DENTAL_PRIVATE_DOCUMENTS.md` plus `tests/test_dental_assistant.py` differ. No backend runtime/configuration redeploy is required.
+- Related private-document cleanup PR #61 remains open, Draft and unmerged at `87aa068b2759a60130722f28ea43815227c92d56`. Its prior CI runs [#43424740289](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43424740289) and [#43424740181](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43424740181) succeeded (241 passed/3 skipped and 244 passed respectively). It is code-only and undeployed. Its branch is diverged from the deployed runtime (12 ahead/7 behind); do not treat it as a merge-ready deployment. Cleanup defaults to dry-run and requires both an explicit environment enablement and `--apply`; no scheduled cleanup runner exists.
+
+### Product and authorization source review
+- The shared catalogue `shared/dentalServices.ts` contains exactly 20 unique service IDs/names, each with a distinct local image; the public service test asserts all 20 are rendered and available for booking, plus the separate `Other dental concern` option.
+- Public patient pages remain account-free and explicitly set `intelligence_request: false`; no Supabase client dependency is present in the web portal package. Doctor clinical intelligence API is guarded by `require_doctor`.
+- Assistant SPA uses separate `/v1/dental/assistant/*` routes and an Assistant-role session. The backend Assistant module has clinic-scoped queries and separate authentication. Backend tests cover reception/contact intake, appointment coordination and approved receipt recording, plus denial of clinical/owner operations and cross-clinic isolation. These are source and automated-test findings only; real authenticated Doctor/Assistant staging acceptance remains unverified.
+- Public appointment rate limiting is currently in-process memory. Backend source comments explicitly require a shared limiter or edge-level rule before production horizontal scaling; production rate-limit gate remains open.
+
+### Render deployment and runtime observations
+- Canonical frontend service `srv-dbr2ttsipgvc739a4tmg` deployment `dep-dbsdaguq1p3s73enc940` is LIVE on exact branch head `a145d3897e1636b80d9b29c94f8a51e7e65a7ac8`.
+- Canonical API service `srv-dbr8m159fdbs73dl404g` deployment `dep-dbrngjnf3r2c7391c5v0` is marked LIVE on application commit `5f4adba355b56f69427f554925ad8cdaa7f81d40`.
+- Both services are Free plan, Singapore region, one instance, auto-deploy enabled, and have no Render-native `healthCheckPath` configured. The frontend runs Vite preview rather than a separately provisioned static-site/CDN service.
+- Bounded Render logs show the frontend Vite preview process started at 00:30:03 UTC. The API process started at 00:43:02 UTC and logged a graceful shutdown at 00:57:41 UTC. No later API startup, request log, 5xx entry, or error/fatal entry was returned through 01:10 UTC. No corresponding lifecycle event was returned for 00:30–01:10 UTC. CPU/memory samples stop at 00:55 UTC; HTTP request/latency and instance-count metrics returned no data. This is an observed process shutdown and telemetry gap; its exact cause and current public reachability are not established. Do not infer continuous API availability from Render deployment status.
+- Live external browser/API URL fetching was unavailable, and TinyFish browser automation was not run because its wallet balance is negative. No top-up or spending occurred. The latest browser evidence remains CI-local preview only.
+
+### Neon synthetic storage and recovery
+- Project `silent-king-54610898` is `oralyn-staging-synthetic`, Free plan, Singapore (`aws-ap-southeast-1`), PostgreSQL 17. Both source branch `br-steep-bonus-a1yqarg7` and restored/default branch `br-proud-scene-a1g7g3qo` are ready but report `protected=false`.
+- Source branch has private bucket `oralyn-private-documents`; object listing returned zero objects. Restored/default branch has no bucket. Both automatic snapshot schedules are empty; one manual snapshot `snap-late-surf-a1j1sljm` exists.
+- Project provider HIPAA setting is false. This project remains synthetic-only and is not evidence of a compliance assessment. Never transfer real patient data.
+- No persistent malware scanner/quarantine, installed Render storage credential, verified application storage integration, scheduled cleanup, automatic snapshot schedule or application restore/failover rehearsal is operational. Keep document upload/download/sharing disabled.
+
+### Governance and release decision
+- GitHub rulesets reads returned empty lists for both repositories. The branch-protection endpoint could not be read in this run because the connector rejected the encoded slash branch path; therefore this run does not independently establish required status-check enforcement.
+- All **18 production release gates remain open**. Doctor/Assistant fixture screenshots are not authenticated acceptance. No production deployment/migration, production secret change, paid infrastructure activation, real patient-data transfer, object deletion, service retirement or PR merge occurred.
+- No user action is needed to preserve the current staging deployment. Owner decisions remain required for branch protection, real authenticated staging acceptance, always-on production hosting, production database/privacy review, private storage/scanning, automated recovery/monitoring, custom domain and explicit production release.
