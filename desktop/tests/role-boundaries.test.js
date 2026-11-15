@@ -62,7 +62,7 @@ test("CI records Doctor token storage hardening only after the regression suite"
 test("public patient journey is served only by account-free static pages", () => {
   assert.doesNotMatch(source, /function Patient\(|patientSession|patientLinks|patientInviteCode|oralyn_patient_record_id/);
   assert.match(patientHomeSource, /No patient account, password or OTP is needed/);
-  assert.match(bookingSource, /No account or OTP is required/);
+  assert.match(bookingSource, /No account or OTP needed/);
   assert.match(source, /Patient services &amp; appointment requests/);
   assert.match(source, /window.location.assign\("\/patient\/home\/"\)/);
   assert.doesNotMatch(source, /Continue to patient portal/);
