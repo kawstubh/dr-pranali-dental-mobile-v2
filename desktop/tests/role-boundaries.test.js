@@ -241,6 +241,7 @@ test("Assistant staging contract verification is read-only and never creates a b
   assert.match(assistantContractSource, /method: "GET"/);
   assert.doesNotMatch(assistantContractSource, /method: "(?:POST|PATCH|DELETE)"/);
   assert.match(assistantWorkflowSource, /ORALYN_ASSISTANT_API_CONTRACT_READONLY_VERIFIED=true/);
+  assert.match(assistantWorkflowSource, /github\.event\.pull_request\.head\.repo\.full_name == github\.repository/);
   assert.doesNotMatch(assistantWorkflowSource, /ORALYN_ASSISTANT_UI_API_VERIFIED=true/);
   assert.match(assistantContractSource, /no credentials or writes used/);
 });
