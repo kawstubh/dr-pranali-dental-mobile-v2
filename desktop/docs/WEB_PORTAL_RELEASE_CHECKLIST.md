@@ -404,9 +404,23 @@ Do not merge PRs, deploy production, apply production migrations, change product
 - All 18 top-level production gates remain open. Real authenticated Doctor/Assistant acceptance and cross-clinic browser E2E remain unverified. No production deployment/migration, production secret change, paid infrastructure activation, real patient-data transfer, destructive action or PR merge occurred.
 
 
-## Current head follow-up — 15 Nov 2026 02:01 UTC
+## Latest exact-head verification — 15 Nov 2026 08:03 IST
 
-- Current PR #18 head: 09cc5468f468882481ae1974489b87485098502d. This is a documentation-only release-checklist commit.
-- Render deployment dep-dbsh46u417fc73fi1ee0 is LIVE on that exact commit.
-- Exact-head CI #748 is in progress. Steps 1–13 completed successfully, including regression tests, audit, build, synthetic staging contract and read-only Assistant contract. Step 14 (Chrome responsive/Doctor/Assistant capture) is still running; do not report a full CI pass until it completes.
-- The preceding exact-head CI #747 on ea236ea9543b182bdcc5ab9a2a2a5c70ca3eb053 passed 131/131 tests, zero vulnerabilities, build, staging contracts, browser capture and all four artifacts.
+### Frontend
+- Current PR #18 head: `e10163406f6a1c76926122f4ac9c0030c31a70cf`; the commit is a documentation-only release-checklist refresh relative to `09cc5468f468882481ae1974489b87485098502d`.
+- Exact-head CI [#749](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43665989380) completed successfully: 131 tests passed, 0 failed, 0 skipped; all 20 primary workflow steps succeeded. Dependency audits reported zero vulnerabilities; build, synthetic staging booking/idempotency, read-only Assistant API contract, responsive Chrome capture and four artifact uploads passed.
+- Browser capture covered Patient home, guest booking, Doctor login, Assistant login and Assistant owner-route redirect at 1440x1000, 1280x800 and 390x844. Approved logo/app icon, Playfair Display and Plus Jakarta Sans, PWA active/controlling with one shell cache and no API/auth/storage entries, keyboard focus, reduced-motion and zero application runtime errors were verified. Container D-Bus/UPower warnings were non-fatal.
+- Doctor/Assistant workspace writes are CI synthetic fixtures. Metadata explicitly states `staging_authenticated_e2e=false`, `doctor_password_login_verified=false` and `staging_assistant_login_verified=false`. Fixture 403 evidence is not backend authorization proof.
+- Render frontend service `srv-dbr2ttsipgvc739a4tmg` deployment `dep-dbsh62tckfvc73dl87eg` is LIVE on exact head `e10163406f6a1c76926122f4ac9c0030c31a70cf`. It remains Free/Singapore/one instance with native health-check path unset.
+
+### API and public booking
+- Canonical API service `srv-dbr8m159fdbs73dl404g` deployment `dep-dbrngjnf3r2c7391c5v0` is LIVE on application commit `5f4adba355b56f69427f554925ad8cdaa7f81d40`.
+- Backend PR #60 head `3fbfff0e387fbfc893553de47d0336cd40a9edea` is 2 commits ahead / 0 behind the deployed runtime; only `docs/DENTAL_PRIVATE_DOCUMENTS.md` and `tests/test_dental_assistant.py` differ. Backend CI remains green (Engine 240 passed; PostgreSQL 237 passed, 3 skipped). No application/config redeploy is pending.
+- Bounded Render error/fatal and request-5xx log queries for both canonical services from 15 Nov 2026 01:33–02:33 UTC returned no entries. This is a bounded observation, not an uptime guarantee.
+- Public booking uses an in-process sliding window of 8 attempts per 5 minutes per client IP, returns 429 with Retry-After, and caps tracked client buckets at 10,000. Tests cover burst limiting, per-IP isolation, validated `CF-Connecting-IP`, invalid header handling and rejection before persistence. The limiter is process-local; a shared limiter or trusted production edge/WAF policy is required before horizontal scaling. Keep the production rate-limit gate false until edge/shared enforcement is independently verified.
+
+### Synthetic storage and release decision
+- Neon synthetic project `silent-king-54610898`: restore-rehearsal branch `br-steep-bonus-a1yqarg7` is ready/unprotected and has private bucket `oralyn-private-documents` with zero objects; default branch `br-proud-scene-a1g7g3qo` is ready/unprotected and has no matching bucket.
+- One manual snapshot exists; no automatic snapshot schedule was found. Persistent malware scanning/quarantine and verified backup/restore remain unoperational. Keep document upload/download/sharing disabled.
+- All 18 top-level production gates remain open. Real authenticated Doctor/Assistant acceptance, authenticated cross-clinic E2E, production edge rate limiting, secure document lifecycle, recovery, monitoring/rollback, always-on hosting, production database/privacy, domain and deployment approval are not verified.
+- No real patient records were queried or transferred; no production deployment/migration, secret change, paid activation, destructive action or PR merge occurred. PR #18 and PR #60 remain Draft/unmerged.
