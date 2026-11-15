@@ -35,6 +35,7 @@ let ws;
 let sequence = 0;
 const pending = new Map();
 const runtimeErrors = [];
+const bookingNetworkRequests = [];
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function waitFor(fn, timeoutMs = 30000) {
@@ -373,6 +374,77 @@ async function verifyPublicBookingForm() {
   return { ...state, emptySubmit: empty, pastTimeSubmit: past };
 }
 
+async function submitSyntheticGuestBooking(seed) {
+  const before = bookingNetworkRequests.length;
+  const filled = await evaluate(\`(() => {
+    const form = document.querySelector("#booking");
+    const set = (element, value, prototype) => {
+      const setter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
+      if (setter) setter.call(element, value);
+      else element.value = value;
+      element.dispatchEvent(new Event("input", { bubbles: true }));
+      element.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+    set(form.elements.name, \${JSON.stringify(seed.name)}, HTMLInputElement.prototype);
+    set(form.elements.phone, \${JSON.stringify(seed.phone)}, HTMLInputElement.prototype);
+    set(form.elements.treatment_type, "Dental Check-up & Consultation", HTMLSelectElement.prototype);
+    set(form.elements.date, \${JSON.stringify(seed.date)}, HTMLInputElement.prototype);
+    set(form.elements.time, "10:00", HTMLSelectElement.prototype);
+    const button = document.querySelector("#submit");
+    const valid = form.checkValidity();
+    if (!valid) return { valid, reason: form.elements.date.validationMessage || form.elements.phone.validationMessage || "form validation failed" };
+    button.click();
+    const disabledAfterFirstClick = button.disabled;
+    button.click();
+    return { valid, disabledAfterFirstClick, date: form.elements.date.value, time: form.elements.time.value };
+  })()\`);
+  if (!filled.valid || !filled.disabledAfterFirstClick) {
+    throw new Error("Synthetic guest booking form did not validate or disable during submission: " + JSON.stringify(filled));
+  }
+  await waitFor(() => evaluate(
+    'document.querySelector("#message")?.classList.contains("success") === true'
+  ), 30000);
+  await waitFor(() => bookingNetworkRequests.length > before, 15000);
+  await waitFor(() => bookingNetworkRequests.slice(before).some((item) => Number.isFinite(item.status)), 15000);
+  const requests = bookingNetworkRequests.slice(before);
+  const message = await evaluate(\`(() => ({
+    className: document.querySelector("#message")?.className || "",
+    text: document.querySelector("#message")?.textContent || "",
+    buttonDisabled: document.querySelector("#submit")?.disabled === true,
+    buttonText: document.querySelector("#submit")?.textContent || ""
+  }))()\`);
+  const request = requests[0];
+  let payload = null;
+  try { payload = JSON.parse(request?.postData || ""); } catch {}
+  const expectedPayload = Boolean(payload &&
+    payload.idempotency_key === seed.idempotencyKey &&
+    payload.name === seed.name &&
+    payload.phone === seed.phone &&
+    payload.treatment_type === "Dental Check-up & Consultation" &&
+    payload.intelligence_request === false &&
+    payload.starts_at === seed.date + "T10:00:00+05:30");
+  const successfulUi = message.className.includes("success") &&
+    (/Reference: ORL-/.test(message.text) || /already received/i.test(message.text) || /request has been received/i.test(message.text));
+  if (requests.length !== 1 || request.status !== 200 || !expectedPayload || !successfulUi || message.buttonDisabled) {
+    throw new Error("Browser guest-booking acceptance failed: " + JSON.stringify({
+      requestCount: requests.length,
+      status: request?.status,
+      payloadMatched: expectedPayload,
+      ui: message,
+    }));
+  }
+  return {
+    passed: true,
+    requestCount: requests.length,
+    httpStatus: request.status,
+    idempotencyKey: seed.idempotencyKey,
+    syntheticPayloadVerified: true,
+    duplicateClickBlocked: filled.disabledAfterFirstClick && requests.length === 1,
+    confirmationVisible: true,
+    confirmationText: message.text,
+  };
+}
+
 async function captureAssistantAdminGate() {
   await send("Page.navigate", { url: baseUrl + "/assistant-admin/" });
   await waitFor(() => evaluate(
@@ -416,8 +488,22 @@ async function captureAssistantAdminGate() {
       if (message.method === "Log.entryAdded" && message.params.entry?.level === "error") {
         runtimeErrors.push(message.params.entry.text);
       }
+      if (message.method === "Network.requestWillBeSent") {
+        const request = message.params.request;
+        if (request?.method === "POST" && request.url === apiBase.replace(/\/$/, "") + "/v1/dental/public/appointments") {
+          bookingNetworkRequests.push({
+            requestId: message.params.requestId,
+            method: request.method,
+            url: request.url,
+            postData: request.postData || "",
+            status: null,
+          });
+        }
+      }
       if (message.method === "Network.responseReceived") {
         const response = message.params.response;
+        const tracked = bookingNetworkRequests.find((item) => item.requestId === message.params.requestId);
+        if (tracked) tracked.status = response.status;
         if (response && response.status >= 400 && response.url?.startsWith(baseUrl)) {
           runtimeErrors.push("HTTP " + response.status + " " + response.url);
         }
@@ -427,8 +513,7 @@ async function captureAssistantAdminGate() {
         pending.delete(message.id);
         message.error
           ? request.reject(new Error(message.error.message))
-          : request.resolve(message.result || {});
-      }
+          : request.resolve(message.result || {});      }
     });
     await new Promise((resolve, reject) => {
       ws.addEventListener("open", resolve, { once: true });
@@ -497,6 +582,29 @@ async function captureAssistantAdminGate() {
     ));
     fontResults.patientLegacyLoginRedirect = true;
 
+    const bookingSeed = await evaluate(\`(() => {
+      const parts = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit"
+      }).formatToParts(new Date());
+      const part = (type) => parts.find((item) => item.type === type)?.value || "";
+      const today = part("year") + "-" + part("month") + "-" + part("day");
+      const nextDay = new Date(today + "T00:00:00Z");
+      nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+      const date = nextDay.toISOString().slice(0, 10);
+      const idempotencyKey = "oralyn-staging-browser-e2e-" + \${JSON.stringify(commit.slice(0, 12))} + "-" + today.replaceAll("-", "");
+      const digits = \${JSON.stringify(commit.slice(0, 8))}.split("").map((character) =>
+        String(parseInt(character, 16) % 10)
+      ).join("");
+      const seed = {
+        idempotencyKey,
+        name: "Oralyn Browser Synthetic " + \${JSON.stringify(commit.slice(0, 8))},
+        phone: "+919" + digits + "0",
+        date,
+      };
+      sessionStorage.setItem("oralyn_public_booking_idempotency", idempotencyKey);
+      sessionStorage.removeItem("oralyn_public_booking_pending");
+      return seed;
+    })()\`);
     fontResults.patientBooking = await navigate(
       "/patient/booking/",
       "Request an appointment",
@@ -505,6 +613,7 @@ async function captureAssistantAdminGate() {
     accessibilityResults.guestBookingKeyboardFocus = await verifyKeyboardFocus();
     fontResults.patientBookingValidation = await verifyPublicBookingForm();
     accessibilityResults.guestBookingRequiredLabels = fontResults.patientBookingValidation.requiredLabelFields;
+    fontResults.guestBookingBrowserE2E = await submitSyntheticGuestBooking(bookingSeed);
     fontResults.assistantAdmin = await captureAssistantAdminGate();
 
     if (runtimeErrors.length) {
@@ -532,6 +641,9 @@ async function captureAssistantAdminGate() {
       "mobile_viewport=390x844",
       "assistant_admin_redirect_gate=passed",
       "guest_booking_validation=passed",
+      "guest_booking_browser_e2e=" + fontResults.guestBookingBrowserE2E.passed,
+      "guest_booking_browser_http_status=" + fontResults.guestBookingBrowserE2E.httpStatus,
+      "guest_booking_browser_duplicate_click_blocked=" + fontResults.guestBookingBrowserE2E.duplicateClickBlocked,
       "public_booking_api_origin=" + fontResults.patientBookingValidation.apiOrigin,
       "guest_booking_service_count=" + fontResults.patientBookingValidation.catalogueCount,
       "assistant_admin_management_form_visible=" + fontResults.assistantAdmin.assistantManagementFormVisible,
