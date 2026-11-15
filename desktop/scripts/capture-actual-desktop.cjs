@@ -227,6 +227,8 @@ async function captureCurrent(expectedText, screenshotName) {
   await capture(screenshotName + "-390x844.png", 390, 844, true);
   if (screenshotName === "patient-booking") {
     await capture("patient-booking-1366x768.png", 1366, 768);
+    await capture("patient-booking-375x600.png", 375, 600, true);
+    await capture("patient-booking-360x640.png", 360, 640, true);
     await capture("patient-booking-375x667.png", 375, 667, true);
   }
   return { ...fonts, pwa };
@@ -340,7 +342,7 @@ async function verifyPublicBookingForm() {
       minDate: date.min,
       expectedMinDate: today,
       timezoneNotice: document.body.innerText.includes("Asia/Kolkata"),
-      accountFree: document.body.innerText.includes("No account or OTP is required."),
+      accountFree: document.body.innerText.includes("No account or OTP needed."),
       logoVisible: (() => {
         const logo = document.querySelector('header img[src="/oralyn-logo-approved.webp"]');
         const header = logo?.closest("header");
