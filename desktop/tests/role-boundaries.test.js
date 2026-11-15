@@ -99,7 +99,7 @@ test("guest booking sends a stable idempotency key and validates future IST time
   assert.match(bookingSource, /idempotency_key:\s*idempotencyKey/);
   assert.match(bookingSource, /oralyn_public_booking_idempotency/);
   assert.match(bookingSource, /Asia\/Kolkata/);
-  assert.match(bookingSource, /India Standard Time/);
+  assert.match(bookingSource, /Times shown in IST \(Asia\/Kolkata\)/);
   assert.match(bookingSource, /startsAt <= new Date\(\)/);
   assert.match(bookingSource, /intelligence_request:\s*false/);
   assert.match(bookingSource, /dateInput\.setAttribute\("min", localToday\)/);

@@ -176,7 +176,7 @@ test("real browser capture checks shorter mobile booking viewport heights", () =
   const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
   assert.match(source, /patient-booking-375x600/);
   assert.match(source, /patient-booking-360x640/);
-  assert.match(source, /await verifyNoVerticalOverflow\\(height\\)/);
+  assert.match(source, /await verifyNoVerticalOverflow\(height\)/);
 });
 
 test("real browser capture verifies public booking API origin matches the configured API", () => {
