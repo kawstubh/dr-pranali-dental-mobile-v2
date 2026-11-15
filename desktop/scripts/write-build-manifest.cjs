@@ -173,6 +173,7 @@ const manifest = {
   portal_origin: portalOrigin,
   evidence: {
     assistant_api_contract_readonly_verified: flag(process.env.ORALYN_ASSISTANT_API_CONTRACT_READONLY_VERIFIED),
+    guest_booking_browser_e2e_verified: flag(process.env.ORALYN_GUEST_BOOKING_BROWSER_E2E_VERIFIED),
   },
   checks,
   blockers,
