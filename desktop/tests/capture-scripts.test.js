@@ -200,3 +200,14 @@ test("real browser capture verifies keyboard-visible focus and reduced-motion be
   assert.match(source, /hasAssociatedLabel/);
   assert.match(source, /guest_booking_required_field_labels=passed/);
 });
+
+
+test("real browser capture fails before screenshot when a responsive viewport has horizontal page overflow", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.match(source, /async function verifyNoHorizontalOverflow/);
+  assert.match(source, /rootScrollWidth/);
+  assert.match(source, /bodyScrollWidth/);
+  assert.match(source, /Math\.max\(rootScrollWidth, bodyScrollWidth\) > viewportWidth \+ 1/);
+  assert.match(source, /await verifyNoHorizontalOverflow\(width\)/);
+  assert.match(source, /Horizontal page overflow at/);
+});
