@@ -75,11 +75,34 @@ async function evaluate(expression) {
   return result.result && result.result.value;
 }
 
+async function verifyNoHorizontalOverflow(expectedWidth) {
+  const layout = await evaluate(`(() => {
+    const root = document.documentElement;
+    const body = document.body;
+    const viewportWidth = root.clientWidth;
+    const rootScrollWidth = root.scrollWidth;
+    const bodyScrollWidth = body ? body.scrollWidth : rootScrollWidth;
+    return {
+      viewportWidth,
+      expectedViewportWidth: ${Number(expectedWidth)},
+      rootScrollWidth,
+      bodyScrollWidth,
+      horizontalOverflow: Math.max(rootScrollWidth, bodyScrollWidth) > viewportWidth + 1,
+    };
+  })()`);
+  if (!layout || !Number.isFinite(layout.viewportWidth) || layout.viewportWidth <= 0 || layout.horizontalOverflow) {
+    throw new Error("Horizontal page overflow at " + expectedWidth + "px capture: " + JSON.stringify(layout));
+  }
+  return layout;
+}
+
 async function capture(name, width, height, mobile = false) {
   await send("Emulation.setDeviceMetricsOverride", {
     width, height, deviceScaleFactor: 1, mobile,
   });
   await sleep(450);
+  const layout = await verifyNoHorizontalOverflow(width);
+  console.log("[Oralyn layout]", JSON.stringify({ screenshot: name, ...layout }));
   const screenshot = await send("Page.captureScreenshot", {
     format: "png", captureBeyondViewport: false, fromSurface: true,
   });
