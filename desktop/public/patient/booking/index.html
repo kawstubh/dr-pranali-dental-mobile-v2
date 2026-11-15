@@ -15,8 +15,8 @@
 *{box-sizing:border-box}
 html{min-height:100%;background:#f4fbff}
 body{margin:0;min-height:100vh}
-header{height:68px;background:#fff;border-bottom:1px solid #e2edf4;padding:0 max(20px,calc((100vw - 1120px)/2));display:flex;align-items:center;justify-content:space-between;gap:16px}
-header img{width:154px;max-width:42vw;display:block}
+header{height:104px;background:#fff;border-bottom:1px solid #e2edf4;padding:0 max(20px,calc((100vw - 1120px)/2));display:flex;align-items:center;justify-content:space-between;gap:16px}
+header img{width:112px;max-width:42vw;max-height:100%;height:auto;display:block;object-fit:contain}
 a{color:#0a84e8}
 .pill{border:1px solid #cce8ee;border-radius:30px;padding:8px 14px;color:#0b7280;text-decoration:none;font-size:13px;font-weight:750;white-space:nowrap}
 .wrap{width:min(100% - 32px,680px);margin:24px auto 32px}
@@ -39,8 +39,8 @@ textarea{min-height:88px;resize:vertical}
 .hp{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}
 #phone-error{display:block;margin-top:4px}
 @media(max-width:520px){
-  header{height:56px;padding:0 16px}
-  header img{width:126px}
+  header{height:90px;padding:0 16px}
+  header img{width:96px}
   .pill{padding:7px 11px;font-size:12px}
   .wrap{width:100%;margin:12px auto 18px;padding:0 12px}
   .panel{padding:17px 15px;border-radius:16px;box-shadow:0 8px 24px rgba(12,59,130,.055)}
@@ -73,7 +73,7 @@ textarea{min-height:88px;resize:vertical}
 <form id="booking">
 <div class="grid">
 <label>Full name *<input name="name" autocomplete="name" minlength="2" maxlength="200" required placeholder="Your name"></label>
-<label>Mobile number *<input name="phone" id="phone" type="tel" inputmode="tel" autocomplete="tel" minlength="10" maxlength="15" required aria-describedby="phone-error" placeholder="10-digit Indian mobile number"><small id="phone-error" class="note" role="status" aria-live="polite"></small></label>
+<label>Mobile number *<input name="phone" id="phone" type="tel" inputmode="tel" autocomplete="tel" minlength="10" maxlength="15" required aria-describedby="phone-error" placeholder="10-digit mobile"><small id="phone-error" class="note" role="status" aria-live="polite"></small></label>
 </div>
 <label>Dental service *
 <select name="treatment_type" id="treatment-type" required>
