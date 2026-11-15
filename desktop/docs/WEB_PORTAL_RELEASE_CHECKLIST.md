@@ -551,3 +551,21 @@ Do not merge PRs, deploy production, apply production migrations, change product
 - Private bucket `oralyn-private-documents` is empty on restore branch `br-steep-bonus-a1yqarg7` and absent on default branch `br-proud-scene-a1g7g3qo`. Persistent malware scanning/quarantine, cleanup scheduling and verified storage lifecycle are not operational. Keep document upload/download/sharing disabled.
 - The build manifest remains `BLOCKED` with 18 production blockers: production API origin, private storage, malware scanning, backup/restore, monitoring, rollback, real Doctor auth, real Assistant role acceptance, production shared rate limiting, live Assistant UI/API acceptance, Assistant data minimization, authenticated cross-tenant E2E, authenticated screenshots, always-on hosting, production database, privacy/data-residency review, custom domain and explicit production deployment approval.
 - No real patient data was queried or transferred. No production deployment/migration, production secret change, paid infrastructure activation, destructive storage action or PR merge occurred. Keep both canonical PRs Draft and unmerged.
+
+## Release-watch verification — 15 Nov 2026 19:47 IST
+
+### Current exact heads and CI
+- Frontend PR #18 was at `fc890949e7069fc2128484fb27cf27329d0c2f46`; exact-head CI #756 (run 43712549030) passed 132 tests, 0 failed, 0 skipped, four dependency audits with zero vulnerabilities, production build, live read-only Assistant API contract, synthetic guest-booking/idempotency contract, and 15 responsive Chrome captures. This is the last verified frontend application/deployment pair.
+- Backend PR #60 current head is `a9ca4ecf13a237427433126a54f717560b2a6b0d`. Exact-head CI #357 (run 43723743053) passed 252 tests, 0 failed, 0 skipped, 1 non-blocking warning. Engine Tests #418 (run 43723742933) passed 248, skipped 4, 0 failed, 1 non-blocking warning. The ClamAV integration service started successfully and detected the EICAR test signature.
+- The newest backend commit `a9ca4ecf` is tests-only. It adds a regression that proves missing/malformed `CF-Connecting-IP` values fall back to the connection peer, share one Doctor login limiter bucket, and retain HTTP 429 with `Retry-After` on the eleventh failed attempt.
+
+### Backend runtime and staging deployment boundary
+- The Doctor login runtime hardening is in parent commit `b6d2945064bef664147638ff7bc3ab4c3e60640a`: validate Cloudflare client IP, bound the process-local limiter to 10,000 buckets, prune expired entries, fail closed with HTTP 503 and `Retry-After` at capacity, and include `Retry-After` on HTTP 429.
+- Last independently verified canonical staging API deployment is `dep-dbspv6u7bikc73c5f6n0` on application commit `348c0dbe546e4e9ce26b2695e8246d5c24f1ef76`. Compare from that deployed commit to current backend PR head `a9ca4ecf` is 5 commits ahead / 0 behind; the newest commit is tests-only. The runtime change in `b6d29450` is not verified deployed.
+- Render workspace discovery lists `kawstubh's workspace`, but the connector explicitly requires owner confirmation before selecting a workspace. No workspace was selected, no Render service/deploy/log read was performed in this run, and no deployment was triggered. Do not claim current Render status beyond the last verified deployment above.
+
+### Release gates and safety
+- Real authenticated Doctor login/CRUD, real Assistant login/RBAC, authenticated cross-clinic E2E and authenticated screenshots remain unverified; CI UI artifacts are synthetic fixtures.
+- The Doctor login limiter is process-local. Production horizontal scaling still requires a shared/distributed limiter or trusted edge/WAF policy.
+- Neon `oralyn-staging-synthetic` remains synthetic-only. Both branches are unprotected, one manual snapshot exists, both automatic snapshot schedules are empty, and the private document bucket exists only on the restore branch and is empty. Persistent scanner/quarantine/cleanup and application-level restore/failover remain unverified. Keep document actions disabled.
+- Keep both canonical PRs Draft and unmerged. No production deployment/migration, production secret change, paid infrastructure activation, real patient-data transfer or destructive storage action occurred.
