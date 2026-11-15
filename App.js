@@ -18,7 +18,7 @@ import { BRAND } from './src/brandConstants';
 import { DENTAL_SERVICES, DENTAL_SERVICE_CATEGORIES } from './shared/dentalServices';
 import { signInWithGoogle } from './src/auth/googleAuth';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { requestPublicAppointment } from './src/api/dentalApi';
+import { requestPublicAppointment, getDentalHealth } from './src/api/dentalApi';
 
 // Production HTTPS API. The patient app does not require the phone and computer to share a Wi-Fi network.
 const API_URL = 'https://dr-pranali-dental-api.onrender.com';
@@ -81,7 +81,7 @@ function WelcomeScreen({ onStart }) {
   const googleLogin = async () => {
     setGoogleBusy(true);
     setGoogleMessage('Connecting securely to your Google accountâ€¦');
-    fetch(`${API_URL}/health`).catch(() => null);
+    getDentalHealth().catch(() => null);
     try {
       await signInWithGoogle();
       setGoogleMessage('Signed in successfully. Opening your dental care homeâ€¦');

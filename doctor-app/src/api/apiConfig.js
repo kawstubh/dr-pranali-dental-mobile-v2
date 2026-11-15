@@ -1,6 +1,19 @@
-// Expo inlines EXPO_PUBLIC_* values into the native JavaScript bundle.
-// Pull-request builds and local builds use staging; only a push to master
-// explicitly injects the production API URL from the release workflow.
-export const DOCTOR_API_URL =
-  process.env.EXPO_PUBLIC_DENTAL_API_URL ||
-  'https://oralyn-multitenant-staging.onrender.com';
+// Both native apps use the same Oralyn API origin. Never fall back to a retired host.
+export const DOCTOR_API_URL = String(
+  process.env.EXPO_PUBLIC_DENTAL_API_URL || ''
+).trim();
+
+export function requireDoctorApiUrl() {
+  if (!DOCTOR_API_URL) {
+    throw new Error('Oralyn clinic API is not configured for this build. Install the clinic-approved staging build.');
+  }
+  let parsed;
+  try { parsed = new URL(DOCTOR_API_URL); } catch {
+    throw new Error('Oralyn clinic API URL is invalid.');
+  }
+  if (parsed.protocol !== 'https:' || !parsed.hostname || parsed.username || parsed.password ||
+      parsed.pathname !== '/' || parsed.search || parsed.hash) {
+    throw new Error('Oralyn clinic API must be a canonical HTTPS origin.');
+  }
+  return parsed.origin;
+}

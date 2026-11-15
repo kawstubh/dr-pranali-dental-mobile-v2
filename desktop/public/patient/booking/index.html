@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0C3B82">
+<meta name="oralyn-api-origin" content="__ORALYN_API_ORIGIN__">
+<link rel="icon" type="image/webp" href="/oralyn-app-icon-approved.webp">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/oralyn-pwa-192.png">
+<title>Request an appointment | Dr Pranali Dental Clinic</title>
+<style>
+@font-face{font-family:'Plus Jakarta Sans';src:url('/fonts/PlusJakartaSans-Variable.ttf') format('truetype');font-style:normal;font-weight:200 800;font-display:swap}@font-face{font-family:'Playfair Display';src:url('/fonts/PlayfairDisplay-Variable.ttf') format('truetype');font-style:normal;font-weight:400 900;font-display:swap}:root{font-family:'Plus Jakarta Sans',Arial,sans-serif;color:#12304a;background:#f4fbff}*{box-sizing:border-box}body{margin:0}header{background:#fff;border-bottom:1px solid #e2edf4;padding:16px 6vw;display:flex;align-items:center;justify-content:space-between;gap:16px}header img{width:170px;max-width:45vw}a{color:#0a84e8}.pill{border:1px solid #cce8ee;border-radius:30px;padding:9px 15px;color:#0b7280;text-decoration:none;font-size:14px;font-weight:700}.wrap{max-width:760px;margin:34px auto;padding:0 18px}.panel{background:white;border:1px solid #e0ebf2;border-radius:22px;padding:28px;box-shadow:0 14px 40px rgba(12,59,130,.06)}.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#078c98;font-weight:800}h1{font-size:clamp(28px,4vw,38px);margin:10px 0}p{color:#627789;line-height:1.6}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}label{display:block;font-size:13px;font-weight:700;color:#35536a;margin:14px 0}input,select,textarea{display:block;width:100%;margin-top:7px;border:1px solid #cbdbe5;border-radius:10px;padding:13px 12px;font:inherit;font-size:15px;background:#fff;color:#12304a;min-height:48px}textarea{min-height:88px;resize:vertical}.btn{border:0;border-radius:11px;padding:14px 20px;background:#0a84e8;color:white;font:inherit;font-weight:800;cursor:pointer;width:100%;margin-top:10px}.btn:disabled{opacity:.6;cursor:wait}.msg{display:none;margin-top:18px;border-radius:12px;padding:14px;line-height:1.5}.msg.error{display:block;background:#fff2f0;color:#9a2d22}.msg.success{display:block;background:#e9faf7;color:#075f56}.note{font-size:12px;color:#6b7e8e}.back{display:inline-block;margin:0 0 16px;text-decoration:none;font-weight:700}.hp{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}@media(max-width:620px){.grid{grid-template-columns:1fr}.panel{padding:21px}.wrap{margin:20px auto}}
+</style>
+</head>
+<body>
+<header><img src="/oralyn-logo-approved.webp" alt="Oralyn"><a class="pill" href="/patient/home/">Patient home</a></header>
+<main class="wrap">
+<a class="back" href="/patient/home/">← Back to clinic information</a>
+<section class="panel">
+<div class="eyebrow">Dr Pranali Dental Clinic · Taloja</div>
+<h1>Request an appointment</h1>
+<p>Choose a service and preferred time. No account or OTP is required. The clinic will contact you to confirm your appointment.</p>
+<form id="booking">
+<div class="grid">
+<label>Full name *<input name="name" autocomplete="name" minlength="2" maxlength="200" required placeholder="Your name"></label>
+<label>Mobile number *<input name="phone" id="phone" type="tel" inputmode="tel" autocomplete="tel" minlength="10" maxlength="15" required aria-describedby="phone-error" placeholder="10-digit Indian mobile number"><small id="phone-error" class="note" role="status" aria-live="polite"></small></label>
+</div>
+<label>Dental service *
+<select name="treatment_type" id="treatment-type" required>
+<option value="" disabled selected>Choose a dental service</option>
+<optgroup label="General"><option value="Dental Check-up &amp; Consultation">Dental Check-up &amp; Consultation</option><option value="Gum Treatment (Periodontal Care)">Gum Treatment (Periodontal Care)</option><option value="Tooth Sensitivity Treatment">Tooth Sensitivity Treatment</option><option value="TMJ &amp; Jaw Pain Treatment">TMJ &amp; Jaw Pain Treatment</option></optgroup>
+<optgroup label="Preventive"><option value="Scaling &amp; Cleaning">Scaling &amp; Cleaning</option><option value="Dental Sealants (Cavity Prevention)">Dental Sealants (Cavity Prevention)</option><option value="Oral Hygiene Education">Oral Hygiene Education</option></optgroup>
+<optgroup label="Cosmetic"><option value="Teeth Whitening">Teeth Whitening</option><option value="Veneers (Smile Makeover)">Veneers (Smile Makeover)</option><option value="Smile Makeover (Cosmetic Dentistry)">Smile Makeover (Cosmetic Dentistry)</option></optgroup>
+<optgroup label="Restorative"><option value="Tooth Filling">Tooth Filling</option><option value="Root Canal Treatment (RCT)">Root Canal Treatment (RCT)</option><option value="Dental Crowns &amp; Caps">Dental Crowns &amp; Caps</option><option value="Dentures (Full / Partial)">Dentures (Full / Partial)</option></optgroup>
+<optgroup label="Surgical"><option value="Dental Implants">Dental Implants</option><option value="Tooth Extraction">Tooth Extraction</option></optgroup>
+<optgroup label="Orthodontic"><option value="Braces Treatment">Braces Treatment</option><option value="Clear Aligners (Invisible Braces)">Clear Aligners (Invisible Braces)</option></optgroup>
+<optgroup label="Pediatric"><option value="Kids Dentistry (Child Care)">Kids Dentistry (Child Care)</option></optgroup>
+<optgroup label="Emergency"><option value="Emergency Dental Care">Emergency Dental Care</option></optgroup>
+<option value="Other dental concern">Other dental concern (not listed)</option>
+</select></label>
+<div class="grid">
+<label>Preferred date *<input name="date" id="date" type="date" required></label>
+<label>Preferred time (IST) *<select name="time" id="time" required><option value="">Choose a time</option><option>10:00</option><option>11:00</option><option>12:00</option><option>13:00</option><option>17:00</option><option>18:00</option><option>19:00</option><option>20:00</option></select></label>
+</div>
+<p class="note"><strong>All appointment times are shown in India Standard Time (IST, Asia/Kolkata).</strong></p>
+<label class="hp" aria-hidden="true">Leave this field empty<input name="website" tabindex="-1" autocomplete="off"></label>
+<button class="btn" id="submit" type="submit">Send appointment request</button>
+<div id="message" class="msg" role="status" aria-live="polite"></div>
+<p class="note">Your request is not a confirmed booking. The clinic team will contact you. Your information is used only to respond to this appointment request.</p>
+</form>
+</section>
+</main>
+<script>
+const API_BASE = (() => {
+  const configured = document.querySelector('meta[name="oralyn-api-origin"]')?.content?.trim() || "";
+  try {
+    const parsed = new URL(configured);
+    if (parsed.protocol !== "https:" || parsed.origin !== configured || parsed.username || parsed.password) return "";
+    return parsed.origin;
+  } catch {
+    return "";
+  }
+})();
+const form = document.getElementById("booking");
+const message = document.getElementById("message");
+const dateInput = document.getElementById("date");
+const phoneInput = document.getElementById("phone");
+const timeInput = document.getElementById("time");
+const phoneError = document.getElementById("phone-error");
+const serviceSelect = document.getElementById("treatment-type");
+const serviceById = {"checkup":"Dental Check-up & Consultation","scaling":"Scaling & Cleaning","whitening":"Teeth Whitening","filling":"Tooth Filling","rct":"Root Canal Treatment (RCT)","crowns":"Dental Crowns & Caps","implants":"Dental Implants","extraction":"Tooth Extraction","braces":"Braces Treatment","aligners":"Clear Aligners (Invisible Braces)","dentures":"Dentures (Full / Partial)","veneers":"Veneers (Smile Makeover)","gum-care":"Gum Treatment (Periodontal Care)","kids":"Kids Dentistry (Child Care)","emergency":"Emergency Dental Care","sensitivity":"Tooth Sensitivity Treatment","sealants":"Dental Sealants (Cavity Prevention)","hygiene":"Oral Hygiene Education","smile-makeover":"Smile Makeover (Cosmetic Dentistry)","tmj":"TMJ & Jaw Pain Treatment"};
+const requestedService = new URLSearchParams(window.location.search).get("service");
+if (requestedService && serviceById[requestedService]) serviceSelect.value = serviceById[requestedService];
+const idempotencyStorageKey = "oralyn_public_booking_idempotency";
+const pendingStorageKey = "oralyn_public_booking_pending";
+const newIdempotencyKey = () => {
+  if (typeof crypto === "undefined" || typeof crypto.getRandomValues !== "function") {
+    throw new Error("Secure browser storage is required to send an appointment request.");
+  }
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (value) => value.toString(16).padStart(2, "0")).join("");
+};
+let idempotencyKey = newIdempotencyKey();
+let requestPending = false;
+try {
+  idempotencyKey = sessionStorage.getItem(idempotencyStorageKey) || idempotencyKey;
+  sessionStorage.setItem(idempotencyStorageKey, idempotencyKey);
+  requestPending = sessionStorage.getItem(pendingStorageKey) === "1";
+} catch {}
+const rotateIdempotencyKey = () => {
+  idempotencyKey = newIdempotencyKey();
+  requestPending = false;
+  try {
+    sessionStorage.setItem(idempotencyStorageKey, idempotencyKey);
+    sessionStorage.removeItem(pendingStorageKey);
+  } catch {}
+};
+const clearValidationMessage = () => {
+  if (message.classList.contains("error")) {
+    message.className = "msg";
+    message.textContent = "";
+  }
+};
+form.addEventListener("invalid", () => {
+  message.className = "msg error";
+  message.textContent = "Please complete all required fields and correct any highlighted details before sending your request.";
+}, true);
+form.addEventListener("input", () => {
+  if (requestPending) rotateIdempotencyKey();
+  clearValidationMessage();
+});
+form.addEventListener("change", () => {
+  if (requestPending) rotateIdempotencyKey();
+  clearValidationMessage();
+});
+const today = new Date();
+const clinicParts = new Intl.DateTimeFormat("en-GB", {timeZone:"Asia/Kolkata",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(today);
+const clinicPart = (type) => clinicParts.find((part) => part.type === type)?.value || "";
+const localToday = clinicPart("year") + "-" + clinicPart("month") + "-" + clinicPart("day");
+dateInput.min = localToday;
+dateInput.setAttribute("min", localToday);
+dateInput.value = localToday;
+dateInput.addEventListener("change", () => {
+  dateInput.setCustomValidity(dateInput.value && dateInput.value < localToday
+    ? "Please choose today or a future date." : "");
+});
+const validateIndianMobile = () => {
+  const raw = phoneInput.value.trim();
+  const digits = raw.replace(/\D/g, "");
+  const valid = !raw || /^[6-9][0-9]{9}$/.test(digits)
+    || /^91[6-9][0-9]{9}$/.test(digits);
+  phoneInput.setCustomValidity(valid ? "" : "Enter a valid 10-digit Indian mobile number.");
+  phoneError.textContent = raw && !valid
+    ? "Enter a valid 10-digit Indian mobile number (or +91 followed by 10 digits)." : "";
+  return valid;
+};
+phoneInput.addEventListener("input", validateIndianMobile);
+phoneInput.addEventListener("blur", validateIndianMobile);
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  message.className = "msg";
+  message.textContent = "";
+  if (!form.reportValidity()) return;
+  if (!API_BASE) {
+    message.className = "msg error";
+    message.textContent = "Appointment requests are temporarily unavailable. Please call the clinic.";
+    return;
+  }
+  const data = new FormData(form);
+  if (String(data.get("website") || "").trim()) return;
+  if (!validateIndianMobile()) {
+    phoneInput.reportValidity();
+    return;
+  }
+  const localDateTime = String(data.get("date")) + "T" + String(data.get("time")) + ":00";
+  const startsAt = new Date(localDateTime + "+05:30");
+  if (Number.isNaN(startsAt.getTime()) || startsAt <= new Date()) {
+    message.className = "msg error";
+    message.textContent = "Please choose a future date and time.";
+    return;
+  }
+  const button = document.getElementById("submit");
+  requestPending = true;
+  try { sessionStorage.setItem(pendingStorageKey, "1"); } catch {}
+  button.disabled = true;
+  button.textContent = "Sending request…";
+  try {
+    const response = await fetch(API_BASE + "/v1/dental/public/appointments", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        idempotency_key: idempotencyKey,
+        name: String(data.get("name")).trim(),
+        phone: String(data.get("phone")).trim(),
+        starts_at: localDateTime + "+05:30",
+        treatment_type: String(data.get("treatment_type")),
+        intelligence_request: false,
+        website: String(data.get("website") || "").trim()
+      })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const serverMessage = typeof result.detail === "string"
+        ? result.detail
+        : typeof result.detail?.message === "string" ? result.detail.message : "";
+      const detail = response.status === 429
+        ? "Too many requests. Please wait a few minutes and try again."
+        : response.status === 422
+          ? "Please check your details, choose a published service and select a future IST time."
+          : serverMessage || "We could not send your request. Please call the clinic.";
+      throw new Error(detail);
+    }
+    form.reset();
+    dateInput.value = localToday;
+    rotateIdempotencyKey();
+    message.className = "msg success";
+    message.textContent = result.status === "already_received"
+      ? (result.message || "A similar request was already received. The clinic will contact you to confirm.")
+      : `${result.message || "Your appointment request has been received."}${result.reference ? " Reference: " + result.reference + "." : ""}`;
+  } catch (error) {
+    message.className = "msg error";
+    message.textContent = error.message || "Network error. Please try again or call the clinic.";
+  } finally {
+    button.disabled = false;
+    button.textContent = "Send appointment request";
+  }
+});
+</script>
+</body></html>

@@ -1,0 +1,73 @@
+@font-face{font-family:"Plus Jakarta Sans";src:url("/fonts/PlusJakartaSans-Variable.ttf") format("truetype");font-weight:200 800;font-display:swap}
+@font-face{font-family:"Playfair Display";src:url("/fonts/PlayfairDisplay-Variable.ttf") format("truetype");font-weight:400 900;font-display:swap}
+:root{font-family:"Plus Jakarta Sans",Arial,sans-serif;color:#173a57;background:#f4fbff}
+.assistant-shell{min-height:100vh;background:radial-gradient(circle at 90% 0%,rgba(0,198,200,.10),transparent 28%),#f4fbff}
+.assistant-topbar{min-height:76px;background:#fff;border-bottom:1px solid #e1edf3;display:flex;align-items:center;justify-content:space-between;padding:12px clamp(18px,4vw,56px);gap:20px}
+.assistant-brand{display:flex;align-items:center;gap:20px}.assistant-brand img{width:142px;max-height:46px;object-fit:contain}.assistant-brand span,.assistant-eyebrow{font-size:11px;font-weight:800;letter-spacing:.16em;color:#078b98}
+.assistant-user{display:flex;align-items:center;gap:14px}.assistant-user div{display:grid;gap:3px;text-align:right}.assistant-user b{font-size:13px}.assistant-user small{font-size:11px;color:#6b8090}
+.assistant-icon-button{border:1px solid #dbe8ef;background:#fff;border-radius:11px;width:42px;height:42px;display:grid;place-items:center;color:#0c3b82;cursor:pointer}
+.assistant-content{max-width:1280px;margin:0 auto;padding:38px clamp(16px,3vw,36px) 56px}
+.assistant-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:24px}
+.assistant-heading h1,.assistant-auth-card h1{font-family:"Playfair Display",Georgia,serif;font-size:clamp(32px,4vw,44px);line-height:1.1;color:#0c3b82;margin:9px 0}
+.assistant-heading p,.assistant-intro{color:#657e90;line-height:1.65;margin:0}
+.assistant-secondary,.assistant-primary{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:0;border-radius:11px;padding:13px 17px;font:inherit;font-weight:800;cursor:pointer}
+.assistant-secondary{background:#fff;border:1px solid #cfe0ea;color:#0c3b82}
+.assistant-primary{width:100%;background:#0a84e8;color:#fff;min-height:48px;box-shadow:0 8px 18px rgba(10,132,232,.15)}
+.assistant-secondary:disabled,.assistant-primary:disabled{opacity:.55;cursor:not-allowed}
+.assistant-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0}
+.assistant-tabs button{display:flex;align-items:center;gap:9px;padding:12px 16px;border:1px solid #dce8ef;border-radius:12px;background:#fff;color:#4d687c;font:inherit;font-weight:700;cursor:pointer}
+.assistant-tabs button.active{background:#e7f9fa;border-color:#9ddfe1;color:#056c78}
+.assistant-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(300px,.8fr);gap:18px;align-items:start}
+.assistant-panel{background:#fff;border:1px solid #e0ebf2;border-radius:20px;padding:22px;box-shadow:0 12px 34px rgba(12,59,130,.045)}
+.assistant-panel-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:18px;color:#0a84e8}
+.assistant-panel-heading h2{font-size:18px;color:#163d5c;margin:0 0 5px}.assistant-panel-heading p{font-size:13px;color:#6b8191;line-height:1.5;margin:0}
+.assistant-list{display:grid;gap:0}
+.assistant-appointment{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;padding:16px 0;border-top:1px solid #edf2f5}
+.assistant-appointment-main{display:grid;gap:5px;min-width:0}.assistant-appointment-main b{color:#193f5d}.assistant-appointment-main span,.assistant-appointment-main small{font-size:12px;color:#6d8292}.assistant-appointment-main small{line-height:1.5}
+.assistant-appointment-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.assistant-appointment-actions button{display:inline-flex;align-items:center;gap:5px;border:1px solid #cde8e7;background:#f0fbfa;color:#06747b;border-radius:9px;padding:8px 10px;font:inherit;font-size:12px;font-weight:800;cursor:pointer}
+.assistant-appointment-actions button.assistant-danger-button{border-color:#f1d8d6;background:#fff8f7;color:#a3423c}
+.assistant-appointment-actions button:disabled{opacity:.5;cursor:not-allowed}
+.assistant-status{border-radius:30px;padding:6px 9px;background:#f0f5f8;color:#5e7384;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.status-confirmed{background:#e8f8f1;color:#16734e}.status-requested{background:#fff5df;color:#956515}.status-cancelled{background:#fff0ef;color:#a3423c}
+.assistant-form{display:grid;gap:14px}.assistant-form label,.assistant-auth-card label,.assistant-billing-select{display:grid;gap:7px;color:#36556d;font-size:13px;font-weight:700}
+.assistant-form input,.assistant-form select,.assistant-auth-card input,.assistant-billing-select select{width:100%;min-height:47px;border:1px solid #cbdde7;border-radius:10px;background:#fff;padding:11px 12px;color:#193d5b;font:inherit;font-size:14px;outline:none}
+.assistant-form input:focus,.assistant-form select:focus,.assistant-auth-card input:focus,.assistant-billing-select select:focus{border-color:#0a84e8;box-shadow:0 0 0 3px rgba(10,132,232,.11)}
+.assistant-form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.assistant-form small{font-size:12px;color:#758a98}
+.assistant-patient{display:flex;align-items:center;gap:12px;padding:13px 0;border-top:1px solid #edf2f5}.assistant-patient div{display:grid;gap:4px}.assistant-patient b{font-size:14px}.assistant-patient small{font-size:12px;color:#6b8191}
+.assistant-avatar{width:38px;height:38px;border-radius:12px;background:#eaf8fa;color:#078b98;display:grid;place-items:center}
+.assistant-empty{min-height:170px;display:grid;align-content:center;justify-items:center;gap:8px;color:#8ca0ad;text-align:center}.assistant-empty b{font-size:14px;color:#426077}.assistant-empty span{font-size:12px}
+.assistant-billing-select{max-width:520px}.assistant-billing-list{display:grid;gap:12px;margin-top:20px}.assistant-invoice{border:1px solid #e2edf3;border-radius:14px;padding:16px}.assistant-invoice-head,.assistant-invoice-totals{display:flex;align-items:center;justify-content:space-between;gap:14px}.assistant-invoice-head div{display:grid;gap:5px}.assistant-invoice-head b{color:#173e5d}.assistant-invoice-head small,.assistant-receipt{font-size:11px;color:#718696}.assistant-invoice-head strong{color:#0c3b82;font-size:18px}.assistant-invoice-totals{justify-content:flex-start;gap:22px;border-top:1px solid #edf2f5;margin-top:12px;padding-top:12px;font-size:12px;color:#6d8292}.assistant-invoice-totals b{color:#234b67}.assistant-receipt{display:block;margin-top:9px}
+.assistant-alert{padding:12px 14px;border-radius:11px;margin:14px 0;font-size:13px;line-height:1.5}.assistant-alert-error{background:#fff2f0;color:#9a342a;border:1px solid #f3d4d0}.assistant-alert-success{background:#e9faf5;color:#0b7058;border:1px solid #cceee4}
+.assistant-security-note{display:flex;align-items:flex-start;gap:10px;margin-top:20px;padding:14px 16px;border:1px solid #d8ebf2;border-radius:13px;background:#f7fcff;color:#587387;font-size:12px;line-height:1.6}.assistant-security-note svg{flex:0 0 auto;color:#078b98}
+.assistant-auth-shell{display:grid;place-items:center;padding:28px 16px}.assistant-auth-card{width:min(100%,460px);background:#fff;border:1px solid #dfebf2;border-radius:24px;padding:34px;box-shadow:0 24px 70px rgba(12,59,130,.10)}
+.assistant-logo{display:block;width:190px;max-height:68px;object-fit:contain;margin:0 auto 28px}
+.assistant-auth-card form{display:grid;gap:16px;margin-top:24px}.assistant-auth-foot{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:20px;color:#6a8292;font-size:11px}.assistant-auth-foot svg{color:#078b98}
+.assistant-back{display:block;text-align:center;margin-top:18px;color:#0a84e8;font-size:13px;font-weight:700;text-decoration:none}
+.assistant-loading{min-height:100vh;display:grid;place-content:center;justify-items:center;gap:14px;color:#617c8e}.assistant-loading img{width:180px}.assistant-loading p{font-size:14px}
+@media(max-width:900px){.assistant-grid{grid-template-columns:1fr}.assistant-content{padding-top:26px}}
+@media(max-width:640px){.assistant-topbar{align-items:flex-start;padding:13px 16px}.assistant-brand{display:grid;gap:5px}.assistant-brand img{width:116px}.assistant-brand span{font-size:9px}.assistant-user{gap:8px}.assistant-user b{max-width:145px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}.assistant-user small{font-size:10px}.assistant-content{padding:22px 14px 36px}.assistant-heading{align-items:flex-start;flex-direction:column}.assistant-heading h1{font-size:32px}.assistant-panel{padding:17px}.assistant-appointment{align-items:start;grid-template-columns:1fr}.assistant-appointment-actions{justify-content:flex-start}.assistant-form-row{grid-template-columns:1fr}.assistant-auth-card{padding:25px 20px}.assistant-invoice-head strong{font-size:15px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+
+.assistant-management-panel{margin-top:22px}.assistant-management-form{display:grid;grid-template-columns:1fr 1fr minmax(190px,.7fr);gap:14px;align-items:end}.assistant-management-form label{display:grid;gap:7px;color:#36556d;font-size:13px;font-weight:700}.assistant-management-form input{width:100%;min-height:47px;border:1px solid #cbdde7;border-radius:10px;background:#fff;padding:11px 12px;color:#193d5b;font:inherit;font-size:14px}.assistant-management-form small{font-size:11px;font-weight:500;color:#718696}.assistant-management-list{margin-top:20px}.assistant-management-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 0;border-top:1px solid #edf2f5}.assistant-management-row div{display:grid;gap:4px}.assistant-management-row b{font-size:13px;color:#173e5d}.assistant-management-row small{font-size:11px;color:#718696}.assistant-management-row button{border:1px solid #f1d8d6;background:#fff8f7;color:#a3423c;border-radius:9px;padding:9px 12px;font:inherit;font-size:12px;font-weight:800;cursor:pointer}.assistant-management-row button:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:900px){.assistant-management-form{grid-template-columns:1fr 1fr}.assistant-management-form .assistant-primary{grid-column:1/-1}}
+@media(max-width:560px){.assistant-management-form{grid-template-columns:1fr}.assistant-management-form .assistant-primary{grid-column:auto}}
+
+.assistant-receipt-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:15px;padding:15px;border:1px solid #dcebf1;border-radius:13px;background:#f8fcff}
+.assistant-receipt-form label{display:grid;gap:7px;color:#36556d;font-size:12px;font-weight:700}
+.assistant-receipt-form input,.assistant-receipt-form select{width:100%;min-height:43px;border:1px solid #cbdde7;border-radius:9px;background:#fff;padding:10px;color:#193d5b;font:inherit;font-size:13px}
+.assistant-receipt-form small{grid-column:1/-1;color:#718696;font-size:11px;line-height:1.5}
+.assistant-receipt-actions{grid-column:1/-1;display:flex;gap:9px;flex-wrap:wrap}
+.assistant-receipt-actions .assistant-primary{width:auto;min-width:210px;min-height:42px;padding:10px 14px}
+.assistant-record-payment{margin-top:14px}
+@media(max-width:640px){.assistant-receipt-form{grid-template-columns:1fr}.assistant-receipt-form small,.assistant-receipt-actions{grid-column:auto}.assistant-receipt-actions{display:grid}.assistant-receipt-actions .assistant-primary{width:100%}}
+
+.assistant-reschedule-form{grid-column:1/-1;display:grid;gap:12px;margin-top:4px;padding:14px;border:1px solid #dcebf1;border-radius:13px;background:#f8fcff}
+.assistant-reschedule-form label{display:grid;gap:7px;color:#36556d;font-size:12px;font-weight:700}
+.assistant-reschedule-form input{width:100%;min-height:43px;border:1px solid #cbdde7;border-radius:9px;background:#fff;padding:10px;color:#193d5b;font:inherit;font-size:13px}
+.assistant-reschedule-form input:focus{border-color:#0a84e8;outline:none;box-shadow:0 0 0 3px rgba(10,132,232,.11)}
+.assistant-reschedule-form small{color:#718696;font-size:11px;line-height:1.5}
+.assistant-reschedule-actions{display:flex;gap:9px;flex-wrap:wrap}
+.assistant-reschedule-actions button{min-height:42px}
+@media(max-width:640px){.assistant-reschedule-actions{display:grid}.assistant-reschedule-actions button{width:100%}}
