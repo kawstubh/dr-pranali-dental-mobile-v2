@@ -1,6 +1,6 @@
 # Oralyn Web Portal — Current Release Checklist
 
-**Last verified:** 15 November 2026, 01:57 UTC (07:27 IST). All timestamps in the verification log below are UTC unless marked IST.
+**Last verified:** 15 November 2026, 04:42 UTC (10:12 IST). All timestamps in the verification log below are UTC unless marked IST.
 **Release decision: BLOCKED for production.** This is a synthetic staging release candidate. All PRs remain open, Draft and unmerged.
 
 ## Product contract
@@ -20,14 +20,14 @@
 ### Frontend — PR #18
 - Repository: kawstubh/dr-pranali-dental-mobile-v2
 - Branch: feat/oralyn-desktop-app; base: master.
-- Latest fully completed exact-head CI/browser verification: `ea236ea9543b182bdcc5ab9a2a2a5c70ca3eb053` (CI #747; this commit itself only refreshed the release checklist). The exact last non-documentation runtime commit SHA was not isolated in this review. The 28-commit range from UI baseline `c90061d4001db1d5995c381b8e37148a529981ed` includes API-origin/transport hardening in `desktop/src/api.js`, `desktop/vite.config.js`, `App.js`, `doctor-app/src/api/apiConfig.js`, `doctor-app/src/api/doctorApi.js` and `src/api/dentalApi.js`, plus tests, workflow and documentation. Desktop React view/style files were not among the changed paths in this comparison. Current PR head after the subsequent checklist refresh is `09cc5468f468882481ae1974489b87485098502d` (documentation-only); exact-head CI #748 is still running with steps 1–13 passed and Chrome capture pending.
+- Current PR head: `a2f11e8dcc55076bb032bc5c4d4db5f895835dee` (`test(oralyn): cover horizontal overflow assertion`). Exact-head CI #751 completed successfully: **132 tests passed, 0 failed, 0 skipped**; all 22 workflow steps passed. Four npm audit invocations reported zero vulnerabilities; staging-targeted build, live synthetic guest-booking/idempotency contract, read-only Assistant API contract, security-header check, responsive Chrome capture and all four artifacts passed. The 15-screen browser capture measured root/body scroll width against viewport width and recorded zero horizontal overflow. The 28-commit range from UI baseline `c90061d4001db1d5995c381b8e37148a529981ed` includes API-origin/transport hardening in `desktop/src/api.js`, `desktop/vite.config.js`, `App.js`, `doctor-app/src/api/apiConfig.js`, `doctor-app/src/api/doctorApi.js` and `src/api/dentalApi.js`, plus tests, workflow and documentation; desktop React view/style files were not among the changed paths in that baseline comparison.
 - PR: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/pull/18
 - State: open, Draft, unmerged.
 
 ### Backend — PR #60
 - Repository: kawstubh/universal-intelligence-engine
 - Branch: feat/oralyn-clinic-assistant-rbac; base: feat/oralyn-backend-release-integration-20261113.
-- Latest PR #60 head: `3fbfff0e387fbfc893553de47d0336cd40a9edea`; deployed application-code commit: `5f4adba355b56f69427f554925ad8cdaa7f81d40`. GitHub compare confirms 2 commits ahead, 0 behind, limited to `docs/DENTAL_PRIVATE_DOCUMENTS.md` and `tests/test_dental_assistant.py`; no runtime/config change is pending deployment.
+- Latest PR #60 head: `a9bbd7df1d3d0c6bc1cc945c3d56a4e421bbc024`; last recorded deployed application-code commit: `5f4adba355b56f69427f554925ad8cdaa7f81d40`. GitHub compare confirms 6 commits ahead, 0 behind; the range includes runtime changes in `dental_document_scanner.py` and `dental_documents.py`, plus tests/docs. These runtime changes are not deployed. Current exact-head Engine Tests #43677883185 passed 242, skipped 4, with one warning; exact-head CI #43677883167 remains in progress.
 - PR: https://github.com/kawstubh/universal-intelligence-engine/pull/60
 - State: open, Draft, unmerged.
 
@@ -45,7 +45,7 @@
 - Branch: feat/oralyn-desktop-app; repository kawstubh/dr-pranali-dental-mobile-v2.
 - Service type: web service; plan: Free; region: Singapore; auto-deploy: enabled.
 - Render health-check path is currently unset.
-- Current frontend deployment `dep-dbsh46u417fc73fi1ee0` is LIVE on exact PR head `09cc5468f468882481ae1974489b87485098502d` (documentation-only checklist refresh). The previous fully completed browser verification is on `ea236ea9`; current exact-head CI #748 is still in progress. The latest docs-only commit does not change the portal bundle.
+- Last recorded frontend deployment `dep-dbshmgvj5k9c73erjr30` was reported LIVE on exact PR head `a2f11e8dcc55076bb032bc5c4d4db5f895835dee`. It was not independently re-queried in this verification because the Render connector requires explicit workspace selection; no workspace was selected and no deploy was triggered.
 - The current service instance started its Vite preview process at 12:00:39 UTC on 14 Nov 2026.
 - Free plan may sleep and is not an always-on production host.
 
@@ -55,40 +55,31 @@
 - Branch: feat/oralyn-clinic-assistant-rbac; repository kawstubh/universal-intelligence-engine.
 - Service type: web service; plan: Free; region: Singapore; auto-deploy: enabled.
 - Render health-check path is currently unset; the API exposes /health and /ready and the frontend CI read-only contract checks both.
-- Deployment `dep-dbrngjnf3r2c7391c5v0` remains LIVE on backend application commit `5f4adba355b56f69427f554925ad8cdaa7f81d40`. GitHub compare to PR #60 head `3fbfff0e` confirms only `docs/DENTAL_PRIVATE_DOCUMENTS.md` and `tests/test_dental_assistant.py` differ; no runtime/config redeploy is required.
+- Last recorded deployment `dep-dbrngjnf3r2c7391c5v0` was reported LIVE on backend application commit `5f4adba355b56f69427f554925ad8cdaa7f81d40`. It was not independently re-queried in this verification. Current PR #60 contains additional runtime scanner/document-upload preflight changes that are not deployed; do not treat the deployed API as containing this hardening.
 - Render logs show the previous API process shut down gracefully at 11:16:03 UTC and a new process completed startup at 12:01:21 UTC on 14 Nov 2026. This is consistent with the Free service sleeping/restarting; LIVE deployment metadata does not guarantee continuous uptime.
 
 ## CI and browser evidence
 
 ### Frontend exact-head workflow
-- Latest completed workflow: Oralyn Desktop #43665313844.
-- URL: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43665313844
-- Exact PR head: `ea236ea9543b182bdcc5ab9a2a2a5c70ca3eb053`.
-- Validation job completed successfully; all 20 primary validation steps passed.
-- Node test runner: 131 tests, 131 passed, 0 failed, 0 skipped.
-- Four npm audit invocations reported 0 vulnerabilities.
-- Staging-targeted production build passed.
-- Live synthetic booking/idempotency contract and read-only Assistant API contract passed.
-- Headless Chrome responsive, Doctor-fixture and Assistant-fixture captures passed; all four artifacts uploaded.
-- The workflow explicitly labels Doctor/Assistant captures as synthetic fixtures, not authenticated staging acceptance.
-- Build manifest reports RELEASE BLOCKED with 18 false production gates. Do not interpret successful CI as production approval.
+- Current frontend head: `a2f11e8dcc55076bb032bc5c4d4db5f895835dee`.
+- Exact-head workflow [#43668768898](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43668768898) completed successfully: **132 tests passed, 0 failed, 0 skipped**; all 22 workflow steps succeeded.
+- Four npm audit invocations reported zero vulnerabilities. Staging-targeted production build, synthetic booking/idempotency, read-only Assistant API contract, security headers, responsive Chrome capture and four artifact uploads passed.
+- Browser capture recorded 15 desktop/tablet/mobile screens across Doctor login, Assistant login, Patient home, guest booking and Assistant owner-route redirect. Root/body scroll width equaled viewport width on all 15 captures: zero horizontal overflow. Application runtime-error array was empty.
+- Approved logo/app icon, Playfair Display and Plus Jakarta Sans, keyboard-visible focus, reduced-motion and PWA service-worker control were verified. One shell cache was present; no API/auth/storage paths were cached.
+- Doctor/Assistant workspace screenshots and writes are **CI synthetic fixtures**, not real authenticated staging acceptance. Metadata explicitly records `staging_authenticated_e2e=false`, `doctor_password_login_verified=false` and `staging_assistant_login_verified=false`.
+- Actual artifacts: [15 browser screenshots](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14143293650), [Doctor synthetic fixture](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14142769780), [Assistant synthetic fixture](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14143507484), [staging bundle and manifest](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14142749736). Artifacts expire 29 Nov 2026 around 02:41 UTC.
+- Build manifest reports RELEASE BLOCKED with 18 false production gates. CI success is not production approval.
 
-### Current frontend artifacts (CI #43665313844)
-- Actual desktop/tablet/mobile browser captures: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14141763268
-- Synthetic Doctor UI fixture: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14141738430
-- Synthetic Assistant UI fixture: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14142017675
-- Staging bundle and checksum manifest: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14142157242
-- Browser artifact ZIP SHA-256: `c15cb02bea9c6aad76543065071f89963c309f914b4e80e65d08333dd6f8e0ea`; Doctor fixture: `867015fc8e7da3e1cb0f993ea27a019a6cfdae4e76051023d3e2b2c31653beec`; Assistant fixture: `ff6d4873fbf40df1cb2a48525c62bf5f13d852c3914b205965af5a366dfb09de`; build: `091e91d7a150799b74d12e943dbb60acd13c80420cf7f23c24fbcdaf9471771d`. Artifacts expire 28 Nov 2026 12:44 UTC.
+### Backend PR #60
+- Current head: `a9bbd7df1d3d0c6bc1cc945c3d56a4e421bbc024`.
+- Exact-head Engine Tests [#43677883185](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43677883185) completed successfully: **242 passed, 4 skipped, 1 warning**.
+- Exact-head PostgreSQL/ClamAV integration CI [#43677883167](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43677883167) is still running its `pytest -q` step. Do not mark the backend release checks fully green until it completes.
+- The immediately preceding backend head `4e9f0fb8` passed CI #43677724662 (245 passed, 1 warning) and Engine Tests #43677724652 (242 passed, 3 skipped, 1 warning). These are parent-head results, not substitutes for current-head CI.
+- The new live ClamAV integration test exercises the NUL-terminated `zPING`/`PONG` readiness protocol against the isolated CI ClamAV service.
 
-### Backend CI
-- Engine #43634918023: 240 passed, 0 failed, 1 warning.
-- PostgreSQL #43634918034: 237 passed, 3 skipped, 0 failed, 1 warning.
-- Both workflows completed successfully on backend PR #60 head `3fbfff0e387fbfc893553de47d0336cd40a9edea`.
-
-### Cleanup PR CI
-- Engine #43424740289: 241 passed, 3 skipped.
-- PostgreSQL #43424740181: 244 passed.
-- PR #61 remains code-only and undeployed.
+### Earlier backend and cleanup evidence
+- Previous backend PR #60 head `3fbfff0e`: Engine CI #43634918023 passed 240; PostgreSQL CI #43634918034 passed 237, skipped 3.
+- Cleanup PR #61 remains code-only and undeployed; previous CI results are historical and do not imply live scanner/storage operations.
 
 ## Public Patient journey and booking
 
@@ -424,3 +415,34 @@ Do not merge PRs, deploy production, apply production migrations, change product
 - One manual snapshot exists; no automatic snapshot schedule was found. Persistent malware scanning/quarantine and verified backup/restore remain unoperational. Keep document upload/download/sharing disabled.
 - All 18 top-level production gates remain open. Real authenticated Doctor/Assistant acceptance, authenticated cross-clinic E2E, production edge rate limiting, secure document lifecycle, recovery, monitoring/rollback, always-on hosting, production database/privacy, domain and deployment approval are not verified.
 - No real patient records were queried or transferred; no production deployment/migration, secret change, paid activation, destructive action or PR merge occurred. PR #18 and PR #60 remain Draft/unmerged.
+
+
+## Latest exact-head verification — 15 Nov 2026 04:42 UTC
+
+### Repository and CI state
+- Frontend PR #18 remains open, Draft and unmerged at `a2f11e8dcc55076bb032bc5c4d4db5f895835dee`; exact-head CI #43668768898 passed 132/132 with zero failures/skips and the 15-screen overflow gate passed.
+- Backend PR #60 remains open, Draft and unmerged at `a9bbd7df1d3d0c6bc1cc945c3d56a4e421bbc024`. Engine Tests #43677883185 passed 242, skipped 4, one warning. CI #43677883167 is still running the PostgreSQL/ClamAV-backed test step.
+- Both canonical PRs remain unmerged. No production deployment, migration, secret change or paid activation occurred.
+
+### Document upload safety correction
+- Source review found that the former upload-intent endpoint could create a pending document row and issue a presigned PUT URL before confirming that private ClamAV was configured and reachable. Finalization already failed closed, but an unscanned pending object could still be uploaded to quarantine.
+- Backend PR #60 now checks the configured private ClamAV endpoint before creating the row or issuing the URL. It sends the NUL-terminated `zPING` command and requires exact `PONG`; missing/unsafe/unavailable scanner returns HTTP 503. Unit tests assert no row and no presigned URL for missing, invalid and unavailable scanner states.
+- Finalization still performs a fresh bounded `INSTREAM` scan of the actual verified bytes and requires an audit record before publishing a separate `verified/` key. A PING response is not treated as malware clearance.
+- A real ClamAV PING/PONG integration test was added to the CI workflow. The exact-head PostgreSQL/ClamAV CI is still in progress; the current runtime change has not been deployed.
+- Frontend Doctor document UI requires both `VITE_PRIVATE_DOCUMENT_STORAGE_READY=true` and `VITE_DOCUMENT_MALWARE_SCANNING_READY=true` before showing upload/download/review controls. Current manifest gates remain false. Backend preflight adds an independent server-side guard. Keep document actions disabled.
+
+### Render verification limitation
+- `list_workspaces` returned the single visible workspace `kawstubh's workspace` (`tea-da2mcb6gekts73b8e1fg`). The Render connector requires explicit owner workspace selection before service/deployment reads. No workspace was selected in this run; the last recorded frontend/API deployment IDs above were not independently re-queried and no deployment was triggered.
+- Both canonical Render services were previously recorded as Free/Singapore/one instance with native health-check paths unset. The API has documented Free-plan cold starts; LIVE deployment metadata is not an uptime guarantee.
+
+### Neon synthetic-only recovery and security state
+- Project `silent-king-54610898` (`oralyn-staging-synthetic`) remains synthetic-only. Source/restore branch `br-steep-bonus-a1yqarg7` and default/main `br-proud-scene-a1g7g3qo` are ready and unprotected.
+- One manual snapshot `snap-late-surf-a1j1sljm` exists. Automatic snapshot schedules are empty on both branches.
+- `oralyn-private-documents` is empty on the restore-rehearsal branch and absent from default/main. Persistent scanner/quarantine, scheduled cleanup and verified restore/failover remain unoperational.
+- Project settings show `hipaa=false`, `block_public_connections=false`, and no IP allowlist. This is synthetic-only and must never contain real patient data.
+
+### Release decision
+- All 18 top-level production gates remain open. Real Doctor/Assistant authentication and CRUD, authenticated cross-clinic E2E, production shared/edge rate limiting, secure private storage/scanning/cleanup, backup/restore, monitoring, rollback, always-on hosting, production database/privacy, custom domain and deployment approval remain outstanding.
+- The two legacy APK workflow files return 404 on the current frontend feature branch; the active product workflow is the responsive web portal.
+- No real patient records were queried or transferred. No production change, destructive storage action, paid infrastructure activation, PR merge or production release occurred.
+
