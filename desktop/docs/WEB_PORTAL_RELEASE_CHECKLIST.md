@@ -20,7 +20,7 @@
 ### Frontend — PR #18
 - Repository: kawstubh/dr-pranali-dental-mobile-v2
 - Branch: feat/oralyn-desktop-app; base: master.
-- Latest verified application/runtime source head: `ea236ea9543b182bdcc5ab9a2a2a5c70ca3eb053`; exact-head CI #43665313844 passed 131/131. The release-checklist file is subsequently refreshed in a documentation-only commit. Comparison from prior application baseline `c90061d4001db1d5995c381b8e37148a529981ed` shows 28 commits ahead, 0 behind. This delta is not documentation-only: it includes API-origin/transport hardening in `desktop/src/api.js`, `desktop/vite.config.js`, `App.js`, `doctor-app/src/api/apiConfig.js`, `doctor-app/src/api/doctorApi.js` and `src/api/dentalApi.js`, plus tests, workflow and documentation. The desktop React view/style files were not among the changed paths in this comparison.
+- Latest fully completed exact-head CI/browser verification: `ea236ea9543b182bdcc5ab9a2a2a5c70ca3eb053` (CI #747; this commit itself only refreshed the release checklist). The exact last non-documentation runtime commit SHA was not isolated in this review. The 28-commit range from UI baseline `c90061d4001db1d5995c381b8e37148a529981ed` includes API-origin/transport hardening in `desktop/src/api.js`, `desktop/vite.config.js`, `App.js`, `doctor-app/src/api/apiConfig.js`, `doctor-app/src/api/doctorApi.js` and `src/api/dentalApi.js`, plus tests, workflow and documentation. Desktop React view/style files were not among the changed paths in this comparison. Current PR head after the subsequent checklist refresh is `09cc5468f468882481ae1974489b87485098502d` (documentation-only); exact-head CI #748 is still running with steps 1–13 passed and Chrome capture pending.
 - PR: https://github.com/kawstubh/dr-pranali-dental-mobile-v2/pull/18
 - State: open, Draft, unmerged.
 
@@ -45,7 +45,7 @@
 - Branch: feat/oralyn-desktop-app; repository kawstubh/dr-pranali-dental-mobile-v2.
 - Service type: web service; plan: Free; region: Singapore; auto-deploy: enabled.
 - Render health-check path is currently unset.
-- Last verified deployment `dep-dbsh1vlbedkc73c764bg` is LIVE on source head `ea236ea9543b182bdcc5ab9a2a2a5c70ca3eb053`. The current checklist refresh is documentation-only and auto-deploys on this feature branch; it does not change the portal bundle. The 28-commit delta from `c90061d4` includes API-origin/transport and health-check client changes as well as tests/workflow/docs; do not describe the entire delta as documentation-only. The React view/style files were not changed in that comparison.
+- Current frontend deployment `dep-dbsh46u417fc73fi1ee0` is LIVE on exact PR head `09cc5468f468882481ae1974489b87485098502d` (documentation-only checklist refresh). The previous fully completed browser verification is on `ea236ea9`; current exact-head CI #748 is still in progress. The latest docs-only commit does not change the portal bundle.
 - The current service instance started its Vite preview process at 12:00:39 UTC on 14 Nov 2026.
 - Free plan may sleep and is not an always-on production host.
 
@@ -402,3 +402,11 @@ Do not merge PRs, deploy production, apply production migrations, change product
 
 ### Release decision
 - All 18 top-level production gates remain open. Real authenticated Doctor/Assistant acceptance and cross-clinic browser E2E remain unverified. No production deployment/migration, production secret change, paid infrastructure activation, real patient-data transfer, destructive action or PR merge occurred.
+
+
+## Current head follow-up — 15 Nov 2026 02:01 UTC
+
+- Current PR #18 head: 09cc5468f468882481ae1974489b87485098502d. This is a documentation-only release-checklist commit.
+- Render deployment dep-dbsh46u417fc73fi1ee0 is LIVE on that exact commit.
+- Exact-head CI #748 is in progress. Steps 1–13 completed successfully, including regression tests, audit, build, synthetic staging contract and read-only Assistant contract. Step 14 (Chrome responsive/Doctor/Assistant capture) is still running; do not report a full CI pass until it completes.
+- The preceding exact-head CI #747 on ea236ea9543b182bdcc5ab9a2a2a5c70ca3eb053 passed 131/131 tests, zero vulnerabilities, build, staging contracts, browser capture and all four artifacts.
