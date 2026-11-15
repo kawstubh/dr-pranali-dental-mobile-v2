@@ -9,17 +9,67 @@
 <link rel="apple-touch-icon" href="/oralyn-pwa-192.png">
 <title>Request an appointment | Dr Pranali Dental Clinic</title>
 <style>
-@font-face{font-family:'Plus Jakarta Sans';src:url('/fonts/PlusJakartaSans-Variable.ttf') format('truetype');font-style:normal;font-weight:200 800;font-display:swap}@font-face{font-family:'Playfair Display';src:url('/fonts/PlayfairDisplay-Variable.ttf') format('truetype');font-style:normal;font-weight:400 900;font-display:swap}:root{font-family:'Plus Jakarta Sans',Arial,sans-serif;color:#12304a;background:#f4fbff}*{box-sizing:border-box}body{margin:0}header{background:#fff;border-bottom:1px solid #e2edf4;padding:16px 6vw;display:flex;align-items:center;justify-content:space-between;gap:16px}header img{width:170px;max-width:45vw}a{color:#0a84e8}.pill{border:1px solid #cce8ee;border-radius:30px;padding:9px 15px;color:#0b7280;text-decoration:none;font-size:14px;font-weight:700}.wrap{max-width:760px;margin:34px auto;padding:0 18px}.panel{background:white;border:1px solid #e0ebf2;border-radius:22px;padding:28px;box-shadow:0 14px 40px rgba(12,59,130,.06)}.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#078c98;font-weight:800}h1{font-size:clamp(28px,4vw,38px);margin:10px 0}p{color:#627789;line-height:1.6}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}label{display:block;font-size:13px;font-weight:700;color:#35536a;margin:14px 0}input,select,textarea{display:block;width:100%;margin-top:7px;border:1px solid #cbdbe5;border-radius:10px;padding:13px 12px;font:inherit;font-size:15px;background:#fff;color:#12304a;min-height:48px}textarea{min-height:88px;resize:vertical}.btn{border:0;border-radius:11px;padding:14px 20px;background:#0a84e8;color:white;font:inherit;font-weight:800;cursor:pointer;width:100%;margin-top:10px}.btn:disabled{opacity:.6;cursor:wait}.msg{display:none;margin-top:18px;border-radius:12px;padding:14px;line-height:1.5}.msg.error{display:block;background:#fff2f0;color:#9a2d22}.msg.success{display:block;background:#e9faf7;color:#075f56}.note{font-size:12px;color:#6b7e8e}.back{display:inline-block;margin:0 0 16px;text-decoration:none;font-weight:700}.hp{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}@media(max-width:620px){.grid{grid-template-columns:1fr}.panel{padding:21px}.wrap{margin:20px auto}}
+@font-face{font-family:'Plus Jakarta Sans';src:url('/fonts/PlusJakartaSans-Variable.ttf') format('truetype');font-style:normal;font-weight:200 800;font-display:swap}
+@font-face{font-family:'Playfair Display';src:url('/fonts/PlayfairDisplay-Variable.ttf') format('truetype');font-style:normal;font-weight:400 900;font-display:swap}
+:root{font-family:'Plus Jakarta Sans',Arial,sans-serif;color:#12304a;background:#f4fbff}
+*{box-sizing:border-box}
+html{min-height:100%;background:#f4fbff}
+body{margin:0;min-height:100vh}
+header{height:68px;background:#fff;border-bottom:1px solid #e2edf4;padding:0 max(20px,calc((100vw - 1120px)/2));display:flex;align-items:center;justify-content:space-between;gap:16px}
+header img{width:154px;max-width:42vw;display:block}
+a{color:#0a84e8}
+.pill{border:1px solid #cce8ee;border-radius:30px;padding:8px 14px;color:#0b7280;text-decoration:none;font-size:13px;font-weight:750;white-space:nowrap}
+.wrap{width:min(100% - 32px,680px);margin:24px auto 32px}
+.panel{background:#fff;border:1px solid #e0ebf2;border-radius:20px;padding:24px 28px;box-shadow:0 14px 40px rgba(12,59,130,.06)}
+.eyebrow{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:#078c98;font-weight:800}
+h1{font-size:clamp(27px,4vw,34px);line-height:1.15;letter-spacing:-.7px;margin:7px 0}
+p{color:#627789;line-height:1.5;margin:7px 0 14px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+label{display:block;min-width:0;font-size:12px;font-weight:750;color:#35536a;margin:10px 0}
+input,select,textarea{display:block;width:100%;min-width:0;margin-top:6px;border:1px solid #cbdbe5;border-radius:10px;padding:10px 11px;font:inherit;font-size:16px;background:#fff;color:#12304a;min-height:46px}
+input:focus,select:focus,textarea:focus{outline:0;border-color:#0a84e8;box-shadow:0 0 0 3px rgba(10,132,232,.12)}
+textarea{min-height:88px;resize:vertical}
+.btn{border:0;border-radius:11px;padding:12px 18px;background:#0a84e8;color:#fff;font:inherit;font-size:15px;font-weight:800;cursor:pointer;width:100%;min-height:48px;margin-top:8px}
+.btn:disabled{opacity:.6;cursor:wait}
+.msg{display:none;margin-top:12px;border-radius:12px;padding:12px;line-height:1.45}
+.msg.error{display:block;background:#fff2f0;color:#9a2d22}
+.msg.success{display:block;background:#e9faf7;color:#075f56}
+.note{font-size:11px;color:#6b7e8e;line-height:1.4}
+.back{display:inline-block;margin:0 0 12px;text-decoration:none;font-weight:700}
+.hp{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}
+#phone-error{display:block;margin-top:4px}
+@media(max-width:520px){
+  header{height:56px;padding:0 16px}
+  header img{width:126px}
+  .pill{padding:7px 11px;font-size:12px}
+  .wrap{width:100%;margin:12px auto 18px;padding:0 12px}
+  .panel{padding:17px 15px;border-radius:16px;box-shadow:0 8px 24px rgba(12,59,130,.055)}
+  .eyebrow{font-size:10px;letter-spacing:.11em}
+  h1{font-size:25px;line-height:1.12;margin:6px 0}
+  p{font-size:13px;line-height:1.4;margin:6px 0 10px}
+  .grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px}
+  label{font-size:11px;margin:8px 0}
+  input,select{min-height:44px;padding:9px 8px;font-size:16px;border-radius:9px}
+  .btn{min-height:46px;margin-top:7px;padding:11px 14px;font-size:14px}
+  .note{font-size:10px;line-height:1.35;margin:7px 0}
+  .msg{font-size:13px;padding:10px;margin-top:9px}
+}
+@media(max-width:350px){
+  .panel{padding:14px 11px}
+  .grid{gap:7px}
+  input,select{padding-left:7px;padding-right:7px}
+  h1{font-size:23px}
+}
+@media(min-width:900px){.wrap{margin-top:32px}.panel{padding:28px 34px}}
 </style>
 </head>
 <body>
 <header><img src="/oralyn-logo-approved.webp" alt="Oralyn"><a class="pill" href="/patient/home/">Patient home</a></header>
 <main class="wrap">
-<a class="back" href="/patient/home/">← Back to clinic information</a>
 <section class="panel">
 <div class="eyebrow">Dr Pranali Dental Clinic · Taloja</div>
 <h1>Request an appointment</h1>
-<p>Choose a service and preferred time. No account or OTP is required. The clinic will contact you to confirm your appointment.</p>
+<p>Choose your service and preferred time. No account or OTP needed.</p>
 <form id="booking">
 <div class="grid">
 <label>Full name *<input name="name" autocomplete="name" minlength="2" maxlength="200" required placeholder="Your name"></label>
@@ -46,7 +96,7 @@
 <label class="hp" aria-hidden="true">Leave this field empty<input name="website" tabindex="-1" autocomplete="off"></label>
 <button class="btn" id="submit" type="submit">Send appointment request</button>
 <div id="message" class="msg" role="status" aria-live="polite"></div>
-<p class="note">Your request is not a confirmed booking. The clinic team will contact you. Your information is used only to respond to this appointment request.</p>
+<p class="note"><strong>Request only — the clinic will contact you to confirm.</strong></p>
 </form>
 </section>
 </main>
