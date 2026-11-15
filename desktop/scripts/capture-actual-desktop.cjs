@@ -401,10 +401,18 @@ async function submitSyntheticGuestBooking(seed) {
   if (!filled.valid || !filled.disabledAfterFirstClick) {
     throw new Error("Synthetic guest booking form did not validate or disable during submission: " + JSON.stringify(filled));
   }
-  await waitFor(() => evaluate('document.querySelector("#message")?.classList.contains("success") === true'), 30000);
+  await waitFor(() => evaluate('(() => { const node = document.querySelector("#message"); return Boolean(node && (node.classList.contains("success") || node.classList.contains("error"))); })()'), 30000);
+  const requests = bookingNetworkRequests.slice(before);
+  const initialMessage = await evaluate('(() => ({ className: document.querySelector("#message")?.className || "", text: document.querySelector("#message")?.textContent || "" }))()');
+  if (initialMessage.className.includes("error")) {
+    throw new Error("Live portal rejected the synthetic booking before confirmation: " + JSON.stringify({
+      message: initialMessage.text,
+      requests: requests.map((item) => ({ status: item.status, postData: item.postData })),
+    }));
+  }
   await waitFor(() => bookingNetworkRequests.length > before, 15000);
   await waitFor(() => bookingNetworkRequests.slice(before).some((item) => Number.isFinite(item.status)), 15000);
-  const requests = bookingNetworkRequests.slice(before);
+  const completedRequests = bookingNetworkRequests.slice(before);
   const message = await evaluate('(() => ({'
     + 'className: document.querySelector("#message")?.className || "",'
     + 'text: document.querySelector("#message")?.textContent || "",'
@@ -602,6 +610,19 @@ async function captureAssistantAdminGate() {
     accessibilityResults.guestBookingKeyboardFocus = await verifyKeyboardFocus();
     fontResults.patientBookingValidation = await verifyPublicBookingForm();
     accessibilityResults.guestBookingRequiredLabels = fontResults.patientBookingValidation.requiredLabelFields;
+    const livePortalOrigin = new URL(process.env.ORALYN_PORTAL_ORIGIN || baseUrl).origin;
+    await send("Page.navigate", { url: livePortalOrigin + "/patient/booking/" });
+    await waitFor(() => evaluate(
+      "location.origin === " + JSON.stringify(livePortalOrigin) + " && Boolean(document.querySelector('#booking'))"
+    ));
+    await evaluate(
+      "sessionStorage.setItem('oralyn_public_booking_idempotency', " + JSON.stringify(bookingSeed.idempotencyKey) + ");" +
+      "sessionStorage.removeItem('oralyn_public_booking_pending');"
+    );
+    await send("Page.reload", { ignoreCache: true });
+    await waitFor(() => evaluate(
+      "location.origin === " + JSON.stringify(livePortalOrigin) + " && Boolean(document.querySelector('#booking'))"
+    ));
     fontResults.guestBookingBrowserE2E = await submitSyntheticGuestBooking(bookingSeed);
     fontResults.assistantAdmin = await captureAssistantAdminGate();
 
