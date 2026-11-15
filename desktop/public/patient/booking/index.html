@@ -39,19 +39,19 @@ textarea{min-height:88px;resize:vertical}
 .hp{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}
 #phone-error{display:block;margin-top:4px}
 @media(max-width:520px){
-  header{height:90px;padding:0 16px}
-  header img{width:96px}
+  header{height:78px;padding:0 14px}
+  header img{width:88px}
   .pill{padding:7px 11px;font-size:12px}
-  .wrap{width:100%;margin:12px auto 18px;padding:0 12px}
-  .panel{padding:17px 15px;border-radius:16px;box-shadow:0 8px 24px rgba(12,59,130,.055)}
+  .wrap{width:100%;margin:8px auto 10px;padding:0 10px}
+  .panel{padding:14px 13px;border-radius:15px;box-shadow:0 8px 24px rgba(12,59,130,.055)}
   .eyebrow{font-size:10px;letter-spacing:.11em}
-  h1{font-size:25px;line-height:1.12;margin:6px 0}
-  p{font-size:13px;line-height:1.4;margin:6px 0 10px}
+  h1{font-size:24px;line-height:1.1;margin:4px 0}
+  p{font-size:12px;line-height:1.3;margin:4px 0 7px}
   .grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px}
-  label{font-size:11px;margin:8px 0}
-  input,select{min-height:44px;padding:9px 8px;font-size:16px;border-radius:9px}
-  .btn{min-height:46px;margin-top:7px;padding:11px 14px;font-size:14px}
-  .note{font-size:10px;line-height:1.35;margin:7px 0}
+  label{font-size:11px;margin:6px 0}
+  input,select{min-height:44px;padding:8px 8px;font-size:16px;border-radius:9px}
+  .btn{min-height:46px;margin-top:5px;padding:10px 14px;font-size:14px}
+  .note{font-size:10px;line-height:1.25;margin:5px 0}
   .msg{font-size:13px;padding:10px;margin-top:9px}
 }
 @media(max-width:350px){
@@ -69,7 +69,7 @@ textarea{min-height:88px;resize:vertical}
 <section class="panel">
 <div class="eyebrow">Dr Pranali Dental Clinic · Taloja</div>
 <h1>Request an appointment</h1>
-<p>Choose your service and preferred time. No account or OTP is required.</p>
+<p>No account or OTP required.</p>
 <form id="booking">
 <div class="grid">
 <label>Full name *<input name="name" autocomplete="name" minlength="2" maxlength="200" required placeholder="Your name"></label>
@@ -92,11 +92,11 @@ textarea{min-height:88px;resize:vertical}
 <label>Preferred date *<input name="date" id="date" type="date" required></label>
 <label>Preferred time (IST) *<select name="time" id="time" required><option value="">Choose a time</option><option>10:00</option><option>11:00</option><option>12:00</option><option>13:00</option><option>17:00</option><option>18:00</option><option>19:00</option><option>20:00</option></select></label>
 </div>
-<p class="note"><strong>All appointment times are shown in India Standard Time (IST, Asia/Kolkata).</strong></p>
+<p class="note"><strong>Times shown in IST (Asia/Kolkata).</strong></p>
 <label class="hp" aria-hidden="true">Leave this field empty<input name="website" tabindex="-1" autocomplete="off"></label>
 <button class="btn" id="submit" type="submit">Send appointment request</button>
 <div id="message" class="msg" role="status" aria-live="polite"></div>
-<p class="note"><strong>Request only — the clinic will contact you to confirm.</strong></p>
+<p class="note"><strong>Request only — clinic will contact you to confirm.</strong></p>
 </form>
 </section>
 </main>
