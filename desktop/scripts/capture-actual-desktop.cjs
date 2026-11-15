@@ -402,17 +402,18 @@ async function submitSyntheticGuestBooking(seed) {
     throw new Error("Synthetic guest booking form did not validate or disable during submission: " + JSON.stringify(filled));
   }
   await waitFor(() => evaluate('(() => { const node = document.querySelector("#message"); return Boolean(node && (node.classList.contains("success") || node.classList.contains("error"))); })()'), 30000);
-  const requests = bookingNetworkRequests.slice(before);
+  const initialRequests = bookingNetworkRequests.slice(before);
   const initialMessage = await evaluate('(() => ({ className: document.querySelector("#message")?.className || "", text: document.querySelector("#message")?.textContent || "" }))()');
   if (initialMessage.className.includes("error")) {
     throw new Error("Live portal rejected the synthetic booking before confirmation: " + JSON.stringify({
       message: initialMessage.text,
-      requests: requests.map((item) => ({ status: item.status, postData: item.postData })),
+      requests: initialRequests.map((item) => ({ status: item.status, postData: item.postData })),
     }));
   }
   await waitFor(() => bookingNetworkRequests.length > before, 15000);
   await waitFor(() => bookingNetworkRequests.slice(before).some((item) => Number.isFinite(item.status)), 15000);
   const completedRequests = bookingNetworkRequests.slice(before);
+  const requests = completedRequests;
   const message = await evaluate('(() => ({'
     + 'className: document.querySelector("#message")?.className || "",'
     + 'text: document.querySelector("#message")?.textContent || "",'
