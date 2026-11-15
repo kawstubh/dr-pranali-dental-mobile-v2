@@ -181,7 +181,7 @@ test("real browser capture checks shorter mobile booking viewport heights", () =
 
 test("real browser capture validates the deployed staging booking page at mobile, tablet and desktop sizes", () => {
   const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
-  assert.match(source, /liveStagingBookingValidation = await verifyPublicBookingForm\\(\\)/);
+  assert.ok(source.includes("fontResults.liveStagingBookingValidation = await verifyPublicBookingForm();"));
   for (const viewport of [
     "patient-booking-live-staging-375x600",
     "patient-booking-live-staging-360x640",
