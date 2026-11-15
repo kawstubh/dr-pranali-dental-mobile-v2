@@ -1,6 +1,6 @@
 # Oralyn Web Portal — Current Release Checklist
 
-**Last verified:** 15 November 2026, 12:09 UTC (17:39 IST). All timestamps in the verification log below are UTC unless marked IST.
+**Last verified:** 15 November 2026, 17:12 UTC (22:42 IST). All timestamps in the verification log below are UTC unless marked IST.
 **Release decision: BLOCKED for production.** This is a synthetic staging release candidate. All PRs remain open, Draft and unmerged.
 
 ## Product contract
@@ -596,3 +596,30 @@ This section supersedes earlier service/deployment and branch-head observations 
 - TinyFish browser automation was not run: the available wallet balance is `-$0.072`; no top-up or paid browser run was initiated. Direct public fetches of the Render portal/API were also inaccessible to the web fetcher. Existing CI headless-Chrome evidence remains the browser evidence for this run.
 - Real authenticated Doctor login, real Assistant login/RBAC acceptance, live Doctor/Assistant CRUD persistence, authenticated cross-tenant E2E and production booking abuse/rate-limit acceptance remain unverified. Synthetic Doctor/Assistant fixtures are not substitutes.
 - Keep all production release gates blocked. No production deployment, migration, secret change, paid activation, real patient-data transfer, destructive storage action or PR merge occurred.
+
+
+## Follow-up acceptance — 15 Nov 2026 17:12 UTC (22:42 IST)
+
+This follow-up supersedes the immediately preceding note's pending guest-booking/API acceptance statement.
+
+### Frontend exact-head workflow #758
+- Frontend commit `2dcd42b1df84447879f31e6511a5f49b89b72a91` is the current PR #18 head. [Workflow #758](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43739453790) completed successfully. **132/132 tests passed, 0 failed, 0 skipped**; npm audit reported **0 vulnerabilities**; the staging-targeted build passed.
+- The live synthetic staging contract now passed against the independently verified API deployment: `ORALYN_STAGING_PORTAL_COMMIT_VERIFIED=true`, `ORALYN_STAGING_API_COMMIT_VERIFIED=true`, `ORALYN_GUEST_BOOKING_E2E_VERIFIED=true`, `ORALYN_GUEST_BOOKING_IDEMPOTENCY_VERIFIED=true`, and `ORALYN_ASSISTANT_API_CONTRACT_READONLY_VERIFIED=true`.
+- The idempotency replay returned the same opaque public reference with `already_received`; no patient/appointment IDs were exposed. Public booking required-field and future-IST validation passed, the catalogue count was 20 plus Other, and account-free booking was verified.
+- Real headless Chrome captured **15 desktop/tablet/mobile screens** across Doctor login, Assistant login, Patient home, guest booking and Assistant owner-route redirect. All 15 root/body widths equalled viewport widths: **0 horizontal-overflow failures**. Runtime-error array was empty. Approved wordmark/app icon, Playfair Display, Plus Jakarta Sans, visible keyboard focus, reduced-motion behavior and PWA shell caching were verified. No API/auth/storage routes were cached.
+- The primary route capture reports the PWA service worker active and controlling the Doctor, Assistant, Patient and booking routes. Synthetic Doctor/Assistant workspace artifacts remain **CI fixtures only**; their metadata explicitly records `staging_authenticated_e2e=false`, `doctor_password_login_verified=false` and `staging_assistant_login_verified=false`. The fixture evidence does not prove real authenticated persistence or live server-side RBAC.
+- Artifacts (available until 29 Nov 2026 17:11 UTC): [15 actual browser screenshots](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43739453790/artifacts/14172026295), [Doctor synthetic fixture](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43739453790/artifacts/14172061248), [Assistant synthetic fixture](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43739453790/artifacts/14172330275), [staging build and checksum manifest](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43739453790/artifacts/14172036404).
+- The only Chrome log errors were non-fatal D-Bus/UPower container warnings; application runtime errors remained empty.
+
+### Current staging deployment identities
+- Frontend Render deployment `dep-dbsue8vf3r2c73erb070` is LIVE on `2dcd42b1df84447879f31e6511a5f49b89b72a91`.
+- API Render deployment `dep-dbsttr3m8hqs73d1fo7g` is LIVE on backend PR #60 head `a9ca4ecf13a237427433126a54f717560b2a6b0d`.
+- Both are Free-tier, Singapore, single-instance staging services with auto-deploy enabled. Neither has a Render health-check path configured. Free-tier sleep/restart behavior means this is not always-on production hosting.
+
+### Remaining release blockers — unchanged
+- Real Doctor password login and authenticated Doctor data persistence; real Assistant login and live least-privilege acceptance; server-side cross-tenant E2E and authenticated screenshots.
+- Production API origin, production booking rate limiting/shared limiter or trusted edge/WAF, always-on hosting, production database, custom domain, privacy/data-residency review, monitoring and rollback.
+- Private document storage on the default branch, persistent malware scanning/quarantine, lifecycle cleanup and tested backup/restore. Neon remains synthetic-only, both branches are unprotected, automatic snapshot schedules are empty, and the private bucket exists only on restore rehearsal with zero objects. Keep all document actions disabled.
+- Production deployment approval.
+
+The staging contract and CI success do not constitute production approval. Both PRs remain Draft/unmerged. No production changes, paid activations, secrets changes, real patient-data transfer or destructive storage actions occurred.
