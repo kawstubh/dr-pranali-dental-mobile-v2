@@ -569,3 +569,30 @@ Do not merge PRs, deploy production, apply production migrations, change product
 - The Doctor login limiter is process-local. Production horizontal scaling still requires a shared/distributed limiter or trusted edge/WAF policy.
 - Neon `oralyn-staging-synthetic` remains synthetic-only. Both branches are unprotected, one manual snapshot exists, both automatic snapshot schedules are empty, and the private document bucket exists only on the restore branch and is empty. Persistent scanner/quarantine/cleanup and application-level restore/failover remain unverified. Keep document actions disabled.
 - Keep both canonical PRs Draft and unmerged. No production deployment/migration, production secret change, paid infrastructure activation, real patient-data transfer or destructive storage action occurred.
+
+
+## Release-watch verification — 15 Nov 2026 17:06 UTC (22:36 IST)
+
+This section supersedes earlier service/deployment and branch-head observations above where they differ.
+
+### Exact current heads and CI
+- Frontend PR #18 remains open, Draft and unmerged on `feat/oralyn-desktop-app`, exact head `08dd1131f2c0bb83047d80ee65f6c221eba81b0a`. Exact-head workflow [#757](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43723946992) completed successfully: **132 passed, 0 failed, 0 skipped**. Its 15-screen desktop/tablet/mobile Chrome capture passed with zero horizontal overflow; CI fixtures are not real authenticated acceptance.
+- Backend PR #60 remains open, Draft and unmerged on `feat/oralyn-clinic-assistant-rbac`, exact head `a9ca4ecf13a237427433126a54f717560b2a6b0d`. Exact-head [CI #357](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43723743053) passed **252 tests, 0 failed, 0 skipped, 1 warning**. Exact-head [Engine Tests #418](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/43723742933) passed **248 tests, 0 failed, 4 skipped, 1 warning**. CI's isolated ClamAV integration detected the synthetic EICAR test signature.
+
+### Render staging — independently re-queried
+- Frontend service `srv-dbr2ttsipgvc739a4tmg`: latest deployment `dep-dbsrvumq1p3s73f586bg` is **LIVE** on exact frontend PR head `08dd1131f2c0bb83047d80ee65f6c221eba81b0a`. Service is Free, Singapore, one instance, auto-deploy enabled; no Render health-check path is configured.
+- API service `srv-dbr8m159fdbs73dl404g`: latest deployment `dep-dbsttr3m8hqs73d1fo7g` is **LIVE** on exact backend PR #60 head `a9ca4ecf13a237427433126a54f717560b2a6b0d`. Service is Free, Singapore, one instance, auto-deploy enabled; no Render health-check path is configured.
+- The deployed API head includes the Doctor login IP-validation/rate-limit runtime hardening in parent `b6d29450`; the current head adds missing/malformed forwarded-IP regression coverage. This is staging only.
+- Frontend CI #757 ran before this API deployment. Its manifest correctly recorded `ORALYN_STAGING_API_COMMIT_VERIFIED=false` and did not run guest-booking/idempotency write E2E against the mismatched API. Those two gates remain **unverified for the newly deployed API** until a fresh synthetic staging run completes. Do not reuse earlier booking evidence.
+- Render service/deploy metadata reads succeeded. Render log reads still require explicit workspace selection; no workspace was selected and no logs are claimed.
+
+### Synthetic database and document safety
+- Neon project `silent-king-54610898` is the synthetic-only project. Project HIPAA setting is false, public connections are not blocked, and the IP allowlist is empty. Both `main` and restore-rehearsal branches are ready but unprotected.
+- Exactly one manual snapshot exists (`snap-late-surf-a1j1sljm`); both branches have empty automatic snapshot schedules. The restore-rehearsal branch is ready and has a private `oralyn-private-documents` bucket with **zero objects**; the default `main` branch has no matching bucket.
+- A branch restored from the manual snapshot is not proof of a complete application backup/restore rehearsal. Persistent malware quarantine, production-grade private storage, automatic backups and verified application restore remain unproven. Keep document upload/download/sharing disabled.
+- Never place real patient data in this project.
+
+### Browser and acceptance limitations
+- TinyFish browser automation was not run: the available wallet balance is `-$0.072`; no top-up or paid browser run was initiated. Direct public fetches of the Render portal/API were also inaccessible to the web fetcher. Existing CI headless-Chrome evidence remains the browser evidence for this run.
+- Real authenticated Doctor login, real Assistant login/RBAC acceptance, live Doctor/Assistant CRUD persistence, authenticated cross-tenant E2E and production booking abuse/rate-limit acceptance remain unverified. Synthetic Doctor/Assistant fixtures are not substitutes.
+- Keep all production release gates blocked. No production deployment, migration, secret change, paid activation, real patient-data transfer, destructive storage action or PR merge occurred.
