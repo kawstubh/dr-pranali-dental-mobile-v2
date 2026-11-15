@@ -315,6 +315,17 @@ async function verifyPublicBookingForm() {
       expectedMinDate: today,
       timezoneNotice: document.body.innerText.includes("Asia/Kolkata"),
       accountFree: document.body.innerText.includes("No account or OTP is required."),
+      logoVisible: (() => {
+        const logo = document.querySelector('header img[src="/oralyn-logo-approved.webp"]');
+        const header = logo?.closest("header");
+        const logoRect = logo?.getBoundingClientRect();
+        const headerRect = header?.getBoundingClientRect();
+        return Boolean(logo && logo.complete && logo.naturalWidth > 0 && logoRect && headerRect &&
+          logoRect.width > 0 && logoRect.height > 0 &&
+          logoRect.top >= Math.max(0, headerRect.top) - 1 &&
+          logoRect.bottom <= headerRect.bottom + 1 &&
+          logoRect.bottom <= document.documentElement.clientHeight + 1);
+      })(),
       apiOrigin: document.querySelector('meta[name="oralyn-api-origin"]')?.content?.trim() || "",
     };
   })()`);
@@ -328,7 +339,7 @@ async function verifyPublicBookingForm() {
   if (state.requiredFields.length !== 5 || state.requiredLabelFields.length !== 5 ||
       state.requiredLabelFields.some((item) => !item.hasAssociatedLabel) ||
       state.catalogueCount !== 20 || state.otherCount !== 1 ||
-      state.minDate !== state.expectedMinDate || !state.timezoneNotice || !state.accountFree) {
+      state.minDate !== state.expectedMinDate || !state.timezoneNotice || !state.accountFree || !state.logoVisible) {
     throw new Error("Public booking contract verification failed: " + JSON.stringify(state));
   }
 
