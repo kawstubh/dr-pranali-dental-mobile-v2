@@ -227,6 +227,7 @@ async function captureCurrent(expectedText, screenshotName) {
   await capture(screenshotName + "-390x844.png", 390, 844, true);
   if (screenshotName === "patient-booking") {
     await capture("patient-booking-1366x768.png", 1366, 768);
+    await capture("patient-booking-768x1024.png", 768, 1024);
     await capture("patient-booking-375x600.png", 375, 600, true);
     await capture("patient-booking-360x640.png", 360, 640, true);
     await capture("patient-booking-375x667.png", 375, 667, true);
@@ -342,7 +343,7 @@ async function verifyPublicBookingForm() {
       minDate: date.min,
       expectedMinDate: today,
       timezoneNotice: document.body.innerText.includes("Asia/Kolkata"),
-      accountFree: document.body.innerText.includes("No account or OTP needed."),
+      accountFree: document.body.innerText.includes("No account or OTP required."),
       logoVisible: (() => {
         const logo = document.querySelector('header img[src="/oralyn-logo-approved.webp"]');
         const header = logo?.closest("header");
@@ -663,6 +664,13 @@ async function captureAssistantAdminGate() {
     await waitFor(() => evaluate(
       "location.origin === " + JSON.stringify(livePortalOrigin) + " && Boolean(document.querySelector('#booking'))"
     ));
+    fontResults.liveStagingBookingValidation = await verifyPublicBookingForm();
+    await capture("patient-booking-live-staging-375x600.png", 375, 600, true);
+    await capture("patient-booking-live-staging-360x640.png", 360, 640, true);
+    await capture("patient-booking-live-staging-375x667.png", 375, 667, true);
+    await capture("patient-booking-live-staging-390x844.png", 390, 844, true);
+    await capture("patient-booking-live-staging-768x1024.png", 768, 1024);
+    await capture("patient-booking-live-staging-1366x768.png", 1366, 768);
     fontResults.guestBookingBrowserE2E = await submitSyntheticGuestBooking(bookingSeed);
     fontResults.assistantAdmin = await captureAssistantAdminGate();
 
@@ -695,6 +703,9 @@ async function captureAssistantAdminGate() {
       "guest_booking_browser_http_status=" + fontResults.guestBookingBrowserE2E.httpStatus,
       "guest_booking_browser_duplicate_click_blocked=" + fontResults.guestBookingBrowserE2E.duplicateClickBlocked,
       "public_booking_api_origin=" + fontResults.patientBookingValidation.apiOrigin,
+      "live_staging_booking_layout=passed",
+      "live_staging_booking_service_count=" + fontResults.liveStagingBookingValidation.catalogueCount,
+      "live_staging_booking_api_origin=" + fontResults.liveStagingBookingValidation.apiOrigin,
       "guest_booking_service_count=" + fontResults.patientBookingValidation.catalogueCount,
       "assistant_admin_management_form_visible=" + fontResults.assistantAdmin.assistantManagementFormVisible,
       "assistant_admin_plus_jakarta_sans_loaded=" + fontResults.assistantAdmin.plusJakartaSans,

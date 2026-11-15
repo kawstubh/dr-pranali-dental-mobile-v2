@@ -179,6 +179,27 @@ test("real browser capture checks shorter mobile booking viewport heights", () =
   assert.match(source, /await verifyNoVerticalOverflow\(height\)/);
 });
 
+test("real browser capture validates the deployed staging booking page at mobile, tablet and desktop sizes", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.match(source, /liveStagingBookingValidation = await verifyPublicBookingForm\\(\\)/);
+  for (const viewport of [
+    "patient-booking-live-staging-375x600",
+    "patient-booking-live-staging-360x640",
+    "patient-booking-live-staging-375x667",
+    "patient-booking-live-staging-390x844",
+    "patient-booking-live-staging-768x1024",
+    "patient-booking-live-staging-1366x768",
+  ]) assert.ok(source.includes(viewport), viewport);
+});
+
+test("staging manifest commit mismatch is recorded without a long deployment wait", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "verify-staging-contract.cjs"), "utf8");
+  const start = source.indexOf('portalOrigin + "/oralyn-build-manifest.json?expected_commit="');
+  const end = source.indexOf("const dentalHealthResult", start);
+  assert.ok(start >= 0 && end > start);
+  assert.match(source.slice(start, end), /},\\s*2,\\s*1000,\\s*\\)/);
+});
+
 test("real browser capture verifies public booking API origin matches the configured API", () => {
   const capture = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
   assert.ok(capture.includes('meta[name="oralyn-api-origin"]'));
