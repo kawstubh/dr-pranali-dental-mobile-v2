@@ -179,6 +179,14 @@ test("real browser capture checks shorter mobile booking viewport heights", () =
   assert.match(source, /await verifyNoVerticalOverflow\(height\)/);
 });
 
+test("real browser booking validation waits for the approved logo asset before measuring visibility", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.match(source, /async function waitForApprovedBookingLogo\(\)/);
+  assert.match(source, /await waitForApprovedBookingLogo\(\);/);
+  assert.match(source, /logo && logo\.complete && logo\.naturalWidth > 0/);
+  assert.match(source, /Approved Oralyn booking logo did not load before visibility verification/);
+});
+
 test("real browser capture validates the deployed staging booking page at mobile, tablet and desktop sizes", () => {
   const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
   assert.ok(source.includes("fontResults.liveStagingBookingValidation = await verifyPublicBookingForm();"));
