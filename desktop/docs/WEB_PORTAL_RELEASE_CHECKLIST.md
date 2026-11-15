@@ -446,3 +446,27 @@ Do not merge PRs, deploy production, apply production migrations, change product
 - The two legacy APK workflow files return 404 on the current frontend feature branch; the active product workflow is the responsive web portal.
 - No real patient records were queried or transferred. No production change, destructive storage action, paid infrastructure activation, PR merge or production release occurred.
 
+
+
+## Release-watch verification — 15 Nov 2026 13:49 IST
+
+### Exact repository and CI state
+- Frontend PR #18 head at the start of this verification: `4c45bc35e7afbbf9ec3f2e4c6faa7a63f440f98c`, a documentation-only release-checklist refresh. Exact-head workflow #752 (`43678109983`) completed successfully: 132 passed, 0 failed, 0 skipped. Its Chrome run captured 15 responsive screens and recorded zero horizontal overflow and zero application runtime errors.
+- Backend PR #60 advanced to `348c0dbe546e4e9ce26b2695e8246d5c24f1ef76`. Exact-head CI #352 (`43694121508`) passed 249, 0 failed, 0 skipped, 1 warning. Engine Tests #413 (`43694121574`) passed 245, skipped 4, 1 warning.
+- CI #352 used isolated PostgreSQL and ClamAV services; its logs confirm ClamAV detected the synthetic EICAR test signature. The only warning in each backend workflow is the non-blocking Starlette TestClient/httpx deprecation warning.
+
+### Additional document audit-failure hardening
+- Backend commit `802b1dbe64ec13d0c5089790ee2b0b585917b4ff` changes malware-detection audit-write failure from a swallowed/log-only condition to HTTP 503 `DOCUMENT_MALWARE_AUDIT_UNAVAILABLE`.
+- Backend test commit `348c0dbe546e4e9ce26b2695e8246d5c24f1ef76` adds a regression test proving the upload is rejected, no quarantine or verified object remains, and the generic `document.upload_rejected` audit event is written when the malware-specific audit insert fails.
+- This behavior is source and exact-head CI verified, not live staging verified. The backend PR remains 10 commits ahead / 0 behind the last recorded deployed API application commit `5f4adba355b56f69427f554925ad8cdaa7f81d40`. Do not mark backend commit equivalence true.
+
+### Deployment and data safety
+- Last independently verified frontend Render deployment remains `dep-dbsjhitckfvc73dn7sh0`, LIVE on frontend head `4c45bc35` at 11:44 IST. Render was not re-queried in this run because the connector requires owner confirmation before selecting a workspace. No deployment was triggered.
+- Backend Render deployment remains unverified in this run; last recorded runtime is `5f4adba`. No manual deployment was triggered.
+- The only visible Render workspace is `kawstubh's workspace` (`tea-da2mcb6gekts73b8e1fg`). Do not select it without owner confirmation.
+- Neon project `silent-king-54610898` is synthetic-only. Both branches remain unprotected; one manual snapshot exists and both automatic snapshot schedules are empty. `oralyn-private-documents` is private and empty on the restore branch and absent from main. No real patient data was queried.
+- Real authenticated Doctor/Assistant acceptance remains unverified. Document upload/download/sharing remain disabled. CI ClamAV is an ephemeral test service, not persistent staging scanning/quarantine.
+
+### Release decision
+- Keep all PRs Draft and unmerged. Production remains blocked pending authenticated Doctor/Assistant acceptance, cross-clinic E2E, shared production booking rate limiting, persistent private storage/scanning/cleanup, automated backup/verified restore, monitoring/rollback, always-on hosting, production database/privacy review, custom domain and explicit deployment approval.
+- No production deployment/migration, secret change, paid activation, destructive storage action, real patient-data transfer or PR merge occurred.
