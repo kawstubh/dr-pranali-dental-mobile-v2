@@ -1,6 +1,6 @@
 # Oralyn Web Portal — Current Release Checklist
 
-**Last verified:** 15 November 2026, 04:42 UTC (10:12 IST). All timestamps in the verification log below are UTC unless marked IST.
+**Last verified:** 15 November 2026, 12:04 UTC (17:34 IST). All timestamps in the verification log below are UTC unless marked IST.
 **Release decision: BLOCKED for production.** This is a synthetic staging release candidate. All PRs remain open, Draft and unmerged.
 
 ## Product contract
@@ -491,3 +491,32 @@ Do not merge PRs, deploy production, apply production migrations, change product
 - Render workspace listing exposes only `kawstubh's workspace` (`tea-da2mcb6gekts73b8e1fg`). The connector explicitly requires owner confirmation before selecting it. No workspace was selected and no service/deployment read or manual deploy occurred.
 - Neon project `silent-king-54610898` remains synthetic-only. Both branches are ready and unprotected; one manual snapshot exists; automatic snapshot schedules are empty on both branches. The private document bucket is empty on the restore branch and absent on main. No real patient data was queried.
 - Keep document upload/download/sharing disabled. No real authenticated Doctor/Assistant acceptance is established. Keep this PR Draft and unmerged; no production deployment, migration, secret change, paid activation, destructive storage action or real patient-data transfer occurred.
+
+
+## Release-watch verification — 15 Nov 2026 17:35 IST
+
+### Exact repositories and CI
+- Frontend PR #18 is open, Draft and unmerged at `9c514cb2e38bceceeb96b483330e32aa14b604da`. Exact-head workflow #754 ([run 43696546647](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43696546647)) completed successfully: 132 passed, 0 failed, 0 skipped; all 41 job steps completed. Dependency audits reported zero vulnerabilities, the staging-targeted build passed, the live read-only contracts and browser capture passed, and four artifacts were uploaded.
+- Frontend CI #754 artifacts expire 29 Nov 2026 08:55 UTC: [responsive screenshots](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14154911490), [Doctor synthetic UI](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14154502413), [Assistant synthetic UI](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14154333376), [build and manifest](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14155051169).
+- Backend PR #60 is open, Draft and unmerged at `348c0dbe546e4e9ce26b2695e8246d5c24f1ef76`. Exact-head CI #352 passed 249; Engine Tests #413 passed 245 with 4 skipped. Both workflows had one non-blocking warning.
+
+### Render deployment verification and backend recovery
+- Canonical frontend service `srv-dbr2ttsipgvc739a4tmg` is configured on `feat/oralyn-desktop-app`, autoDeploy=yes, Free/Singapore. Latest deployment `dep-dbsn5ms9v7es73c3jk10` is LIVE on exact frontend PR head `9c514cb2e38bceceeb96b483330e32aa14b604da`.
+- Canonical staging API service `srv-dbr8m159fdbs73dl404g` is configured on the exact backend PR head branch `feat/oralyn-clinic-assistant-rbac`, autoDeploy=yes, Free/Singapore. Auto-deploy had not created a deployment after the reviewed runtime commits; the previous live runtime remained `5f4adba355b56f69427f554925ad8cdaa7f81d40`, while GitHub compare to PR #60 head showed 10 commits ahead / 0 behind and runtime changes in scanner/document upload code.
+- As a staging-only recovery, manually triggered a deploy after confirming the configured branch matched the reviewed PR head and the previous auto-deploy event was missing. Deployment `dep-dbspv6u7bikc73c5f6n0` checked out exact commit `348c0dbe546e4e9ce26b2695e8246d5c24f1ef76` from `feat/oralyn-clinic-assistant-rbac`; Render build succeeded, application startup completed, and Render reported the service LIVE at 15 Nov 2026 12:04:41 UTC. This is the synthetic staging API only, not production.
+- Post-deploy API health/database identity and synthetic booking/idempotency are pending the next exact-head frontend CI run. Do not mark those release gates true until the live contract passes against this deployment.
+- Render logs show the prior Free API process shut down gracefully at 09:08:54 UTC; the Free plan may sleep. The new deploy's internal `HEAD /` probe returned 404 because the service root has no handler; the native Render health-check path remains unset. Explicit `/health`, `/ready` and `/v1/dental/health` checks must pass post-deploy.
+- A separate static site `oralyn-web-portal-staging` (`srv-dbr2qgek1f9s73dq82j0`) also deploys the same frontend branch/commit. Older separate Doctor/Patient static test/web services remain in Render. The canonical product endpoint remains `oralyn-web-portal-spa`; no legacy service was deleted or modified.
+- A separate synthetic API service `oralyn-staging-api-synthetic` remains on the PR base/integration branch and is not the canonical Assistant API or the reviewed PR #60 head.
+
+### Neon and document safety
+- Neon project `silent-king-54610898` remains synthetic-only. Both branches are ready and unprotected; one manual snapshot `snap-late-surf-a1j1sljm` exists and automatic snapshot schedules are empty.
+- Metadata records the default branch restore as finalized from the manual snapshot, but application-level restore/failover acceptance is not established.
+- `oralyn-private-documents` is empty on restore branch `br-steep-bonus-a1yqarg7` and absent from default branch `br-proud-scene-a1g7g3qo`. No persistent scanner/quarantine or scheduled lifecycle cleanup is operational. Keep upload/download/sharing disabled.
+- Project is synthetic-only, HIPAA setting false, public connections not blocked and IP allowlist empty. No individual patient records were queried or transferred.
+
+### Acceptance and release decision
+- CI #754 confirms 15 responsive browser captures, zero horizontal overflow, zero application runtime errors, approved brand assets/fonts, keyboard focus, reduced-motion and PWA shell behavior. Doctor and Assistant workspace artifacts are synthetic fixtures, not real authenticated acceptance.
+- Public UI validates five required fields, 20 approved services plus Other, India-time future dates, and blocks empty/past submissions before network requests. Full guest-booking E2E/idempotency was not run by CI #754 because the API commit did not yet match at that run.
+- Real Doctor/Assistant authenticated acceptance, authenticated cross-clinic E2E, shared/edge production rate limiting, secure document storage/scanning/cleanup, automated backup/verified restore, monitoring/rollback, always-on hosting, production database/privacy, custom domain and explicit production approval remain open.
+- No production deployment, production database change, secret change, paid infrastructure activation, real patient-data transfer, destructive storage action or PR merge occurred. Keep both canonical PRs Draft and unmerged.
