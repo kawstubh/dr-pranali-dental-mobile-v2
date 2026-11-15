@@ -470,3 +470,24 @@ Do not merge PRs, deploy production, apply production migrations, change product
 ### Release decision
 - Keep all PRs Draft and unmerged. Production remains blocked pending authenticated Doctor/Assistant acceptance, cross-clinic E2E, shared production booking rate limiting, persistent private storage/scanning/cleanup, automated backup/verified restore, monitoring/rollback, always-on hosting, production database/privacy review, custom domain and explicit deployment approval.
 - No production deployment/migration, secret change, paid activation, destructive storage action, real patient-data transfer or PR merge occurred.
+
+
+## Release-watch verification — 15 Nov 2026 14:21 IST
+
+### Exact-head frontend CI #753 completed
+- Current documentation-only frontend PR head at this check: `c8e1af4c0962f5991ec63fcb2fbcb962ee101b9c`.
+- Exact-head workflow #753 ([run 43694302762](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/43694302762)) completed successfully. Its exact-head test log records **132 passed, 0 failed, 0 skipped**. All 22 workflow steps completed successfully.
+- Dependency audits reported zero vulnerabilities; staging-targeted Vite build passed; read-only Assistant API contract passed; browser capture and all four artifact uploads completed.
+- Browser evidence records **15/15 viewport captures with no horizontal overflow** across Doctor login, Assistant login, public patient home, guest booking and Assistant owner-route gate. Each recorded root/body scroll width equaled viewport width.
+- Browser metadata reports approved wordmark/app icon, Playfair Display and Plus Jakarta Sans loaded, keyboard-visible focus, reduced-motion honored, active/controlling PWA service worker, one shell cache with no forbidden API/auth/storage paths, and an empty application runtime-error array.
+- Artifacts (available until 29 Nov 2026 08:26 UTC): [actual desktop/tablet/mobile screenshots](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14154146589), [Doctor synthetic UI](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14154017017), [Assistant synthetic UI](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14153777597), [static staging build and manifest](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/artifacts/14153852479).
+- Doctor/Assistant workspace interactions remain `CI_SYNTHETIC_ONLY`. Fixture metadata explicitly records `staging_authenticated_e2e=false`, `doctor_password_login_verified=false`, and `staging_assistant_login_verified=false`. The Doctor fixture's cross-organisation denial is `fixture_403_not_backend`; it is not backend authorization proof.
+- Booking UI verifies five required labelled fields, 20 catalogue services plus Other, India-time future-date validation, and no network request for empty or past-time submissions. The build manifest explicitly leaves `ORALYN_GUEST_BOOKING_E2E_VERIFIED=false` and `ORALYN_GUEST_BOOKING_IDEMPOTENCY_VERIFIED=false`; the read-only API contract is not full guest-booking E2E or idempotency acceptance. Do not mark either gate true.
+- The build manifest also explicitly records `ORALYN_STAGING_API_COMMIT_VERIFIED=false`, `ORALYN_STAGING_PORTAL_COMMIT_VERIFIED=true`, and `Release status: BLOCKED`. Production API origin, private document storage/scanning, backup/restore, monitoring, rollback, authenticated Doctor/Assistant acceptance, production rate limiting, cross-tenant E2E, always-on hosting, production database/privacy, custom domain and deployment approval remain unverified.
+
+### Backend and infrastructure status
+- Backend PR #60 head remains recorded as `348c0dbe546e4e9ce26b2695e8246d5c24f1ef76`; exact-head CI #352 passed 249 and Engine Tests #413 passed 245 with 4 skipped. The malware-audit-outage regression is source/CI verified, not deployed.
+- The last recorded API application runtime remains `5f4adba355b56f69427f554925ad8cdaa7f81d40`; backend PR #60 is 10 commits ahead / 0 behind. Do not claim backend deployment equivalence.
+- Render workspace listing exposes only `kawstubh's workspace` (`tea-da2mcb6gekts73b8e1fg`). The connector explicitly requires owner confirmation before selecting it. No workspace was selected and no service/deployment read or manual deploy occurred.
+- Neon project `silent-king-54610898` remains synthetic-only. Both branches are ready and unprotected; one manual snapshot exists; automatic snapshot schedules are empty on both branches. The private document bucket is empty on the restore branch and absent on main. No real patient data was queried.
+- Keep document upload/download/sharing disabled. No real authenticated Doctor/Assistant acceptance is established. Keep this PR Draft and unmerged; no production deployment, migration, secret change, paid activation, destructive storage action or real patient-data transfer occurred.
