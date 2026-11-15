@@ -645,7 +645,7 @@ async function captureAssistantAdminGate() {
       "pwa_service_worker_controlled=" + fontResults.doctorLogin.pwa.controlled,
       "pwa_cache_name_present=" + fontResults.doctorLogin.pwa.cachePresent,
       "pwa_api_cache_entries=" + fontResults.doctorLogin.pwa.forbidden.length,
-      "synthetic_patient_data=none",
+      "synthetic_patient_data=staging_synthetic_only",
       "assistant_login_screen_captured=" + Boolean(fontResults.assistantLogin),
       "patient_login_redirect=" + Boolean(fontResults.patientLegacyLoginRedirect),
       "authenticated_screens=false",
