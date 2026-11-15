@@ -197,7 +197,7 @@ test("staging manifest commit mismatch is recorded without a long deployment wai
   const start = source.indexOf('portalOrigin + "/oralyn-build-manifest.json?expected_commit="');
   const end = source.indexOf("const dentalHealthResult", start);
   assert.ok(start >= 0 && end > start);
-  assert.match(source.slice(start, end), /},\\s*2,\\s*1000,\\s*\\)/);
+  assert.match(source.slice(start, end), /},\s*2,\s*1000,\s*\)/);
 });
 
 test("real browser capture verifies public booking API origin matches the configured API", () => {
