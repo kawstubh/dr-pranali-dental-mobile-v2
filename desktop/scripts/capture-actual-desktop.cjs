@@ -97,13 +97,35 @@ async function verifyNoHorizontalOverflow(expectedWidth) {
   return layout;
 }
 
+async function verifyNoVerticalOverflow(expectedHeight) {
+  const layout = await evaluate(`(() => {
+    const root = document.documentElement;
+    const body = document.body;
+    const viewportHeight = root.clientHeight;
+    const rootScrollHeight = root.scrollHeight;
+    const bodyScrollHeight = body ? body.scrollHeight : rootScrollHeight;
+    return {
+      viewportHeight,
+      expectedViewportHeight: ${Number(expectedHeight)},
+      rootScrollHeight,
+      bodyScrollHeight,
+      verticalOverflow: Math.max(rootScrollHeight, bodyScrollHeight) > viewportHeight + 1,
+    };
+  })()`);
+  if (!layout || !Number.isFinite(layout.viewportHeight) || layout.viewportHeight <= 0 || layout.verticalOverflow) {
+    throw new Error("Vertical page overflow at " + expectedHeight + "px capture: " + JSON.stringify(layout));
+  }
+  return layout;
+}
+
 async function capture(name, width, height, mobile = false) {
   await send("Emulation.setDeviceMetricsOverride", {
     width, height, deviceScaleFactor: 1, mobile,
   });
   await sleep(450);
   const layout = await verifyNoHorizontalOverflow(width);
-  console.log("[Oralyn layout]", JSON.stringify({ screenshot: name, ...layout }));
+  const vertical = name.startsWith("patient-booking-") ? await verifyNoVerticalOverflow(height) : null;
+  console.log("[Oralyn layout]", JSON.stringify({ screenshot: name, ...layout, ...(vertical ? { vertical } : {}) }));
   const screenshot = await send("Page.captureScreenshot", {
     format: "png", captureBeyondViewport: false, fromSurface: true,
   });
@@ -203,6 +225,10 @@ async function captureCurrent(expectedText, screenshotName) {
   await capture(screenshotName + "-1440x1000.png", 1440, 1000);
   await capture(screenshotName + "-1280x800.png", 1280, 800);
   await capture(screenshotName + "-390x844.png", 390, 844, true);
+  if (screenshotName === "patient-booking") {
+    await capture("patient-booking-1366x768.png", 1366, 768);
+    await capture("patient-booking-375x667.png", 375, 667, true);
+  }
   return { ...fonts, pwa };
 }
 
@@ -315,6 +341,17 @@ async function verifyPublicBookingForm() {
       expectedMinDate: today,
       timezoneNotice: document.body.innerText.includes("Asia/Kolkata"),
       accountFree: document.body.innerText.includes("No account or OTP is required."),
+      logoVisible: (() => {
+        const logo = document.querySelector('header img[src="/oralyn-logo-approved.webp"]');
+        const header = logo?.closest("header");
+        const logoRect = logo?.getBoundingClientRect();
+        const headerRect = header?.getBoundingClientRect();
+        return Boolean(logo && logo.complete && logo.naturalWidth > 0 && logoRect && headerRect &&
+          logoRect.width > 0 && logoRect.height > 0 &&
+          logoRect.top >= Math.max(0, headerRect.top) - 1 &&
+          logoRect.bottom <= headerRect.bottom + 1 &&
+          logoRect.bottom <= document.documentElement.clientHeight + 1);
+      })(),
       apiOrigin: document.querySelector('meta[name="oralyn-api-origin"]')?.content?.trim() || "",
     };
   })()`);
@@ -328,7 +365,7 @@ async function verifyPublicBookingForm() {
   if (state.requiredFields.length !== 5 || state.requiredLabelFields.length !== 5 ||
       state.requiredLabelFields.some((item) => !item.hasAssociatedLabel) ||
       state.catalogueCount !== 20 || state.otherCount !== 1 ||
-      state.minDate !== state.expectedMinDate || !state.timezoneNotice || !state.accountFree) {
+      state.minDate !== state.expectedMinDate || !state.timezoneNotice || !state.accountFree || !state.logoVisible) {
     throw new Error("Public booking contract verification failed: " + JSON.stringify(state));
   }
 
