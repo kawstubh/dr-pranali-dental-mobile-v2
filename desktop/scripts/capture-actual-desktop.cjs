@@ -376,43 +376,40 @@ async function verifyPublicBookingForm() {
 
 async function submitSyntheticGuestBooking(seed) {
   const before = bookingNetworkRequests.length;
-  const filled = await evaluate(\`(() => {
-    const form = document.querySelector("#booking");
-    const set = (element, value, prototype) => {
-      const setter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
-      if (setter) setter.call(element, value);
-      else element.value = value;
-      element.dispatchEvent(new Event("input", { bubbles: true }));
-      element.dispatchEvent(new Event("change", { bubbles: true }));
-    };
-    set(form.elements.name, \${JSON.stringify(seed.name)}, HTMLInputElement.prototype);
-    set(form.elements.phone, \${JSON.stringify(seed.phone)}, HTMLInputElement.prototype);
-    set(form.elements.treatment_type, "Dental Check-up & Consultation", HTMLSelectElement.prototype);
-    set(form.elements.date, \${JSON.stringify(seed.date)}, HTMLInputElement.prototype);
-    set(form.elements.time, "10:00", HTMLSelectElement.prototype);
-    const button = document.querySelector("#submit");
-    const valid = form.checkValidity();
-    if (!valid) return { valid, reason: form.elements.date.validationMessage || form.elements.phone.validationMessage || "form validation failed" };
-    button.click();
-    const disabledAfterFirstClick = button.disabled;
-    button.click();
-    return { valid, disabledAfterFirstClick, date: form.elements.date.value, time: form.elements.time.value };
-  })()\`);
+  const fillExpression = '(() => {'
+    + 'const form = document.querySelector("#booking");'
+    + 'const set = (element, value, prototype) => {'
+    + 'const setter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;'
+    + 'if (setter) setter.call(element, value); else element.value = value;'
+    + 'element.dispatchEvent(new Event("input", { bubbles: true }));'
+    + 'element.dispatchEvent(new Event("change", { bubbles: true }));'
+    + '};'
+    + 'set(form.elements.name, ' + JSON.stringify(seed.name) + ', HTMLInputElement.prototype);'
+    + 'set(form.elements.phone, ' + JSON.stringify(seed.phone) + ', HTMLInputElement.prototype);'
+    + 'set(form.elements.treatment_type, "Dental Check-up & Consultation", HTMLSelectElement.prototype);'
+    + 'set(form.elements.date, ' + JSON.stringify(seed.date) + ', HTMLInputElement.prototype);'
+    + 'set(form.elements.time, "10:00", HTMLSelectElement.prototype);'
+    + 'const button = document.querySelector("#submit");'
+    + 'const valid = form.checkValidity();'
+    + 'if (!valid) return { valid, reason: form.elements.date.validationMessage || form.elements.phone.validationMessage || "form validation failed" };'
+    + 'button.click();'
+    + 'const disabledAfterFirstClick = button.disabled;'
+    + 'button.click();'
+    + 'return { valid, disabledAfterFirstClick, date: form.elements.date.value, time: form.elements.time.value };'
+    + '})()';
+  const filled = await evaluate(fillExpression);
   if (!filled.valid || !filled.disabledAfterFirstClick) {
     throw new Error("Synthetic guest booking form did not validate or disable during submission: " + JSON.stringify(filled));
   }
-  await waitFor(() => evaluate(
-    'document.querySelector("#message")?.classList.contains("success") === true'
-  ), 30000);
+  await waitFor(() => evaluate('document.querySelector("#message")?.classList.contains("success") === true'), 30000);
   await waitFor(() => bookingNetworkRequests.length > before, 15000);
   await waitFor(() => bookingNetworkRequests.slice(before).some((item) => Number.isFinite(item.status)), 15000);
   const requests = bookingNetworkRequests.slice(before);
-  const message = await evaluate(\`(() => ({
-    className: document.querySelector("#message")?.className || "",
-    text: document.querySelector("#message")?.textContent || "",
-    buttonDisabled: document.querySelector("#submit")?.disabled === true,
-    buttonText: document.querySelector("#submit")?.textContent || ""
-  }))()\`);
+  const message = await evaluate('(() => ({'
+    + 'className: document.querySelector("#message")?.className || "",'
+    + 'text: document.querySelector("#message")?.textContent || "",'
+    + 'buttonDisabled: document.querySelector("#submit")?.disabled === true'
+    + ' }))()');
   const request = requests[0];
   let payload = null;
   try { payload = JSON.parse(request?.postData || ""); } catch {}
@@ -582,29 +579,21 @@ async function captureAssistantAdminGate() {
     ));
     fontResults.patientLegacyLoginRedirect = true;
 
-    const bookingSeed = await evaluate(\`(() => {
-      const parts = new Intl.DateTimeFormat("en-GB", {
-        timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit"
-      }).formatToParts(new Date());
-      const part = (type) => parts.find((item) => item.type === type)?.value || "";
-      const today = part("year") + "-" + part("month") + "-" + part("day");
-      const nextDay = new Date(today + "T00:00:00Z");
-      nextDay.setUTCDate(nextDay.getUTCDate() + 1);
-      const date = nextDay.toISOString().slice(0, 10);
-      const idempotencyKey = "oralyn-staging-browser-e2e-" + \${JSON.stringify(commit.slice(0, 12))} + "-" + today.replaceAll("-", "");
-      const digits = \${JSON.stringify(commit.slice(0, 8))}.split("").map((character) =>
-        String(parseInt(character, 16) % 10)
-      ).join("");
-      const seed = {
-        idempotencyKey,
-        name: "Oralyn Browser Synthetic " + \${JSON.stringify(commit.slice(0, 8))},
-        phone: "+919" + digits + "0",
-        date,
-      };
-      sessionStorage.setItem("oralyn_public_booking_idempotency", idempotencyKey);
-      sessionStorage.removeItem("oralyn_public_booking_pending");
-      return seed;
-    })()\`);
+    const seedExpression = '(() => {'
+      + 'const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());'
+      + 'const part = (type) => parts.find((item) => item.type === type)?.value || "";'
+      + 'const today = part("year") + "-" + part("month") + "-" + part("day");'
+      + 'const nextDay = new Date(today + "T00:00:00Z"); nextDay.setUTCDate(nextDay.getUTCDate() + 1);'
+      + 'const date = nextDay.toISOString().slice(0, 10);'
+      + 'const commitPrefix = ' + JSON.stringify(commit.slice(0, 12)) + ';'
+      + 'const idempotencyKey = "oralyn-staging-browser-e2e-" + commitPrefix + "-" + today.replaceAll("-", "");'
+      + 'const digits = ' + JSON.stringify(commit.slice(0, 8)) + '.split("").map((character) => String(parseInt(character, 16) % 10)).join("");'
+      + 'const seed = { idempotencyKey, name: "Oralyn Browser Synthetic " + commitPrefix.slice(0, 8), phone: "+919" + digits + "0", date };'
+      + 'sessionStorage.setItem("oralyn_public_booking_idempotency", idempotencyKey);'
+      + 'sessionStorage.removeItem("oralyn_public_booking_pending");'
+      + 'return seed;'
+      + '})()';
+    const bookingSeed = await evaluate(seedExpression);
     fontResults.patientBooking = await navigate(
       "/patient/booking/",
       "Request an appointment",
