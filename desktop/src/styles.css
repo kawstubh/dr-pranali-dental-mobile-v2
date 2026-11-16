@@ -4189,3 +4189,19 @@ main.oralyn-reference-layout {
 .oralyn-approved-wordmark {display:block;width:clamp(104px,8.5vw,124px);max-height:128px;height:auto;object-fit:contain;object-position:left center;filter:none;background:transparent;}
 .oralyn-reference-card .oralyn-app-squircle {background:transparent;border-radius:22%;box-shadow:none;overflow:hidden;}
 .oralyn-reference-card .oralyn-app-squircle img {display:block!important;width:100%;height:100%;object-fit:contain;filter:none;}
+
+/* Doctor sign-in: give the transparent wordmark its intended larger, unboxed size.
+   This selector deliberately outranks the earlier generic .oralyn-auth-brand img rules. */
+.oralyn-reference-story .oralyn-auth-brand .oralyn-approved-wordmark {
+  display:block;
+  width:clamp(118px,10vw,148px);
+  max-width:100%;
+  height:auto;
+  max-height:none;
+  object-fit:contain;
+  object-position:left center;
+  border-radius:0;
+  background:transparent;
+  filter:none;
+  flex:0 0 auto;
+}
