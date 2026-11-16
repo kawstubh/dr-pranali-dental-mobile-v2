@@ -85,7 +85,7 @@ async function backendCommitMatchesPr(repo, deployedCommit, prHeadCommit) {
     return { ok: false, detail: "deployed API commit or PR #60 head is unavailable" };
   }
   if (deployedCommit === prHeadCommit) {
-    return { ok: true, detail: "live API deployment commit exactly matches Draft PR #60 head " + prHeadCommit };
+    return { ok: true, detail: "live API deployment commit exactly matches PR #60 head " + prHeadCommit };
   }
 
   const comparison = await request(
