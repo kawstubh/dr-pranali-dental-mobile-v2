@@ -352,7 +352,7 @@ function App() {
         </div>
       )}
       <aside className={mobile ? "sidebar open" : "sidebar"}>
-        <div className="brand"><img src="/oralyn-logo-approved.webp" alt="Oralyn official wordmark" /><button className="close" onClick={() => B(false)}>
+        <div className="brand"><img src="/oralyn-wordmark-transparent.svg" alt="Oralyn official wordmark" /><button className="close" onClick={() => B(false)}>
             <X />
           </button>
         </div>
