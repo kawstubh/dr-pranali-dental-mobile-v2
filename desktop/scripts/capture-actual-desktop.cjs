@@ -229,6 +229,7 @@ async function captureCurrent(expectedText, screenshotName) {
     await capture("patient-booking-1366x768.png", 1366, 768);
     await capture("patient-booking-768x1024.png", 768, 1024);
     await capture("patient-booking-375x600.png", 375, 600, true);
+    await capture("patient-booking-320x568.png", 320, 568, true);
     await capture("patient-booking-360x640.png", 360, 640, true);
     await capture("patient-booking-375x667.png", 375, 667, true);
   }
@@ -737,6 +738,7 @@ async function captureAssistantAdminGate() {
     ));
     fontResults.liveStagingBookingValidation = await verifyPublicBookingForm();
     await capture("patient-booking-live-staging-375x600.png", 375, 600, true);
+    await capture("patient-booking-live-staging-320x568.png", 320, 568, true);
     await capture("patient-booking-live-staging-360x640.png", 360, 640, true);
     await capture("patient-booking-live-staging-375x667.png", 375, 667, true);
     await capture("patient-booking-live-staging-390x844.png", 390, 844, true);

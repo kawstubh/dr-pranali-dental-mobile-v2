@@ -175,6 +175,7 @@ test("synthetic Doctor and Assistant fixtures record PWA state without duplicati
 test("real browser capture checks shorter mobile booking viewport heights", () => {
   const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
   assert.match(source, /patient-booking-375x600/);
+  assert.match(source, /patient-booking-320x568/);
   assert.match(source, /patient-booking-360x640/);
   assert.match(source, /await verifyNoVerticalOverflow\(height\)/);
 });
@@ -210,6 +211,7 @@ test("real browser capture validates the deployed staging booking page at mobile
   const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
   assert.ok(source.includes("fontResults.liveStagingBookingValidation = await verifyPublicBookingForm();"));
   for (const viewport of [
+    "patient-booking-live-staging-320x568",
     "patient-booking-live-staging-375x600",
     "patient-booking-live-staging-360x640",
     "patient-booking-live-staging-375x667",
