@@ -337,6 +337,9 @@ async function waitForApprovedBookingLogo() {
 }
 
 async function verifyPublicBookingForm() {
+  const bookingUrl = await evaluate("location.origin + location.pathname");
+  await send("Page.navigate", { url: bookingUrl + "?oralyn-qa=booking-validation" });
+  await waitFor(() => evaluate('document.readyState === "complete" && Boolean(document.querySelector("#booking"))'));
   await waitForApprovedBookingLogo();
   await waitFor(() => evaluate(`(() => {
     const date = document.querySelector("#date");
@@ -360,7 +363,9 @@ async function verifyPublicBookingForm() {
     const today = part("year") + "-" + part("month") + "-" + part("day");
     return {
       requiredFields: ["name", "phone", "treatment_type", "date", "time"]
-        .filter((name) => Boolean(form.elements.namedItem(name)?.required)),
+        .filter((name) => name === "treatment_type"
+          ? Boolean(service.required || document.querySelector("#service-options")?.getAttribute("aria-required") === "true")
+          : Boolean(form.elements.namedItem(name)?.required)),
       requiredLabelFields: ["name", "phone", "treatment_type", "date", "time"].map((name) => {
         const control = form.elements.namedItem(name);
         const labelText = control?.getAttribute("aria-label") ||
@@ -438,7 +443,8 @@ async function verifyPublicBookingForm() {
     };
   })()`);
   if (empty.fetchCalls !== 0 || empty.nativeValidity || !empty.submitPrevented ||
-      !empty.visibleError || !empty.text.includes("required fields")) {
+      !empty.visibleError ||
+      (!empty.text.includes("required fields") && !empty.text.includes("choose a dental service"))) {
     throw new Error("Empty guest booking did not show a safe validation message without browser UI: " + JSON.stringify(empty));
   }
 
@@ -481,6 +487,15 @@ async function verifyPublicBookingForm() {
     }
     const phoneError = document.querySelector("#phone-error");
     if (phoneError) phoneError.textContent = "";
+    const serviceSelect = document.querySelector("#treatment-type");
+    serviceSelect?.dispatchEvent(new Event("change", { bubbles: true }));
+    const serviceTrigger = document.querySelector("#service-trigger");
+    serviceTrigger?.removeAttribute("aria-invalid");
+    const serviceError = document.querySelector("#service-error");
+    if (serviceError) {
+      serviceError.textContent = "";
+      serviceError.classList.remove("visible");
+    }
     message.className = "msg";
     message.textContent = "";
     document.activeElement?.blur();
@@ -569,7 +584,58 @@ async function verifyServicePicker() {
       !keyboard.focusRestored || !keyboard.restoredPlaceholder) {
     throw new Error("Service picker keyboard open, navigation or Escape handling failed: " + JSON.stringify(keyboard));
   }
-  return { optionCount: opened.optionCount, groupCount: opened.groupCount, filtered, selected, keyboard };
+  const missingService = await evaluate(`(() => {
+    const form = document.querySelector("#booking");
+    const date = document.querySelector("#date");
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit"
+    }).formatToParts(new Date(Date.now() + 86400000));
+    const part = (type) => parts.find((item) => item.type === type)?.value || "";
+    form.elements.name.value = "Synthetic service validation";
+    form.elements.phone.value = "9876543210";
+    date.value = part("year") + "-" + part("month") + "-" + part("day");
+    date.setCustomValidity("");
+    form.elements.time.value = "10:00";
+    const select = document.querySelector("#treatment-type");
+    select.value = "";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    let fetchCalls = 0;
+    const originalFetch = window.fetch;
+    window.fetch = (...args) => { fetchCalls += 1; return originalFetch(...args); };
+    form.requestSubmit();
+    window.fetch = originalFetch;
+    const message = document.querySelector("#message");
+    const trigger = document.querySelector("#service-trigger");
+    const error = document.querySelector("#service-error");
+    const result = {
+      fetchCalls,
+      visibleError: message.classList.contains("error"),
+      message: message.textContent,
+      serviceError: error.textContent,
+      ariaInvalid: trigger.getAttribute("aria-invalid"),
+    };
+    form.reset();
+    date.min = "2026-11-16";
+    const dateParts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit"
+    }).formatToParts(new Date());
+    const today = (type) => dateParts.find((item) => item.type === type)?.value || "";
+    date.min = today("year") + "-" + today("month") + "-" + today("day");
+    date.value = date.min;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    trigger.removeAttribute("aria-invalid");
+    error.textContent = "";
+    error.classList.remove("visible");
+    message.className = "msg";
+    message.textContent = "";
+    return result;
+  })()`);
+  if (missingService.fetchCalls !== 0 || !missingService.visibleError ||
+      !missingService.message.includes("choose a dental service") ||
+      !missingService.serviceError || missingService.ariaInvalid !== "true") {
+    throw new Error("Public booking did not block a missing custom service selection: " + JSON.stringify(missingService));
+  }
+  return { optionCount: opened.optionCount, groupCount: opened.groupCount, filtered, selected, keyboard, missingService };
 }
 
 async function submitSyntheticGuestBooking(seed) {
