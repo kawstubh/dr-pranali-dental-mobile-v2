@@ -350,7 +350,7 @@ async function main() {
     "ORALYN_STAGING_PORTAL_COMMIT_VERIFIED",
     portalCommitOk,
     "live portal manifest commit " + (livePortalManifest?.commit_sha || "unavailable") +
-      " compared with expected Draft PR #18 head " + (expectedPortalCommit || "unavailable"),
+      " compared with expected workflow commit " + (expectedPortalCommit || "unavailable"),
   );
   record("ORALYN_STAGING_API_COMMIT_VERIFIED", apiCommitOk, apiCommitCheck.detail);
 
