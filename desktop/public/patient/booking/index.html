@@ -61,6 +61,37 @@ textarea{min-height:88px;resize:vertical}
   h1{font-size:23px}
 }
 @media(min-width:900px){.wrap{margin-top:32px}.panel{padding:28px 34px}}
+
+.service-picker{position:relative;margin-top:7px}
+.service-trigger{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:52px;padding:12px 14px;border:1px solid #cbdbe5;border-radius:12px;background:#fff;color:#526779;text-align:left;font:inherit;font-size:15px;cursor:pointer}
+.service-trigger[aria-expanded="true"],.service-trigger:focus-visible{outline:0;border-color:#00a6a6;box-shadow:0 0 0 3px rgba(0,166,166,.13)}
+.service-trigger.has-value{color:#12304a;font-weight:700}
+.service-trigger .chevron{width:10px;height:10px;border-right:2px solid #078c98;border-bottom:2px solid #078c98;transform:rotate(45deg);flex:none;margin:0 4px 5px}
+.service-error{display:none;color:#a12d27;font-size:12px;margin:6px 2px 0}
+.service-error.visible{display:block}
+.service-native-select{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.service-sheet-backdrop{position:fixed;inset:0;z-index:1000;background:rgba(14,35,48,.42);display:flex;align-items:flex-end;justify-content:center;padding:0}
+.service-sheet{width:min(100%,620px);max-height:min(86dvh,760px);overflow:auto;background:#fff;border-radius:24px 24px 0 0;padding:12px 16px calc(22px + env(safe-area-inset-bottom));box-shadow:0 -12px 40px rgba(12,59,130,.18);overscroll-behavior:contain}
+.service-sheet[hidden],.service-sheet-backdrop[hidden]{display:none}
+.service-sheet-grip{width:42px;height:4px;border-radius:8px;background:#cbd7df;margin:0 auto 14px}
+.service-sheet-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.service-sheet-head h2{font-size:21px;line-height:1.2;margin:0;color:#17324a}
+.service-sheet-head p{font-size:13px;margin:5px 0 0;color:#657b8d}
+.service-close{border:0;border-radius:50%;width:38px;height:38px;background:#edf7f8;color:#087f86;font-size:24px;line-height:1;cursor:pointer;flex:none}
+.service-group{border:1px solid #e5edf2;border-radius:16px;overflow:hidden;margin:12px 0;background:#fbfdfe}
+.service-group-title{display:flex;align-items:center;gap:10px;padding:11px 13px;background:#eaf8f8;color:#087f86;font-size:15px;font-weight:800}
+.service-group:nth-of-type(3n) .service-group-title{background:#edf5ff;color:#2365a0}
+.service-group:nth-of-type(4n) .service-group-title{background:#f3efff;color:#6550a8}
+.service-option{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;padding:11px 13px;border:0;border-top:1px solid #edf1f4;background:#fff;color:#20364a;text-align:left;font:inherit;font-size:14px;font-weight:650;cursor:pointer}
+.service-option:focus-visible{outline:3px solid rgba(0,166,166,.35);outline-offset:-3px}
+.service-option[aria-checked="true"]{background:#f0fbfa;color:#087f86}
+.service-option-label{flex:1;min-width:0}
+.service-radio{width:21px;height:21px;border:2px solid #9aabb7;border-radius:50%;display:grid;place-items:center;flex:none}
+.service-option[aria-checked="true"] .service-radio{border-color:#07999a}
+.service-option[aria-checked="true"] .service-radio:after{content:"";width:9px;height:9px;border-radius:50%;background:#07999a}
+@media(min-width:620px){.service-sheet-backdrop{align-items:center;padding:20px}.service-sheet{border-radius:22px;max-height:82vh}}
+@media(prefers-reduced-motion:no-preference){.service-sheet-backdrop{animation:serviceFade .16s ease-out}@keyframes serviceFade{from{opacity:0}to{opacity:1}}}
+
 </style>
 </head>
 <body>
@@ -87,7 +118,18 @@ textarea{min-height:88px;resize:vertical}
 <optgroup label="Pediatric"><option value="Kids Dentistry (Child Care)">Kids Dentistry (Child Care)</option></optgroup>
 <optgroup label="Emergency"><option value="Emergency Dental Care">Emergency Dental Care</option></optgroup>
 <option value="Other dental concern">Other dental concern (not listed)</option>
-</select></label>
+</select>
+<div class="service-picker">
+<button class="service-trigger" id="service-trigger" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="service-sheet"><span id="service-trigger-label">Choose a dental service</span><span class="chevron" aria-hidden="true"></span></button>
+<div class="service-error" id="service-error" role="alert">Please choose a dental service.</div>
+</div></label>
+<div class="service-sheet-backdrop" id="service-backdrop" hidden>
+<section class="service-sheet" id="service-sheet" role="dialog" aria-modal="true" aria-labelledby="service-sheet-title" tabindex="-1">
+<div class="service-sheet-grip" aria-hidden="true"></div>
+<div class="service-sheet-head"><div><h2 id="service-sheet-title">Choose a dental service</h2><p>Select the treatment you’d like to book</p></div><button class="service-close" id="service-close" type="button" aria-label="Close service list">×</button></div>
+<div id="service-options"></div>
+</section>
+</div>
 <div class="grid">
 <label>Preferred date *<input name="date" id="date" type="date" required></label>
 <label>Preferred time (IST) *<select name="time" id="time" required><option value="">Choose a time</option><option>10:00</option><option>11:00</option><option>12:00</option><option>13:00</option><option>17:00</option><option>18:00</option><option>19:00</option><option>20:00</option></select></label>
@@ -118,6 +160,110 @@ const phoneInput = document.getElementById("phone");
 const timeInput = document.getElementById("time");
 const phoneError = document.getElementById("phone-error");
 const serviceSelect = document.getElementById("treatment-type");
+
+const serviceTrigger = document.getElementById("service-trigger");
+const serviceTriggerLabel = document.getElementById("service-trigger-label");
+const serviceBackdrop = document.getElementById("service-backdrop");
+const serviceSheet = document.getElementById("service-sheet");
+const serviceOptions = document.getElementById("service-options");
+const serviceError = document.getElementById("service-error");
+serviceSelect.classList.add("service-native-select");
+serviceSelect.removeAttribute("required");
+const serviceGroups = [...serviceSelect.children].filter((node) => node.tagName === "OPTGROUP");
+const renderServicePicker = () => {
+  serviceOptions.replaceChildren();
+  for (const group of serviceGroups) {
+    const section = document.createElement("section");
+    section.className = "service-group";
+    const heading = document.createElement("div");
+    heading.className = "service-group-title";
+    heading.textContent = group.label;
+    section.append(heading);
+    for (const option of [...group.children]) {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "service-option";
+      item.setAttribute("role", "radio");
+      item.dataset.value = option.value;
+      item.setAttribute("aria-checked", String(serviceSelect.value === option.value));
+      const label = document.createElement("span");
+      label.className = "service-option-label";
+      label.textContent = option.textContent;
+      const radio = document.createElement("span");
+      radio.className = "service-radio";
+      radio.setAttribute("aria-hidden", "true");
+      item.append(label, radio);
+      item.addEventListener("click", () => {
+        serviceSelect.value = option.value;
+        serviceSelect.dispatchEvent(new Event("change", {bubbles:true}));
+        updateServicePicker();
+        closeServicePicker();
+        serviceTrigger.focus();
+      });
+      section.append(item);
+    }
+    serviceOptions.append(section);
+  }
+  const other = [...serviceSelect.options].find((option) => option.value === "Other dental concern");
+  if (other) {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "service-option";
+    item.setAttribute("role", "radio");
+    item.dataset.value = other.value;
+    item.setAttribute("aria-checked", String(serviceSelect.value === other.value));
+    const label = document.createElement("span");
+    label.className = "service-option-label";
+    label.textContent = "Other dental concern (not listed)";
+    const radio = document.createElement("span");
+    radio.className = "service-radio";
+    radio.setAttribute("aria-hidden", "true");
+    item.append(label, radio);
+    item.addEventListener("click", () => {
+      serviceSelect.value = other.value;
+      serviceSelect.dispatchEvent(new Event("change", {bubbles:true}));
+      updateServicePicker();
+      closeServicePicker();
+      serviceTrigger.focus();
+    });
+    serviceOptions.append(item);
+  }
+};
+const updateServicePicker = () => {
+  const selected = serviceSelect.selectedOptions[0];
+  const hasValue = Boolean(serviceSelect.value);
+  serviceTriggerLabel.textContent = hasValue ? selected.textContent : "Choose a dental service";
+  serviceTrigger.classList.toggle("has-value", hasValue);
+  serviceTrigger.setAttribute("aria-label", hasValue ? "Dental service: " + selected.textContent : "Choose a dental service");
+  serviceOptions.querySelectorAll(".service-option").forEach((item) => {
+    item.setAttribute("aria-checked", String(item.dataset.value === serviceSelect.value));
+  });
+  serviceError.classList.remove("visible");
+  serviceTrigger.removeAttribute("aria-invalid");
+};
+const openServicePicker = () => {
+  renderServicePicker();
+  serviceBackdrop.hidden = false;
+  serviceTrigger.setAttribute("aria-expanded", "true");
+  document.body.style.overflow = "hidden";
+  serviceSheet.focus();
+};
+const closeServicePicker = () => {
+  serviceBackdrop.hidden = true;
+  serviceTrigger.setAttribute("aria-expanded", "false");
+  document.body.style.overflow = "";
+};
+serviceTrigger.addEventListener("click", openServicePicker);
+document.getElementById("service-close").addEventListener("click", () => { closeServicePicker(); serviceTrigger.focus(); });
+serviceBackdrop.addEventListener("click", (event) => {
+  if (event.target === serviceBackdrop) { closeServicePicker(); serviceTrigger.focus(); }
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !serviceBackdrop.hidden) { closeServicePicker(); serviceTrigger.focus(); }
+});
+serviceSelect.addEventListener("change", updateServicePicker);
+updateServicePicker();
+
 const serviceById = {"checkup":"Dental Check-up & Consultation","scaling":"Scaling & Cleaning","whitening":"Teeth Whitening","filling":"Tooth Filling","rct":"Root Canal Treatment (RCT)","crowns":"Dental Crowns & Caps","implants":"Dental Implants","extraction":"Tooth Extraction","braces":"Braces Treatment","aligners":"Clear Aligners (Invisible Braces)","dentures":"Dentures (Full / Partial)","veneers":"Veneers (Smile Makeover)","gum-care":"Gum Treatment (Periodontal Care)","kids":"Kids Dentistry (Child Care)","emergency":"Emergency Dental Care","sensitivity":"Tooth Sensitivity Treatment","sealants":"Dental Sealants (Cavity Prevention)","hygiene":"Oral Hygiene Education","smile-makeover":"Smile Makeover (Cosmetic Dentistry)","tmj":"TMJ & Jaw Pain Treatment"};
 const requestedService = new URLSearchParams(window.location.search).get("service");
 if (requestedService && serviceById[requestedService]) serviceSelect.value = serviceById[requestedService];
@@ -192,6 +338,14 @@ form.addEventListener("submit", async (event) => {
   event.preventDefault();
   message.className = "msg";
   message.textContent = "";
+  if (!serviceSelect.value) {
+    serviceError.classList.add("visible");
+    serviceTrigger.setAttribute("aria-invalid", "true");
+    serviceTrigger.focus();
+    message.className = "msg error";
+    message.textContent = "Please choose a dental service before sending your request.";
+    return;
+  }
   if (!form.reportValidity()) return;
   if (!API_BASE) {
     message.className = "msg error";
