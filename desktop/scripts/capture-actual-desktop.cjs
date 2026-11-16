@@ -495,8 +495,8 @@ async function verifyServicePicker() {
       triggerPresent: Boolean(trigger),
       open: Boolean(menu && !menu.hidden),
       expanded: trigger?.getAttribute("aria-expanded") || "",
-      optionCount: document.querySelectorAll("#service-options [role="option"]").length,
-      groupCount: document.querySelectorAll("#service-options [role="group"]").length,
+      optionCount: document.querySelectorAll('#service-options [role="option"]').length,
+      groupCount: document.querySelectorAll('#service-options [role="group"]').length,
     };
   })()`);
   if (!opened.triggerPresent || !opened.open || opened.expanded !== "true" || opened.optionCount !== 21) {
@@ -508,7 +508,7 @@ async function verifyServicePicker() {
     const search = document.querySelector("#service-search");
     search.value = "scaling";
     search.dispatchEvent(new Event("input", { bubbles: true }));
-    const options = [...document.querySelectorAll("#service-options [role="option"]")];
+    const options = [...document.querySelectorAll('#service-options [role="option"]')];
     return { count: options.length, label: options[0]?.innerText || "" };
   })()`);
   if (filtered.count !== 1 || !filtered.label.includes("Scaling & Cleaning")) {
@@ -516,7 +516,7 @@ async function verifyServicePicker() {
   }
 
   const selected = await evaluate(`(() => {
-    const item = [...document.querySelectorAll("#service-options [role="option"]")]
+    const item = [...document.querySelectorAll('#service-options [role="option"]')]
       .find((option) => option.dataset.serviceValue === "Scaling & Cleaning");
     item?.click();
     const select = document.querySelector("#treatment-type");
