@@ -12,16 +12,10 @@
   "lang": "en-IN",
   "icons": [
     {
-      "src": "/oralyn-pwa-192.png",
-      "sizes": "192x192",
+      "src": "/oralyn-approved-logo.png",
+      "sizes": "180x178",
       "type": "image/png",
       "purpose": "any"
-    },
-    {
-      "src": "/oralyn-pwa-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
     }
   ]
 }

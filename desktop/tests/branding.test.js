@@ -35,32 +35,30 @@ test("licensed display and body fonts are bundled locally with traceable source 
   assert.match(fontsDoc, /C40F2293766A503BC70CCE9E512EF844A4CCB7CBCDE792FE2EA31D191917D8D6/);
 });
 
-test("the approved Oralyn wordmark and app mark are used; provisional artwork is not shipped", () => {
-  for (const path of ["../public/oralyn-logo-approved.webp", "../public/oralyn-app-icon-approved.webp"]) {
-    assert.ok(existsSync(new URL(path, import.meta.url)), path + " must exist");
-    assert.ok(statSync(new URL(path, import.meta.url)).size > 1000);
-  }
-  assert.ok(patientHome.includes('href="/oralyn-app-icon-approved.webp"'));
-  assert.match(main, /src="\/oralyn-logo-approved\.webp"/);
-  assert.match(html, /href="\/oralyn-app-icon-approved\.webp"/);
-  assert.doesNotMatch(main + html, /oralyn-app-icon\.png|oralyn-mark\.png|oralyn-logo-recovered\.jpg/);
-  assert.doesNotMatch(css, /\.brand img,\s*\.authbrand img\s*\{\s*display:\s*none/i);
-  assert.match(brandDoc, /Oralyn Investor Presentation_20261020_200633_0000\.pptx/);
-  assert.match(brandDoc, /ppt\/media\/image1\.png/);
+test("all portal brand placements use the user-approved transparent Oralyn master artwork", () => {
+  const approved = "../public/oralyn-approved-logo.png";
+  assert.ok(existsSync(new URL(approved, import.meta.url)));
+  assert.ok(statSync(new URL(approved, import.meta.url)).size > 1000);
+  assert.ok(patientHome.includes('href="/oralyn-approved-logo.png"') || patientHome.includes('src="/oralyn-approved-logo.png"'));
+  assert.ok(patientBooking.includes('src="/oralyn-approved-logo.png"'));
+  assert.match(main, /src="\/oralyn-approved-logo\.png"/);
+  assert.match(html, /href="\/oralyn-approved-logo\.png"/);
+  assert.match(brandDoc, /Official master logo/);
+  assert.match(brandDoc, /180 × 178 px/);
+  assert.doesNotMatch(main + read("../src/assistant.jsx"), /oralyn-wordmark-transparent\.svg|oralyn-logo-approved\.webp|oralyn-app-icon-approved\.webp/);
 });
 
-test("Doctor sign-in uses the transparent wordmark at a larger size without a boxed background", () => {
+test("Doctor sign-in, Patient and Assistant use the same transparent master logo", () => {
   const match = main.match(/function OralynVectorBrand\(\) \{[\s\S]*?\n\}/);
-  assert.ok(match, "Doctor sign-in wordmark component must exist");
-  assert.match(match[0], /src="\/oralyn-wordmark-transparent\.svg"/);
-  assert.ok(existsSync(new URL("../public/oralyn-wordmark-transparent.svg", import.meta.url)));
-  const transparentWordmark = read("../public/oralyn-wordmark-transparent.svg");
-  assert.match(transparentWordmark, /<svg[\s\S]*viewBox=/);
-  assert.doesNotMatch(transparentWordmark, /<rect\b[^>]*fill="(?:url\(#bg\)|#[0-9a-f]{3,8})"/i);
-  assert.match(css, /\.oralyn-reference-story \.oralyn-auth-brand \.oralyn-approved-wordmark\s*\{[\s\S]*?width:\s*clamp\(118px,10vw,148px\)[\s\S]*?max-height:\s*none[\s\S]*?background:\s*transparent/);
+  assert.ok(match);
+  assert.match(match[0], /src="\/oralyn-approved-logo\.png"/);
+  const assistant = read("../src/assistant.jsx");
+  assert.match(assistant, /src="\/oralyn-approved-logo\.png"/);
+  assert.match(css, /\.oralyn-app-squircle\{background:transparent!important/);
+  assert.match(css, /\.oralyn-approved-wordmark\{width:clamp\(112px,9vw,140px\)!important/);
   const serviceWorker = read("../public/sw.js");
-  assert.match(serviceWorker, /"\/oralyn-wordmark-transparent\.svg"/);
-  assert.match(captureScript, /wordmark\.getAttribute\("src"\) === "\/oralyn-wordmark-transparent\.svg"/);
+  assert.match(serviceWorker, /"\/oralyn-approved-logo\.png"/);
+  assert.match(captureScript, /oralyn-approved-logo\.png/);
 });
 
 test("the root render is protected by the visible React error boundary", () => {

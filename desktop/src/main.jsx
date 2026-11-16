@@ -352,7 +352,7 @@ function App() {
         </div>
       )}
       <aside className={mobile ? "sidebar open" : "sidebar"}>
-        <div className="brand"><img src="/oralyn-logo-approved.webp" alt="Oralyn official wordmark" /><button className="close" onClick={() => B(false)}>
+        <div className="brand"><img src="/oralyn-approved-logo.png" alt="Oralyn official wordmark" /><button className="close" onClick={() => B(false)}>
             <X />
           </button>
         </div>
@@ -487,7 +487,7 @@ function App() {
 }
 function OralynVectorBrand() {
   return <div className="oralyn-vector-brand" aria-label="Oralyn — Smart Dental Care for Healthier Smiles">
-    <img className="oralyn-approved-wordmark" src="/oralyn-wordmark-transparent.svg" alt="Oralyn — Smart Dental Care for Healthier Smiles" />
+    <img className="oralyn-approved-wordmark" src="/oralyn-approved-logo.png" alt="Oralyn — Smart Dental Care for Healthier Smiles" />
   </div>;
 }
 function OralynClinicIllustration() {
@@ -540,7 +540,7 @@ function LoginScreen({ loading, error, onLogin, onPatient, onAssistant }) {
       </section>
       <section className="oralyn-auth-panel oralyn-reference-panel" aria-label="Doctor sign in">
         <div className="oralyn-auth-card oralyn-reference-card">
-          <div className="oralyn-app-squircle" aria-label="Oralyn approved app icon"><img src="/oralyn-app-icon-approved.webp" alt="Oralyn app icon" /></div>
+          <div className="oralyn-app-squircle" aria-label="Oralyn approved app icon"><img src="/oralyn-approved-logo.png" alt="Oralyn app icon" /></div>
           <span className="oralyn-auth-label">DOCTOR PORTAL</span>
           <h2>Oralyn Doctor</h2>
           <p className="oralyn-auth-subtitle">Sign in with your clinic-issued email and password.</p>

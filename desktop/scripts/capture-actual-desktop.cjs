@@ -313,14 +313,14 @@ async function verifyReducedMotion() {
 
 async function waitForApprovedBookingLogo() {
   const ready = () => evaluate(`(() => {
-    const logo = document.querySelector('header img[src="/oralyn-logo-approved.webp"]');
+    const logo = document.querySelector('header img[src="/oralyn-approved-logo.png"]');
     return Boolean(logo && logo.complete && logo.naturalWidth > 0);
   })()`);
   try {
     await waitFor(ready, 12000);
   } catch {
     const state = await evaluate(`(() => {
-      const logo = document.querySelector('header img[src="/oralyn-logo-approved.webp"]');
+      const logo = document.querySelector('header img[src="/oralyn-approved-logo.png"]');
       const rect = logo?.getBoundingClientRect();
       return {
         exists: Boolean(logo),
@@ -387,7 +387,7 @@ async function verifyPublicBookingForm() {
       timezoneNotice: document.body.innerText.includes("Asia/Kolkata"),
       accountFree: document.body.innerText.includes("No account or OTP required."),
       logoVisible: (() => {
-        const logo = document.querySelector('header img[src="/oralyn-logo-approved.webp"]');
+        const logo = document.querySelector('header img[src="/oralyn-approved-logo.png"]');
         const header = logo?.closest("header");
         const logoRect = logo?.getBoundingClientRect();
         const headerRect = header?.getBoundingClientRect();
@@ -809,8 +809,8 @@ async function captureAssistantAdminGate() {
       const wordmark = document.querySelector(".oralyn-vector-brand img");
       const appIcon = document.querySelector(".oralyn-app-squircle img");
       return {
-        wordmark: Boolean(wordmark && wordmark.complete && wordmark.naturalWidth > 0 && wordmark.getAttribute("src") === "/oralyn-wordmark-transparent.svg"),
-        appIcon: Boolean(appIcon && appIcon.complete && appIcon.naturalWidth > 0 && appIcon.getAttribute("src") === "/oralyn-app-icon-approved.webp")
+        wordmark: Boolean(wordmark && wordmark.complete && wordmark.naturalWidth > 0 && wordmark.getAttribute("src") === "/oralyn-approved-logo.png"),
+        appIcon: Boolean(appIcon && appIcon.complete && appIcon.naturalWidth > 0 && appIcon.getAttribute("src") === "/oralyn-approved-logo.png")
       };
     })()`);
     if (!approvedLogoAssets.wordmark || !approvedLogoAssets.appIcon) {

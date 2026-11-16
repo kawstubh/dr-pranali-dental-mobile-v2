@@ -4205,3 +4205,8 @@ main.oralyn-reference-layout {
   filter:none;
   flex:0 0 auto;
 }
+
+/* Official transparent Oralyn master artwork: no secondary tile or background. */
+.oralyn-app-squircle{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:visible!important}
+.oralyn-app-squircle img{width:100%!important;height:100%!important;object-fit:contain!important;filter:none!important}
+.oralyn-approved-wordmark{width:clamp(112px,9vw,140px)!important;max-height:none!important;height:auto!important;object-fit:contain!important;background:transparent!important}
