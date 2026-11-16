@@ -486,6 +486,78 @@ async function verifyPublicBookingForm() {
   return { ...state, emptySubmit: empty, pastTimeSubmit: past, formReset: restored };
 }
 
+async function verifyServicePicker() {
+  const opened = await evaluate(`(() => {
+    const trigger = document.querySelector("#service-trigger");
+    const menu = document.querySelector("#service-menu");
+    trigger?.click();
+    return {
+      triggerPresent: Boolean(trigger),
+      open: Boolean(menu && !menu.hidden),
+      expanded: trigger?.getAttribute("aria-expanded") || "",
+      optionCount: document.querySelectorAll("#service-options [role="option"]").length,
+      groupCount: document.querySelectorAll("#service-options [role="group"]").length,
+    };
+  })()`);
+  if (!opened.triggerPresent || !opened.open || opened.expanded !== "true" || opened.optionCount !== 21) {
+    throw new Error("Custom dental service picker did not expose all 20 approved services plus Other: " + JSON.stringify(opened));
+  }
+  await capture("patient-booking-service-picker-390x844.png", 390, 844, true);
+
+  const filtered = await evaluate(`(() => {
+    const search = document.querySelector("#service-search");
+    search.value = "scaling";
+    search.dispatchEvent(new Event("input", { bubbles: true }));
+    const options = [...document.querySelectorAll("#service-options [role="option"]")];
+    return { count: options.length, label: options[0]?.innerText || "" };
+  })()`);
+  if (filtered.count !== 1 || !filtered.label.includes("Scaling & Cleaning")) {
+    throw new Error("Service picker search did not filter the approved catalogue correctly: " + JSON.stringify(filtered));
+  }
+
+  const selected = await evaluate(`(() => {
+    const item = [...document.querySelectorAll("#service-options [role="option"]")]
+      .find((option) => option.dataset.serviceValue === "Scaling & Cleaning");
+    item?.click();
+    const select = document.querySelector("#treatment-type");
+    const trigger = document.querySelector("#service-trigger");
+    const menu = document.querySelector("#service-menu");
+    return {
+      value: select.value,
+      label: document.querySelector("#service-trigger-value")?.textContent || "",
+      closed: Boolean(menu?.hidden),
+      expanded: trigger?.getAttribute("aria-expanded") || "",
+    };
+  })()`);
+  if (selected.value !== "Scaling & Cleaning" || !selected.label.includes("Scaling & Cleaning") ||
+      !selected.closed || selected.expanded !== "false") {
+    throw new Error("Service picker did not synchronize its selection with the booking form: " + JSON.stringify(selected));
+  }
+
+  const keyboard = await evaluate(`(() => {
+    const trigger = document.querySelector("#service-trigger");
+    const menu = document.querySelector("#service-menu");
+    trigger.focus();
+    trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true }));
+    const openedByKeyboard = Boolean(menu && !menu.hidden);
+    const focusedOption = document.activeElement?.getAttribute("role") === "option";
+    if (openedByKeyboard && document.activeElement) {
+      document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    }
+    const closedByEscape = Boolean(menu?.hidden);
+    const focusRestored = document.activeElement === trigger;
+    const select = document.querySelector("#treatment-type");
+    select.value = "";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    return { openedByKeyboard, focusedOption, closedByEscape, focusRestored, restoredPlaceholder: document.querySelector("#service-trigger-value")?.textContent === "Choose a dental service" };
+  })()`);
+  if (!keyboard.openedByKeyboard || !keyboard.focusedOption || !keyboard.closedByEscape ||
+      !keyboard.focusRestored || !keyboard.restoredPlaceholder) {
+    throw new Error("Service picker keyboard open, navigation or Escape handling failed: " + JSON.stringify(keyboard));
+  }
+  return { optionCount: opened.optionCount, groupCount: opened.groupCount, filtered, selected, keyboard };
+}
+
 async function submitSyntheticGuestBooking(seed) {
   const before = bookingNetworkRequests.length;
   const fillExpression = '(() => {'
@@ -722,6 +794,7 @@ async function captureAssistantAdminGate() {
     );
     accessibilityResults.guestBookingKeyboardFocus = await verifyKeyboardFocus();
     fontResults.patientBookingValidation = await verifyPublicBookingForm();
+    fontResults.patientServicePicker = await verifyServicePicker();
     accessibilityResults.guestBookingRequiredLabels = fontResults.patientBookingValidation.requiredLabelFields;
     const livePortalOrigin = new URL(process.env.ORALYN_PORTAL_ORIGIN || baseUrl).origin;
     await send("Page.navigate", { url: livePortalOrigin + "/patient/booking/" });
@@ -779,6 +852,9 @@ async function captureAssistantAdminGate() {
       "live_staging_booking_layout=passed",
       "live_staging_booking_service_count=" + fontResults.liveStagingBookingValidation.catalogueCount,
       "live_staging_booking_api_origin=" + fontResults.liveStagingBookingValidation.apiOrigin,
+      "patient_service_picker=passed",
+      "patient_service_picker_option_count=" + fontResults.patientServicePicker.optionCount,
+      "patient_service_picker_keyboard=passed",
       "guest_booking_service_count=" + fontResults.patientBookingValidation.catalogueCount,
       "assistant_admin_management_form_visible=" + fontResults.assistantAdmin.assistantManagementFormVisible,
       "assistant_admin_plus_jakarta_sans_loaded=" + fontResults.assistantAdmin.plusJakartaSans,
