@@ -4350,3 +4350,10 @@ main.oralyn-reference-layout {
     font-size: 11px !important;
   }
 }
+
+
+/* Doctor login responsive overflow correction: never crop the icon or lower actions. */
+@media (max-height: 760px) and (min-width: 761px) {
+  .oralyn-reference-panel { align-items: flex-start; overflow-y: auto; overflow-x: hidden; }
+  .oralyn-reference-card { max-height: none; overflow: visible; flex: 0 0 auto; }
+}
