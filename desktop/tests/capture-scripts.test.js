@@ -279,3 +279,17 @@ test("real browser capture fails before screenshot when a responsive viewport ha
   assert.match(source, /await verifyNoHorizontalOverflow\(width\)/);
   assert.match(source, /Horizontal page overflow at/);
 });
+
+
+test("staging API checks tolerate bounded Render cold starts without accepting transient 5xx responses", () => {
+  const staging = readFileSync(join(process.cwd(), "scripts", "verify-staging-contract.cjs"), "utf8");
+  const assistant = readFileSync(join(process.cwd(), "scripts", "verify-assistant-staging-contract.cjs"), "utf8");
+  assert.match(staging, /apiOrigin \+ "\/health"/);
+  assert.match(staging, /body\?\.status === "ok"/);
+  assert.match(staging, /20,\s*3000/);
+  assert.match(staging, /body\?\.database_identity_verified === true/);
+  assert.match(assistant, /const maxAttempts = 10/);
+  assert.match(assistant, /new Set\(\[502, 503, 504\]\)/);
+  assert.match(assistant, /response\.arrayBuffer\(\)/);
+  assert.match(assistant, /remained HTTP/);
+});
