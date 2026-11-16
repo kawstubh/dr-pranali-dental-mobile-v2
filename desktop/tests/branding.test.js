@@ -49,6 +49,19 @@ test("the approved Oralyn wordmark and app mark are used; provisional artwork is
   assert.match(brandDoc, /ppt\/media\/image1\.png/);
 });
 
+test("Doctor sign-in uses the transparent wordmark at a larger size without a boxed background", () => {
+  const match = main.match(/function OralynVectorBrand\(\) \{[\s\S]*?\n\}/);
+  assert.ok(match, "Doctor sign-in wordmark component must exist");
+  assert.match(match[0], /src="\/oralyn-wordmark-transparent\.svg"/);
+  assert.ok(existsSync(new URL("../public/oralyn-wordmark-transparent.svg", import.meta.url)));
+  const transparentWordmark = read("../public/oralyn-wordmark-transparent.svg");
+  assert.match(transparentWordmark, /<svg[\s\S]*viewBox=/);
+  assert.doesNotMatch(transparentWordmark, /<rect\b[^>]*fill="(?:url\(#bg\)|#[0-9a-f]{3,8})"/i);
+  assert.match(css, /\.oralyn-reference-story \.oralyn-auth-brand \.oralyn-approved-wordmark\s*\{[\s\S]*?width:\s*clamp\(118px,10vw,148px\)[\s\S]*?max-height:\s*none[\s\S]*?background:\s*transparent/);
+  const serviceWorker = read("../public/sw.js");
+  assert.match(serviceWorker, /"\/oralyn-wordmark-transparent\.svg"/);
+});
+
 test("the root render is protected by the visible React error boundary", () => {
   assert.match(main, /import ErrorBoundary from "\.\/ErrorBoundary\.jsx"/);
   assert.match(main, /<ErrorBoundary>/);
