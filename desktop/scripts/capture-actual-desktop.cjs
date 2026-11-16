@@ -452,16 +452,18 @@ async function verifyPublicBookingForm() {
     if (phoneError) phoneError.textContent = "";
     message.className = "msg";
     message.textContent = "";
+    document.activeElement?.blur();
     return {
       minDate: date.min,
       value: date.value,
       blank: !form.elements.name.value && !form.elements.phone.value &&
         !form.elements.treatment_type.value && !form.elements.time.value,
       messageCleared: !message.classList.contains("error") && !message.textContent,
+      focusCleared: !form.contains(document.activeElement),
     };
   })()`);
   if (restored.minDate !== state.minDate || restored.value !== state.minDate ||
-      !restored.blank || !restored.messageCleared) {
+      !restored.blank || !restored.messageCleared || !restored.focusCleared) {
     throw new Error("Booking form was not restored to a clean state after negative validation checks: " + JSON.stringify(restored));
   }
   return { ...state, emptySubmit: empty, pastTimeSubmit: past, formReset: restored };
