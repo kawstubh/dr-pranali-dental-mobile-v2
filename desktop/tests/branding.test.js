@@ -60,6 +60,7 @@ test("Doctor sign-in uses the transparent wordmark at a larger size without a bo
   assert.match(css, /\.oralyn-reference-story \.oralyn-auth-brand \.oralyn-approved-wordmark\s*\{[\s\S]*?width:\s*clamp\(118px,10vw,148px\)[\s\S]*?max-height:\s*none[\s\S]*?background:\s*transparent/);
   const serviceWorker = read("../public/sw.js");
   assert.match(serviceWorker, /"\/oralyn-wordmark-transparent\.svg"/);
+  assert.match(captureScript, /wordmark\.getAttribute\("src"\) === "\/oralyn-wordmark-transparent\.svg"/);
 });
 
 test("the root render is protected by the visible React error boundary", () => {
