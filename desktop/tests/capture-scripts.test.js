@@ -147,6 +147,12 @@ test("preview server stays alive for responsive and synthetic UI captures in one
   assert.match(captureStep, /capture-synthetic-assistant\.cjs/);
 });
 
+test("staging contract labels the merged backend PR without stale Draft wording", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "verify-staging-contract.cjs"), "utf8");
+  assert.ok(source.includes("live API deployment commit exactly matches PR #60 head "));
+  assert.doesNotMatch(source, /Draft PR #60/);
+});
+
 test("release workflow derives live gates instead of hard-coding them true", () => {
   const file = join(process.cwd(), "..", ".github", "workflows", "oralyn-desktop.yml");
   const source = readFileSync(file, "utf8");
