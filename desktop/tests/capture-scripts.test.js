@@ -232,12 +232,12 @@ test("real browser capture validates the deployed staging booking page at mobile
   ]) assert.ok(source.includes(viewport), viewport);
 });
 
-test("staging manifest commit mismatch is recorded without a long deployment wait", () => {
+test("staging manifest waits for the exact portal commit while Render auto-deploys", () => {
   const source = readFileSync(join(process.cwd(), "scripts", "verify-staging-contract.cjs"), "utf8");
   const start = source.indexOf('portalOrigin + "/oralyn-build-manifest.json?expected_commit="');
   const end = source.indexOf("const dentalHealthResult", start);
   assert.ok(start >= 0 && end > start);
-  assert.match(source.slice(start, end), /},\s*2,\s*1000,\s*\)/);
+  assert.match(source.slice(start, end), /},\s*45,\s*2000,\s*\)/);
 });
 
 test("real browser capture verifies public booking API origin matches the configured API", () => {
