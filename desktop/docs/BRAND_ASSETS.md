@@ -1,30 +1,27 @@
-# Oralyn brand asset provenance
+﻿# Oralyn brand asset provenance
 
-The official wordmark and app mark used by this desktop project were extracted from the approved user-provided investor presentation, not redrawn or replaced with a generic dental icon.
+## Official master artwork
 
-## Source
+- `public/oralyn-official-logo.png` is the sole approved full Oralyn logo.
+- Source: the user's supplied Oralyn tooth-and-circuit mark, wordmark and two-line tagline.
+- Cleaned transparent PNG, 1231 × 1207 px, RGBA.
+- Preserve the original gradients, typography, proportions and tagline. Do not redraw, recolor, stretch or place it on a boxed background.
+- Use this full master on Doctor sign-in, Doctor navigation, Patient pages and Clinic Assistant branding.
 
-- Original presentation: `Oralyn Investor Presentation_20261020_200633_0000.pptx`
-- Embedded media: `ppt/media/image1.png` (922 × 615 pixels)
-- Wordmark crop: source pixels `(60,55)–(565,555)`; resized without changing the artwork to 180 × 178 WebP.
-- App-mark crop: source pixels `(635,55)–(860,280)`; resized without changing the artwork to 128 × 128 WebP.
+## Small-screen and app icon
 
-## Installed files
+- `public/oralyn-tooth-icon.png` is a 512 × 512 transparent tooth-only derivative cropped from the official master.
+- Use it only for favicon, Apple touch icon, PWA manifest and compact app-icon contexts where the complete wordmark would be unreadable.
+- The complete logo remains the preferred mark wherever there is sufficient space.
 
-- `legacy/oralyn-approved-logo.png (retired)` — full approved Oralyn wordmark for Doctor and Patient sign-in.
-- `legacy/oralyn-approved-logo.png (retired)` — approved Oralyn app mark for the sidebar, patient hero and favicon.
+## Retired assets
 
-SHA-256:
+- The recreated `oralyn-wordmark-transparent.svg` is not approved and must not be rendered.
+- Earlier low-resolution and boxed logo files are retired. Do not restore them as brand sources.
+- The approved Dr. Pranali Dental Clinic logo is a separate identity and must not be replaced by Oralyn branding.
 
-- `oralyn-approved-logo.png`: `21FB2E071B929D2E853C21DD234BE2A70FDFF546E88E2035CFDEDEEC836530C0`
-- `oralyn-approved-logo.png`: `92D6672C1B90BA1EB322E892A4DBA67817E0247B12A3F87D37D1101975F07D51`
+## Asset integrity
 
-The previous provisional `oralyn-app-icon.png` is archived outside `public/` and is no longer referenced by the application. The approved Dr. Pranali Dental Clinic logo remains a separate asset and was not modified.
-
-
-Official master logo — 16 Nov 2026
-- Sole approved artwork: public/oralyn-approved-logo.png.
-- Source: user-provided transparent Oralyn tooth/circuit mark, Oralyn wordmark and tagline.
-- Original dimensions: 180 × 178 px; RGBA transparency preserved. Do not enlarge for print.
-- Doctor, Patient and Clinic Assistant portal branding must use this exact asset.
-- The recreated transparent SVG and prior boxed marks are not approved artwork and must not be rendered.
+- Full master: 1231 × 1207 px, transparent PNG.
+- Tooth icon: 512 × 512 px, transparent PNG.
+- Browser/PWA references and regression tests must resolve to these two assets only.

@@ -18,7 +18,7 @@ test("Oralyn manifest is installable and uses approved brand icon derivatives", 
   assert.equal(manifest.name, "Oralyn Dental Care Portal");
   assert.equal(manifest.display, "standalone");
   assert.equal(manifest.theme_color, "#0C3B82");
-  assert.deepEqual(manifest.icons.map((icon) => icon.sizes).sort(), ["180x178"]);
+  assert.deepEqual(manifest.icons.map((icon) => icon.sizes).sort(), ["512x512"]);
   for (const icon of manifest.icons) {
     const iconPath = path.join(root, "public", icon.src.replace(/^\//, ""));
     assert.ok(fs.statSync(iconPath).size > 1000);

@@ -36,29 +36,29 @@ test("licensed display and body fonts are bundled locally with traceable source 
 });
 
 test("all portal brand placements use the user-approved transparent Oralyn master artwork", () => {
-  const approved = "../public/oralyn-approved-logo.png";
+  const approved = "../public/oralyn-official-logo.png";
   assert.ok(existsSync(new URL(approved, import.meta.url)));
   assert.ok(statSync(new URL(approved, import.meta.url)).size > 1000);
-  assert.ok(patientHome.includes('href="/oralyn-approved-logo.png"') || patientHome.includes('src="/oralyn-approved-logo.png"'));
-  assert.ok(patientBooking.includes('src="/oralyn-approved-logo.png"'));
-  assert.match(main, /src="\/oralyn-approved-logo\.png"/);
-  assert.match(html, /href="\/oralyn-approved-logo\.png"/);
-  assert.match(brandDoc, /Official master logo/);
-  assert.match(brandDoc, /180 × 178 px/);
+  assert.ok(patientHome.includes('href="/oralyn-tooth-icon.png"') || patientHome.includes('src="/oralyn-official-logo.png"'));
+  assert.ok(patientBooking.includes('src="/oralyn-official-logo.png"'));
+  assert.match(main, /src="\/oralyn-official-logo\.png"/);
+  assert.match(html, /href="\/oralyn-tooth-icon\.png"/);
+  assert.match(brandDoc, /Official master artwork/);
+  assert.match(brandDoc, /1231.*1207 px/);
   assert.doesNotMatch(main + read("../src/assistant.jsx"), /oralyn-wordmark-transparent\.svg|oralyn-logo-approved\.webp|oralyn-app-icon-approved\.webp/);
 });
 
 test("Doctor sign-in, Patient and Assistant use the same transparent master logo", () => {
   const match = main.match(/function OralynVectorBrand\(\) \{[\s\S]*?\n\}/);
   assert.ok(match);
-  assert.match(match[0], /src="\/oralyn-approved-logo\.png"/);
+  assert.match(match[0], /src="\/oralyn-official-logo\.png"/);
   const assistant = read("../src/assistant.jsx");
-  assert.match(assistant, /src="\/oralyn-approved-logo\.png"/);
+  assert.match(assistant, /src="\/oralyn-official-logo\.png"/);
   assert.match(css, /\.oralyn-app-squircle\{background:transparent!important/);
   assert.match(css, /\.oralyn-approved-wordmark\{width:clamp\(112px,9vw,140px\)!important/);
   const serviceWorker = read("../public/sw.js");
-  assert.match(serviceWorker, /"\/oralyn-approved-logo\.png"/);
-  assert.match(captureScript, /oralyn-approved-logo\.png/);
+  assert.match(serviceWorker, /"\/oralyn-official-logo\.png"/);
+  assert.match(captureScript, /oralyn-official-logo\.png/);
 });
 
 test("the root render is protected by the visible React error boundary", () => {

@@ -4210,3 +4210,50 @@ main.oralyn-reference-layout {
 .oralyn-app-squircle{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:visible!important}
 .oralyn-app-squircle img{width:100%!important;height:100%!important;object-fit:contain!important;filter:none!important}
 .oralyn-approved-wordmark{width:clamp(112px,9vw,140px)!important;max-height:none!important;height:auto!important;object-fit:contain!important;background:transparent!important}
+
+/* Official high-resolution Oralyn master: larger, unboxed and consistently legible. */
+.oralyn-reference-story .oralyn-auth-brand .oralyn-approved-wordmark {
+  width: clamp(170px, 14vw, 210px) !important;
+  max-width: 100%;
+  height: auto !important;
+  max-height: none !important;
+  object-fit: contain;
+}
+.oralyn-app-squircle {
+  width: clamp(150px, 15vw, 184px) !important;
+  height: auto !important;
+  aspect-ratio: 1231 / 1207;
+  margin: 0 auto 12px !important;
+  display: block !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+.oralyn-app-squircle img {
+  width: 100% !important;
+  height: auto !important;
+  object-fit: contain !important;
+  filter: none !important;
+}
+.brand img {
+  width: 164px !important;
+  height: auto !important;
+  max-height: 144px;
+  object-fit: contain !important;
+  border-radius: 0 !important;
+}
+.assistant-brand img, .assistant-logo {
+  width: 156px !important;
+  height: auto !important;
+  max-height: 148px;
+  object-fit: contain !important;
+  border-radius: 0 !important;
+}
+@media (max-width: 640px) {
+  .oralyn-reference-story .oralyn-auth-brand .oralyn-approved-wordmark { width: clamp(136px, 38vw, 168px) !important; }
+  .oralyn-app-squircle { width: 138px !important; }
+  .brand img { width: 126px !important; height: auto !important; }
+  .assistant-brand img, .assistant-logo { width: 124px !important; height: auto !important; }
+}

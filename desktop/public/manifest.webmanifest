@@ -12,8 +12,8 @@
   "lang": "en-IN",
   "icons": [
     {
-      "src": "/oralyn-approved-logo.png",
-      "sizes": "180x178",
+      "src": "/oralyn-tooth-icon.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     }
