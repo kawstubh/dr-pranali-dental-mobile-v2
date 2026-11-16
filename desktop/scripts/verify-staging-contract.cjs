@@ -143,8 +143,8 @@ async function main() {
       (response, body) => response?.status === 200 &&
         body?.commit_sha === expectedPortalCommit,
       { headers: { "Cache-Control": "no-store, no-cache", Pragma: "no-cache" } },
-      2,
-      1000,
+      45,
+      2000,
     ),
   ]);
 
