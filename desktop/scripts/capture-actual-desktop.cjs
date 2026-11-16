@@ -399,16 +399,32 @@ async function verifyPublicBookingForm() {
   }
 
   const empty = await evaluate(`(() => {
+    const form = document.querySelector("#booking");
     let fetchCalls = 0;
+    let nativeValidity = true;
     const originalFetch = window.fetch;
+    const originalReportValidity = form.reportValidity.bind(form);
     window.fetch = (...args) => { fetchCalls += 1; return originalFetch(...args); };
-    document.querySelector("#submit").click();
+    form.reportValidity = () => {
+      nativeValidity = form.checkValidity();
+      return nativeValidity;
+    };
+    const submitEvent = new Event("submit", { bubbles: true, cancelable: true });
+    form.dispatchEvent(submitEvent);
+    form.reportValidity = originalReportValidity;
     window.fetch = originalFetch;
     const message = document.querySelector("#message");
-    return { fetchCalls, visibleError: message.classList.contains("error"), text: message.textContent };
+    return {
+      fetchCalls,
+      nativeValidity,
+      submitPrevented: submitEvent.defaultPrevented,
+      visibleError: message.classList.contains("error"),
+      text: message.textContent,
+    };
   })()`);
-  if (empty.fetchCalls !== 0 || !empty.visibleError || !empty.text.includes("required fields")) {
-    throw new Error("Empty guest booking did not show a safe validation message: " + JSON.stringify(empty));
+  if (empty.fetchCalls !== 0 || empty.nativeValidity || !empty.submitPrevented ||
+      !empty.visibleError || !empty.text.includes("required fields")) {
+    throw new Error("Empty guest booking did not show a safe validation message without browser UI: " + JSON.stringify(empty));
   }
 
   const past = await evaluate(`(() => {
