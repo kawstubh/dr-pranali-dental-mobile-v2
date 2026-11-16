@@ -749,7 +749,14 @@ async function captureAssistantAdminGate() {
     ws.addEventListener("message", (event) => {
       const message = JSON.parse(event.data);
       if (message.method === "Runtime.exceptionThrown") {
-        runtimeErrors.push(message.params.exceptionDetails?.text || "runtime exception");
+        const details = message.params.exceptionDetails || {};
+        runtimeErrors.push({
+          text: details.text || "runtime exception",
+          description: details.exception?.description || "",
+          url: details.url || "",
+          lineNumber: details.lineNumber ?? null,
+          columnNumber: details.columnNumber ?? null,
+        });
       }
       if (message.method === "Log.entryAdded" && message.params.entry?.level === "error") {
         runtimeErrors.push(message.params.entry.text);
