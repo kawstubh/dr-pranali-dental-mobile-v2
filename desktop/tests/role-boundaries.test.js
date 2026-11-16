@@ -146,7 +146,7 @@ test("public booking uses a custom searchable service picker while preserving th
   assert.match(bookingSource, /if \(!serviceSelect\.value\)/);
   assert.match(bookingSource, /Please choose a dental service before sending your request/);
   assert.match(bookingSource, /serviceSelect\.dispatchEvent\(new Event\("change", \{ bubbles: true \}\)\)/);
-  assert.match(bookingSource, /treatment_type:\\s*String\\(data.get\\("treatment_type"\\)\\)/);
+  assert.match(bookingSource, /treatment_type:\s*String\(data.get\("treatment_type"\)\)/);
   assert.match(bookingSource, /serviceSelect\.value/);
   assert.match(bookingSource, /Dental Check-up &amp; Consultation/);
   assert.match(bookingSource, /Emergency Dental Care/);
