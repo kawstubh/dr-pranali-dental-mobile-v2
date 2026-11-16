@@ -109,7 +109,8 @@ test("guest booking sends a stable idempotency key and validates future IST time
   assert.match(bookingSource, /id="phone-error"/);
   assert.doesNotMatch(bookingSource, /name="note"/);
   assert.match(bookingSource, /name="date" id="date" type="date" required/);
-  assert.match(bookingSource, /Request only — clinic will contact you to confirm/);
+  assert.match(bookingSource, /Request only\\./);
+  assert.match(bookingSource, /Contact details are used only to respond/);
   assert.match(bookingSource, /dateInput\.min = localToday/);
   assert.match(bookingSource, /form\.addEventListener\("invalid"/);
   assert.match(bookingSource, /name="phone" id="phone" type="tel"/);
