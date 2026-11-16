@@ -116,3 +116,19 @@ test("browser font acceptance attaches a Playfair probe and verifies both local 
   assert.match(captureScript, /matchingFaces/);
   assert.match(captureScript, /fontFaceRules/);
 });
+
+
+test("retired Oralyn logo variants are excluded from the public asset directory", () => {
+  for (const filename of [
+    "oralyn-approved-logo.png",
+    "oralyn-logo-approved.webp",
+    "oralyn-app-icon-approved.webp",
+    "oralyn-wordmark-transparent.svg",
+  ]) {
+    assert.equal(
+      existsSync(new URL("../public/" + filename, import.meta.url)),
+      false,
+      filename + " is retired and must not ship in the public build"
+    );
+  }
+});

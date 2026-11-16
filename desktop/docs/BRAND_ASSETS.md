@@ -16,8 +16,7 @@
 
 ## Retired assets
 
-- The recreated `oralyn-wordmark-transparent.svg` is not approved and must not be rendered.
-- Earlier low-resolution and boxed logo files are retired. Do not restore them as brand sources.
+- The recreated `oralyn-wordmark-transparent.svg` and legacy `oralyn-approved-logo.png`, `oralyn-logo-approved.webp`, and `oralyn-app-icon-approved.webp` variants have been removed from `public/`. Do not reintroduce or render them.
 - The approved Dr. Pranali Dental Clinic logo is a separate identity and must not be replaced by Oralyn branding.
 
 ## Asset integrity
