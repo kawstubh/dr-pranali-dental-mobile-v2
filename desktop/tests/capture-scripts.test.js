@@ -140,6 +140,9 @@ test("preview server stays alive for responsive and synthetic UI captures in one
   assert.match(captureStep, /trap cleanup_preview EXIT/);
   assert.match(captureStep, /verify-portal-security-headers\.cjs/);
   assert.match(captureStep, /capture-actual-desktop\.cjs/);
+  assert.match(captureStep, /ORALYN_PREVIEW_URL="\$ORALYN_PORTAL_ORIGIN" ORALYN_CAPTURE_OUTPUT=evidence\/live-hosted-portal node scripts\/capture-actual-desktop\.cjs/);
+  assert.match(source, /name: oralyn-live-hosted-portal-screens/);
+  assert.match(source, /path: desktop\/evidence\/live-hosted-portal\//);
   assert.match(captureStep, /capture-synthetic-doctor\.cjs/);
   assert.match(captureStep, /capture-synthetic-assistant\.cjs/);
 });
