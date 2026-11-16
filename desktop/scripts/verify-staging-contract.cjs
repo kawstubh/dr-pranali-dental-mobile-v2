@@ -130,13 +130,32 @@ async function main() {
   const backendPr = await githubPullRequest("kawstubh/universal-intelligence-engine", 60);
   const expectedApiCommit = backendPr?.head?.sha || "";
 
-  const [dentalHealthWait, portalManifestWait] = await Promise.all([
+  // Render free-tier instances can cold-start after inactivity. Warm the
+  // lightweight endpoint first, then require healthy readiness and database
+  // identity within bounded retry windows. A 5xx is never accepted as success.
+  const healthResult = await waitForResponse(
+    apiOrigin + "/health",
+    (response, body) => response?.status === 200 && body?.status === "ok",
+    { headers: originHeaders },
+    20,
+    3000,
+  );
+  const [dentalHealthWait, readyResult, portalManifestWait] = await Promise.all([
     waitForResponse(
       apiOrigin + "/v1/dental/health",
       (response, body) => response?.status === 200 &&
         body?.database_identity_verified === true &&
         body?.database_branch_identity_verified === true,
       { headers: originHeaders },
+      20,
+      3000,
+    ),
+    waitForResponse(
+      apiOrigin + "/ready",
+      (response) => response?.status === 200,
+      { headers: originHeaders },
+      12,
+      2500,
     ),
     waitForResponse(
       portalOrigin + "/oralyn-build-manifest.json?expected_commit=" + encodeURIComponent(expectedPortalCommit),
@@ -150,20 +169,6 @@ async function main() {
 
   const dentalHealthResult = dentalHealthWait;
   const health = dentalHealthWait.body;
-  const healthResult = await waitForResponse(
-    apiOrigin + "/health",
-    (response) => response?.status === 200,
-    { headers: originHeaders },
-    4,
-    2500,
-  );
-  const readyResult = await waitForResponse(
-    apiOrigin + "/ready",
-    (response) => response?.status === 200,
-    { headers: originHeaders },
-    4,
-    2500,
-  );
   const apiStackOk = healthResult.response?.status === 200 &&
     readyResult.response?.status === 200 &&
     dentalHealthResult.response?.status === 200 &&
