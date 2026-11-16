@@ -94,6 +94,17 @@ test("guest booking collects minimum contact details and uses public appointment
   assert.match(bookingSource, /\/v1\/dental\/public\/appointments/);
   assert.match(bookingSource, /Your appointment request has been received/);
 });
+test("public booking uses an accessible custom dental service picker instead of the platform-native option popup", () => {
+  assert.match(bookingSource, /id="service-picker"/);
+  assert.match(bookingSource, /id="service-trigger"[^>]*aria-haspopup="listbox"/);
+  assert.match(bookingSource, /id="service-options"[^>]*role="listbox"/);
+  assert.match(bookingSource, /function renderServiceOptions/);
+  assert.match(bookingSource, /serviceSelect\.hidden = true/);
+  assert.match(bookingSource, /event\.key === "ArrowDown"/);
+  assert.match(bookingSource, /event\.key === "Escape"/);
+  assert.match(bookingSource, /aria-selected/);
+  assert.match(bookingSource, /No matching services/);
+});
 
 test("guest booking sends a stable idempotency key and validates future IST time", () => {
   assert.match(bookingSource, /idempotency_key:\s*idempotencyKey/);
