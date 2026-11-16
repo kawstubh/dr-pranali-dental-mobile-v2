@@ -615,7 +615,6 @@ async function verifyServicePicker() {
       ariaInvalid: trigger.getAttribute("aria-invalid"),
     };
     form.reset();
-    date.min = "2026-11-16";
     const dateParts = new Intl.DateTimeFormat("en-GB", {
       timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit"
     }).formatToParts(new Date());
