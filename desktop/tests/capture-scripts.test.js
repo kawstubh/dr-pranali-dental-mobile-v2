@@ -187,6 +187,14 @@ test("real browser booking validation waits for the approved logo asset before m
   assert.match(source, /Approved Oralyn booking logo did not load before visibility verification/);
 });
 
+test("empty booking screenshot validation avoids native browser popovers", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.match(source, /form\.reportValidity = \(\) => \{/);
+  assert.match(source, /nativeValidity = form\.checkValidity\(\)/);
+  assert.match(source, /new Event\("submit", \{ bubbles: true, cancelable: true \}\)/);
+  assert.match(source, /Empty guest booking did not show a safe validation message without browser UI/);
+});
+
 test("booking browser capture restores a clean form after negative validation checks", () => {
   const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
   assert.match(source, /const restored = await evaluate/);
