@@ -187,6 +187,15 @@ test("real browser booking validation waits for the approved logo asset before m
   assert.match(source, /Approved Oralyn booking logo did not load before visibility verification/);
 });
 
+test("booking browser capture restores a clean form after negative validation checks", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.match(source, /const restored = await evaluate/);
+  assert.match(source, /form\.reset\(\)/);
+  assert.match(source, /date\.min = \${JSON\.stringify\(state\.minDate\)}/);
+  assert.match(source, /message\.className = "msg"/);
+  assert.match(source, /Booking form was not restored to a clean state/);
+});
+
 test("real browser capture validates the deployed staging booking page at mobile, tablet and desktop sizes", () => {
   const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
   assert.ok(source.includes("fontResults.liveStagingBookingValidation = await verifyPublicBookingForm();"));
