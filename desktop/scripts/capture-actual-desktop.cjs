@@ -437,7 +437,34 @@ async function verifyPublicBookingForm() {
   if (past.fetchCalls !== 0 || !past.visibleError || !past.text.includes("future date and time")) {
     throw new Error("Past IST appointment was not blocked before network submission: " + JSON.stringify(past));
   }
-  return { ...state, emptySubmit: empty, pastTimeSubmit: past };
+
+  const restored = await evaluate(`(() => {
+    const form = document.querySelector("#booking");
+    const date = document.querySelector("#date");
+    const message = document.querySelector("#message");
+    form.reset();
+    date.min = ${JSON.stringify(state.minDate)};
+    date.value = ${JSON.stringify(state.minDate)};
+    for (const name of ["name", "phone", "treatment_type", "date", "time"]) {
+      form.elements[name]?.setCustomValidity("");
+    }
+    const phoneError = document.querySelector("#phone-error");
+    if (phoneError) phoneError.textContent = "";
+    message.className = "msg";
+    message.textContent = "";
+    return {
+      minDate: date.min,
+      value: date.value,
+      blank: !form.elements.name.value && !form.elements.phone.value &&
+        !form.elements.treatment_type.value && !form.elements.time.value,
+      messageCleared: !message.classList.contains("error") && !message.textContent,
+    };
+  })()`);
+  if (restored.minDate !== state.minDate || restored.value !== state.minDate ||
+      !restored.blank || !restored.messageCleared) {
+    throw new Error("Booking form was not restored to a clean state after negative validation checks: " + JSON.stringify(restored));
+  }
+  return { ...state, emptySubmit: empty, pastTimeSubmit: past, formReset: restored };
 }
 
 async function submitSyntheticGuestBooking(seed) {
