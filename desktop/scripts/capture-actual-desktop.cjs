@@ -381,6 +381,7 @@ async function verifyPublicBookingForm() {
       minDateAttribute: date.getAttribute("min"),
       expectedMinDate: today,
       scriptReady: Boolean(date.min === today),
+      initStage: window.__oralynBookingScriptStage || "not-run",
       timezoneNotice: document.body.innerText.includes("Asia/Kolkata"),
       accountFree: document.body.innerText.includes("No account or OTP required."),
       logoVisible: (() => {
@@ -397,6 +398,7 @@ async function verifyPublicBookingForm() {
       apiOrigin: document.querySelector('meta[name="oralyn-api-origin"]')?.content?.trim() || "",
     };
   })()`);
+  state.runtimeErrors = runtimeErrors.slice(-10);
   const expectedApiOrigin = new URL(apiBase).origin;
   if (state.apiOrigin !== expectedApiOrigin) {
     throw new Error("Public booking API origin does not match the configured portal API: " + JSON.stringify({
