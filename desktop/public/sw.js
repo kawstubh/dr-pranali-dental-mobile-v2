@@ -5,6 +5,7 @@ const SHELL = [
   "/oralyn-pwa-192.png",
   "/oralyn-pwa-512.png",
   "/oralyn-logo-approved.webp",
+  "/oralyn-wordmark-transparent.svg",
   "/oralyn-app-icon-approved.webp"
 ];
 
