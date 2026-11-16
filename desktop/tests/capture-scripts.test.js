@@ -193,6 +193,8 @@ test("booking browser capture restores a clean form after negative validation ch
   assert.match(source, /form\.reset\(\)/);
   assert.match(source, /date\.min = \${JSON\.stringify\(state\.minDate\)}/);
   assert.match(source, /message\.className = "msg"/);
+  assert.match(source, /document\.activeElement\?\.blur\(\)/);
+  assert.match(source, /focusCleared: !form\.contains\(document\.activeElement\)/);
   assert.match(source, /Booking form was not restored to a clean state/);
 });
 
