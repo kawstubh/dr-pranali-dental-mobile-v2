@@ -133,6 +133,22 @@ test("guest booking sends a stable idempotency key and validates future IST time
   assert.match(bookingSource, /name="phone" id="phone" type="tel"/);
 });
 
+test("public booking uses a custom searchable service picker while preserving the clinic service catalogue", () => {
+  assert.match(bookingSource, /id="service-trigger"/);
+  assert.match(bookingSource, /role="listbox"/);
+  assert.match(bookingSource, /function renderServiceOptions\(searchTerm = ""\)/);
+  assert.match(bookingSource, /serviceSearchInput\.addEventListener\("input"/);
+  assert.match(bookingSource, /serviceSelect\.removeAttribute\("required"\)/);
+  assert.match(bookingSource, /if \(!serviceSelect\.value\)/);
+  assert.match(bookingSource, /Please choose a dental service before sending your request/);
+  assert.match(bookingSource, /serviceSelect\.dispatchEvent\(new Event\("change", \{ bubbles: true \}\)\)/);
+  assert.match(bookingSource, /serviceSelect\.value = String\(data\.get\("treatment_type"\)\)/);
+  assert.match(bookingSource, /serviceSelect\.value/);
+  assert.match(bookingSource, /Dental Check-up &amp; Consultation/);
+  assert.match(bookingSource, /Emergency Dental Care/);
+  assert.match(bookingSource, /Other dental concern/);
+});
+
 test("patient private records are not rendered in the public account-free experience", () => {
   assert.match(patientHomeSource, /clinical records, prescriptions and invoices remain protected/);
   assert.doesNotMatch(bookingSource, /clinical notes|odontogram|prescription|invoice|patient_id|appointment_id/i);
