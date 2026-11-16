@@ -172,6 +172,14 @@ test("synthetic Doctor and Assistant fixtures record PWA state without duplicati
 });;
 
 
+test("real browser capture verifies the custom mobile dental service picker", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.match(source, /async function verifyServicePicker\(\)/);
+  assert.match(source, /patient-booking-service-picker-390x844\.png/);
+  assert.match(source, /fontResults\.patientServicePicker = await verifyServicePicker\(\)/);
+  assert.match(source, /patient_service_picker_keyboard=passed/);
+});
+
 test("real browser capture checks shorter mobile booking viewport heights", () => {
   const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
   assert.match(source, /patient-booking-375x600/);
