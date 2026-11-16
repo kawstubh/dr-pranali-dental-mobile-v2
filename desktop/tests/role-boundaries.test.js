@@ -94,6 +94,12 @@ test("guest booking collects minimum contact details and uses public appointment
   assert.match(bookingSource, /\/v1\/dental\/public\/appointments/);
   assert.match(bookingSource, /Your appointment request has been received/);
 });
+test("public booking inline script parses before browser execution", () => {
+  const inlineScript = bookingSource.match(/<script>([\\s\\S]*?)<\\/script>/)?.[1];
+  assert.ok(inlineScript, "expected one inline booking script");
+  assert.doesNotThrow(() => new vm.Script(inlineScript, { filename: "patient-booking-inline.js" }));
+});
+
 test("public booking uses an accessible custom dental service picker instead of the platform-native option popup", () => {
   assert.match(bookingSource, /id="service-picker"/);
   assert.match(bookingSource, /id="service-trigger"[^>]*aria-haspopup="listbox"/);
