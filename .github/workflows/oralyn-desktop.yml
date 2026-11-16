@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 20
     env:
       VITE_DENTAL_API_URL: https://oralyn-staging-api-assistant.onrender.com
-      ORALYN_PORTAL_ORIGIN: https://oralyn-staging-all-portals.onrender.com
+      ORALYN_PORTAL_ORIGIN: https://oralyn-staging-all-portals-web.onrender.com
       ORALYN_ENVIRONMENT: staging
       ORALYN_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     defaults:
