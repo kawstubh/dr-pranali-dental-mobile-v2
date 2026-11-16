@@ -100,6 +100,7 @@ jobs:
           test -x "$CHROME_BIN" || { echo "::error::Configured Chrome path is not executable: $CHROME_BIN"; exit 1; }
           "$CHROME_BIN" --version
           node scripts/capture-actual-desktop.cjs
+          ORALYN_PREVIEW_URL="$ORALYN_PORTAL_ORIGIN" ORALYN_CAPTURE_OUTPUT=evidence/live-hosted-portal node scripts/capture-actual-desktop.cjs
           echo "ORALYN_GUEST_BOOKING_BROWSER_E2E_VERIFIED=true" >> "$GITHUB_ENV"
           ORALYN_CAPTURE_OUTPUT=evidence/synthetic-doctor node scripts/capture-synthetic-doctor.cjs
           ORALYN_CAPTURE_OUTPUT=evidence/synthetic-assistant node scripts/capture-synthetic-assistant.cjs
@@ -112,6 +113,13 @@ jobs:
         with:
           name: oralyn-desktop-actual-screens
           path: desktop/evidence/actual-desktop/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload live hosted portal screenshots
+        uses: actions/upload-artifact@v7
+        with:
+          name: oralyn-live-hosted-portal-screens
+          path: desktop/evidence/live-hosted-portal/
           if-no-files-found: error
           retention-days: 14
       - name: Upload synthetic Doctor UI evidence (not staging acceptance)
