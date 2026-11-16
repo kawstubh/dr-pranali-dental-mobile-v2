@@ -338,6 +338,16 @@ async function waitForApprovedBookingLogo() {
 
 async function verifyPublicBookingForm() {
   await waitForApprovedBookingLogo();
+  await waitFor(() => evaluate(`(() => {
+    const date = document.querySelector("#date");
+    if (!date) return false;
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit"
+    }).formatToParts(new Date());
+    const part = (type) => parts.find((item) => item.type === type)?.value || "";
+    const today = part("year") + "-" + part("month") + "-" + part("day");
+    return date.min === today;
+  })()`), 12000);
   const state = await evaluate(`(() => {
     const form = document.querySelector("#booking");
     const service = document.querySelector("#treatment-type");
@@ -368,7 +378,9 @@ async function verifyPublicBookingForm() {
         option.value === "Other dental concern"
       ).length,
       minDate: date.min,
+      minDateAttribute: date.getAttribute("min"),
       expectedMinDate: today,
+      scriptReady: Boolean(date.min === today),
       timezoneNotice: document.body.innerText.includes("Asia/Kolkata"),
       accountFree: document.body.innerText.includes("No account or OTP required."),
       logoVisible: (() => {
