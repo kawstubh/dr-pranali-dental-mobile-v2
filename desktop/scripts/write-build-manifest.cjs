@@ -159,6 +159,8 @@ const checks = {
   production_data_residency_privacy_review_verified: flag(process.env.ORALYN_PRODUCTION_DATA_RESIDENCY_PRIVACY_REVIEW_VERIFIED),
   production_custom_domain_verified: flag(process.env.ORALYN_PRODUCTION_DOMAIN_VERIFIED),
   production_deployment_approval_verified: flag(process.env.ORALYN_PRODUCTION_DEPLOYMENT_APPROVED),
+  // Repository branch protections are a release prerequisite; remain false until an administrator verifies required checks.
+  repository_branch_protection_verified: flag(process.env.ORALYN_REPOSITORY_BRANCH_PROTECTION_VERIFIED),
 };
 const blockers = Object.entries(checks)
   .filter(([, passed]) => !passed)

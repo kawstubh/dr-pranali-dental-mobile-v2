@@ -50,6 +50,7 @@ test("staging manifest records verified public gates without claiming live booki
         ORALYN_GUEST_BOOKING_E2E_VERIFIED: "false",
         ORALYN_MOBILE_BROWSER_E2E_VERIFIED: "true",
         ORALYN_PHYSICAL_IPHONE_SAFARI_VERIFIED: "false",
+        ORALYN_REPOSITORY_BRANCH_PROTECTION_VERIFIED: "false",
         ORALYN_SERVICE_CATALOG_UI_VERIFIED: "true",
         ORALYN_SERVICE_CATALOG_API_VERIFIED: "true",
         ORALYN_PATIENT_ACCOUNT_FREE_VERIFIED: "true",
@@ -85,6 +86,7 @@ test("staging manifest records verified public gates without claiming live booki
     assert.equal(manifest.checks.patient_guest_booking_e2e_verified, false);
     assert.equal(manifest.checks.mobile_browser_e2e_verified, true);
     assert.equal(manifest.checks.physical_iphone_safari_verified, false);
+    assert.equal(manifest.checks.repository_branch_protection_verified, false);
     assert.equal(manifest.checks.public_service_catalog_ui_verified, true);
     assert.equal(manifest.checks.public_service_catalog_api_verified, true);
     assert.equal(manifest.checks.patient_account_routes_disabled_verified, true);
@@ -115,6 +117,7 @@ test("staging manifest records verified public gates without claiming live booki
       "guest_booking_idempotency_verified",
       "production_guest_rate_limiting_verified",
       "physical_iphone_safari_verified",
+      "repository_branch_protection_verified",
       "assistant_ui_api_verified",
       "cross_tenant_e2e_verified",
       "authenticated_screenshots_verified",
