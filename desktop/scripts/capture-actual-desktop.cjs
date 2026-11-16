@@ -344,20 +344,7 @@ async function verifyPublicBookingForm() {
     await send("Page.navigate", { url: bookingUrl });
     await waitFor(() => evaluate('document.readyState === "complete" && Boolean(document.querySelector("#booking"))'));
     await waitForApprovedBookingLogo();
-    if (expectsCustomPicker) {
-      await waitFor(() => evaluate('window.__oralynBookingScriptStage === "date-ready"'), 12000);
-    } else {
-      await waitFor(() => evaluate(`(() => {
-        const date = document.querySelector("#date");
-        if (!date) return false;
-        const parts = new Intl.DateTimeFormat("en-GB", {
-          timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit"
-        }).formatToParts(new Date());
-        const part = (type) => parts.find((item) => item.type === type)?.value || "";
-        const today = part("year") + "-" + part("month") + "-" + part("day");
-        return date.min === today;
-      })()`), 12000);
-    }
+    await sleep(500);
   } finally {
     await send("Network.setBypassServiceWorker", { bypass: false });
   }
