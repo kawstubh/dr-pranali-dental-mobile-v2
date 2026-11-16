@@ -192,7 +192,7 @@ const serviceOptionsContainer = document.getElementById("service-options");
 const serviceError = document.getElementById("service-error");
 let serviceOptionButtons = [];
 const serviceGroups = Array.from(serviceSelect.children).flatMap((child) => {
-  if (child.tagName === "OPTGROUP") return [{ label: child.label, options: Array.from(child.options) }];
+  if (child.tagName === "OPTGROUP") return [{ label: child.label, options: Array.from(child.children).filter((option) => option.tagName === "OPTION") }];
   if (child.tagName === "OPTION" && child.value) return [{ label: "Other", options: [child] }];
   return [];
 });
