@@ -95,7 +95,11 @@ test("guest booking collects minimum contact details and uses public appointment
   assert.match(bookingSource, /Your appointment request has been received/);
 });
 test("public booking inline script parses before browser execution", () => {
-  const inlineScript = bookingSource.match(/<script>([\\s\\S]*?)<\\/script>/)?.[1];
+  const scriptStart = bookingSource.indexOf("<script>");
+  const scriptEnd = bookingSource.indexOf("</script>", scriptStart);
+  const inlineScript = scriptStart >= 0 && scriptEnd > scriptStart
+    ? bookingSource.slice(scriptStart + "<script>".length, scriptEnd)
+    : "";
   assert.ok(inlineScript, "expected one inline booking script");
   assert.doesNotThrow(() => new vm.Script(inlineScript, { filename: "patient-booking-inline.js" }));
 });
