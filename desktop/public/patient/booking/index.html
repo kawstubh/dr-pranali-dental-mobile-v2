@@ -276,6 +276,7 @@ function chooseService(value) {
   closeServiceMenu();
 }
 serviceSelect.hidden = true;
+serviceSelect.removeAttribute("required");
 serviceSelect.setAttribute("aria-hidden", "true");
 serviceSelect.tabIndex = -1;
 serviceTrigger.hidden = false;
@@ -411,6 +412,15 @@ form.addEventListener("submit", async (event) => {
   event.preventDefault();
   message.className = "msg";
   message.textContent = "";
+  if (!serviceSelect.value) {
+    serviceError.textContent = "Please choose a dental service.";
+    serviceError.classList.add("visible");
+    serviceTrigger.setAttribute("aria-invalid", "true");
+    serviceTrigger.focus();
+    message.className = "msg error";
+    message.textContent = "Please choose a dental service before sending your request.";
+    return;
+  }
   if (!form.reportValidity()) return;
   if (!API_BASE) {
     message.className = "msg error";
@@ -462,6 +472,7 @@ form.addEventListener("submit", async (event) => {
       throw new Error(detail);
     }
     form.reset();
+    syncServicePicker();
     dateInput.value = localToday;
     rotateIdempotencyKey();
     message.className = "msg success";
