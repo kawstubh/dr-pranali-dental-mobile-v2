@@ -118,6 +118,41 @@ async function verifyNoVerticalOverflow(expectedHeight) {
   return layout;
 }
 
+async function verifyMobileDoctorLoginVisibility() {
+  const state = await evaluate(`(() => {
+    const root = document.documentElement;
+    const card = document.querySelector(".oralyn-reference-card");
+    const email = card?.querySelector('input[type="email"]');
+    const password = card?.querySelector('input[type="password"]');
+    const submit = card?.querySelector(".oralyn-signin");
+    const rect = (element) => {
+      if (!element) return null;
+      const box = element.getBoundingClientRect();
+      return { top: box.top, bottom: box.bottom, width: box.width, height: box.height };
+    };
+    const withinViewport = (box) => Boolean(box && box.width > 0 && box.height > 0 &&
+      box.top >= -1 && box.bottom <= root.clientHeight + 1);
+    const emailRect = rect(email);
+    const passwordRect = rect(password);
+    const submitRect = rect(submit);
+    return {
+      viewportWidth: root.clientWidth,
+      viewportHeight: root.clientHeight,
+      cardTop: rect(card)?.top ?? null,
+      emailVisible: withinViewport(emailRect),
+      passwordVisible: withinViewport(passwordRect),
+      submitVisible: withinViewport(submitRect),
+      emailRect,
+      passwordRect,
+      submitRect,
+    };
+  })()`);
+  if (!state || state.viewportWidth > 640 || !state.emailVisible || !state.passwordVisible || !state.submitVisible) {
+    throw new Error("Doctor sign-in email, password and submit must be visible in the first mobile viewport: " + JSON.stringify(state));
+  }
+  return state;
+}
+
 async function capture(name, width, height, mobile = false) {
   await send("Emulation.setDeviceMetricsOverride", {
     width, height, deviceScaleFactor: 1, mobile,
@@ -802,6 +837,7 @@ async function captureAssistantAdminGate() {
       "Sign in with your clinic-issued email and password",
       "doctor-login"
     );
+    fontResults.doctorLogin.mobileLoginVisibility = await verifyMobileDoctorLoginVisibility();
     const accessibilityResults = {};
     accessibilityResults.doctorKeyboardFocus = await verifyKeyboardFocus();
     accessibilityResults.reducedMotion = await verifyReducedMotion();
@@ -918,6 +954,7 @@ async function captureAssistantAdminGate() {
       "font_playfair_display_loaded=" + fontResults.doctorLogin.playfairDisplay,
       "approved_logo_wordmark_loaded=" + approvedLogoAssets.wordmark,
       "approved_app_icon_loaded=" + approvedLogoAssets.appIcon,
+      "doctor_mobile_login_primary_controls_visible=" + Boolean(fontResults.doctorLogin.mobileLoginVisibility?.emailVisible && fontResults.doctorLogin.mobileLoginVisibility?.passwordVisible && fontResults.doctorLogin.mobileLoginVisibility?.submitVisible),
       "pwa_service_worker_controlled=" + fontResults.doctorLogin.pwa.controlled,
       "pwa_cache_name_present=" + fontResults.doctorLogin.pwa.cachePresent,
       "pwa_api_cache_entries=" + fontResults.doctorLogin.pwa.forbidden.length,
