@@ -161,6 +161,7 @@ textarea{min-height:88px;resize:vertical}
 </section>
 </main>
 <script>
+window.__oralynBookingScriptStage = "started";
 const API_BASE = (() => {
   const configured = document.querySelector('meta[name="oralyn-api-origin"]')?.content?.trim() || "";
   try {
@@ -280,6 +281,7 @@ serviceSelect.tabIndex = -1;
 serviceTrigger.hidden = false;
 servicePicker.classList.add("is-enhanced");
 syncServicePicker();
+window.__oralynBookingScriptStage = "service-picker-ready";
 serviceSelect.addEventListener("change", syncServicePicker);
 serviceTrigger.addEventListener("click", () => {
   if (serviceMenu.hidden) openServiceMenu();
@@ -388,6 +390,7 @@ const localToday = clinicPart("year") + "-" + clinicPart("month") + "-" + clinic
 dateInput.min = localToday;
 dateInput.setAttribute("min", localToday);
 dateInput.value = localToday;
+window.__oralynBookingScriptStage = "date-ready";
 dateInput.addEventListener("change", () => {
   dateInput.setCustomValidity(dateInput.value && dateInput.value < localToday
     ? "Please choose today or a future date." : "");
