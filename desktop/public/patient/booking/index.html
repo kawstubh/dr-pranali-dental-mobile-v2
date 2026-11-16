@@ -273,6 +273,8 @@ function chooseService(value) {
   serviceSelect.value = value;
   serviceSelect.dispatchEvent(new Event("change", { bubbles: true }));
   serviceError.textContent = "";
+  serviceError.classList.remove("visible");
+  serviceTrigger.removeAttribute("aria-invalid");
   closeServiceMenu();
 }
 serviceSelect.hidden = true;
@@ -365,6 +367,8 @@ const clearValidationMessage = () => {
     message.textContent = "";
   }
   if (serviceError.textContent) serviceError.textContent = "";
+  serviceError.classList.remove("visible");
+  serviceTrigger.removeAttribute("aria-invalid");
 };
 form.addEventListener("invalid", (event) => {
   message.className = "msg error";
