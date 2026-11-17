@@ -11,23 +11,44 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function request(path, init = {}) {
   let lastError;
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  let lastTransientStatus = null;
+  const maxAttempts = 10;
+  const retryableStatuses = new Set([502, 503, 504]);
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const delayMs = Math.min(8000, 1500 * (2 ** Math.min(attempt, 3)));
     try {
       const response = await fetch(API_ORIGIN + path, {
         ...init,
-        signal: AbortSignal.timeout(20000),
+        signal: AbortSignal.timeout(12000),
       });
-      if ([502, 503, 504].includes(response.status) && attempt < 2) {
-        await wait(1200 * (attempt + 1));
-        continue;
+      if (retryableStatuses.has(response.status)) {
+        lastTransientStatus = response.status;
+        await response.arrayBuffer();
+        if (attempt < maxAttempts - 1) {
+          console.warn("[Oralyn staging] transient HTTP " + response.status + " for " + path +
+            "; retry " + (attempt + 2) + "/" + maxAttempts + " in " + delayMs + "ms.");
+          await wait(delayMs);
+          continue;
+        }
+        throw new Error("Assistant staging API remained HTTP " + response.status +
+          " for " + path + " after " + maxAttempts + " attempts.");
       }
       return response;
     } catch (error) {
       lastError = error;
-      if (attempt < 2) await wait(1200 * (attempt + 1));
+      if (attempt < maxAttempts - 1) {
+        console.warn("[Oralyn staging] request to " + path + " did not complete; retry " +
+          (attempt + 2) + "/" + maxAttempts + " in " + delayMs + "ms.");
+        await wait(delayMs);
+      }
     }
   }
-  throw lastError || new Error("Assistant staging API did not respond.");
+  if (lastTransientStatus !== null) {
+    throw new Error("Assistant staging API remained unavailable for " + path +
+      " after " + maxAttempts + " bounded attempts (last HTTP " + lastTransientStatus + ").");
+  }
+  throw new Error("Assistant staging API did not respond for " + path + " after " +
+    maxAttempts + " bounded attempts.", { cause: lastError });
 }
 
 async function expectStatus(path, status, { consume = true } = {}) {

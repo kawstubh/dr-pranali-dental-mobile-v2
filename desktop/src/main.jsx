@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+﻿import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   LayoutDashboard,
@@ -348,11 +348,11 @@ function App() {
         <div className="pwa-update-banner" role="status">
           <span>A new Oralyn portal update is ready.</span>
           <button onClick={applyPwaUpdate}>Refresh portal</button>
-          <button className="pwa-dismiss" aria-label="Dismiss update notice" onClick={() => setPwaUpdateReady(false)}>×</button>
+          <button className="pwa-dismiss" aria-label="Dismiss update notice" onClick={() => setPwaUpdateReady(false)}><X size={14} aria-hidden="true" /></button>
         </div>
       )}
       <aside className={mobile ? "sidebar open" : "sidebar"}>
-        <div className="brand"><img src="/oralyn-logo-approved.webp" alt="Oralyn official wordmark" /><button className="close" onClick={() => B(false)}>
+        <div className="brand"><img src="/oralyn-official-logo.png" alt="Oralyn official wordmark" /><button className="close" onClick={() => B(false)}>
             <X />
           </button>
         </div>
@@ -412,11 +412,11 @@ function App() {
             {role === "doctor" && (<div className="search">
               <Search />
               <input
-                placeholder="Search patients, records…"
+                placeholder="Search patients, recordsâ€¦"
                 value={search}
                 onChange={(e) => S(e.target.value)}
               />
-              <kbd>⌘ K</kbd>
+              <kbd>âŒ˜ K</kbd>
             </div>)}
             {role === "doctor" && (workspaces.length > 1 ? (
               <select className="workspace-switcher" aria-label="Switch clinic workspace" value={activeWorkspace?.id || activeWorkspace?.clinic_id || ""} onChange={(event) => switchWorkspace(event.target.value)}>
@@ -425,7 +425,7 @@ function App() {
             ) : <span className={activeWorkspace ? "workspace-chip" : "workspace-chip missing"}>{activeWorkspace?.name || "No active workspace"}</span>)}
             <button
               className="bell"
-              onClick={() => ping("You’re all caught up.")}
+              onClick={() => ping("Youâ€™re all caught up.")}
             >
               <Bell />
               <i />
@@ -486,8 +486,8 @@ function App() {
   );
 }
 function OralynVectorBrand() {
-  return <div className="oralyn-vector-brand" aria-label="Oralyn — Smart Dental Care for Healthier Smiles">
-    <img className="oralyn-approved-wordmark" src="/oralyn-logo-approved.webp" alt="Oralyn — Smart Dental Care for Healthier Smiles" />
+  return <div className="oralyn-vector-brand" aria-label="Oralyn Smart Dental Care for Healthier Smiles">
+    <img className="oralyn-approved-wordmark" src="/oralyn-official-logo.png" alt="Oralyn Smart Dental Care for Healthier Smiles" />
   </div>;
 }
 function OralynClinicIllustration() {
@@ -540,7 +540,7 @@ function LoginScreen({ loading, error, onLogin, onPatient, onAssistant }) {
       </section>
       <section className="oralyn-auth-panel oralyn-reference-panel" aria-label="Doctor sign in">
         <div className="oralyn-auth-card oralyn-reference-card">
-          <div className="oralyn-app-squircle" aria-label="Oralyn approved app icon"><img src="/oralyn-app-icon-approved.webp" alt="Oralyn app icon" /></div>
+          <div className="oralyn-app-squircle" aria-label="Oralyn approved app icon"><img src="/oralyn-tooth-icon.png" alt="Oralyn tooth icon" /></div>
           <span className="oralyn-auth-label">DOCTOR PORTAL</span>
           <h2>Oralyn Doctor</h2>
           <p className="oralyn-auth-subtitle">Sign in with your clinic-issued email and password.</p>
@@ -563,8 +563,8 @@ function LoginScreen({ loading, error, onLogin, onPatient, onAssistant }) {
           </form>
           <div className="oralyn-auth-divider"><span>SECURE CLINIC ACCESS</span></div>
           <div className="oralyn-reference-admin-note">Your account is issued and managed by your clinic administrator. Public sign-up is disabled.</div>
-          <button className="oralyn-team-link" onClick={onAssistant}>Clinic Assistant sign in <span>→</span></button>
-          <button className="oralyn-patient-link" onClick={onPatient}>Patient services &amp; appointment requests <span>→</span></button>
+          <button className="oralyn-team-link" onClick={onAssistant}>Clinic Assistant sign in <ArrowUpRight size={14} aria-hidden="true" /></button>
+          <button className="oralyn-patient-link" onClick={onPatient}>Patient services &amp; appointment requests <ArrowUpRight size={14} aria-hidden="true" /></button>
         </div>
       </section>
     </main>
@@ -669,7 +669,7 @@ function ClinicModal({ page, patients, token, onClose, onSaved, ping }) {
                   </option>
                   {patients.map((p) => (
                     <option value={p.id}>
-                      {p.name} · {p.phone || p.id}
+                      {p.name}  |  {p.phone || p.id}
                     </option>
                   ))}
                 </select>
@@ -697,7 +697,7 @@ function ClinicModal({ page, patients, token, onClose, onSaved, ping }) {
             disabled={busy || (!isPatient && !patients.length)}
           >
             {busy
-              ? "Saving securely…"
+              ? "Saving securelyâ€¦"
               : isPatient
                 ? "Save patient"
                 : "Save appointment"}
@@ -766,7 +766,7 @@ function AccountSettings({ user, activeWorkspace, onSignOut }) {
           <div className="settings-list">
             <div><small>Account</small><b>{user?.email || user?.name || "Authenticated account"}</b></div>
             <div><small>Role</small><b>{user?.role || "Doctor"}</b></div>
-            <div><small>Session</small><b>Authenticated · session-managed</b></div>
+            <div><small>Session</small><b>Authenticated  |  session-managed</b></div>
           </div>
         </Panel>
         <Panel title="Linked clinic" sub="The active record context used for protected portal requests.">
@@ -887,7 +887,7 @@ function Doctor({
   const people = patients.map((p) => [
     (p.name || "Unknown patient").split(" ").map((x) => x[0]).slice(0, 2).join("").toUpperCase(),
     p.name || "Unknown patient",
-    p.id || "—",
+    p.id || "â€”",
     p.phone || "Phone not recorded",
   ]);
   const orderedAppointments = [...appointments].sort((a, b) => new Date(a.starts_at || "").getTime() - new Date(b.starts_at || "").getTime());
@@ -901,8 +901,8 @@ function Doctor({
   const now = new Date();
   const greeting = now.getHours() < 12 ? "Good morning" : now.getHours() < 17 ? "Good afternoon" : "Good evening";
   const todayLabel = now.toLocaleDateString("en-IN", { weekday: "long", day: "2-digit", month: "long", year: "numeric" }).toUpperCase();
-  const dashboardCount = (key) => dashboardSummaryLoading ? "…" : dashboardSummary ? Number(dashboardSummary[key] || 0) : "—";
-  const dashboardMoney = (key) => dashboardSummaryLoading ? "…" : dashboardSummary ? new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(dashboardSummary[key] || 0) / 100) : "—";
+  const dashboardCount = (key) => dashboardSummaryLoading ? "â€¦" : dashboardSummary ? Number(dashboardSummary[key] || 0) : "â€”";
+  const dashboardMoney = (key) => dashboardSummaryLoading ? "â€¦" : dashboardSummary ? new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(dashboardSummary[key] || 0) / 100) : "â€”";
   const dashboardUnavailable = dashboardSummaryError
     ? "Live workspace metrics are unavailable: " + dashboardSummaryError
     : "Live workspace metrics are not available from this API environment yet.";
@@ -935,7 +935,7 @@ function Doctor({
               .map((x) => x[0])
               .slice(0, 2)
               .join("")
-              .toUpperCase() || "—"}
+              .toUpperCase() || "â€”"}
           </span>
           <div>
             <h2>
@@ -945,7 +945,7 @@ function Doctor({
             <p>
               {activePatient
                 ? activePatient.id +
-                  " · " +
+                  "  |  " +
                   (activePatient.phone || "Phone not recorded")
                 : "Add a patient record to begin clinical charting."}
             </p>
@@ -959,7 +959,7 @@ function Doctor({
           </label>
           <div className="next">
             <small>Next appointment</small>
-            <b>{nextAppointment ? `${new Date(nextAppointment.starts_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} · ${formatTime(nextAppointment.starts_at)}` : "No appointment scheduled"}</b>
+            <b>{nextAppointment ? `${new Date(nextAppointment.starts_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}  |  ${formatTime(nextAppointment.starts_at)}` : "No appointment scheduled"}</b>
           </div>
           <button className="outline" onClick={() => P("patients")}>Open patient directory</button>
         </div>
@@ -977,7 +977,7 @@ function Doctor({
         </div>
         <Panel
           title="Clinical intelligence"
-          sub="Doctor-only decision support · Patient-facing AI is disabled."
+          sub="Doctor-only decision support  |  Patient-facing AI is disabled."
         >
           <button
             className="primary"
@@ -1004,7 +1004,7 @@ function Doctor({
               }
             }}
           >
-            {aiBusy ? "Preparing summary…" : "Generate clinician summary"}
+            {aiBusy ? "Preparing summaryâ€¦" : "Generate clinician summary"}
           </button>
           {aiResult && (
             <div className="airesult" aria-live="polite">
@@ -1036,7 +1036,7 @@ function Doctor({
         <div className="clinical">
           <Panel
             title="Dental chart"
-            sub="FDI notation · Select a tooth to review or update findings"
+            sub="FDI notation  |  Select a tooth to review or update findings"
           >
             <div className="legend">
               <span><i className="swatch snr" />Not recorded</span>
@@ -1080,7 +1080,7 @@ function Doctor({
                       }[findings[n] || "not-recorded"],
                     }}
                   >
-                    ◒
+                    â—’
                   </span>
                 </button>
               ))}
@@ -1109,14 +1109,14 @@ function Doctor({
                       }[findings[n] || "not-recorded"],
                     }}
                   >
-                    ◒
+                    â—’
                   </span>
                   <small>{n}</small>
                 </button>
               ))}
             </div>
             <p className="disclaimer">
-              Clinic chart · Changes are saved only when you select Save
+              Clinic chart  |  Changes are saved only when you select Save
               finding.
             </p>
           </Panel>
@@ -1203,7 +1203,7 @@ function Doctor({
                     <td className="patient-actions-cell">
                       <div className="patient-row-actions">
                         <button className="link" onClick={() => { setSelectedPatientId(String(p[2])); P("clinical"); }}>
-                          Open ›
+                          Open â€º
                         </button>
                       </div>
                     </td>
@@ -1242,7 +1242,7 @@ function Doctor({
               year: "numeric",
             })}
           </b>
-          <span className="muted">All scheduled visits · clinic-local time</span>
+          <span className="muted">All scheduled visits  |  clinic-local time</span>
         </div>
         {appointmentError && <div className="autherror" role="alert">{appointmentError}</div>}
         <div className="schedule">
@@ -1288,7 +1288,7 @@ function Doctor({
                       </select>
                     </label>
                     <button className="outline" disabled={!changed || Boolean(appointmentBusyId)} onClick={() => saveAppointment(appointment)}>
-                      {appointmentBusyId === String(appointment.id) ? "Saving…" : "Save changes"}
+                      {appointmentBusyId === String(appointment.id) ? "Savingâ€¦" : "Save changes"}
                     </button>
                   </div>
                 </div>
@@ -1353,7 +1353,7 @@ function Doctor({
               <div className="listrow">Active treatment plans <b>{dashboardCount("active_treatment_plan_count")}</b></div>
             </>
           ) : (
-            <div className="empty-state">{dashboardSummaryLoading ? "Loading live workspace metrics…" : dashboardUnavailable}</div>
+            <div className="empty-state">{dashboardSummaryLoading ? "Loading live workspace metricsâ€¦" : dashboardUnavailable}</div>
           )}
         </Panel>
       </>
@@ -1364,9 +1364,9 @@ function Doctor({
         <div>
           <div className="eyebrow">{todayLabel}</div>
           <h1>
-            {greeting}, {doctorDisplayName(user)} <span>✦</span>
+            {greeting}, {doctorDisplayName(user)} <span>âœ¦</span>
           </h1>
-          <p>Here’s your practice overview for today.</p>
+          <p>Hereâ€™s your practice overview for today.</p>
         </div>
         <button className="primary" onClick={() => M(true)}>
           <Plus />
@@ -1405,7 +1405,7 @@ function Doctor({
           sub="Your next appointments"
           action={
             <button className="link" onClick={() => P("appointments")}>
-              Full calendar ↗
+              Full calendar <ArrowUpRight size={14} aria-hidden="true" /><ArrowUpRight size={14} aria-hidden="true" />
             </button>
           }
         >
@@ -1437,7 +1437,7 @@ function Doctor({
               <div className="listrow">Outstanding balance <b>{dashboardMoney("outstanding_balance_paise")}</b></div>
             </>
           ) : (
-            <div className="empty-state">{dashboardSummaryLoading ? "Loading live workspace metrics…" : dashboardUnavailable}</div>
+            <div className="empty-state">{dashboardSummaryLoading ? "Loading live workspace metricsâ€¦" : dashboardUnavailable}</div>
           )}
           <div className="listrow">
             Patients in clinic <b>{dashboardSummary ? dashboardCount("patient_count") : patients.length}</b>
@@ -1465,7 +1465,7 @@ function Doctor({
             in one place.
           </p>
           <button onClick={() => P("clinical")}>
-            Open clinical workspace ›
+            Open clinical workspace â€º
           </button>
         </div>
       </div>
@@ -1609,7 +1609,7 @@ function WorkspaceManagement({ token, user, workspaces, activeWorkspace, workspa
       </Panel>
       <div className="workspace-grid">
         <Panel title="Available workspaces" sub="Only memberships returned for this doctor are displayed.">
-          {loading && <div className="empty-state">Loading organisation workspaces…</div>}
+          {loading && <div className="empty-state">Loading organisation workspacesâ€¦</div>}
           {visible.length ? visible.map((item) => {
             const id = item.id || item.clinic_id;
             const active = String(id) === String(activeWorkspace?.id || activeWorkspace?.clinic_id);
@@ -1682,9 +1682,21 @@ createRoot(document.getElementById("root")).render(
     {isAssistantRoute ? (
       <AssistantApp />
     ) : redirectPatientRoute || isLegacyAssistantAdminRoute ? (
-      <main className="redirect-screen" role="status">Opening the secure clinic workspace…</main>
+      <main className="redirect-screen" role="status">Opening the secure clinic workspaceâ€¦</main>
     ) : (
       <App />
     )}
   </ErrorBoundary>,
 );
+
+
+
+
+
+
+
+
+
+
+
+

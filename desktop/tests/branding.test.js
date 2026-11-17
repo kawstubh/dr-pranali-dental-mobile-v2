@@ -1,4 +1,4 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, statSync } from "node:fs";
 
@@ -35,18 +35,30 @@ test("licensed display and body fonts are bundled locally with traceable source 
   assert.match(fontsDoc, /C40F2293766A503BC70CCE9E512EF844A4CCB7CBCDE792FE2EA31D191917D8D6/);
 });
 
-test("the approved Oralyn wordmark and app mark are used; provisional artwork is not shipped", () => {
-  for (const path of ["../public/oralyn-logo-approved.webp", "../public/oralyn-app-icon-approved.webp"]) {
-    assert.ok(existsSync(new URL(path, import.meta.url)), path + " must exist");
-    assert.ok(statSync(new URL(path, import.meta.url)).size > 1000);
-  }
-  assert.ok(patientHome.includes('href="/oralyn-app-icon-approved.webp"'));
-  assert.match(main, /src="\/oralyn-logo-approved\.webp"/);
-  assert.match(html, /href="\/oralyn-app-icon-approved\.webp"/);
-  assert.doesNotMatch(main + html, /oralyn-app-icon\.png|oralyn-mark\.png|oralyn-logo-recovered\.jpg/);
-  assert.doesNotMatch(css, /\.brand img,\s*\.authbrand img\s*\{\s*display:\s*none/i);
-  assert.match(brandDoc, /Oralyn Investor Presentation_20261020_200633_0000\.pptx/);
-  assert.match(brandDoc, /ppt\/media\/image1\.png/);
+test("all portal brand placements use the user-approved transparent Oralyn master artwork", () => {
+  const approved = "../public/oralyn-official-logo.png";
+  assert.ok(existsSync(new URL(approved, import.meta.url)));
+  assert.ok(statSync(new URL(approved, import.meta.url)).size > 1000);
+  assert.ok(patientHome.includes('href="/oralyn-tooth-icon.png"') || patientHome.includes('src="/oralyn-official-logo.png"'));
+  assert.ok(patientBooking.includes('src="/oralyn-official-logo.png"'));
+  assert.match(main, /src="\/oralyn-official-logo\.png"/);
+  assert.match(html, /href="\/oralyn-tooth-icon\.png"/);
+  assert.match(brandDoc, /Official master artwork/);
+  assert.match(brandDoc, /1231.*1207 px/);
+  assert.doesNotMatch(main + read("../src/assistant.jsx"), /oralyn-wordmark-transparent\.svg|oralyn-logo-approved\.webp/);
+});
+
+test("Doctor sign-in, Patient and Assistant use the same transparent master logo", () => {
+  const match = main.match(/function OralynVectorBrand\(\) \{[\s\S]*?\n\}/);
+  assert.ok(match);
+  assert.match(match[0], /src="\/oralyn-official-logo\.png"/);
+  const assistant = read("../src/assistant.jsx");
+  assert.match(assistant, /src="\/oralyn-official-logo\.png"/);
+  assert.match(css, /\.oralyn-app-squircle\{background:transparent!important/);
+  assert.match(css, /\.oralyn-approved-wordmark\{width:clamp\(112px,9vw,140px\)!important/);
+  const serviceWorker = read("../public/sw.js");
+  assert.match(serviceWorker, /"\/oralyn-official-logo\.png"/);
+  assert.match(captureScript, /oralyn-official-logo\.png/);
 });
 
 test("the root render is protected by the visible React error boundary", () => {
@@ -104,3 +116,18 @@ test("browser font acceptance attaches a Playfair probe and verifies both local 
   assert.match(captureScript, /matchingFaces/);
   assert.match(captureScript, /fontFaceRules/);
 });
+
+
+test("retired Oralyn logo variants are excluded from the public asset directory", () => {
+  for (const filename of [
+    "oralyn-approved-logo.png",
+    "oralyn-wordmark-transparent.svg",
+  ]) {
+    assert.equal(
+      existsSync(new URL("../public/" + filename, import.meta.url)),
+      false,
+      filename + " is retired and must not ship in the public build"
+    );
+  }
+});
+

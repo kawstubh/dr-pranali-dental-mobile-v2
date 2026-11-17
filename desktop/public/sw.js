@@ -2,10 +2,8 @@ const CACHE_NAME = "oralyn-portal-shell-__ORALYN_BUILD_ID__";
 const SHELL = [
   "/",
   "/manifest.webmanifest",
-  "/oralyn-pwa-192.png",
-  "/oralyn-pwa-512.png",
-  "/oralyn-logo-approved.webp",
-  "/oralyn-app-icon-approved.webp"
+  "/oralyn-official-logo.png",
+  "/oralyn-tooth-icon.png",
 ];
 
 self.addEventListener("install", (event) => {

@@ -1,4 +1,4 @@
-import assert from "node:assert/strict";
+﻿import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -30,25 +30,23 @@ const escapeHtml = (value) => value
   .replaceAll('"', "&quot;")
   .replaceAll("'", "&#39;");
 
-test("the public catalogue publishes all twenty shared dental services with local images", () => {
+test("the patient home page presents all twenty dental services in a plain dropdown without service images", () => {
   assert.equal(services.length, 20);
   assert.equal(new Set(services.map((service) => service.id)).size, 20);
-  assert.equal(new Set(services.map((service) => service.image)).size, 20);
-  assert.equal((home.match(/<article class="service-card">/g) || []).length, 20);
-  assert.ok(home.includes("@media(max-width:700px){.service-grid{grid-template-columns:repeat(2"));
-  assert.ok(home.includes("@media(max-width:380px){.service-grid{grid-template-columns:1fr"));
+  assert.equal((home.match(/<option value="[^"]+">/g) || []).length, 21);
+  assert.match(home, /id="home-service"/);
+  assert.match(home, /Choose a dental service/);
+  assert.match(home, /home-service-continue/);
+  assert.doesNotMatch(home, /<img[^>]+\/services\//);
+  assert.doesNotMatch(home, /class="service-card"|class="service-image"/);
 
   for (const service of services) {
-    const image = `${service.image}.png`;
-    assert.ok(existsSync(path.join(publicServicesPath, image)), `Missing public image ${image}`);
-    assert.ok(home.includes(`/services/${image}`), `Home page does not reference ${image}`);
-    assert.ok(home.includes(escapeHtml(service.name)), `Home page is missing ${service.name}`);
-    assert.ok(home.includes(`/patient/booking/?service=${service.id}`), `Service link is missing for ${service.id}`);
-    assert.ok(booking.includes(`<option value="${escapeHtml(service.name)}">`), `Booking option is missing for ${service.name}`);
-    assert.ok(booking.includes(`"${service.id}":"${service.name}"`), `Booking preselection is missing for ${service.id}`);
+    assert.ok(home.includes(`value="${service.id}"`), `Home dropdown is missing ${service.id}`);
+    assert.ok(home.includes(escapeHtml(service.name)), `Home dropdown is missing ${service.name}`);
+    assert.ok(booking.includes(`<option value="${escapeHtml(service.name)}">`), `Booking option is missing ${service.name}`);
+    assert.ok(booking.includes(`"${service.id}":"${service.name}"`), `Booking preselection is missing ${service.id}`);
   }
 });
-
 test("public service pages remain account-free and patient AI-free", () => {
   for (const page of [home, booking]) {
     assert.doesNotMatch(page, /patient\/(?:login|signup|register)|supabase.*auth|intelligence_request\s*:\s*true/i);
@@ -75,3 +73,5 @@ test("guest booking exposes required and future IST validation", () => {
   assert.match(booking, /Please choose a future date and time\./);
   assert.doesNotMatch(booking, /min="2026-11-13"/);
 });
+
+

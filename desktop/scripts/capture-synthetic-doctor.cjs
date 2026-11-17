@@ -261,6 +261,26 @@ async function main() {
   await capture("doctor-appointments-1440x1000.png");
   await capture("doctor-appointments-390x844.png", 390, 844, true);
 
+  await navigate("/doctor/notes", "Clinical notes");
+  await waitFor(() => evaluate('document.body.innerText.includes("No clinical notes have been recorded for this patient.") && document.body.innerText.includes("New clinical note")'));
+  await capture("doctor-clinical-notes-1440x1000.png");
+  await capture("doctor-clinical-notes-390x844.png", 390, 844, true);
+
+  await navigate("/doctor/treatments", "Treatment plans");
+  await waitFor(() => evaluate('document.body.innerText.includes("No treatment plans have been created for this patient.") && document.body.innerText.includes("Create a treatment plan")'));
+  await capture("doctor-treatment-plans-1440x1000.png");
+  await capture("doctor-treatment-plans-390x844.png", 390, 844, true);
+
+  await navigate("/doctor/billing", "Billing & invoices");
+  await waitFor(() => evaluate('document.body.innerText.includes("No invoices have been created for this patient.") && document.body.innerText.includes("Create an invoice")'));
+  await capture("doctor-billing-1440x1000.png");
+  await capture("doctor-billing-390x844.png", 390, 844, true);
+
+  await navigate("/doctor/reports", "Reports & analytics");
+  await waitFor(() => evaluate('document.body.innerText.includes("Financial position") && document.body.innerText.includes("Outstanding balance")'));
+  await capture("doctor-reports-1440x1000.png");
+  await capture("doctor-reports-390x844.png", 390, 844, true);
+
   await navigate("/doctor/files", "Private documents");
   await waitFor(() => evaluate('document.body.innerText.includes("Uploads, downloads and review are disabled")'));
   const privateDocumentControls = await evaluate("(() => ({fileInput:Boolean(document.querySelector('input[type=file]')),uploadButton:[...document.querySelectorAll('button')].some((item)=>(item.innerText||'').includes('Upload securely')),shareButton:[...document.querySelectorAll('button')].some((item)=>(item.innerText||'').includes('Share with patient')),downloadButton:[...document.querySelectorAll('button')].some((item)=>(item.innerText||'').includes('Download'))}))()");

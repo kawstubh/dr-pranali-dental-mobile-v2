@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 20
     env:
       VITE_DENTAL_API_URL: https://oralyn-staging-api-assistant.onrender.com
-      ORALYN_PORTAL_ORIGIN: https://oralyn-web-portal-spa.onrender.com
+      ORALYN_PORTAL_ORIGIN: https://oralyn-staging-all-portals-web.onrender.com
       ORALYN_ENVIRONMENT: staging
       ORALYN_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     defaults:
@@ -34,19 +34,24 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: desktop/package-lock.json
-      - name: Verify root workspace install and audit
+      - name: Install root workspace dependencies
         working-directory: .
-        run: |
-          npm ci --ignore-scripts
-          npm audit --audit-level=low
+        run: npm ci --ignore-scripts
+      - name: Audit root workspace dependencies
+        id: root_audit
+        working-directory: .
+        continue-on-error: true
+        run: npm audit --audit-level=low
       - name: Install locked dependencies
         run: npm ci
       - name: Run desktop regression tests
         run: npm test
       - name: Record memory-only Doctor token storage verification
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feat/oralyn-desktop-app'
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         run: echo "ORALYN_DOCTOR_TOKEN_STORAGE_HARDENING_VERIFIED=true" >> "$GITHUB_ENV"
       - name: Audit dependencies
+        id: desktop_audit
+        continue-on-error: true
         run: npm audit --audit-level=low
       - name: Build staging-targeted desktop bundle
         run: npm run build
@@ -55,7 +60,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/verify-staging-contract.cjs
       - name: Verify live Assistant API contract (read-only)
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feat/oralyn-desktop-app'
+        if: github.event_name == 'pull_request'
         run: |
           node scripts/verify-assistant-staging-contract.cjs
           echo "ORALYN_ASSISTANT_API_CONTRACT_READONLY_VERIFIED=true" >> "$GITHUB_ENV"
@@ -100,6 +105,7 @@ jobs:
           test -x "$CHROME_BIN" || { echo "::error::Configured Chrome path is not executable: $CHROME_BIN"; exit 1; }
           "$CHROME_BIN" --version
           node scripts/capture-actual-desktop.cjs
+          ORALYN_PREVIEW_URL="$ORALYN_PORTAL_ORIGIN" ORALYN_CAPTURE_OUTPUT=evidence/live-hosted-portal node scripts/capture-actual-desktop.cjs
           echo "ORALYN_GUEST_BOOKING_BROWSER_E2E_VERIFIED=true" >> "$GITHUB_ENV"
           ORALYN_CAPTURE_OUTPUT=evidence/synthetic-doctor node scripts/capture-synthetic-doctor.cjs
           ORALYN_CAPTURE_OUTPUT=evidence/synthetic-assistant node scripts/capture-synthetic-assistant.cjs
@@ -112,6 +118,13 @@ jobs:
         with:
           name: oralyn-desktop-actual-screens
           path: desktop/evidence/actual-desktop/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload live hosted portal screenshots
+        uses: actions/upload-artifact@v7
+        with:
+          name: oralyn-live-hosted-portal-screens
+          path: desktop/evidence/live-hosted-portal/
           if-no-files-found: error
           retention-days: 14
       - name: Upload synthetic Doctor UI evidence (not staging acceptance)
@@ -137,3 +150,13 @@ jobs:
           path: desktop/dist/
           if-no-files-found: error
           retention-days: 14
+      - name: Enforce dependency audit release gate
+        if: always()
+        env:
+          ROOT_AUDIT_OUTCOME: ${{ steps.root_audit.outcome }}
+          DESKTOP_AUDIT_OUTCOME: ${{ steps.desktop_audit.outcome }}
+        run: |
+          if [ "$ROOT_AUDIT_OUTCOME" = "failure" ] || [ "$DESKTOP_AUDIT_OUTCOME" = "failure" ]; then
+            echo "::error::Dependency audit failed. Independent build, staging and browser checks were allowed to run; review their results separately. Release remains blocked."
+            exit 1
+          fi

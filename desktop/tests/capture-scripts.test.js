@@ -1,4 +1,4 @@
-import { test } from "node:test";
+﻿import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -63,8 +63,8 @@ test("real browser capture verifies legacy Assistant admin route redirects to Do
 
 test("real browser capture verifies the approved Oralyn wordmark and app icon load", () => {
   const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
-  assert.match(source, /oralyn-logo-approved\.webp/);
-  assert.match(source, /oralyn-app-icon-approved\.webp/);
+  assert.match(source, /oralyn-official-logo\.png/);
+  assert.match(source, /oralyn-tooth-icon\.png/);
   assert.match(source, /approvedLogoAssets\.wordmark/);
   assert.match(source, /approvedLogoAssets\.appIcon/);
 });
@@ -74,6 +74,17 @@ test("real browser capture follows the current premium Doctor login and patient-
   assert.match(source, /Sign in with your clinic-issued email and password/);
   assert.match(source, /Patient services & appointment requests/);
   assert.doesNotMatch(source, /Sign in with your clinic doctor account|Public patient services/);
+});
+
+test("real browser capture verifies the short-desktop Doctor sign-in submit stays reachable", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.ok(source.includes("doctor-login-short-desktop-top-1366x600.png"));
+  assert.ok(source.includes("doctor-login-short-desktop-submit-1366x600.png"));
+  assert.ok(source.includes("shortDesktopLogin.submitVisible"));
+  assert.ok(source.includes('cardMaxHeight !== "none"'));
+  const css = readFileSync(join(process.cwd(), "src", "styles.css"), "utf8");
+  assert.match(css, /\.oralyn-reference-card\{width:min\(100%,510px\);max-height:none!important;overflow:visible!important/);
+  assert.ok(source.includes('scrollIntoView({ block: "center", inline: "nearest" })'));
 });
 
 test("synthetic Assistant capture exercises the SPA route, memory-only login, reception, appointments and billing", () => {
@@ -140,8 +151,17 @@ test("preview server stays alive for responsive and synthetic UI captures in one
   assert.match(captureStep, /trap cleanup_preview EXIT/);
   assert.match(captureStep, /verify-portal-security-headers\.cjs/);
   assert.match(captureStep, /capture-actual-desktop\.cjs/);
+  assert.match(captureStep, /ORALYN_PREVIEW_URL="\$ORALYN_PORTAL_ORIGIN" ORALYN_CAPTURE_OUTPUT=evidence\/live-hosted-portal node scripts\/capture-actual-desktop\.cjs/);
+  assert.match(source, /name: oralyn-live-hosted-portal-screens/);
+  assert.match(source, /path: desktop\/evidence\/live-hosted-portal\//);
   assert.match(captureStep, /capture-synthetic-doctor\.cjs/);
   assert.match(captureStep, /capture-synthetic-assistant\.cjs/);
+});
+
+test("staging contract labels the merged backend PR without stale Draft wording", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "verify-staging-contract.cjs"), "utf8");
+  assert.ok(source.includes("live API deployment commit exactly matches PR #60 head "));
+  assert.doesNotMatch(source, /Draft PR #60/);
 });
 
 test("release workflow derives live gates instead of hard-coding them true", () => {
@@ -171,6 +191,94 @@ test("synthetic Doctor and Assistant fixtures record PWA state without duplicati
   assert.ok(realBrowser.includes("!status.controlled"));
 });;
 
+
+test("authenticated Doctor workspace prevents browser-page scrolling while containing long work views", () => {
+  const css = readFileSync(join(process.cwd(), "src", "styles.css"), "utf8");
+  assert.match(css, /html:has\(\.shell\),body:has\(\.shell\)/);
+  assert.match(css, /\.shell>main\{height:100vh;height:100dvh;min-height:0;overflow:hidden/);
+  assert.match(css, /\.shell>main>\.content\{[^}]*overflow-y:auto/);
+});
+test("viewport-fit browser gate covers Patient, Doctor and Assistant entry screens", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "verify-viewport-fit.cjs"), "utf8");
+  assert.match(source, /Patient Home/);
+  assert.match(source, /Patient Booking/);
+  assert.match(source, /Doctor Login/);
+  assert.match(source, /Assistant Login/);
+  assert.match(source, /verticalOverflow/);
+  assert.match(source, /horizontalOverflow/);
+  assert.match(source, /\[1366,768,false\]/);
+  assert.match(source, /\[390,844,true\]/);
+  assert.match(source, /\[320,568,true\]/);
+});
+test("real browser capture verifies the native mobile dental service dropdown", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.match(source, /async function verifyServicePicker\(\)/);
+  assert.ok(source.includes("patient-booking-native-service-dropdown-390x844.png"));
+  assert.match(source, /fontResults\.patientServicePicker = await verifyServicePicker\(\)/);
+  assert.match(source, /patient_service_dropdown_keyboard=passed/);
+});
+test("real browser capture keeps Patient Home viewport-fit and allows reachable scrolling on short booking screens", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.match(source, /name\.startsWith\("patient-booking-"\)/);
+  assert.match(source, /async function verifyScrollableBooking\(expectedHeight\)/);
+  assert.match(source, /submitReachable/);
+  assert.match(source, /scrollAllowed/);
+  assert.match(source, /name\.startsWith\("patient-home-"\)[\s\S]*?verifyNoVerticalOverflow\(height\)/);
+  assert.match(source, /patient-home-1366x768/);
+  assert.match(source, /patient-home-375x600/);
+  assert.match(source, /patient-home-320x568/);
+  assert.match(source, /patient-booking-375x600/);
+  assert.match(source, /patient-booking-320x568/);
+  assert.match(source, /patient-booking-360x640/);
+});
+test("real browser booking validation waits for the approved logo asset before measuring visibility", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.match(source, /async function waitForApprovedBookingLogo\(\)/);
+  assert.match(source, /await waitForApprovedBookingLogo\(\);/);
+  assert.match(source, /logo && logo\.complete && logo\.naturalWidth > 0/);
+  assert.match(source, /Approved Oralyn booking logo did not load before visibility verification/);
+});
+
+test("empty booking screenshot validation avoids native browser popovers", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.match(source, /form\.reportValidity = \(\) => \{/);
+  assert.match(source, /nativeValidity = form\.checkValidity\(\)/);
+  assert.match(source, /new Event\("submit", \{ bubbles: true, cancelable: true \}\)/);
+  assert.match(source, /Empty guest booking did not show a safe validation message without browser UI/);
+});
+
+test("booking browser capture restores a clean form after negative validation checks", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.match(source, /const restored = await evaluate/);
+  assert.match(source, /form\.reset\(\)/);
+  assert.match(source, /date\.min = \${JSON\.stringify\(state\.minDate\)}/);
+  assert.match(source, /message\.className = "msg"/);
+  assert.match(source, /document\.activeElement\?\.blur\(\)/);
+  assert.match(source, /focusCleared: !form\.contains\(document\.activeElement\)/);
+  assert.match(source, /Booking form was not restored to a clean state/);
+});
+
+test("real browser capture validates the deployed staging booking page at mobile, tablet and desktop sizes", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.ok(source.includes("fontResults.liveStagingBookingValidation = await verifyPublicBookingForm();"));
+  for (const viewport of [
+    "patient-booking-live-staging-320x568",
+    "patient-booking-live-staging-375x600",
+    "patient-booking-live-staging-360x640",
+    "patient-booking-live-staging-375x667",
+    "patient-booking-live-staging-390x844",
+    "patient-booking-live-staging-768x1024",
+    "patient-booking-live-staging-1366x768",
+  ]) assert.ok(source.includes(viewport), viewport);
+});
+
+test("staging manifest waits for the exact portal commit while Render auto-deploys", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "verify-staging-contract.cjs"), "utf8");
+  const start = source.indexOf('portalOrigin + "/oralyn-build-manifest.json?expected_commit="');
+  const end = source.indexOf("const dentalHealthResult", start);
+  assert.ok(start >= 0 && end > start);
+  assert.match(source.slice(start, end), /},\s*45,\s*2000,\s*\)/);
+});
 
 test("real browser capture verifies public booking API origin matches the configured API", () => {
   const capture = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
@@ -210,4 +318,55 @@ test("real browser capture fails before screenshot when a responsive viewport ha
   assert.match(source, /Math\.max\(rootScrollWidth, bodyScrollWidth\) > viewportWidth \+ 1/);
   assert.match(source, /await verifyNoHorizontalOverflow\(width\)/);
   assert.match(source, /Horizontal page overflow at/);
+});
+
+
+test("staging API checks tolerate bounded Render cold starts without accepting transient 5xx responses", () => {
+  const staging = readFileSync(join(process.cwd(), "scripts", "verify-staging-contract.cjs"), "utf8");
+  const assistant = readFileSync(join(process.cwd(), "scripts", "verify-assistant-staging-contract.cjs"), "utf8");
+  assert.match(staging, /apiOrigin \+ "\/health"/);
+  assert.match(staging, /body\?\.status === "ok"/);
+  assert.match(staging, /20,\s*3000/);
+  assert.match(staging, /body\?\.database_identity_verified === true/);
+  assert.match(assistant, /const maxAttempts = 10/);
+  assert.match(assistant, /new Set\(\[502, 503, 504\]\)/);
+  assert.match(assistant, /response\.arrayBuffer\(\)/);
+  assert.match(assistant, /remained HTTP/);
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+test("real browser capture verifies Oralyn marketing homepage canonical URLs and desktop, tablet and mobile layouts", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.ok(source.includes('"/oralyn/"'));
+  assert.ok(source.includes("More clarity for your clinic."));
+  assert.ok(source.includes("oralyn-marketing-home-768x1024.png"));
+  assert.ok(source.includes("oralyn-marketing-home-320x568.png"));
+  assert.ok(source.includes("marketingCanonical.canonical"));
+  assert.ok(source.includes("marketingCanonical.openGraph"));
+  assert.ok(source.includes("marketingHomeCanonical"));
+});
+test("dependency audit failures do not skip independent staging and browser evidence but still fail release", () => {
+  const workflow = readFileSync(join(process.cwd(), "..", ".github", "workflows", "oralyn-desktop.yml"), "utf8");
+  assert.match(workflow, /id: root_audit[\s\S]*?continue-on-error: true/);
+  assert.match(workflow, /id: desktop_audit[\s\S]*?continue-on-error: true/);
+  assert.match(workflow, /Verify live synthetic staging contract/);
+  assert.match(workflow, /Verify live Assistant API contract/);
+  assert.match(workflow, /Install headless Chrome/);
+  assert.match(workflow, /Start preview and capture responsive, Doctor and Assistant UI evidence/);
+  assert.match(workflow, /Enforce dependency audit release gate/);
+  assert.match(workflow, /if: always\(\)/);
+  assert.match(workflow, /steps\.root_audit\.outcome/);
+  assert.match(workflow, /steps\.desktop_audit\.outcome/);
 });

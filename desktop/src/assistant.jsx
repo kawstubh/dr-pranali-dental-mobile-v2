@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import {
   CalendarDays,
   CheckCircle2,
@@ -429,14 +429,14 @@ export default function AssistantApp() {
   };
 
   if (booting) {
-    return <main className="assistant-shell"><div className="assistant-loading"><img src="/oralyn-logo-approved.webp" alt="Oralyn" /><p>Verifying your Clinic Assistant session…</p></div></main>;
+    return <main className="assistant-shell"><div className="assistant-loading"><img src="/oralyn-official-logo.png" alt="Oralyn" /><p>Verifying your Clinic Assistant sessionâ€¦</p></div></main>;
   }
 
   if (!token || !user) {
     return (
       <main className="assistant-shell assistant-auth-shell">
         <section className="assistant-auth-card">
-          <img className="assistant-logo" src="/oralyn-logo-approved.webp" alt="Oralyn official wordmark" />
+          <img className="assistant-logo" src="/oralyn-official-logo.png" alt="Oralyn official wordmark" />
           <div className="assistant-eyebrow">RECEPTION ACCESS</div>
           <h1>Clinic Assistant</h1>
           <p className="assistant-intro">Sign in to manage patient contact intake and appointment coordination. Clinical records and clinical intelligence remain restricted to Doctors.</p>
@@ -444,9 +444,9 @@ export default function AssistantApp() {
           <form onSubmit={signIn}>
             <label>Email address<input type="email" autoComplete="username" required value={email} onChange={(event) => setEmail(event.target.value)} /></label>
             <label>Password<input type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} /></label>
-            <button className="assistant-primary" type="submit" disabled={loginBusy}>{loginBusy ? "Signing in…" : "Sign in securely"}</button>
+            <button className="assistant-primary" type="submit" disabled={loginBusy}>{loginBusy ? "Signing inâ€¦" : "Sign in securely"}</button>
           </form>
-          <div className="assistant-auth-foot"><ShieldCheck size={16} /> Separate staff role · Server-verified clinic access</div>
+          <div className="assistant-auth-foot"><ShieldCheck size={16} /> Separate staff role  |  Server-verified clinic access</div>
           <a className="assistant-back" href="/">Back to Doctor sign in</a>
         </section>
       </main>
@@ -456,8 +456,8 @@ export default function AssistantApp() {
   return (
     <main className="assistant-shell">
       <header className="assistant-topbar">
-        <div className="assistant-brand"><img src="/oralyn-logo-approved.webp" alt="Oralyn" /><span>RECEPTION WORKSPACE</span></div>
-        <div className="assistant-user"><div><b>{user.email}</b><small>Clinic Assistant · {user.clinic_id}</small></div><button className="assistant-icon-button" onClick={signOut} aria-label="Sign out"><LogOut size={18} /></button></div>
+        <div className="assistant-brand"><img src="/oralyn-official-logo.png" alt="Oralyn" /><span>RECEPTION WORKSPACE</span></div>
+        <div className="assistant-user"><div><b>{user.email}</b><small>Clinic Assistant  |  {user.clinic_id}</small></div><button className="assistant-icon-button" onClick={signOut} aria-label="Sign out"><LogOut size={18} /></button></div>
       </header>
       <div className="assistant-content">
         <div className="assistant-heading">
@@ -477,7 +477,7 @@ export default function AssistantApp() {
             <div className="assistant-panel-heading"><div><h2>Appointment queue</h2><p>{appointments.length} active appointment{appointments.length === 1 ? "" : "s"} in this clinic. New public requests appear here for reception confirmation.</p></div><CalendarDays size={20} /></div>
             {appointments.length ? <div className="assistant-list">{appointments.map((appointment) => (
               <article className="assistant-appointment" key={appointment.id}>
-                <div className="assistant-appointment-main"><b>{appointment.patient_name || "Patient"}</b><span>{appointment.patient_phone}</span><small>{dateLabel(appointment.starts_at)} · Appointment</small></div>
+                <div className="assistant-appointment-main"><b>{appointment.patient_name || "Patient"}</b><span>{appointment.patient_phone}</span><small>{dateLabel(appointment.starts_at)}  |  Appointment</small></div>
                 <div className="assistant-appointment-actions">
                   <span className={"assistant-status status-" + String(appointment.status).replace(/[^a-z_]/g, "")}>{String(appointment.status).replaceAll("_", " ")}</span>
                   {appointment.status !== "confirmed" && !["cancelled", "completed", "no_show"].includes(appointment.status) && <button type="button" onClick={() => changeAppointment(appointment, "confirm")} disabled={busy}><CheckCircle2 size={15} /> Confirm</button>}
@@ -538,7 +538,7 @@ export default function AssistantApp() {
               <form className="assistant-form" onSubmit={addPatient}>
                 <label>Full name<input required maxLength={200} value={patientForm.name} onChange={(event) => setPatientForm((current) => ({ ...current, name: event.target.value }))} /></label>
                 <label>Mobile number<input type="tel" required minLength={7} maxLength={40} value={patientForm.phone} onChange={(event) => setPatientForm((current) => ({ ...current, phone: event.target.value }))} /></label>
-                <button className="assistant-primary" type="submit" disabled={busy}>{busy ? "Saving…" : "Save contact"}</button>
+                <button className="assistant-primary" type="submit" disabled={busy}>{busy ? "Savingâ€¦" : "Save contact"}</button>
               </form>
             </div>
           </section>
@@ -551,15 +551,15 @@ export default function AssistantApp() {
               const draft = receiptDrafts[invoice.id];
               return (
                 <article className="assistant-invoice" key={invoice.id}>
-                  <div className="assistant-invoice-head"><div><b>{invoice.invoice_number}</b><small>{invoice.patient_name} · {invoice.status} · Due {invoice.due_date || "not set"}</small></div><strong>{money(invoice.total_paise)}</strong></div>
+                  <div className="assistant-invoice-head"><div><b>{invoice.invoice_number}</b><small>{invoice.patient_name}  |  {invoice.status}  |  Due {invoice.due_date || "not set"}</small></div><strong>{money(invoice.total_paise)}</strong></div>
                   <div className="assistant-invoice-totals"><span>Paid <b>{money(invoice.paid_paise)}</b></span><span>Balance <b>{money(invoice.balance_paise)}</b></span></div>
                   {Number(invoice.balance_paise || 0) > 0 && ["issued", "partially_paid", "overdue"].includes(invoice.status) && (
                     draft?.open ? (
                       <form className="assistant-receipt-form" onSubmit={(event) => recordPayment(event, invoice)}>
-                        <label>Amount received (₹)<input type="number" min="0.01" max={(Number(invoice.balance_paise) / 100).toFixed(2)} step="0.01" required value={draft.amount} onChange={(event) => setReceiptDrafts((current) => ({ ...current, [invoice.id]: { ...draft, amount: event.target.value } }))} /></label>
+                        <label>Amount received (â‚¹)<input type="number" min="0.01" max={(Number(invoice.balance_paise) / 100).toFixed(2)} step="0.01" required value={draft.amount} onChange={(event) => setReceiptDrafts((current) => ({ ...current, [invoice.id]: { ...draft, amount: event.target.value } }))} /></label>
                         <label>Payment method<select value={draft.method} onChange={(event) => setReceiptDrafts((current) => ({ ...current, [invoice.id]: { ...draft, method: event.target.value } }))}><option value="cash">Cash</option><option value="upi">UPI</option><option value="bank_transfer">Bank transfer</option><option value="other">Other</option></select></label>
                         <label>Reference (optional)<input maxLength={128} value={draft.reference} onChange={(event) => setReceiptDrafts((current) => ({ ...current, [invoice.id]: { ...draft, reference: event.target.value } }))} /></label>
-                        <div className="assistant-receipt-actions"><button className="assistant-primary" type="submit" disabled={busy}>{busy ? "Saving…" : "Record received payment"}</button><button className="assistant-secondary" type="button" onClick={() => setReceiptDrafts((current) => { const next = { ...current }; delete next[invoice.id]; return next; })} disabled={busy}>Cancel</button></div>
+                        <div className="assistant-receipt-actions"><button className="assistant-primary" type="submit" disabled={busy}>{busy ? "Savingâ€¦" : "Record received payment"}</button><button className="assistant-secondary" type="button" onClick={() => setReceiptDrafts((current) => { const next = { ...current }; delete next[invoice.id]; return next; })} disabled={busy}>Cancel</button></div>
                         <small>Only record money the clinic has already received. The secure request key makes retries idempotent.</small>
                       </form>
                     ) : <button className="assistant-secondary assistant-record-payment" onClick={() => startReceiptDraft(invoice)} disabled={busy}>Record payment received</button>
@@ -661,12 +661,12 @@ export function AssistantManagement({ token, user }) {
       <form className="assistant-management-form" onSubmit={createAssistant}>
         <label>Assistant email<input type="email" required pattern="[^@\s]+@[^@\s]+\.[^@\s]+" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
         <label>Initial password<input type="password" required minLength={12} maxLength={256} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} /><small>At least 12 characters. The password is not displayed again after account creation.</small></label>
-        <button className="assistant-primary" type="submit" disabled={busy}>{busy ? "Saving…" : "Create Clinic Assistant"}</button>
+        <button className="assistant-primary" type="submit" disabled={busy}>{busy ? "Savingâ€¦" : "Create Clinic Assistant"}</button>
       </form>
       <div className="assistant-management-list">
         {assistants.length ? assistants.map((assistant) => (
           <article key={assistant.id} className="assistant-management-row">
-            <div><b>{assistant.email}</b><small>{assistant.active ? "Active · Assistant role" : "Inactive · Assistant role"}</small></div>
+            <div><b>{assistant.email}</b><small>{assistant.active ? "Active  |  Assistant role" : "Inactive  |  Assistant role"}</small></div>
             {assistant.active && <button type="button" className="assistant-danger-button" onClick={() => deactivate(assistant)} disabled={busy}>Deactivate</button>}
           </article>
         )) : <div className="assistant-empty"><Users size={22} /><b>No Clinic Assistants</b><span>Create a separate reception account when the clinic is ready.</span></div>}
@@ -675,3 +675,7 @@ export function AssistantManagement({ token, user }) {
     </section>
   );
 }
+
+
+
+
