@@ -34,11 +34,14 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: desktop/package-lock.json
-      - name: Verify root workspace install and audit
+      - name: Install root workspace dependencies
         working-directory: .
-        run: |
-          npm ci --ignore-scripts
-          npm audit --audit-level=low
+        run: npm ci --ignore-scripts
+      - name: Audit root workspace dependencies
+        id: root_audit
+        working-directory: .
+        continue-on-error: true
+        run: npm audit --audit-level=low
       - name: Install locked dependencies
         run: npm ci
       - name: Run desktop regression tests
@@ -47,6 +50,8 @@ jobs:
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         run: echo "ORALYN_DOCTOR_TOKEN_STORAGE_HARDENING_VERIFIED=true" >> "$GITHUB_ENV"
       - name: Audit dependencies
+        id: desktop_audit
+        continue-on-error: true
         run: npm audit --audit-level=low
       - name: Build staging-targeted desktop bundle
         run: npm run build
@@ -145,3 +150,13 @@ jobs:
           path: desktop/dist/
           if-no-files-found: error
           retention-days: 14
+      - name: Enforce dependency audit release gate
+        if: always()
+        env:
+          ROOT_AUDIT_OUTCOME: ${{ steps.root_audit.outcome }}
+          DESKTOP_AUDIT_OUTCOME: ${{ steps.desktop_audit.outcome }}
+        run: |
+          if [ "$ROOT_AUDIT_OUTCOME" = "failure" ] || [ "$DESKTOP_AUDIT_OUTCOME" = "failure" ]; then
+            echo "::error::Dependency audit failed. Build, staging contracts, browser checks and evidence were collected, but release remains blocked."
+            exit 1
+          fi
