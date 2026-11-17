@@ -833,6 +833,27 @@ async function captureAssistantAdminGate() {
     ));
     fontResults.patientHome = await captureCurrent("Your smile, your care.", "patient-home");
 
+    fontResults.marketingHome = await navigate(
+      "/oralyn/",
+      "More clarity for your clinic.",
+      "oralyn-marketing-home"
+    );
+    await capture("oralyn-marketing-home-768x1024.png", 768, 1024);
+    await capture("oralyn-marketing-home-320x568.png", 320, 568, true);
+    const expectedPortalOrigin = new URL(process.env.ORALYN_PORTAL_ORIGIN || baseUrl).origin;
+    const marketingCanonical = await evaluate(`(() => ({
+      canonical: document.querySelector('link[rel="canonical"]')?.href || "",
+      openGraph: document.querySelector('meta[property="og:url"]')?.content || "",
+    }))()`);
+    const expectedMarketingCanonical = expectedPortalOrigin + "/oralyn/";
+    if (
+      marketingCanonical.canonical !== expectedMarketingCanonical ||
+      marketingCanonical.openGraph !== expectedMarketingCanonical
+    ) {
+      throw new Error("Marketing homepage canonical/Open Graph URLs do not match the configured portal origin: " + JSON.stringify(marketingCanonical));
+    }
+    fontResults.marketingHomeCanonical = true;
+
     await send("Page.navigate", { url: baseUrl + "/patient/login" });
     await waitFor(() => evaluate(
       'location.pathname === "/patient/home/" && document.body.innerText.includes("Your smile, your care.")'
@@ -925,6 +946,7 @@ async function captureAssistantAdminGate() {
       "patient_service_dropdown_option_count=" + fontResults.patientServicePicker.optionCount,
       "patient_service_dropdown_keyboard=passed",
       "guest_booking_service_count=" + fontResults.patientBookingValidation.catalogueCount,
+      "marketing_home_canonical=" + Boolean(fontResults.marketingHomeCanonical),
       "assistant_admin_management_form_visible=" + fontResults.assistantAdmin.assistantManagementFormVisible,
       "assistant_admin_plus_jakarta_sans_loaded=" + fontResults.assistantAdmin.plusJakartaSans,
       "role_route_refresh_back_forward=passed",

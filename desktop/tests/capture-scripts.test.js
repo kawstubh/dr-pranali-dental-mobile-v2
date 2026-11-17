@@ -342,3 +342,15 @@ test("staging API checks tolerate bounded Render cold starts without accepting t
 
 
 
+
+
+test("real browser capture verifies Oralyn marketing homepage canonical URLs and desktop, tablet and mobile layouts", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.ok(source.includes('"/oralyn/"'));
+  assert.ok(source.includes("More clarity for your clinic."));
+  assert.ok(source.includes("oralyn-marketing-home-768x1024.png"));
+  assert.ok(source.includes("oralyn-marketing-home-320x568.png"));
+  assert.ok(source.includes("marketingCanonical.canonical"));
+  assert.ok(source.includes("marketingCanonical.openGraph"));
+  assert.ok(source.includes("marketingHomeCanonical"));
+});

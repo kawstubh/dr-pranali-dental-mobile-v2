@@ -85,7 +85,10 @@ function walk(directory, prefix = "") {
 const environment = process.env.ORALYN_ENVIRONMENT || (process.env.RENDER_GIT_COMMIT ? "staging" : "local");
 const environmentName = environment.toLowerCase();
 const requireHttpsOrigins = ["staging", "production"].includes(environmentName);
-const portalOrigin = originOf(process.env.ORALYN_PORTAL_ORIGIN || "", {
+const portalOriginInput =
+  process.env.ORALYN_PORTAL_ORIGIN ||
+  (environmentName === "local" ? "http://localhost:4173" : "");
+const portalOrigin = originOf(portalOriginInput, {
   requireHttps: requireHttpsOrigins,
   label: "Portal origin",
 });
@@ -102,6 +105,28 @@ if (environmentName === "staging" && apiOrigin !== stagingApiOrigin) {
 if (environmentName === "production" && (!apiOrigin || apiOrigin === stagingApiOrigin)) {
   throw new Error("Production portal builds require an explicit non-staging HTTPS API origin.");
 }
+if (["staging", "production"].includes(environmentName) && !portalOrigin) {
+  throw new Error("Staging and production portal builds require an explicit canonical HTTPS portal origin.");
+}
+
+const canonicalOriginMarker = "__ORALYN_CANONICAL_ORIGIN__";
+function injectCanonicalOrigin(directory) {
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      injectCanonicalOrigin(absolute);
+      continue;
+    }
+    if (!entry.isFile() || !entry.name.toLowerCase().endsWith(".html")) continue;
+    const html = fs.readFileSync(absolute, "utf8");
+    if (!html.includes(canonicalOriginMarker)) continue;
+    if (!portalOrigin) throw new Error("Canonical marketing URLs require ORALYN_PORTAL_ORIGIN.");
+    const configuredHtml = html.split(canonicalOriginMarker).join(portalOrigin);
+    if (configuredHtml.includes(canonicalOriginMarker)) throw new Error("Unresolved Oralyn canonical-origin placeholder in " + absolute);
+    fs.writeFileSync(absolute, configuredHtml, "utf8");
+  }
+}
+injectCanonicalOrigin(outputDir);
 
 const bookingPagePath = path.join(outputDir, "patient", "booking", "index.html");
 if (!fs.existsSync(bookingPagePath)) {
