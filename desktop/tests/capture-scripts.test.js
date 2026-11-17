@@ -217,16 +217,19 @@ test("real browser capture verifies the native mobile dental service dropdown", 
   assert.match(source, /fontResults\.patientServicePicker = await verifyServicePicker\(\)/);
   assert.match(source, /patient_service_dropdown_keyboard=passed/);
 });
-test("real browser capture rejects vertical page scrolling on patient home and booking viewports", () => {
+test("real browser capture keeps Patient Home viewport-fit and allows reachable scrolling on short booking screens", () => {
   const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
-  assert.match(source, /name\.startsWith\("patient-booking-"\) \|\| name\.startsWith\("patient-home-"\)/);
+  assert.match(source, /name\.startsWith\("patient-booking-"\)/);
+  assert.match(source, /async function verifyScrollableBooking\(expectedHeight\)/);
+  assert.match(source, /submitReachable/);
+  assert.match(source, /scrollAllowed/);
+  assert.match(source, /name\.startsWith\("patient-home-"\)[\s\S]*?verifyNoVerticalOverflow\(height\)/);
   assert.match(source, /patient-home-1366x768/);
   assert.match(source, /patient-home-375x600/);
   assert.match(source, /patient-home-320x568/);
   assert.match(source, /patient-booking-375x600/);
   assert.match(source, /patient-booking-320x568/);
   assert.match(source, /patient-booking-360x640/);
-  assert.match(source, /await verifyNoVerticalOverflow\(height\)/);
 });
 test("real browser booking validation waits for the approved logo asset before measuring visibility", () => {
   const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
@@ -353,4 +356,17 @@ test("real browser capture verifies Oralyn marketing homepage canonical URLs and
   assert.ok(source.includes("marketingCanonical.canonical"));
   assert.ok(source.includes("marketingCanonical.openGraph"));
   assert.ok(source.includes("marketingHomeCanonical"));
+});
+test("dependency audit failures do not skip independent staging and browser evidence but still fail release", () => {
+  const workflow = readFileSync(join(process.cwd(), "..", ".github", "workflows", "oralyn-desktop.yml"), "utf8");
+  assert.match(workflow, /id: root_audit[\s\S]*?continue-on-error: true/);
+  assert.match(workflow, /id: desktop_audit[\s\S]*?continue-on-error: true/);
+  assert.match(workflow, /Verify live synthetic staging contract/);
+  assert.match(workflow, /Verify live Assistant API contract/);
+  assert.match(workflow, /Install headless Chrome/);
+  assert.match(workflow, /Start preview and capture responsive, Doctor and Assistant UI evidence/);
+  assert.match(workflow, /Enforce dependency audit release gate/);
+  assert.match(workflow, /if: always\(\)/);
+  assert.match(workflow, /steps\.root_audit\.outcome/);
+  assert.match(workflow, /steps\.desktop_audit\.outcome/);
 });
