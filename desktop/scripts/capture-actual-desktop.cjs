@@ -837,6 +837,50 @@ async function captureAssistantAdminGate() {
       "Sign in with your clinic-issued email and password",
       "doctor-login"
     );
+
+    // Exercise the short-desktop breakpoint directly; the regular desktop captures are 800px+ tall.
+    await send("Emulation.setDeviceMetricsOverride", {
+      width: 1366, height: 600, deviceScaleFactor: 1, mobile: false,
+    });
+    await sleep(450);
+    await capture("doctor-login-short-desktop-top-1366x600.png", 1366, 600);
+    await evaluate(`(() => {
+      const submit = document.querySelector(".oralyn-reference-card .oralyn-signin");
+      if (!submit) throw new Error("Doctor sign-in submit control was not found at short desktop height.");
+      submit.scrollIntoView({ block: "center", inline: "nearest" });
+      return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    })()`);
+    const shortDesktopLogin = await evaluate(`(() => {
+      const root = document.documentElement;
+      const body = document.body;
+      const card = document.querySelector(".oralyn-reference-card");
+      const submit = card?.querySelector(".oralyn-signin");
+      const rect = submit?.getBoundingClientRect();
+      const scrolling = document.scrollingElement;
+      return {
+        viewportWidth: root.clientWidth,
+        viewportHeight: root.clientHeight,
+        submitVisible: Boolean(rect && rect.width > 0 && rect.height > 0 &&
+          rect.top >= -1 && rect.bottom <= root.clientHeight + 1),
+        scrollTop: scrolling?.scrollTop ?? 0,
+        pageScrollHeight: Math.max(root.scrollHeight, body?.scrollHeight || 0),
+        cardOverflow: card ? getComputedStyle(card).overflow : null,
+        cardMaxHeight: card ? getComputedStyle(card).maxHeight : null,
+      };
+    })()`);
+    if (shortDesktopLogin.viewportWidth !== 1366 || shortDesktopLogin.viewportHeight !== 600 ||
+        !shortDesktopLogin.submitVisible || shortDesktopLogin.cardOverflow !== "visible" ||
+        shortDesktopLogin.cardMaxHeight !== "none") {
+      throw new Error("Short desktop Doctor sign-in submit must remain reachable without card clipping: " +
+        JSON.stringify(shortDesktopLogin));
+    }
+    await capture("doctor-login-short-desktop-submit-1366x600.png", 1366, 600);
+    fontResults.doctorLogin.shortDesktopLogin = shortDesktopLogin;
+    await send("Emulation.setDeviceMetricsOverride", {
+      width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false,
+    });
+    await evaluate("window.scrollTo(0, 0)");
+    await sleep(450);
     fontResults.doctorLogin.mobileLoginVisibility = await verifyMobileDoctorLoginVisibility();
     const accessibilityResults = {};
     accessibilityResults.doctorKeyboardFocus = await verifyKeyboardFocus();
@@ -963,6 +1007,7 @@ async function captureAssistantAdminGate() {
       "patient_login_redirect=" + Boolean(fontResults.patientLegacyLoginRedirect),
       "authenticated_screens=false",
       "mobile_viewport=390x844",
+      "short_desktop_doctor_login=passed",
       "assistant_admin_redirect_gate=passed",
       "guest_booking_validation=passed",
       "guest_booking_browser_e2e=" + fontResults.guestBookingBrowserE2E.passed,

@@ -76,6 +76,15 @@ test("real browser capture follows the current premium Doctor login and patient-
   assert.doesNotMatch(source, /Sign in with your clinic doctor account|Public patient services/);
 });
 
+test("real browser capture verifies the short-desktop Doctor sign-in submit stays reachable", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.match(source, /doctor-login-short-desktop-top-1366x600\\.png/);
+  assert.match(source, /doctor-login-short-desktop-submit-1366x600\\.png/);
+  assert.match(source, /shortDesktopLogin\\.submitVisible/);
+  assert.match(source, /cardMaxHeight !== "none"/);
+  assert.match(source, /scrollIntoView\\(\\{ block: "center", inline: "nearest" \\}\\)/);
+});
+
 test("synthetic Assistant capture exercises the SPA route, memory-only login, reception, appointments and billing", () => {
   const file = join(process.cwd(), "scripts", "capture-synthetic-assistant.cjs");
   const source = readFileSync(file, "utf8");
