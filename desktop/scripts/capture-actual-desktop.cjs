@@ -159,7 +159,7 @@ async function capture(name, width, height, mobile = false) {
   });
   await sleep(450);
   const layout = await verifyNoHorizontalOverflow(width);
-  const vertical = name.startsWith("patient-booking-") ? await verifyNoVerticalOverflow(height) : null;
+  const vertical = name.startsWith("patient-booking-") || name.startsWith("patient-home-") ? await verifyNoVerticalOverflow(height) : null;
   console.log("[Oralyn layout]", JSON.stringify({ screenshot: name, ...layout, ...(vertical ? { vertical } : {}) }));
   const screenshot = await send("Page.captureScreenshot", {
     format: "png", captureBeyondViewport: false, fromSurface: true,
@@ -260,6 +260,11 @@ async function captureCurrent(expectedText, screenshotName) {
   await capture(screenshotName + "-1440x1000.png", 1440, 1000);
   await capture(screenshotName + "-1280x800.png", 1280, 800);
   await capture(screenshotName + "-390x844.png", 390, 844, true);
+  if (screenshotName === "patient-home") {
+    await capture("patient-home-1366x768.png", 1366, 768);
+    await capture("patient-home-375x600.png", 375, 600, true);
+    await capture("patient-home-320x568.png", 320, 568, true);
+  }
   if (screenshotName === "patient-booking") {
     await capture("patient-booking-1366x768.png", 1366, 768);
     await capture("patient-booking-768x1024.png", 768, 1024);
@@ -946,4 +951,5 @@ async function captureAssistantAdminGate() {
   console.error(error.stack || error);
   process.exit(1);
 });
+
 

@@ -80,6 +80,58 @@ textarea{min-height:88px;resize:vertical}
 @media(prefers-reduced-motion:reduce){
   *,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+/* One-viewport booking form: keep every field and action visible without page scrolling. */
+html,body{width:100%;height:100%;min-height:0;overflow:hidden}
+body{height:100dvh;display:flex;flex-direction:column}
+header{height:64px;min-height:64px;flex:0 0 64px;padding:0 max(18px,calc((100vw - 1080px)/2))}
+.wrap{width:min(100% - 36px,660px);height:calc(100dvh - 64px);min-height:0;margin:0 auto;padding:10px 0;display:flex;align-items:center;justify-content:center}
+.panel{width:100%;max-height:100%;overflow:hidden;padding:19px 28px;border-radius:20px}
+.panel:before{left:24px;right:24px}
+h1{font-size:clamp(27px,3.1vw,34px);margin:8px 0 3px}
+p{font-size:12px;line-height:1.35;margin:3px 0 10px}
+form{margin-top:10px}
+.grid{gap:10px}
+label{font-size:11px;margin:5px 0 8px}
+input,select{min-height:42px;padding:9px 10px;font-size:15px;margin-top:5px}
+.service-field{margin:4px 0 7px}
+.service-field>label{margin:5px 0;font-size:11px}
+.btn{min-height:44px;margin-top:5px;padding:10px 16px;font-size:13px}
+.note{font-size:10px;line-height:1.25;margin:4px 0}
+.msg{font-size:11px;padding:8px;margin-top:7px}
+@media(max-width:760px){
+ header{height:56px;min-height:56px;flex-basis:56px;padding:0 13px}
+ header img{width:100px;max-height:50px}
+ .wrap{width:100%;height:calc(100dvh - 56px);padding:6px 9px}
+ .panel{padding:13px 13px 11px;border-radius:15px;box-shadow:0 8px 24px rgba(12,59,130,.06)}
+ .panel:before{left:15px;right:15px}
+ .eyebrow{font-size:8px;letter-spacing:.11em}
+ h1{font-size:clamp(23px,6.5vw,28px);margin:6px 0 3px}
+ p{font-size:11px;line-height:1.3;margin:3px 0 7px}
+ form{margin-top:8px}
+ .grid{gap:7px}
+ label{font-size:10px;margin:4px 0 6px}
+ input,select{min-height:39px;padding:7px 8px;font-size:16px;margin-top:4px;border-radius:9px}
+ .service-field{margin:3px 0 6px}
+ .service-field>label{font-size:10px;margin:4px 0}
+ .btn{min-height:41px;margin-top:4px;padding:8px 12px;font-size:12px}
+ .note{font-size:9px;line-height:1.2;margin:3px 0}
+ .msg{font-size:11px;padding:7px;margin-top:6px}
+}
+@media(max-height:680px){
+ .wrap{padding-top:4px;padding-bottom:4px}
+ .panel{padding-top:10px;padding-bottom:9px}
+ h1{font-size:25px;margin:5px 0 2px}
+ p{margin:2px 0 5px;font-size:10px}
+ form{margin-top:6px}
+ .grid{gap:6px}
+ label{margin:3px 0 5px}
+ input,select{min-height:36px;padding:6px 8px}
+ .service-field{margin:2px 0 4px}
+ .service-field>label{margin:3px 0}
+ .btn{min-height:38px;margin-top:3px}
+ .note{font-size:8px;margin:2px 0}
+}
+@media(max-width:360px){.wrap{padding-left:6px;padding-right:6px}.panel{padding-left:10px;padding-right:10px}.grid{gap:5px}}
 </style>
 </head>
 <body>
@@ -305,6 +357,7 @@ form.addEventListener("submit", async (event) => {
 });
 </script>
 </body></html>
+
 
 
 

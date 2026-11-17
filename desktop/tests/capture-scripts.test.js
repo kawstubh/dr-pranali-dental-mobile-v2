@@ -190,6 +190,18 @@ test("synthetic Doctor and Assistant fixtures record PWA state without duplicati
 });;
 
 
+test("viewport-fit browser gate covers Patient, Doctor and Assistant entry screens", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "verify-viewport-fit.cjs"), "utf8");
+  assert.match(source, /Patient Home/);
+  assert.match(source, /Patient Booking/);
+  assert.match(source, /Doctor Login/);
+  assert.match(source, /Assistant Login/);
+  assert.match(source, /verticalOverflow/);
+  assert.match(source, /horizontalOverflow/);
+  assert.match(source, /\[1366,768,false\]/);
+  assert.match(source, /\[390,844,true\]/);
+  assert.match(source, /\[320,568,true\]/);
+});
 test("real browser capture verifies the native mobile dental service dropdown", () => {
   const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
   assert.match(source, /async function verifyServicePicker\(\)/);
@@ -197,14 +209,17 @@ test("real browser capture verifies the native mobile dental service dropdown", 
   assert.match(source, /fontResults\.patientServicePicker = await verifyServicePicker\(\)/);
   assert.match(source, /patient_service_dropdown_keyboard=passed/);
 });
-test("real browser capture checks shorter mobile booking viewport heights", () => {
+test("real browser capture rejects vertical page scrolling on patient home and booking viewports", () => {
   const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.match(source, /name\.startsWith\("patient-booking-"\) \|\| name\.startsWith\("patient-home-"\)/);
+  assert.match(source, /patient-home-1366x768/);
+  assert.match(source, /patient-home-375x600/);
+  assert.match(source, /patient-home-320x568/);
   assert.match(source, /patient-booking-375x600/);
   assert.match(source, /patient-booking-320x568/);
   assert.match(source, /patient-booking-360x640/);
   assert.match(source, /await verifyNoVerticalOverflow\(height\)/);
 });
-
 test("real browser booking validation waits for the approved logo asset before measuring visibility", () => {
   const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
   assert.match(source, /async function waitForApprovedBookingLogo\(\)/);
@@ -307,6 +322,8 @@ test("staging API checks tolerate bounded Render cold starts without accepting t
   assert.match(assistant, /response\.arrayBuffer\(\)/);
   assert.match(assistant, /remained HTTP/);
 });
+
+
 
 
 

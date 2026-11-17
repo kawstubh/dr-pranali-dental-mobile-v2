@@ -7,31 +7,84 @@
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/oralyn-tooth-icon.png">
 <title>Patient appointments | Dr Pranali Dental Clinic</title>
-<style>
-@font-face{font-family:'Plus Jakarta Sans';src:url('/fonts/PlusJakartaSans-Variable.ttf') format('truetype');font-style:normal;font-weight:200 800;font-display:swap}@font-face{font-family:'Playfair Display';src:url('/fonts/PlayfairDisplay-Variable.ttf') format('truetype');font-style:normal;font-weight:400 900;font-display:swap}:root{font-family:'Plus Jakarta Sans',Arial,sans-serif;color:#12304a;background:#f4fbff}*{box-sizing:border-box}body{margin:0}header{background:#fff;border-bottom:1px solid #e2edf4;padding:16px 6vw;display:flex;align-items:center;justify-content:space-between;gap:16px}header img{width:190px;max-width:48vw}a{color:inherit}.pill{border:1px solid #cce8ee;border-radius:30px;padding:9px 15px;color:#0b7280;text-decoration:none;font-size:14px;font-weight:700}.wrap{max-width:1100px;margin:48px auto;padding:0 24px}.hero{background:linear-gradient(125deg,#0c3b82,#0a84e8);border-radius:28px;padding:48px;color:white;position:relative;overflow:hidden}.eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#b8f5f0;font-weight:800}.hero h1{font-size:clamp(32px,5vw,52px);line-height:1.1;max-width:650px;margin:14px 0}.hero p{font-size:17px;line-height:1.7;max-width:640px;color:#e6f5ff}.cta{display:inline-block;background:#00c6c8;color:#063c58;padding:15px 22px;border-radius:12px;text-decoration:none;font-weight:800;margin-top:14px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:24px}.card{background:white;border:1px solid #e2edf4;border-radius:18px;padding:22px}.card h2{font-size:18px;margin:0 0 8px}.card p{color:#617789;line-height:1.6;margin:0}.foot{padding:30px 0;color:#64798a;font-size:13px;text-align:center}.service-section{margin-top:44px}.section-head{display:flex;align-items:end;justify-content:space-between;gap:18px;flex-wrap:wrap}.section-head h2{font-family:'Playfair Display',Georgia,serif;font-size:clamp(26px,3vw,34px);margin:0;color:#0c3b82}.section-head p{max-width:620px;color:#617789;line-height:1.6;margin:8px 0 0}.service-select-wrap{max-width:620px;margin-top:22px;padding:22px;background:#fff;border:1px solid #e2edf4;border-radius:18px}.service-select-label{display:block;margin:0 0 8px;font-size:13px;font-weight:750;color:#35536a}.service-select-wrap select{display:block;width:100%;min-height:52px;padding:12px;border:1px solid #d5e1e8;border-radius:11px;background:#fbfdfe;color:#12304a;font:inherit;font-size:15px}.service-continue{margin-top:14px}.service-grid,.service-card,.service-image{display:none!important}.cta.secondary{background:#fff;color:#0c3b82;border:1px solid rgba(255,255,255,.65);margin-left:8px}@media(max-width:700px){.wrap{margin:22px auto;padding:0 15px}.hero{padding:28px 22px;border-radius:20px}.grid{grid-template-columns:1fr}.hero p{font-size:15px}header{padding:14px 18px}header img{width:150px;max-width:42vw}}
+<style>@font-face{font-family:'Plus Jakarta Sans';src:url('/fonts/PlusJakartaSans-Variable.ttf') format('truetype');font-style:normal;font-weight:200 800;font-display:swap}
+@font-face{font-family:'Playfair Display';src:url('/fonts/PlayfairDisplay-Variable.ttf') format('truetype');font-style:normal;font-weight:400 900;font-display:swap}
+:root{font-family:'Plus Jakarta Sans',Arial,sans-serif;color:#12304a;background:#f4fbff;color-scheme:light}
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;min-height:0;margin:0;overflow:hidden}
+body{background:radial-gradient(ellipse at 12% 15%,rgba(0,198,200,.12),transparent 34%),radial-gradient(ellipse at 88% 80%,rgba(10,132,232,.1),transparent 36%),#f4fbff}
+header{height:66px;padding:0 max(22px,calc((100vw - 1200px)/2));display:flex;align-items:center;justify-content:space-between;gap:16px;background:rgba(255,255,255,.94);border-bottom:1px solid #e2edf4}
+header img{width:142px;max-width:44vw;max-height:58px;object-fit:contain;display:block}
+a{color:inherit}
+.pill{border:1px solid #cce8ee;border-radius:30px;padding:8px 14px;color:#0b7280;text-decoration:none;font-size:12px;font-weight:750;white-space:nowrap}
+.wrap{width:min(1200px,calc(100% - 48px));height:calc(100dvh - 66px);margin:0 auto;padding:clamp(16px,3.5vh,34px) 0 12px;display:grid;grid-template-rows:minmax(0,1fr) auto;gap:8px;min-height:0}
+.hero{min-height:0;display:grid;grid-template-columns:minmax(0,1.08fr) minmax(360px,.92fr);border-radius:26px;overflow:hidden;background:linear-gradient(125deg,#0b326d 0%,#0a4e91 58%,#087dbd 100%);box-shadow:0 22px 60px rgba(12,59,130,.14)}
+.hero-copy{min-width:0;display:flex;flex-direction:column;justify-content:center;padding:clamp(28px,5vw,70px);color:#fff;position:relative;isolation:isolate}
+.hero-copy:before,.hero-copy:after{content:'';position:absolute;z-index:-1;border:1px solid rgba(90,225,230,.15);border-radius:50%;width:460px;height:460px;right:-240px;bottom:-300px}
+.hero-copy:after{width:620px;height:620px;right:-320px;bottom:-390px;border-color:rgba(90,225,230,.1)}
+.eyebrow{font-size:10px;letter-spacing:.17em;text-transform:uppercase;color:#9df1eb;font-weight:800}
+h1{font:700 clamp(38px,4.4vw,60px)/1.08 'Playfair Display',Georgia,serif;letter-spacing:-.7px;max-width:600px;margin:16px 0 12px;color:#fff}
+.hero-copy>p{font-size:clamp(13px,1.15vw,16px);line-height:1.65;max-width:520px;color:#e0effc;margin:0}
+.hero-points{display:flex;flex-wrap:wrap;gap:9px 18px;margin-top:24px;color:#d9f8f7;font-size:11px;font-weight:700}
+.hero-points span{display:inline-flex;align-items:center;gap:7px}.hero-points span:before{content:'';width:6px;height:6px;border-radius:50%;background:#35d5d4;box-shadow:0 0 0 4px rgba(53,213,212,.13)}
+.cta{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:12px 19px;border-radius:11px;background:#00c6c8;color:#063c58;text-decoration:none;font-size:13px;font-weight:850;margin-top:27px;width:max-content;max-width:100%;box-shadow:0 9px 24px rgba(0,198,200,.17)}
+.service-panel{align-self:center;justify-self:center;width:min(100% - 56px,470px);padding:clamp(22px,3vw,36px);border:1px solid rgba(255,255,255,.85);border-radius:22px;background:#fff;box-shadow:0 20px 54px rgba(3,25,55,.2)}
+.service-kicker{font-size:10px;font-weight:850;letter-spacing:.14em;text-transform:uppercase;color:#078c98}
+.service-panel h2{font:700 clamp(24px,2.4vw,31px)/1.15 'Playfair Display',Georgia,serif;color:#123c70;margin:10px 0 7px}
+.service-panel>p{font-size:12px;line-height:1.5;color:#6c8091;margin:0 0 20px}
+.service-select-label{display:block;margin:0 0 8px;font-size:12px;font-weight:800;color:#35536a}
+.service-panel select{display:block;width:100%;min-height:52px;padding:12px;border:1px solid #d5e1e8;border-radius:11px;background:#fbfdfe;color:#12304a;font:inherit;font-size:14px}
+.service-panel select:focus-visible{outline:3px solid rgba(10,132,232,.22);outline-offset:2px;border-color:#0a84e8}
+.service-continue{width:100%;margin-top:13px;background:linear-gradient(100deg,#087fbd,#0a84e8);color:#fff}
+.service-note{display:block;margin-top:12px;color:#8294a3;font-size:10px;line-height:1.45;text-align:center}
+.foot{font-size:10px;line-height:1.3;color:#71869a;text-align:center}.visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+@media(max-width:760px){
+ header{height:58px;padding:0 14px}header img{width:118px;max-height:50px}.pill{font-size:10px;padding:7px 11px}
+ .wrap{width:calc(100% - 20px);height:calc(100dvh - 58px);padding:10px 0 7px;gap:6px}
+ .hero{grid-template-columns:1fr;grid-template-rows:minmax(0,.95fr) minmax(0,1.05fr);border-radius:19px}
+ .hero-copy{padding:clamp(14px,3.2vh,25px) 19px 12px;justify-content:center}
+ h1{font-size:clamp(29px,8vw,39px);margin:8px 0 6px;line-height:1.04}
+ .hero-copy>p{font-size:11px;line-height:1.4;max-width:600px}
+ .hero-points{gap:6px 12px;margin-top:11px;font-size:9px}
+ .hero-points span:before{width:5px;height:5px}
+ .cta{min-height:39px;margin-top:12px;padding:9px 14px;font-size:11px}
+ .service-panel{width:calc(100% - 26px);padding:14px 15px;border-radius:15px;margin:0 auto 12px}
+ .service-kicker{font-size:8px}.service-panel h2{font-size:22px;margin:5px 0}.service-panel>p{font-size:10px;line-height:1.35;margin-bottom:9px}
+ .service-select-label{font-size:10px;margin-bottom:5px}.service-panel select{min-height:43px;padding:8px 10px;font-size:13px}
+ .service-continue{min-height:40px;margin-top:8px}.service-note{font-size:9px;margin-top:7px}
+ .foot{font-size:9px}
 }
-
-
-</style>
+@media(max-height:680px) and (max-width:760px){.hero{grid-template-rows:minmax(0,.85fr) minmax(0,1.15fr)}.hero-copy{padding-top:9px;padding-bottom:7px}.hero-points{margin-top:7px}.cta{margin-top:8px}.service-panel{padding:10px 13px;margin-bottom:7px}.service-panel>p{margin-bottom:6px}.service-note{display:none}}
+@media(max-width:360px){.wrap{width:calc(100% - 14px)}.hero-copy{padding-left:14px;padding-right:14px}.hero-points{gap:5px 8px}.service-panel{width:calc(100% - 18px);padding:11px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}</style>
 </head>
 <body>
 <header><img src="/oralyn-official-logo.png" alt="Oralyn"><a class="pill" href="/">Clinic workspace</a></header>
 <main class="wrap">
-<section class="hero"><div class="eyebrow">Dr Pranali Dental Clinic &middot; Taloja</div><h1>Your smile, your care.</h1><p>Book a dental visit in a few simple steps. No patient account, password or OTP is needed. Send your preferred service and time; our clinic team will contact you to confirm the appointment.</p><a class="cta" href="/patient/booking/">Request an appointment &rarr;</a><a class="cta secondary" href="#services">Explore 20 services</a></section>
-<section class="grid">
-<article class="card"><h2>Easy appointment request</h2><p>Choose your service, preferred date and time, then share your contact number.</p></article>
-<article class="card"><h2>Private by design</h2><p>Your clinical records, prescriptions and invoices remain protected inside the clinic workspace.</p></article>
-<article class="card"><h2>Clinic confirmation</h2><p>Your request is not a confirmed appointment until the clinic team contacts you.</p></article>
+<section class="hero" aria-labelledby="patient-home-title">
+<div class="hero-copy">
+<div class="eyebrow">Dr Pranali Dental Clinic &middot; Taloja</div>
+<h1 id="patient-home-title">Your smile, your care.</h1>
+<p>Book your dental visit in a few simple steps. No patient account, password or OTP is needed. Choose a service and preferred time; our clinic team will contact you to confirm.</p>
+<div class="hero-points"><span>Simple appointment requests</span><span>Private patient records</span><span>Clinic confirmation</span></div><span class="visually-hidden">Your clinical records, prescriptions and invoices remain protected inside the clinic workspace.</span>
+<a class="cta" href="/patient/booking/">Request an appointment &rarr;</a>
+</div>
+<aside class="service-panel" aria-labelledby="service-title">
+<div class="service-kicker">Start with your care</div>
+<h2 id="service-title">Choose a dental service</h2>
+<p>Browse all 20 services. Select one to carry it into your appointment request.</p>
+<label class="service-select-label" for="home-service">Dental service</label>
+<select id="home-service"><option value="" selected>Choose a dental service</option><optgroup label="General"><option value="checkup">Dental Check-up &amp; Consultation</option><option value="gum-care">Gum Treatment (Periodontal Care)</option><option value="sensitivity">Tooth Sensitivity Treatment</option><option value="tmj">TMJ &amp; Jaw Pain Treatment</option></optgroup><optgroup label="Preventive"><option value="scaling">Scaling &amp; Cleaning</option><option value="sealants">Dental Sealants (Cavity Prevention)</option><option value="hygiene">Oral Hygiene Education</option></optgroup><optgroup label="Cosmetic"><option value="whitening">Teeth Whitening</option><option value="veneers">Veneers (Smile Makeover)</option><option value="smile-makeover">Smile Makeover (Cosmetic Dentistry)</option></optgroup><optgroup label="Restorative"><option value="filling">Tooth Filling</option><option value="rct">Root Canal Treatment (RCT)</option><option value="crowns">Dental Crowns &amp; Caps</option><option value="dentures">Dentures (Full / Partial)</option></optgroup><optgroup label="Surgical"><option value="implants">Dental Implants</option><option value="extraction">Tooth Extraction</option></optgroup><optgroup label="Orthodontic"><option value="braces">Braces Treatment</option><option value="aligners">Clear Aligners (Invisible Braces)</option></optgroup><optgroup label="Pediatric"><option value="kids">Kids Dentistry (Child Care)</option></optgroup><optgroup label="Emergency"><option value="emergency">Emergency Dental Care</option></optgroup><option value="other">Other dental concern (not listed)</option></select>
+<a class="cta service-continue" id="home-service-continue" href="/patient/booking/">Continue to appointment request</a>
+<small class="service-note">Request only. Your appointment is confirmed by the clinic team.</small>
+</aside>
 </section>
-<section class="service-section" id="services" aria-labelledby="services-title">
-<div class="section-head"><div><h2 id="services-title">Choose a dental service</h2><p>Select the service you would like to discuss. You can also choose it when requesting an appointment.</p></div></div>
-<div class="service-select-wrap"><label class="service-select-label" for="home-service">Dental service</label><select id="home-service"><option value="" selected>Choose a dental service</option><optgroup label="General"><option value="checkup">Dental Check-up &amp; Consultation</option><option value="gum-care">Gum Treatment (Periodontal Care)</option><option value="sensitivity">Tooth Sensitivity Treatment</option><option value="tmj">TMJ &amp; Jaw Pain Treatment</option></optgroup><optgroup label="Preventive"><option value="scaling">Scaling &amp; Cleaning</option><option value="sealants">Dental Sealants (Cavity Prevention)</option><option value="hygiene">Oral Hygiene Education</option></optgroup><optgroup label="Cosmetic"><option value="whitening">Teeth Whitening</option><option value="veneers">Veneers (Smile Makeover)</option><option value="smile-makeover">Smile Makeover (Cosmetic Dentistry)</option></optgroup><optgroup label="Restorative"><option value="filling">Tooth Filling</option><option value="rct">Root Canal Treatment (RCT)</option><option value="crowns">Dental Crowns &amp; Caps</option><option value="dentures">Dentures (Full / Partial)</option></optgroup><optgroup label="Surgical"><option value="implants">Dental Implants</option><option value="extraction">Tooth Extraction</option></optgroup><optgroup label="Orthodontic"><option value="braces">Braces Treatment</option><option value="aligners">Clear Aligners (Invisible Braces)</option></optgroup><optgroup label="Pediatric"><option value="kids">Kids Dentistry (Child Care)</option></optgroup><optgroup label="Emergency"><option value="emergency">Emergency Dental Care</option></optgroup><option value="other">Other dental concern (not listed)</option></select><a class="cta service-continue" id="home-service-continue" href="/patient/booking/">Continue to appointment request</a></div>
-</section>
-<script>document.getElementById('home-service').addEventListener('change',function(){const link=document.getElementById('home-service-continue');link.href=this.value?'/patient/booking/?service='+encodeURIComponent(this.value):'/patient/booking/';});</script>
-
-<div class="foot">Dr Pranali Dental Clinic &middot; Taloja  -  For urgent dental concerns, please call the clinic directly.</div>
+<div class="foot">Dr Pranali Dental Clinic &middot; Taloja &nbsp; | &nbsp; For urgent dental concerns, please call the clinic directly.</div>
 </main>
+<script>document.getElementById('home-service').addEventListener('change',function(){const link=document.getElementById('home-service-continue');link.href=this.value?'/patient/booking/?service='+encodeURIComponent(this.value):'/patient/booking/';});</script>
 </body></html>
+
+
 
 
 
