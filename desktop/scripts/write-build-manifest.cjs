@@ -161,6 +161,8 @@ const checks = {
   production_deployment_approval_verified: flag(process.env.ORALYN_PRODUCTION_DEPLOYMENT_APPROVED),
   // Repository branch protections are a release prerequisite; remain false until an administrator verifies required checks.
   repository_branch_protection_verified: flag(process.env.ORALYN_REPOSITORY_BRANCH_PROTECTION_VERIFIED),
+  // Legacy public Doctor/Patient and pre-combined portal deployments need a verified disposition before release.
+  legacy_portal_surfaces_disposition_verified: flag(process.env.ORALYN_LEGACY_PORTAL_SURFACES_DISPOSITION_VERIFIED),
 };
 const blockers = Object.entries(checks)
   .filter(([, passed]) => !passed)
