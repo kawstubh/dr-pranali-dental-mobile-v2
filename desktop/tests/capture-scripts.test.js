@@ -190,6 +190,12 @@ test("synthetic Doctor and Assistant fixtures record PWA state without duplicati
 });;
 
 
+test("authenticated Doctor workspace prevents browser-page scrolling while containing long work views", () => {
+  const css = readFileSync(join(process.cwd(), "src", "styles.css"), "utf8");
+  assert.match(css, /html:has\(\.shell\),body:has\(\.shell\)/);
+  assert.match(css, /\.shell>main\{height:100vh;height:100dvh;min-height:0;overflow:hidden/);
+  assert.match(css, /\.shell>main>\.content\{[^}]*overflow-y:auto/);
+});
 test("viewport-fit browser gate covers Patient, Doctor and Assistant entry screens", () => {
   const source = readFileSync(join(process.cwd(), "scripts", "verify-viewport-fit.cjs"), "utf8");
   assert.match(source, /Patient Home/);
@@ -322,6 +328,7 @@ test("staging API checks tolerate bounded Render cold starts without accepting t
   assert.match(assistant, /response\.arrayBuffer\(\)/);
   assert.match(assistant, /remained HTTP/);
 });
+
 
 
 
