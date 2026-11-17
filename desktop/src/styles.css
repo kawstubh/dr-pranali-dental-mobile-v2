@@ -4357,3 +4357,13 @@ main.oralyn-reference-layout {
   .oralyn-reference-panel { align-items: flex-start; overflow-y: auto; overflow-x: hidden; }
   .oralyn-reference-card { max-height: none; overflow: visible; flex: 0 0 auto; }
 }
+
+
+/* Short desktop windows: allow the complete Doctor sign-in card to scroll into view. */
+@media (max-height: 760px) and (min-width: 761px) {
+  html:has(.oralyn-reference-layout), body:has(.oralyn-reference-layout), body:has(.oralyn-reference-layout) #root { height: auto !important; min-height: 100%; overflow: auto !important; }
+  main.oralyn-reference-layout { height: auto !important; min-height: 100dvh; overflow: visible !important; align-items: stretch; }
+  .oralyn-reference-story { height: auto !important; min-height: 100dvh; overflow: visible !important; }
+  .oralyn-reference-panel { height: auto !important; min-height: 100dvh; overflow: visible !important; align-items: flex-start !important; padding-top: 18px; padding-bottom: 18px; }
+  .oralyn-reference-card { max-height: none !important; overflow: visible !important; flex: 0 0 auto; margin: auto; }
+}
