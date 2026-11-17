@@ -877,7 +877,7 @@ async function captureAssistantAdminGate() {
     await capture("doctor-login-short-desktop-submit-1366x600.png", 1366, 600);
     fontResults.doctorLogin.shortDesktopLogin = shortDesktopLogin;
     await send("Emulation.setDeviceMetricsOverride", {
-      width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false,
+      width: 390, height: 844, deviceScaleFactor: 1, mobile: true,
     });
     await evaluate("window.scrollTo(0, 0)");
     await sleep(450);
