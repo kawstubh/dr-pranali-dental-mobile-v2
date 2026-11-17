@@ -118,6 +118,58 @@ async function verifyNoVerticalOverflow(expectedHeight) {
   return layout;
 }
 
+async function verifyScrollableBooking(expectedHeight) {
+  const layout = await evaluate(`(async () => {
+    const root = document.documentElement;
+    const body = document.body;
+    const form = document.querySelector("#booking");
+    const submit = document.querySelector("#submit");
+    const viewportHeight = root.clientHeight;
+    const rootScrollHeight = root.scrollHeight;
+    const bodyScrollHeight = body ? body.scrollHeight : rootScrollHeight;
+    const pageScrollHeight = Math.max(rootScrollHeight, bodyScrollHeight);
+    const rootOverflowY = getComputedStyle(root).overflowY;
+    const bodyOverflowY = body ? getComputedStyle(body).overflowY : "visible";
+    const scrollAllowed = !["hidden", "clip"].includes(rootOverflowY) &&
+      !["hidden", "clip"].includes(bodyOverflowY);
+    const pageScrollable = pageScrollHeight > viewportHeight + 1;
+    const startScrollY = window.scrollY;
+    if (submit) {
+      submit.scrollIntoView({ block: "end", behavior: "auto" });
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    }
+    const rect = submit ? submit.getBoundingClientRect() : null;
+    const submitReachable = Boolean(rect && rect.width > 0 && rect.height > 0 &&
+      rect.top >= -1 && rect.bottom <= root.clientHeight + 1);
+    const endScrollY = window.scrollY;
+    const reachedByScroll = !pageScrollable || endScrollY > startScrollY;
+    window.scrollTo(0, 0);
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    return {
+      viewportHeight,
+      expectedViewportHeight: ${Number(expectedHeight)},
+      rootScrollHeight,
+      bodyScrollHeight,
+      pageScrollable,
+      rootOverflowY,
+      bodyOverflowY,
+      scrollAllowed,
+      formPresent: Boolean(form),
+      submitPresent: Boolean(submit),
+      submitReachable,
+      reachedByScroll,
+      scrollYAtSubmit: endScrollY,
+    };
+  })()`);
+  if (!layout || !Number.isFinite(layout.viewportHeight) || layout.viewportHeight <= 0 ||
+      !layout.formPresent || !layout.submitPresent || !layout.scrollAllowed ||
+      !layout.submitReachable || !layout.reachedByScroll) {
+    throw new Error("Patient booking must remain vertically scrollable with a reachable submit action at " +
+      expectedHeight + "px capture: " + JSON.stringify(layout));
+  }
+  return layout;
+}
+
 async function verifyMobileDoctorLoginVisibility() {
   const state = await evaluate(`(() => {
     const root = document.documentElement;
@@ -159,7 +211,11 @@ async function capture(name, width, height, mobile = false) {
   });
   await sleep(450);
   const layout = await verifyNoHorizontalOverflow(width);
-  const vertical = name.startsWith("patient-booking-") || name.startsWith("patient-home-") ? await verifyNoVerticalOverflow(height) : null;
+  const vertical = name.startsWith("patient-booking-")
+    ? await verifyScrollableBooking(height)
+    : name.startsWith("patient-home-")
+      ? await verifyNoVerticalOverflow(height)
+      : null;
   console.log("[Oralyn layout]", JSON.stringify({ screenshot: name, ...layout, ...(vertical ? { vertical } : {}) }));
   const screenshot = await send("Page.captureScreenshot", {
     format: "png", captureBeyondViewport: false, fromSurface: true,
