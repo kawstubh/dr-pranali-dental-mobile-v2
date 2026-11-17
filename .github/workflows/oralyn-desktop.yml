@@ -157,6 +157,6 @@ jobs:
           DESKTOP_AUDIT_OUTCOME: ${{ steps.desktop_audit.outcome }}
         run: |
           if [ "$ROOT_AUDIT_OUTCOME" = "failure" ] || [ "$DESKTOP_AUDIT_OUTCOME" = "failure" ]; then
-            echo "::error::Dependency audit failed. Build, staging contracts, browser checks and evidence were collected, but release remains blocked."
+            echo "::error::Dependency audit failed. Independent build, staging and browser checks were allowed to run; review their results separately. Release remains blocked."
             exit 1
           fi
