@@ -82,6 +82,8 @@ test("real browser capture verifies the short-desktop Doctor sign-in submit stay
   assert.ok(source.includes("doctor-login-short-desktop-submit-1366x600.png"));
   assert.ok(source.includes("shortDesktopLogin.submitVisible"));
   assert.ok(source.includes('cardMaxHeight !== "none"'));
+  const css = readFileSync(join(process.cwd(), "src", "styles.css"), "utf8");
+  assert.match(css, /\.oralyn-reference-card\{width:min\(100%,510px\);max-height:none!important;overflow:visible!important/);
   assert.ok(source.includes('scrollIntoView({ block: "center", inline: "nearest" })'));
 });
 
@@ -328,6 +330,7 @@ test("staging API checks tolerate bounded Render cold starts without accepting t
   assert.match(assistant, /response\.arrayBuffer\(\)/);
   assert.match(assistant, /remained HTTP/);
 });
+
 
 
 
