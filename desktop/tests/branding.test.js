@@ -1,4 +1,4 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, statSync } from "node:fs";
 
@@ -36,17 +36,17 @@ test("licensed display and body fonts are bundled locally with traceable source 
 });
 
 test("the approved Oralyn wordmark and app mark are used; provisional artwork is not shipped", () => {
-  for (const path of ["../public/oralyn-logo-approved.webp", "../public/oralyn-app-icon-approved.webp"]) {
+  for (const path of ["../public/oralyn-official-logo.png", "../public/oralyn-app-icon-approved.webp"]) {
     assert.ok(existsSync(new URL(path, import.meta.url)), path + " must exist");
     assert.ok(statSync(new URL(path, import.meta.url)).size > 1000);
   }
   assert.ok(patientHome.includes('href="/oralyn-app-icon-approved.webp"'));
-  assert.match(main, /src="\/oralyn-logo-approved\.webp"/);
+  assert.match(main, /src="\/oralyn-official-logo\.png"/);
   assert.match(html, /href="\/oralyn-app-icon-approved\.webp"/);
   assert.doesNotMatch(main + html, /oralyn-app-icon\.png|oralyn-mark\.png|oralyn-logo-recovered\.jpg/);
   assert.doesNotMatch(css, /\.brand img,\s*\.authbrand img\s*\{\s*display:\s*none/i);
-  assert.match(brandDoc, /Oralyn Investor Presentation_20261020_200633_0000\.pptx/);
-  assert.match(brandDoc, /ppt\/media\/image1\.png/);
+  assert.match(brandDoc, /oralyn-official-logo-transparent-clean\.png/);
+  assert.match(brandDoc, /F0BFD671CA7CA8A0122F027A6E9B7F02B676CB7D98003B9ADF32227788CA6803/);
 });
 
 test("the root render is protected by the visible React error boundary", () => {
@@ -104,3 +104,8 @@ test("browser font acceptance attaches a Playfair probe and verifies both local 
   assert.match(captureScript, /matchingFaces/);
   assert.match(captureScript, /fontFaceRules/);
 });
+
+
+
+
+

@@ -1,4 +1,4 @@
-const { spawn, execFileSync } = require("node:child_process");
+﻿const { spawn, execFileSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 const os = require("node:os");
@@ -542,7 +542,7 @@ async function captureAssistantAdminGate() {
       const wordmark = document.querySelector(".oralyn-vector-brand img");
       const appIcon = document.querySelector(".oralyn-app-squircle img");
       return {
-        wordmark: Boolean(wordmark && wordmark.complete && wordmark.naturalWidth > 0 && wordmark.getAttribute("src") === "/oralyn-logo-approved.webp"),
+        wordmark: Boolean(wordmark && wordmark.complete && wordmark.naturalWidth > 0 && wordmark.getAttribute("src") === "/oralyn-official-logo.png"),
         appIcon: Boolean(appIcon && appIcon.complete && appIcon.naturalWidth > 0 && appIcon.getAttribute("src") === "/oralyn-app-icon-approved.webp")
       };
     })()`);

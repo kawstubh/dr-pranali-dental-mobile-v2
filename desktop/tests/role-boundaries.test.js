@@ -1,4 +1,4 @@
-import fs from "node:fs";
+﻿import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -39,7 +39,7 @@ test("Doctor workspace still requires a verified Doctor session", () => {
 });
 
 test("Doctor sign-in uses the exact clinic-approved Oralyn wordmark and app icon assets", () => {
-  assert.match(source, /src="\/oralyn-logo-approved\.webp"/);
+  assert.match(source, /src="\/oralyn-official-logo\.png"/);
   assert.match(source, /src="\/oralyn-app-icon-approved\.webp"/);
   assert.doesNotMatch(source, /function OralynToothVector|<OralynToothVector/);
 });
@@ -271,7 +271,7 @@ test("Clinic Assistant reschedules only to a future India Standard Time slot", (
 
 test("Clinic Assistant appointment queue shows scheduling details without clinical treatment type", () => {
   assert.match(assistantAppSource, /appointment\.starts_at/);
-  assert.match(assistantAppSource, /· Appointment/);
+  assert.match(assistantAppSource, /Â· Appointment/);
   assert.doesNotMatch(assistantAppSource, /appointment\.treatment_type|treatment_type/);
 });
 
@@ -290,3 +290,4 @@ test("read-only Assistant API contract does not satisfy authenticated UI persist
   assert.ok(manifest.includes("assistant_ui_api_verified"));
   assert.ok(manifest.includes("assistant_data_minimization_live_verified"));
 });
+

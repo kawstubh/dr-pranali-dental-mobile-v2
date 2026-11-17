@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -13,11 +13,11 @@
 </style>
 </head>
 <body>
-<header><img src="/oralyn-logo-approved.webp" alt="Oralyn"><a class="pill" href="/patient/home/">Patient home</a></header>
+<header><img src="/oralyn-official-logo.png" alt="Oralyn"><a class="pill" href="/patient/home/">Patient home</a></header>
 <main class="wrap">
-<a class="back" href="/patient/home/">← Back to clinic information</a>
+<a class="back" href="/patient/home/">â† Back to clinic information</a>
 <section class="panel">
-<div class="eyebrow">Dr Pranali Dental Clinic · Taloja</div>
+<div class="eyebrow">Dr Pranali Dental Clinic Â· Taloja</div>
 <h1>Request an appointment</h1>
 <p>Choose a service and preferred time. No account or OTP is required. The clinic will contact you to confirm your appointment.</p>
 <form id="booking">
@@ -165,7 +165,7 @@ form.addEventListener("submit", async (event) => {
   requestPending = true;
   try { sessionStorage.setItem(pendingStorageKey, "1"); } catch {}
   button.disabled = true;
-  button.textContent = "Sending request…";
+  button.textContent = "Sending requestâ€¦";
   try {
     const response = await fetch(API_BASE + "/v1/dental/public/appointments", {
       method: "POST",
