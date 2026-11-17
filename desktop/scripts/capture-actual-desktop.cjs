@@ -548,127 +548,26 @@ async function verifyPublicBookingForm() {
 }
 
 async function verifyServicePicker() {
-  const opened = await evaluate(`(() => {
-    const trigger = document.querySelector("#service-trigger");
-    const menu = document.querySelector("#service-menu");
-    trigger?.click();
+  const result = await evaluate(`(() => {
+    const select = document.querySelector("#treatment-type");
+    const options = [...(select?.options || [])].filter((option) => option.value);
+    const images = document.querySelectorAll("#booking img, #booking .service-image, #booking .service-menu");
     return {
-      triggerPresent: Boolean(trigger),
-      open: Boolean(menu && !menu.hidden),
-      expanded: trigger?.getAttribute("aria-expanded") || "",
-      optionCount: document.querySelectorAll('#service-options [role="option"]').length,
-      groupCount: document.querySelectorAll('#service-options [role="group"]').length,
+      nativeSelect: Boolean(select && select.tagName === "SELECT" && !select.hidden),
+      required: Boolean(select?.required),
+      optionCount: options.length,
+      hasAllServices: options.some((option) => option.textContent.includes("Scaling & Cleaning")) && options.some((option) => option.textContent.includes("Dental Check-up")),
+      noPlaceholderArtwork: images.length === 0,
+      keyboardAccessible: Boolean(select && select.tabIndex >= 0),
     };
   })()`);
-  if (!opened.triggerPresent || !opened.open || opened.expanded !== "true" || opened.optionCount !== 21) {
-    throw new Error("Custom dental service picker did not expose all 20 approved services plus Other: " + JSON.stringify(opened));
+  if (!result.nativeSelect || !result.required || result.optionCount !== 21 || !result.hasAllServices ||
+      !result.noPlaceholderArtwork || !result.keyboardAccessible) {
+    throw new Error("Native patient dental service dropdown failed its accessibility or catalogue checks: " + JSON.stringify(result));
   }
-  await capture("patient-booking-service-picker-390x844.png", 390, 844, true);
-
-  const filtered = await evaluate(`(() => {
-    const search = document.querySelector("#service-search");
-    search.value = "scaling";
-    search.dispatchEvent(new Event("input", { bubbles: true }));
-    const options = [...document.querySelectorAll('#service-options [role="option"]')];
-    return { count: options.length, label: options[0]?.innerText || "" };
-  })()`);
-  if (filtered.count !== 1 || !filtered.label.includes("Scaling & Cleaning")) {
-    throw new Error("Service picker search did not filter the approved catalogue correctly: " + JSON.stringify(filtered));
-  }
-
-  const selected = await evaluate(`(() => {
-    const item = [...document.querySelectorAll('#service-options [role="option"]')]
-      .find((option) => option.dataset.serviceValue === "Scaling & Cleaning");
-    item?.click();
-    const select = document.querySelector("#treatment-type");
-    const trigger = document.querySelector("#service-trigger");
-    const menu = document.querySelector("#service-menu");
-    return {
-      value: select.value,
-      label: document.querySelector("#service-trigger-value")?.textContent || "",
-      closed: Boolean(menu?.hidden),
-      expanded: trigger?.getAttribute("aria-expanded") || "",
-    };
-  })()`);
-  if (selected.value !== "Scaling & Cleaning" || !selected.label.includes("Scaling & Cleaning") ||
-      !selected.closed || selected.expanded !== "false") {
-    throw new Error("Service picker did not synchronize its selection with the booking form: " + JSON.stringify(selected));
-  }
-
-  const keyboard = await evaluate(`(() => {
-    const trigger = document.querySelector("#service-trigger");
-    const menu = document.querySelector("#service-menu");
-    trigger.focus();
-    trigger.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true }));
-    const openedByKeyboard = Boolean(menu && !menu.hidden);
-    const focusedOption = document.activeElement?.getAttribute("role") === "option";
-    if (openedByKeyboard && document.activeElement) {
-      document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
-    }
-    const closedByEscape = Boolean(menu?.hidden);
-    const focusRestored = document.activeElement === trigger;
-    const select = document.querySelector("#treatment-type");
-    select.value = "";
-    select.dispatchEvent(new Event("change", { bubbles: true }));
-    return { openedByKeyboard, focusedOption, closedByEscape, focusRestored, restoredPlaceholder: document.querySelector("#service-trigger-value")?.textContent === "Choose a dental service" };
-  })()`);
-  if (!keyboard.openedByKeyboard || !keyboard.focusedOption || !keyboard.closedByEscape ||
-      !keyboard.focusRestored || !keyboard.restoredPlaceholder) {
-    throw new Error("Service picker keyboard open, navigation or Escape handling failed: " + JSON.stringify(keyboard));
-  }
-  const missingService = await evaluate(`(() => {
-    const form = document.querySelector("#booking");
-    const date = document.querySelector("#date");
-    const parts = new Intl.DateTimeFormat("en-GB", {
-      timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit"
-    }).formatToParts(new Date(Date.now() + 86400000));
-    const part = (type) => parts.find((item) => item.type === type)?.value || "";
-    form.elements.name.value = "Synthetic service validation";
-    form.elements.phone.value = "9876543210";
-    date.value = part("year") + "-" + part("month") + "-" + part("day");
-    date.setCustomValidity("");
-    form.elements.time.value = "10:00";
-    const select = document.querySelector("#treatment-type");
-    select.value = "";
-    select.dispatchEvent(new Event("change", { bubbles: true }));
-    let fetchCalls = 0;
-    const originalFetch = window.fetch;
-    window.fetch = (...args) => { fetchCalls += 1; return originalFetch(...args); };
-    form.requestSubmit();
-    window.fetch = originalFetch;
-    const message = document.querySelector("#message");
-    const trigger = document.querySelector("#service-trigger");
-    const error = document.querySelector("#service-error");
-    const result = {
-      fetchCalls,
-      visibleError: message.classList.contains("error"),
-      message: message.textContent,
-      serviceError: error.textContent,
-      ariaInvalid: trigger.getAttribute("aria-invalid"),
-    };
-    form.reset();
-    const dateParts = new Intl.DateTimeFormat("en-GB", {
-      timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit"
-    }).formatToParts(new Date());
-    const today = (type) => dateParts.find((item) => item.type === type)?.value || "";
-    date.min = today("year") + "-" + today("month") + "-" + today("day");
-    date.value = date.min;
-    select.dispatchEvent(new Event("change", { bubbles: true }));
-    trigger.removeAttribute("aria-invalid");
-    error.textContent = "";
-    error.classList.remove("visible");
-    message.className = "msg";
-    message.textContent = "";
-    return result;
-  })()`);
-  if (missingService.fetchCalls !== 0 || !missingService.visibleError ||
-      !missingService.message.includes("choose a dental service") ||
-      !missingService.serviceError || missingService.ariaInvalid !== "true") {
-    throw new Error("Public booking did not block a missing custom service selection: " + JSON.stringify(missingService));
-  }
-  return { optionCount: opened.optionCount, groupCount: opened.groupCount, filtered, selected, keyboard, missingService };
+  await capture("patient-booking-native-service-dropdown-390x844.png", 390, 844, true);
+  return result;
 }
-
 async function submitSyntheticGuestBooking(seed) {
   const before = bookingNetworkRequests.length;
   const fillExpression = '(() => {'
@@ -1017,9 +916,9 @@ async function captureAssistantAdminGate() {
       "live_staging_booking_layout=passed",
       "live_staging_booking_service_count=" + fontResults.liveStagingBookingValidation.catalogueCount,
       "live_staging_booking_api_origin=" + fontResults.liveStagingBookingValidation.apiOrigin,
-      "patient_service_picker=passed",
-      "patient_service_picker_option_count=" + fontResults.patientServicePicker.optionCount,
-      "patient_service_picker_keyboard=passed",
+      "patient_service_dropdown=passed",
+      "patient_service_dropdown_option_count=" + fontResults.patientServicePicker.optionCount,
+      "patient_service_dropdown_keyboard=passed",
       "guest_booking_service_count=" + fontResults.patientBookingValidation.catalogueCount,
       "assistant_admin_management_form_visible=" + fontResults.assistantAdmin.assistantManagementFormVisible,
       "assistant_admin_plus_jakarta_sans_loaded=" + fontResults.assistantAdmin.plusJakartaSans,
@@ -1047,3 +946,4 @@ async function captureAssistantAdminGate() {
   console.error(error.stack || error);
   process.exit(1);
 });
+

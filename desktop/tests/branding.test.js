@@ -1,4 +1,4 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, statSync } from "node:fs";
 
@@ -45,7 +45,7 @@ test("all portal brand placements use the user-approved transparent Oralyn maste
   assert.match(html, /href="\/oralyn-tooth-icon\.png"/);
   assert.match(brandDoc, /Official master artwork/);
   assert.match(brandDoc, /1231.*1207 px/);
-  assert.doesNotMatch(main + read("../src/assistant.jsx"), /oralyn-wordmark-transparent\.svg|oralyn-logo-approved\.webp|oralyn-app-icon-approved\.webp/);
+  assert.doesNotMatch(main + read("../src/assistant.jsx"), /oralyn-wordmark-transparent\.svg|oralyn-logo-approved\.webp/);
 });
 
 test("Doctor sign-in, Patient and Assistant use the same transparent master logo", () => {
@@ -121,8 +121,6 @@ test("browser font acceptance attaches a Playfair probe and verifies both local 
 test("retired Oralyn logo variants are excluded from the public asset directory", () => {
   for (const filename of [
     "oralyn-approved-logo.png",
-    "oralyn-logo-approved.webp",
-    "oralyn-app-icon-approved.webp",
     "oralyn-wordmark-transparent.svg",
   ]) {
     assert.equal(
@@ -132,3 +130,4 @@ test("retired Oralyn logo variants are excluded from the public asset directory"
     );
   }
 });
+

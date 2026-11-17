@@ -348,7 +348,7 @@ function App() {
         <div className="pwa-update-banner" role="status">
           <span>A new Oralyn portal update is ready.</span>
           <button onClick={applyPwaUpdate}>Refresh portal</button>
-          <button className="pwa-dismiss" aria-label="Dismiss update notice" onClick={() => setPwaUpdateReady(false)}>Ã—</button>
+          <button className="pwa-dismiss" aria-label="Dismiss update notice" onClick={() => setPwaUpdateReady(false)}><X size={14} aria-hidden="true" /></button>
         </div>
       )}
       <aside className={mobile ? "sidebar open" : "sidebar"}>
@@ -486,8 +486,8 @@ function App() {
   );
 }
 function OralynVectorBrand() {
-  return <div className="oralyn-vector-brand" aria-label="Oralyn â€” Smart Dental Care for Healthier Smiles">
-    <img className="oralyn-approved-wordmark" src="/oralyn-official-logo.png" alt="Oralyn â€” Smart Dental Care for Healthier Smiles" />
+  return <div className="oralyn-vector-brand" aria-label="Oralyn Smart Dental Care for Healthier Smiles">
+    <img className="oralyn-approved-wordmark" src="/oralyn-official-logo.png" alt="Oralyn Smart Dental Care for Healthier Smiles" />
   </div>;
 }
 function OralynClinicIllustration() {
@@ -559,12 +559,12 @@ function LoginScreen({ loading, error, onLogin, onPatient, onAssistant }) {
                 <button type="button" className="oralyn-password-toggle" onClick={() => setShowPassword(v => !v)} aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? "Hide" : "Show"}</button>
               </span>
             </label>
-            <button className="oralyn-signin" disabled={busy || loading}>{(busy || loading) && <span className="oralyn-spinner" aria-hidden="true" />}{busy || loading ? "Signing in securelyâ€¦" : "Sign in"}</button>
+            <button className="oralyn-signin" disabled={busy || loading}>{(busy || loading) && <span className="oralyn-spinner" aria-hidden="true" />}{busy || loading ? "Signing in securely…" : "Sign in"}</button>
           </form>
           <div className="oralyn-auth-divider"><span>SECURE CLINIC ACCESS</span></div>
           <div className="oralyn-reference-admin-note">Your account is issued and managed by your clinic administrator. Public sign-up is disabled.</div>
-          <button className="oralyn-team-link" onClick={onAssistant}>Clinic Assistant sign in <span>â†’</span></button>
-          <button className="oralyn-patient-link" onClick={onPatient}>Patient services &amp; appointment requests <span>â†’</span></button>
+          <button className="oralyn-team-link" onClick={onAssistant}>Clinic Assistant sign in <ArrowUpRight size={14} aria-hidden="true" /></button>
+          <button className="oralyn-patient-link" onClick={onPatient}>Patient services &amp; appointment requests <ArrowUpRight size={14} aria-hidden="true" /></button>
         </div>
       </section>
     </main>
@@ -669,7 +669,7 @@ function ClinicModal({ page, patients, token, onClose, onSaved, ping }) {
                   </option>
                   {patients.map((p) => (
                     <option value={p.id}>
-                      {p.name} Â· {p.phone || p.id}
+                      {p.name}  |  {p.phone || p.id}
                     </option>
                   ))}
                 </select>
@@ -766,7 +766,7 @@ function AccountSettings({ user, activeWorkspace, onSignOut }) {
           <div className="settings-list">
             <div><small>Account</small><b>{user?.email || user?.name || "Authenticated account"}</b></div>
             <div><small>Role</small><b>{user?.role || "Doctor"}</b></div>
-            <div><small>Session</small><b>Authenticated Â· session-managed</b></div>
+            <div><small>Session</small><b>Authenticated  |  session-managed</b></div>
           </div>
         </Panel>
         <Panel title="Linked clinic" sub="The active record context used for protected portal requests.">
@@ -945,7 +945,7 @@ function Doctor({
             <p>
               {activePatient
                 ? activePatient.id +
-                  " Â· " +
+                  "  |  " +
                   (activePatient.phone || "Phone not recorded")
                 : "Add a patient record to begin clinical charting."}
             </p>
@@ -959,7 +959,7 @@ function Doctor({
           </label>
           <div className="next">
             <small>Next appointment</small>
-            <b>{nextAppointment ? `${new Date(nextAppointment.starts_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} Â· ${formatTime(nextAppointment.starts_at)}` : "No appointment scheduled"}</b>
+            <b>{nextAppointment ? `${new Date(nextAppointment.starts_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}  |  ${formatTime(nextAppointment.starts_at)}` : "No appointment scheduled"}</b>
           </div>
           <button className="outline" onClick={() => P("patients")}>Open patient directory</button>
         </div>
@@ -977,7 +977,7 @@ function Doctor({
         </div>
         <Panel
           title="Clinical intelligence"
-          sub="Doctor-only decision support Â· Patient-facing AI is disabled."
+          sub="Doctor-only decision support  |  Patient-facing AI is disabled."
         >
           <button
             className="primary"
@@ -1036,7 +1036,7 @@ function Doctor({
         <div className="clinical">
           <Panel
             title="Dental chart"
-            sub="FDI notation Â· Select a tooth to review or update findings"
+            sub="FDI notation  |  Select a tooth to review or update findings"
           >
             <div className="legend">
               <span><i className="swatch snr" />Not recorded</span>
@@ -1116,7 +1116,7 @@ function Doctor({
               ))}
             </div>
             <p className="disclaimer">
-              Clinic chart Â· Changes are saved only when you select Save
+              Clinic chart  |  Changes are saved only when you select Save
               finding.
             </p>
           </Panel>
@@ -1242,7 +1242,7 @@ function Doctor({
               year: "numeric",
             })}
           </b>
-          <span className="muted">All scheduled visits Â· clinic-local time</span>
+          <span className="muted">All scheduled visits  |  clinic-local time</span>
         </div>
         {appointmentError && <div className="autherror" role="alert">{appointmentError}</div>}
         <div className="schedule">
@@ -1405,7 +1405,7 @@ function Doctor({
           sub="Your next appointments"
           action={
             <button className="link" onClick={() => P("appointments")}>
-              Full calendar â†—
+              Full calendar <ArrowUpRight size={14} aria-hidden="true" /><ArrowUpRight size={14} aria-hidden="true" />
             </button>
           }
         >
@@ -1688,4 +1688,15 @@ createRoot(document.getElementById("root")).render(
     )}
   </ErrorBoundary>,
 );
+
+
+
+
+
+
+
+
+
+
+
 

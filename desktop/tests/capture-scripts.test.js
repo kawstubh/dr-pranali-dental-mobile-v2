@@ -1,4 +1,4 @@
-import { test } from "node:test";
+﻿import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -190,14 +190,13 @@ test("synthetic Doctor and Assistant fixtures record PWA state without duplicati
 });;
 
 
-test("real browser capture verifies the custom mobile dental service picker", () => {
+test("real browser capture verifies the native mobile dental service dropdown", () => {
   const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
   assert.match(source, /async function verifyServicePicker\(\)/);
-  assert.match(source, /patient-booking-service-picker-390x844\.png/);
+  assert.ok(source.includes("patient-booking-native-service-dropdown-390x844.png"));
   assert.match(source, /fontResults\.patientServicePicker = await verifyServicePicker\(\)/);
-  assert.match(source, /patient_service_picker_keyboard=passed/);
+  assert.match(source, /patient_service_dropdown_keyboard=passed/);
 });
-
 test("real browser capture checks shorter mobile booking viewport heights", () => {
   const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
   assert.match(source, /patient-booking-375x600/);
@@ -308,3 +307,11 @@ test("staging API checks tolerate bounded Render cold starts without accepting t
   assert.match(assistant, /response\.arrayBuffer\(\)/);
   assert.match(assistant, /remained HTTP/);
 });
+
+
+
+
+
+
+
+

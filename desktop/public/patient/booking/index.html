@@ -49,32 +49,7 @@ textarea{min-height:88px;resize:vertical}
 #phone-error{display:block;margin-top:4px}
 .service-field{margin:8px 0 13px}
 .service-field>label{display:block;font-size:12px;font-weight:750;color:#35536a;margin:8px 0 6px}
-.service-picker{position:relative}
-.service-native{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;clip-path:inset(50%)!important;white-space:nowrap!important;border:0!important}
-.service-trigger{display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;min-height:50px;margin:0;padding:12px 14px;border:1px solid #d5e1e8;border-radius:11px;background:#fbfdfe;color:#12304a;font:inherit;font-size:14px;font-weight:650;text-align:left;cursor:pointer;transition:border-color .16s ease,box-shadow .16s ease,background .16s ease}
-.service-trigger.is-placeholder{color:#8496a4;font-weight:500}
-.service-trigger:hover{border-color:#83c8cc;background:#fff}
-.service-trigger:focus-visible,.service-option:focus-visible,.service-menu-close:focus-visible{outline:3px solid rgba(10,132,232,.28);outline-offset:2px;border-color:#0a84e8}
-.service-trigger-icon{display:grid;place-items:center;flex:none;width:27px;height:27px;border-radius:50%;background:#e8f7f7;color:#087e83;font-size:20px;line-height:1;transition:transform .16s ease}
-.service-picker.is-open .service-trigger-icon{transform:rotate(180deg)}
-.service-menu{position:absolute;z-index:41;top:calc(100% + 8px);left:0;right:0;display:flex;flex-direction:column;gap:11px;padding:15px;background:#fff;border:1px solid #dce9ef;border-radius:16px;box-shadow:0 18px 48px rgba(18,48,74,.18);max-height:min(64vh,520px)}
-.service-menu[hidden],.service-trigger[hidden]{display:none!important}
-.service-menu-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.service-menu-heading h2{margin:0;color:#12304a;font-size:17px;line-height:1.25}
-.service-menu-heading p{margin:4px 0 0;font-size:12px;color:#718395}
-.service-menu-close{flex:none;width:32px;height:32px;border:0;border-radius:50%;background:#f1f7fa;color:#35536a;font:inherit;font-size:22px;line-height:1;cursor:pointer}
-.service-search{width:100%;min-height:44px;margin:0;padding:10px 12px;border:1px solid #d5e1e8;border-radius:10px;background:#fbfdfe;color:#12304a;font:inherit;font-size:16px}
-.service-options{display:flex;flex-direction:column;gap:10px;min-height:0;overflow:auto;overscroll-behavior:contain;padding:1px 3px 3px 1px}
-.service-group{display:flex;flex-direction:column;gap:5px}
-.service-group-title{margin:2px 0 3px;padding:3px 7px;color:#078c98;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
-.service-option{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:44px;padding:10px 12px;border:1px solid transparent;border-radius:10px;background:#f7fbfd;color:#25435a;font:inherit;font-size:13px;line-height:1.35;text-align:left;cursor:pointer;transition:background .14s ease,border-color .14s ease,color .14s ease}
-.service-option:hover{background:#eef8fa;border-color:#d4ebee}
-.service-option[aria-selected="true"]{background:#e8f8f6;border-color:#78d1ca;color:#075f56;font-weight:750}
-.service-option-mark{display:grid;place-items:center;flex:none;width:21px;height:21px;border:1.5px solid #b7cbd4;border-radius:50%;color:transparent;font-size:12px;font-weight:800}
-.service-option[aria-selected="true"] .service-option-mark{border-color:#078c98;background:#078c98;color:#fff}
-.service-no-results{margin:4px 6px;color:#718395;font-size:13px}
-.service-error{display:block;min-height:0;margin:4px 0 0;color:#a33a32;font-size:11px;line-height:1.35}
-.service-error:empty{display:none}
+.service-error{display:block;min-height:0;margin:4px 0 0;color:#a33a32;font-size:11px;line-height:1.35}.service-error:empty{display:none}
 @media(max-width:620px){
   header{height:66px;padding:0 14px}
   header img{width:96px;max-height:60px}
@@ -91,13 +66,6 @@ textarea{min-height:88px;resize:vertical}
   input,select{min-height:45px;padding:9px 9px;font-size:16px;border-radius:10px}
   .service-field{margin:5px 0 8px}
   .service-field>label{font-size:11px;margin:5px 0}
-  .service-trigger{min-height:45px;padding:9px 11px;border-radius:10px;font-size:13px}
-  .service-trigger-icon{width:24px;height:24px;font-size:18px}
-  .service-picker.is-open::before{content:"";position:fixed;inset:0;z-index:40;background:rgba(18,48,74,.32)}
-  .service-menu{position:fixed;top:auto;left:10px;right:10px;bottom:10px;max-height:min(78dvh,680px);padding:16px;border-radius:20px;gap:10px}
-  .service-menu-heading h2{font-size:18px}
-  .service-options{max-height:calc(78dvh - 170px);gap:9px}
-  .service-option{min-height:43px;padding:9px 11px;font-size:13px}
   .btn{min-height:47px;margin-top:6px;padding:10px 14px;font-size:14px}
   .note{font-size:10px;line-height:1.3;margin:5px 0}
   .msg{font-size:13px;padding:10px;margin-top:9px}
@@ -118,7 +86,7 @@ textarea{min-height:88px;resize:vertical}
 <header><img src="/oralyn-official-logo.png" alt="Oralyn"><a class="pill" href="/patient/home/">Patient home</a></header>
 <main class="wrap">
 <section class="panel">
-<div class="eyebrow">Dr Pranali Dental Clinic Â· Taloja</div>
+<div class="eyebrow">Dr Pranali Dental Clinic  -  Taloja</div>
 <h1>Request an appointment</h1>
 <p>No account or OTP required.</p>
 <form id="booking">
@@ -128,8 +96,7 @@ textarea{min-height:88px;resize:vertical}
 </div>
 <div class="service-field">
 <label id="service-field-label" for="treatment-type">Dental service *</label>
-<div class="service-picker" id="service-picker">
-<select class="service-native" name="treatment_type" id="treatment-type" required>
+<select name="treatment_type" id="treatment-type" required aria-describedby="service-error">
 <option value="" disabled selected>Choose a dental service</option>
 <optgroup label="General"><option value="Dental Check-up &amp; Consultation">Dental Check-up &amp; Consultation</option><option value="Gum Treatment (Periodontal Care)">Gum Treatment (Periodontal Care)</option><option value="Tooth Sensitivity Treatment">Tooth Sensitivity Treatment</option><option value="TMJ &amp; Jaw Pain Treatment">TMJ &amp; Jaw Pain Treatment</option></optgroup>
 <optgroup label="Preventive"><option value="Scaling &amp; Cleaning">Scaling &amp; Cleaning</option><option value="Dental Sealants (Cavity Prevention)">Dental Sealants (Cavity Prevention)</option><option value="Oral Hygiene Education">Oral Hygiene Education</option></optgroup>
@@ -141,22 +108,8 @@ textarea{min-height:88px;resize:vertical}
 <optgroup label="Emergency"><option value="Emergency Dental Care">Emergency Dental Care</option></optgroup>
 <option value="Other dental concern">Other dental concern (not listed)</option>
 </select>
-<button class="service-trigger" id="service-trigger" type="button" hidden aria-labelledby="service-field-label service-trigger-value" aria-haspopup="listbox" aria-expanded="false" aria-controls="service-options" aria-describedby="service-error">
-  <span class="service-trigger-value" id="service-trigger-value">Choose a dental service</span>
-  <span class="service-trigger-icon" aria-hidden="true">âŒ„</span>
-</button>
-<div class="service-menu" id="service-menu" hidden>
-  <div class="service-menu-heading">
-    <div><h2 id="service-menu-title">Choose a dental service</h2><p>Select the treatment you would like to discuss</p></div>
-    <button class="service-menu-close" id="service-menu-close" type="button" aria-label="Close service list">Ã—</button>
-  </div>
-  <input class="service-search" id="service-search" type="search" aria-label="Search dental services" placeholder="Search services" autocomplete="off">
-  <div class="service-options" id="service-options" role="listbox" aria-labelledby="service-menu-title" aria-required="true"></div>
-</div>
-</div>
 <small class="service-error" id="service-error" role="status" aria-live="polite"></small>
-</div>
-<div class="grid">
+</div><div class="grid">
 <label>Preferred date *<input name="date" id="date" type="date" required></label>
 <label>Preferred time (IST) *<select name="time" id="time" required><option value="">Choose a time</option><option>10:00</option><option>11:00</option><option>12:00</option><option>13:00</option><option>17:00</option><option>18:00</option><option>19:00</option><option>20:00</option></select></label>
 </div>
@@ -187,162 +140,11 @@ const phoneInput = document.getElementById("phone");
 const timeInput = document.getElementById("time");
 const phoneError = document.getElementById("phone-error");
 const serviceSelect = document.getElementById("treatment-type");
-const serviceById = {"checkup":"Dental Check-up & Consultation","scaling":"Scaling & Cleaning","whitening":"Teeth Whitening","filling":"Tooth Filling","rct":"Root Canal Treatment (RCT)","crowns":"Dental Crowns & Caps","implants":"Dental Implants","extraction":"Tooth Extraction","braces":"Braces Treatment","aligners":"Clear Aligners (Invisible Braces)","dentures":"Dentures (Full / Partial)","veneers":"Veneers (Smile Makeover)","gum-care":"Gum Treatment (Periodontal Care)","kids":"Kids Dentistry (Child Care)","emergency":"Emergency Dental Care","sensitivity":"Tooth Sensitivity Treatment","sealants":"Dental Sealants (Cavity Prevention)","hygiene":"Oral Hygiene Education","smile-makeover":"Smile Makeover (Cosmetic Dentistry)","tmj":"TMJ & Jaw Pain Treatment"};
+const serviceById = {"checkup":"Dental Check-up & Consultation","scaling":"Scaling & Cleaning","whitening":"Teeth Whitening","filling":"Tooth Filling","rct":"Root Canal Treatment (RCT)","crowns":"Dental Crowns & Caps","implants":"Dental Implants","extraction":"Tooth Extraction","braces":"Braces Treatment","aligners":"Clear Aligners (Invisible Braces)","dentures":"Dentures (Full / Partial)","veneers":"Veneers (Smile Makeover)","gum-care":"Gum Treatment (Periodontal Care)","kids":"Kids Dentistry (Child Care)","emergency":"Emergency Dental Care","sensitivity":"Tooth Sensitivity Treatment","sealants":"Dental Sealants (Cavity Prevention)","hygiene":"Oral Hygiene Education","smile-makeover":"Smile Makeover (Cosmetic Dentistry)","tmj":"TMJ & Jaw Pain Treatment","other":"Other dental concern"};
 const requestedService = new URLSearchParams(window.location.search).get("service");
 if (requestedService && serviceById[requestedService]) serviceSelect.value = serviceById[requestedService];
-const servicePicker = document.getElementById("service-picker");
-const serviceTrigger = document.getElementById("service-trigger");
-const serviceTriggerValue = document.getElementById("service-trigger-value");
-const serviceMenu = document.getElementById("service-menu");
-const serviceMenuClose = document.getElementById("service-menu-close");
-const serviceSearchInput = document.getElementById("service-search");
-const serviceOptionsContainer = document.getElementById("service-options");
 const serviceError = document.getElementById("service-error");
-let serviceOptionButtons = [];
-const serviceGroups = Array.from(serviceSelect.children).flatMap((child) => {
-  if (child.tagName === "OPTGROUP") return [{ label: child.label, options: Array.from(child.children).filter((option) => option.tagName === "OPTION") }];
-  if (child.tagName === "OPTION" && child.value) return [{ label: "Other", options: [child] }];
-  return [];
-});
-function renderServiceOptions(searchTerm = "") {
-  const query = String(searchTerm).trim().toLocaleLowerCase("en-IN");
-  const fragment = document.createDocumentFragment();
-  serviceOptionButtons = [];
-  serviceGroups.forEach((group, groupIndex) => {
-    const options = group.options.filter((option) =>
-      !query || group.label.toLocaleLowerCase("en-IN").includes(query) ||
-      option.textContent.trim().toLocaleLowerCase("en-IN").includes(query)
-    );
-    if (!options.length) return;
-    const section = document.createElement("section");
-    section.className = "service-group";
-    section.setAttribute("role", "group");
-    section.setAttribute("aria-label", group.label);
-    const heading = document.createElement("h3");
-    heading.className = "service-group-title";
-    heading.id = "service-group-title-" + groupIndex;
-    heading.textContent = group.label;
-    section.setAttribute("aria-labelledby", heading.id);
-    section.append(heading);
-    options.forEach((option) => {
-      const item = document.createElement("button");
-      item.type = "button";
-      item.className = "service-option";
-      item.setAttribute("role", "option");
-      item.setAttribute("aria-selected", String(option.value === serviceSelect.value));
-      item.dataset.serviceValue = option.value;
-      const name = document.createElement("span");
-      name.className = "service-option-name";
-      name.textContent = option.textContent.trim();
-      const mark = document.createElement("span");
-      mark.className = "service-option-mark";
-      mark.setAttribute("aria-hidden", "true");
-      mark.textContent = option.value === serviceSelect.value ? "âœ“" : "";
-      item.append(name, mark);
-      section.append(item);
-      serviceOptionButtons.push(item);
-    });
-    fragment.append(section);
-  });
-  serviceOptionsContainer.replaceChildren(fragment);
-  if (!serviceOptionButtons.length) {
-    const empty = document.createElement("p");
-    empty.className = "service-no-results";
-    empty.textContent = "No matching services. Try another search.";
-    serviceOptionsContainer.append(empty);
-  }
-}
-function syncServicePicker() {
-  const selected = serviceSelect.selectedOptions[0];
-  const hasValue = Boolean(selected && selected.value);
-  serviceTriggerValue.textContent = hasValue ? selected.textContent.trim() : "Choose a dental service";
-  serviceTrigger.classList.toggle("is-placeholder", !hasValue);
-  if (!serviceMenu.hidden) renderServiceOptions(serviceSearchInput.value);
-}
-function openServiceMenu() {
-  serviceMenu.hidden = false;
-  servicePicker.classList.add("is-open");
-  serviceTrigger.setAttribute("aria-expanded", "true");
-  serviceSearchInput.value = "";
-  renderServiceOptions();
-  const selected = serviceOptionButtons.find((item) => item.dataset.serviceValue === serviceSelect.value);
-  (selected || serviceOptionButtons[0])?.focus();
-}
-function closeServiceMenu(restoreFocus = true) {
-  if (serviceMenu.hidden) return;
-  serviceMenu.hidden = true;
-  servicePicker.classList.remove("is-open");
-  serviceTrigger.setAttribute("aria-expanded", "false");
-  if (restoreFocus) serviceTrigger.focus();
-}
-function chooseService(value) {
-  const option = Array.from(serviceSelect.options).find((item) => item.value === value);
-  if (!option) return;
-  serviceSelect.value = value;
-  serviceSelect.dispatchEvent(new Event("change", { bubbles: true }));
-  serviceError.textContent = "";
-  serviceError.classList.remove("visible");
-  serviceTrigger.removeAttribute("aria-invalid");
-  closeServiceMenu();
-}
-serviceSelect.hidden = true;
-serviceSelect.removeAttribute("required");
-serviceSelect.setAttribute("aria-hidden", "true");
-serviceSelect.tabIndex = -1;
-serviceTrigger.hidden = false;
-servicePicker.classList.add("is-enhanced");
-syncServicePicker();
-window.__oralynBookingScriptStage = "service-picker-ready";
-serviceSelect.addEventListener("change", syncServicePicker);
-serviceTrigger.addEventListener("click", () => {
-  if (serviceMenu.hidden) openServiceMenu();
-  else closeServiceMenu();
-});
-serviceTrigger.addEventListener("keydown", (event) => {
-  if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
-    event.preventDefault();
-    if (serviceMenu.hidden) openServiceMenu();
-  }
-});
-serviceOptionsContainer.addEventListener("click", (event) => {
-  const item = event.target.closest("button[data-service-value]");
-  if (item) chooseService(item.dataset.serviceValue);
-});
-serviceOptionsContainer.addEventListener("keydown", (event) => {
-  const index = serviceOptionButtons.indexOf(document.activeElement);
-  let nextIndex = index;
-  if (event.key === "ArrowDown") nextIndex = Math.min(serviceOptionButtons.length - 1, index + 1);
-  else if (event.key === "ArrowUp") nextIndex = Math.max(0, index - 1);
-  else if (event.key === "Home") nextIndex = 0;
-  else if (event.key === "End") nextIndex = serviceOptionButtons.length - 1;
-  else if (event.key === "Escape") {
-    event.preventDefault();
-    closeServiceMenu();
-    return;
-  } else return;
-  event.preventDefault();
-  serviceOptionButtons[nextIndex]?.focus();
-});
-serviceSearchInput.addEventListener("input", () => renderServiceOptions(serviceSearchInput.value));
-serviceSearchInput.addEventListener("keydown", (event) => {
-  if (event.key === "ArrowDown") {
-    event.preventDefault();
-    serviceOptionButtons[0]?.focus();
-  } else if (event.key === "Escape") {
-    event.preventDefault();
-    closeServiceMenu();
-  }
-});
-serviceMenuClose.addEventListener("click", () => closeServiceMenu());
-servicePicker.addEventListener("click", (event) => {
-  if (event.target === servicePicker && servicePicker.classList.contains("is-open")) closeServiceMenu(false);
-});
-document.addEventListener("pointerdown", (event) => {
-  if (!servicePicker.contains(event.target)) closeServiceMenu(false);
-});
-servicePicker.addEventListener("focusout", (event) => {
-  if (!servicePicker.contains(event.relatedTarget)) closeServiceMenu(false);
-});
+serviceSelect.addEventListener("change", () => { serviceError.textContent = ""; serviceSelect.removeAttribute("aria-invalid"); });
 const idempotencyStorageKey = "oralyn_public_booking_idempotency";
 const pendingStorageKey = "oralyn_public_booking_pending";
 const newIdempotencyKey = () => {
@@ -375,8 +177,10 @@ const clearValidationMessage = () => {
     message.textContent = "";
   }
   if (serviceError.textContent) serviceError.textContent = "";
+  serviceSelect.removeAttribute("aria-invalid");
   serviceError.classList.remove("visible");
-  serviceTrigger.removeAttribute("aria-invalid");
+  serviceSelect.removeAttribute("aria-invalid");
+  
 };
 form.addEventListener("invalid", (event) => {
   message.className = "msg error";
@@ -384,8 +188,8 @@ form.addEventListener("invalid", (event) => {
   if (event.target === serviceSelect) {
     event.preventDefault();
     serviceError.textContent = "Please choose a dental service.";
-    if (event.isTrusted) openServiceMenu();
-    else serviceTrigger.focus();
+    
+    serviceSelect.focus();
   }
 }, true);
 form.addEventListener("input", () => {
@@ -428,8 +232,8 @@ form.addEventListener("submit", async (event) => {
   if (!serviceSelect.value) {
     serviceError.textContent = "Please choose a dental service.";
     serviceError.classList.add("visible");
-    serviceTrigger.setAttribute("aria-invalid", "true");
-    serviceTrigger.focus();
+    serviceSelect.setAttribute("aria-invalid", "true");
+    serviceSelect.focus();
     message.className = "msg error";
     message.textContent = "Please choose a dental service before sending your request.";
     return;
@@ -484,7 +288,7 @@ form.addEventListener("submit", async (event) => {
       throw new Error(detail);
     }
     form.reset();
-    syncServicePicker();
+    
     dateInput.value = localToday;
     rotateIdempotencyKey();
     message.className = "msg success";
@@ -501,3 +305,11 @@ form.addEventListener("submit", async (event) => {
 });
 </script>
 </body></html>
+
+
+
+
+
+
+
+

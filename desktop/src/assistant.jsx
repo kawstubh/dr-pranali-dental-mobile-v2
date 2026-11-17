@@ -446,7 +446,7 @@ export default function AssistantApp() {
             <label>Password<input type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} /></label>
             <button className="assistant-primary" type="submit" disabled={loginBusy}>{loginBusy ? "Signing inâ€¦" : "Sign in securely"}</button>
           </form>
-          <div className="assistant-auth-foot"><ShieldCheck size={16} /> Separate staff role Â· Server-verified clinic access</div>
+          <div className="assistant-auth-foot"><ShieldCheck size={16} /> Separate staff role  |  Server-verified clinic access</div>
           <a className="assistant-back" href="/">Back to Doctor sign in</a>
         </section>
       </main>
@@ -457,7 +457,7 @@ export default function AssistantApp() {
     <main className="assistant-shell">
       <header className="assistant-topbar">
         <div className="assistant-brand"><img src="/oralyn-official-logo.png" alt="Oralyn" /><span>RECEPTION WORKSPACE</span></div>
-        <div className="assistant-user"><div><b>{user.email}</b><small>Clinic Assistant Â· {user.clinic_id}</small></div><button className="assistant-icon-button" onClick={signOut} aria-label="Sign out"><LogOut size={18} /></button></div>
+        <div className="assistant-user"><div><b>{user.email}</b><small>Clinic Assistant  |  {user.clinic_id}</small></div><button className="assistant-icon-button" onClick={signOut} aria-label="Sign out"><LogOut size={18} /></button></div>
       </header>
       <div className="assistant-content">
         <div className="assistant-heading">
@@ -477,7 +477,7 @@ export default function AssistantApp() {
             <div className="assistant-panel-heading"><div><h2>Appointment queue</h2><p>{appointments.length} active appointment{appointments.length === 1 ? "" : "s"} in this clinic. New public requests appear here for reception confirmation.</p></div><CalendarDays size={20} /></div>
             {appointments.length ? <div className="assistant-list">{appointments.map((appointment) => (
               <article className="assistant-appointment" key={appointment.id}>
-                <div className="assistant-appointment-main"><b>{appointment.patient_name || "Patient"}</b><span>{appointment.patient_phone}</span><small>{dateLabel(appointment.starts_at)} Â· Appointment</small></div>
+                <div className="assistant-appointment-main"><b>{appointment.patient_name || "Patient"}</b><span>{appointment.patient_phone}</span><small>{dateLabel(appointment.starts_at)}  |  Appointment</small></div>
                 <div className="assistant-appointment-actions">
                   <span className={"assistant-status status-" + String(appointment.status).replace(/[^a-z_]/g, "")}>{String(appointment.status).replaceAll("_", " ")}</span>
                   {appointment.status !== "confirmed" && !["cancelled", "completed", "no_show"].includes(appointment.status) && <button type="button" onClick={() => changeAppointment(appointment, "confirm")} disabled={busy}><CheckCircle2 size={15} /> Confirm</button>}
@@ -551,7 +551,7 @@ export default function AssistantApp() {
               const draft = receiptDrafts[invoice.id];
               return (
                 <article className="assistant-invoice" key={invoice.id}>
-                  <div className="assistant-invoice-head"><div><b>{invoice.invoice_number}</b><small>{invoice.patient_name} Â· {invoice.status} Â· Due {invoice.due_date || "not set"}</small></div><strong>{money(invoice.total_paise)}</strong></div>
+                  <div className="assistant-invoice-head"><div><b>{invoice.invoice_number}</b><small>{invoice.patient_name}  |  {invoice.status}  |  Due {invoice.due_date || "not set"}</small></div><strong>{money(invoice.total_paise)}</strong></div>
                   <div className="assistant-invoice-totals"><span>Paid <b>{money(invoice.paid_paise)}</b></span><span>Balance <b>{money(invoice.balance_paise)}</b></span></div>
                   {Number(invoice.balance_paise || 0) > 0 && ["issued", "partially_paid", "overdue"].includes(invoice.status) && (
                     draft?.open ? (
@@ -666,7 +666,7 @@ export function AssistantManagement({ token, user }) {
       <div className="assistant-management-list">
         {assistants.length ? assistants.map((assistant) => (
           <article key={assistant.id} className="assistant-management-row">
-            <div><b>{assistant.email}</b><small>{assistant.active ? "Active Â· Assistant role" : "Inactive Â· Assistant role"}</small></div>
+            <div><b>{assistant.email}</b><small>{assistant.active ? "Active  |  Assistant role" : "Inactive  |  Assistant role"}</small></div>
             {assistant.active && <button type="button" className="assistant-danger-button" onClick={() => deactivate(assistant)} disabled={busy}>Deactivate</button>}
           </article>
         )) : <div className="assistant-empty"><Users size={22} /><b>No Clinic Assistants</b><span>Create a separate reception account when the clinic is ready.</span></div>}
@@ -675,4 +675,7 @@ export function AssistantManagement({ token, user }) {
     </section>
   );
 }
+
+
+
 
