@@ -2,25 +2,11 @@
 
 ## Official master artwork
 
-- `public/oralyn-official-logo.png` is the sole approved full Oralyn logo.
-- Source: the user's supplied Oralyn tooth-and-circuit mark, wordmark and two-line tagline.
-- Cleaned transparent PNG, 1231 × 1207 px, RGBA.
-- Preserve the original gradients, typography, proportions and tagline. Do not redraw, recolor, stretch or place it on a boxed background.
-- Use this full master on Doctor sign-in, Doctor navigation, Patient pages and Clinic Assistant branding.
+The current approved Oralyn logo is the exact transparent master supplied by the user on 17 November 2026 (`oralyn-official-logo-transparent-clean.png`). It contains the blue/cyan tooth mark, Oralyn wordmark, and tagline “Smart Dental Care For Healthier Smiles”. Do not redraw, crop into a different logo, or substitute the tooth-only app icon where the full logo is required.
 
-## Small-screen and app icon
+- Full master: `public/oralyn-official-logo.png`
+- Original dimensions: 1231 × 1207 px (RGBA transparency)
+- SHA-256: `F0BFD671CA7CA8A0122F027A6E9B7F02B676CB7D98003B9ADF32227788CA6803`
 
-- `public/oralyn-tooth-icon.png` is a 512 × 512 transparent tooth-only derivative cropped from the official master.
-- Use it only for favicon, Apple touch icon, PWA manifest and compact app-icon contexts where the complete wordmark would be unreadable.
-- The complete logo remains the preferred mark wherever there is sufficient space.
+`public/oralyn-app-icon-approved.webp` is for the compact app/favicon icon only. `public/oralyn-logo-approved.webp` is retired and must not be used in full-logo placements. The Dr Pranali Dental Clinic logo is separate and must never be substituted for Oralyn branding.
 
-## Retired assets
-
-- The recreated `oralyn-wordmark-transparent.svg` and legacy `oralyn-approved-logo.png`, `oralyn-logo-approved.webp`, and `oralyn-app-icon-approved.webp` variants have been removed from `public/`. Do not reintroduce or render them.
-- The approved Dr. Pranali Dental Clinic logo is a separate identity and must not be replaced by Oralyn branding.
-
-## Asset integrity
-
-- Full master: 1231 × 1207 px, transparent PNG.
-- Tooth icon: 512 × 512 px, transparent PNG.
-- Browser/PWA references and regression tests must resolve to these two assets only.
