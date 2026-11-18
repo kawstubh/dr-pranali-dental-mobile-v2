@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1260 330" role="img" aria-label="Trivikram Dr Pranali's Dental Clinic">
+<rect width="1260" height="330" fill="#fff"/>
+<g fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round">
+<path stroke-width="18" d="M20 55 C85 95 100 20 205 35 C280 48 325 75 320 125 C312 215 295 300 252 305 C218 310 206 250 175 250 C145 250 136 304 101 296 C60 286 40 205 29 128 C15 80 6 62 20 55 Z"/>
+<path stroke-width="13" d="M30 70 C92 130 115 90 210 65 C274 48 302 88 297 124 C290 186 277 244 252 275 C229 298 218 231 177 231 C145 231 133 279 104 275 C68 263 48 182 36 116"/>
+<path stroke-width="10" d="M55 155 C132 184 205 165 275 137"/>
+<path stroke-width="8" d="M210 203 C272 214 330 256 400 260"/>
+</g>
+<g fill="#000"><path d="M14 10l9 16 17 9-17 9-9 17-9-17-17-9 17-9z" transform="translate(15 0)"/><path d="M339 102l7 12 13 7-13 7-7 13-7-13-13-7 13-7z"/></g>
+<text x="395" y="77" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="68" fill="#e23845">Trivikram</text>
+<text x="385" y="176" font-family="Arial, Helvetica, sans-serif" font-weight="400" font-size="105" letter-spacing="-2" fill="#000">DR. PRANALI’S</text>
+<text x="760" y="245" font-family="Arial, Helvetica, sans-serif" font-weight="400" font-size="54" letter-spacing="1" fill="#000">DENTAL CLINIC</text>
+<g transform="translate(620 185) rotate(24)">
+<ellipse cx="58" cy="26" rx="56" ry="36" fill="#00bde0" stroke="#000" stroke-width="5"/>
+<path d="M108 36 L150 56 L245 56" fill="none" stroke="#000" stroke-width="8"/>
+<rect x="235" y="42" width="405" height="28" rx="14" fill="#6e6e6e" stroke="#444" stroke-width="3"/>
+<rect x="228" y="42" width="32" height="28" fill="#3d3d3d"/>
+<path d="M254 42v28 M267 42v28" stroke="#bbb" stroke-width="4"/>
+</g>
+</svg>
