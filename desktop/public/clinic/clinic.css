@@ -5,3 +5,14 @@
 
 .brand-logo{display:block;width:min(290px,38vw);height:58px;object-fit:contain;object-position:left center}
 @media(max-width:700px){.brand-logo{width:min(250px,75vw);height:50px}}
+
+/* Hero clinic info card replaces decorative placeholder */
+.welcome-card{align-items:flex-start;text-align:left;min-height:300px;padding:34px 32px;border-left:4px solid var(--green);justify-content:center}
+.welcome-card .card-label{font-size:9px;letter-spacing:.17em;color:var(--green);font-weight:700;margin:0 0 12px}
+.welcome-card h2{font-size:27px;line-height:1.25;margin:0 0 22px}
+.card-detail{padding:12px 0;border-top:1px solid var(--line)}
+.card-detail span,.card-detail small{display:block;color:var(--muted);font-size:9px;letter-spacing:.13em}
+.card-detail strong{display:block;font-size:13px;margin:2px 0}
+.card-map{display:inline-block;margin-top:12px;font-size:12px;font-weight:700;color:var(--green);text-decoration:underline;text-underline-offset:4px}
+.brand-logo{width:min(340px,40vw);height:65px}
+@media(max-width:700px){.brand-logo{width:min(285px,82vw);height:54px}.welcome-card{min-height:0;padding:25px}}
