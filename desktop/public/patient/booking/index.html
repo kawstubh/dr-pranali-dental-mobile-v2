@@ -142,12 +142,12 @@ input,select{min-height:48px;padding:11px 12px;font-size:16px;margin-top:7px}
 <select name="treatment_type" id="treatment-type" required aria-describedby="service-error">
 <option value="" disabled selected>Choose a dental service</option>
 <optgroup label="General"><option value="Dental Check-up &amp; Consultation">Dental Check-up &amp; Consultation</option><option value="Gum Treatment (Periodontal Care)">Gum Treatment (Periodontal Care)</option><option value="Tooth Sensitivity Treatment">Tooth Sensitivity Treatment</option><option value="TMJ &amp; Jaw Pain Treatment">TMJ &amp; Jaw Pain Treatment</option></optgroup>
-<optgroup label="Preventive"><option value="Scaling &amp; Cleaning">Scaling &amp; Cleaning</option><option value="Dental Sealants (Cavity Prevention)">Dental Sealants (Cavity Prevention)</option><option value="Oral Hygiene Education">Oral Hygiene Education</option></optgroup>
-<optgroup label="Cosmetic"><option value="Teeth Whitening">Teeth Whitening</option><option value="Veneers (Smile Makeover)">Veneers (Smile Makeover)</option><option value="Smile Makeover (Cosmetic Dentistry)">Smile Makeover (Cosmetic Dentistry)</option></optgroup>
-<optgroup label="Restorative"><option value="Tooth Filling">Tooth Filling</option><option value="Root Canal Treatment (RCT)">Root Canal Treatment (RCT)</option><option value="Dental Crowns &amp; Caps">Dental Crowns &amp; Caps</option><option value="Dentures (Full / Partial)">Dentures (Full / Partial)</option></optgroup>
+<optgroup label="Preventive"><option value="Scaling &amp; Cleaning">Scaling &amp; Cleaning</option><option value="Dental Sealants">Dental Sealants</option><option value="Oral Hygiene Education">Oral Hygiene Education</option></optgroup>
+<optgroup label="Cosmetic"><option value="Teeth Whitening">Teeth Whitening</option><option value="Veneers">Veneers</option><option value="Smile Makeover">Smile Makeover</option></optgroup>
+<optgroup label="Restorative"><option value="Tooth Filling">Tooth Filling</option><option value="Root Canal Treatment">Root Canal Treatment</option><option value="Dental Crowns &amp; Caps">Dental Crowns &amp; Caps</option><option value="Dentures">Dentures</option></optgroup>
 <optgroup label="Surgical"><option value="Dental Implants">Dental Implants</option><option value="Tooth Extraction">Tooth Extraction</option></optgroup>
-<optgroup label="Orthodontic"><option value="Braces Treatment">Braces Treatment</option><option value="Clear Aligners (Invisible Braces)">Clear Aligners (Invisible Braces)</option></optgroup>
-<optgroup label="Pediatric"><option value="Kids Dentistry (Child Care)">Kids Dentistry (Child Care)</option></optgroup>
+<optgroup label="Orthodontic"><option value="Braces Treatment">Braces Treatment</option><option value="Clear Aligners">Clear Aligners</option></optgroup>
+<optgroup label="Pediatric"><option value="Kids Dentistry">Kids Dentistry</option></optgroup>
 <optgroup label="Emergency"><option value="Emergency Dental Care">Emergency Dental Care</option></optgroup>
 <option value="Other dental concern">Other dental concern (not listed)</option>
 </select>
@@ -183,7 +183,7 @@ const phoneInput = document.getElementById("phone");
 const timeInput = document.getElementById("time");
 const phoneError = document.getElementById("phone-error");
 const serviceSelect = document.getElementById("treatment-type");
-const serviceById = {"checkup":"Dental Check-up & Consultation","scaling":"Scaling & Cleaning","whitening":"Teeth Whitening","filling":"Tooth Filling","rct":"Root Canal Treatment (RCT)","crowns":"Dental Crowns & Caps","implants":"Dental Implants","extraction":"Tooth Extraction","braces":"Braces Treatment","aligners":"Clear Aligners (Invisible Braces)","dentures":"Dentures (Full / Partial)","veneers":"Veneers (Smile Makeover)","gum-care":"Gum Treatment (Periodontal Care)","kids":"Kids Dentistry (Child Care)","emergency":"Emergency Dental Care","sensitivity":"Tooth Sensitivity Treatment","sealants":"Dental Sealants (Cavity Prevention)","hygiene":"Oral Hygiene Education","smile-makeover":"Smile Makeover (Cosmetic Dentistry)","tmj":"TMJ & Jaw Pain Treatment","other":"Other dental concern"};
+const serviceById = {"checkup":"Dental Check-up & Consultation","scaling":"Scaling & Cleaning","whitening":"Teeth Whitening","filling":"Tooth Filling","rct":"Root Canal Treatment","crowns":"Dental Crowns & Caps","implants":"Dental Implants","extraction":"Tooth Extraction","braces":"Braces Treatment","aligners":"Clear Aligners","dentures":"Dentures","veneers":"Veneers","gum-care":"Gum Treatment (Periodontal Care)","kids":"Kids Dentistry","emergency":"Emergency Dental Care","sensitivity":"Tooth Sensitivity Treatment","sealants":"Dental Sealants","hygiene":"Oral Hygiene Education","smile-makeover":"Smile Makeover","tmj":"TMJ & Jaw Pain Treatment","other":"Other dental concern"};
 const requestedService = new URLSearchParams(window.location.search).get("service");
 if (requestedService && serviceById[requestedService]) serviceSelect.value = serviceById[requestedService];
 const serviceError = document.getElementById("service-error");
