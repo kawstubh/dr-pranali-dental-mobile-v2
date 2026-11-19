@@ -112,7 +112,6 @@ jobs:
       - name: Record responsive browser acceptance gates
         run: |
           echo "ORALYN_MOBILE_BROWSER_E2E_VERIFIED=true" >> "$GITHUB_ENV"
-          echo "ORALYN_SERVICE_CATALOG_UI_VERIFIED=true" >> "$GITHUB_ENV"
       - name: Upload real desktop screenshot evidence
         uses: actions/upload-artifact@v7
         with:
