@@ -1,4 +1,5 @@
 const fs = require("node:fs");
+const path = require("node:path");
 const { isRuntimeEquivalentCompare } = require("./staging-commit-equivalence.cjs");
 
 const apiOrigin = new URL(process.env.VITE_DENTAL_API_URL || "").origin;
@@ -266,12 +267,53 @@ async function main() {
     "no patient-auth OpenAPI routes; protected APIs deny unauthenticated reads; public pages are account-free",
   );
 
+  const otherServiceLabel = "Other dental concern";
+  const catalogueSourcePath = path.resolve(process.cwd(), "../shared/dentalServices.ts");
+  const candidateBookingPath = path.resolve(process.cwd(), "public/patient/booking/index.html");
+  const catalogueSource = fs.readFileSync(catalogueSourcePath, "utf8");
+  const candidateBookingHtml = fs.readFileSync(candidateBookingPath, "utf8");
+  const candidateServiceLabels = [...catalogueSource.matchAll(
+    /\\{\\s*id:\\s*'[^']+'\\s*,\\s*name:\\s*'([^']+)'/g,
+  )].map((match) => match[1]);
   const serviceSchema = openapi?.components?.schemas?.PublicAppointmentIn?.properties?.treatment_type?.enum || [];
-  const serviceLabels = serviceSchema.filter((label) => label !== "Other dental concern");
-  const catalogApiOk = serviceLabels.length === 20 && serviceSchema.includes("Other dental concern");
-  const catalogUiOk = serviceLabels.every((label) => bookingHtml.includes(label));
-  record("ORALYN_SERVICE_CATALOG_API_VERIFIED", catalogApiOk, "20 repository service labels plus Other in API schema");
-  record("ORALYN_SERVICE_CATALOG_UI_VERIFIED", catalogUiOk, "all 20 repository service labels present in public booking HTML");
+  const apiServiceLabels = serviceSchema.filter((label) => label !== otherServiceLabel);
+  const sortLabels = (labels) => [...labels].sort((left, right) => left.localeCompare(right));
+  const sourceCatalogueOk = candidateServiceLabels.length === 20 &&
+    new Set(candidateServiceLabels).size === 20;
+  const exactApiCatalogueOk = sourceCatalogueOk &&
+    serviceSchema.length === 21 &&
+    serviceSchema.filter((label) => label === otherServiceLabel).length === 1 &&
+    JSON.stringify(sortLabels(apiServiceLabels)) === JSON.stringify(sortLabels(candidateServiceLabels));
+  const escapeHtml = (value) => value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+  const candidateUiOk = sourceCatalogueOk &&
+    candidateServiceLabels.every((label) =>
+      candidateBookingHtml.includes('<option value="' + escapeHtml(label) + '">')
+    ) &&
+    candidateBookingHtml.includes('<option value="' + otherServiceLabel + '">');
+  const apiMissingLabels = candidateServiceLabels.filter((label) => !apiServiceLabels.includes(label));
+  const apiUnexpectedLabels = apiServiceLabels.filter((label) => !candidateServiceLabels.includes(label));
+  record(
+    "ORALYN_SERVICE_CATALOG_API_VERIFIED",
+    exactApiCatalogueOk,
+    exactApiCatalogueOk
+      ? "live API OpenAPI enum exactly matches the candidate branch's twenty approved names plus Other"
+      : "candidate source labels=" + candidateServiceLabels.length +
+        "; live API labels=" + apiServiceLabels.length +
+        "; missing from live API=[" + apiMissingLabels.join("; ") +
+        "]; unexpected live API labels=[" + apiUnexpectedLabels.join("; ") + "]",
+  );
+  record(
+    "ORALYN_SERVICE_CATALOG_UI_VERIFIED",
+    candidateUiOk,
+    candidateUiOk
+      ? "candidate branch booking HTML contains all twenty exact approved option values plus Other"
+      : "candidate booking HTML does not exactly expose the twenty approved option values plus Other",
+  );
 
   // One synthetic request per backend commit per IST day. The idempotency key
   // is stable across hourly CI runs, so retries cannot create duplicate rows.
