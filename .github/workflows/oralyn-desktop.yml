@@ -6,9 +6,9 @@ on:
     paths:
       - 'desktop/**'
       - '.github/workflows/oralyn-desktop.yml'
-  # Feature-branch commits are validated by the PR event; avoid duplicate browser runs.
+  # Run the same isolated validation on the catalogue feature branch; it is not Render-connected.
   push:
-    branches: [master]
+    branches: [master, 'fix/oralyn-approved-service-catalogue-20261119']
     paths:
       - 'desktop/**'
       - '.github/workflows/oralyn-desktop.yml'
@@ -60,7 +60,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/verify-staging-contract.cjs
       - name: Verify live Assistant API contract (read-only)
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/fix/oralyn-approved-service-catalogue-20261119'
         run: |
           node scripts/verify-assistant-staging-contract.cjs
           echo "ORALYN_ASSISTANT_API_CONTRACT_READONLY_VERIFIED=true" >> "$GITHUB_ENV"
