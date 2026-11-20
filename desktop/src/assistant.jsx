@@ -10,7 +10,6 @@ import {
   ShieldCheck,
   Users,
   Wallet,
-  XCircle,
 } from "lucide-react";
 import { resolveApiBase } from "./api.js";
 import "./assistant.css";
