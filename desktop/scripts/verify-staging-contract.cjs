@@ -83,10 +83,10 @@ async function githubPullRequest(repo, number) {
 
 async function backendCommitMatchesPr(repo, deployedCommit, prHeadCommit) {
   if (!deployedCommit || !prHeadCommit) {
-    return { ok: false, detail: "deployed API commit or PR #64 head is unavailable" };
+    return { ok: false, detail: "deployed API commit or PR #63 head is unavailable" };
   }
   if (deployedCommit === prHeadCommit) {
-    return { ok: true, detail: "live API deployment commit exactly matches Draft PR #64 head " + prHeadCommit };
+    return { ok: true, detail: "live API deployment commit exactly matches Draft PR #63 head " + prHeadCommit };
   }
 
   const comparison = await request(
@@ -102,13 +102,13 @@ async function backendCommitMatchesPr(repo, deployedCommit, prHeadCommit) {
   if (isRuntimeEquivalentCompare(compareBody)) {
     return {
       ok: true,
-      detail: "live API runtime commit " + deployedCommit + " is an ancestor of PR #64 head " +
+      detail: "live API runtime commit " + deployedCommit + " is an ancestor of PR #63 head " +
         prHeadCommit + "; GitHub confirms every intervening change is a Markdown file under docs/ or a Python test under tests/, with no runtime or configuration changes",
     };
   }
   return {
     ok: false,
-    detail: "live API runtime commit " + deployedCommit + " differs from PR #64 head " + prHeadCommit +
+    detail: "live API runtime commit " + deployedCommit + " differs from PR #63 head " + prHeadCommit +
       " and the intervening commit range is not exclusively docs/*.md",
   };
 }
@@ -128,7 +128,7 @@ async function waitForResponse(url, predicate, options = {}, attempts = 12, dela
 async function main() {
   const originHeaders = { Origin: portalOrigin };
   const expectedPortalCommit = process.env.ORALYN_COMMIT_SHA || process.env.GITHUB_SHA || "";
-  const backendPr = await githubPullRequest("kawstubh/universal-intelligence-engine", 64);
+  const backendPr = await githubPullRequest("kawstubh/universal-intelligence-engine", 63);
   const expectedApiCommit = backendPr?.head?.sha || "";
 
   const [dentalHealthWait, portalManifestWait] = await Promise.all([
@@ -401,7 +401,7 @@ async function main() {
     const bookingBlockReason = health?.database_identity_verified !== true || !branchIdentityOk
       ? "not attempted because the isolated synthetic database identity is not verified"
       : !apiCommitOk
-        ? "not attempted because the deployed API code does not match PR #64 or a verified docs-only descendant"
+        ? "not attempted because the deployed API code does not match PR #63 or a verified docs-only descendant"
         : "not attempted because the deployed API runtime commit is unavailable";
     record("ORALYN_GUEST_BOOKING_E2E_VERIFIED", false, bookingBlockReason);
     record("ORALYN_GUEST_BOOKING_IDEMPOTENCY_VERIFIED", false, bookingBlockReason);
