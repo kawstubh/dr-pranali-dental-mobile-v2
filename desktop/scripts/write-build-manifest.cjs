@@ -139,6 +139,7 @@ const checks = {
   doctor_auth_e2e_verified: flag(process.env.ORALYN_DOCTOR_AUTH_E2E_VERIFIED),
   doctor_token_storage_hardening_verified: flag(process.env.ORALYN_DOCTOR_TOKEN_STORAGE_HARDENING_VERIFIED),
   assistant_role_e2e_verified: flag(process.env.ORALYN_ASSISTANT_ROLE_E2E_VERIFIED),
+  assistant_appointment_cancellation_403_live_verified: flag(process.env.ORALYN_ASSISTANT_APPOINTMENT_CANCELLATION_403_LIVE_VERIFIED),
   patient_guest_booking_e2e_verified: flag(process.env.ORALYN_GUEST_BOOKING_E2E_VERIFIED),
   patient_account_routes_disabled_verified: flag(process.env.ORALYN_PATIENT_ACCOUNT_FREE_VERIFIED),
   guest_booking_idempotency_verified: flag(process.env.ORALYN_GUEST_BOOKING_IDEMPOTENCY_VERIFIED),
