@@ -269,7 +269,7 @@ async function main() {
   const catalogueSource = fs.readFileSync(catalogueSourcePath, "utf8");
   const candidateBookingHtml = fs.readFileSync(candidateBookingPath, "utf8");
   const candidateServiceLabels = [...catalogueSource.matchAll(
-    /\\{\\s*id:\\s*'[^']+'\\s*,\\s*name:\\s*'([^']+)'/g,
+    /\{\s*id:\s*'[^']+'\s*,\s*name:\s*'([^']+)'/g,
   )].map((match) => match[1]);
   const approvedServiceNames = [
     "Dental Check-up & Consultation",
