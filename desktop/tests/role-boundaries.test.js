@@ -248,6 +248,12 @@ test("staging release contract checks the exact approved catalogue and active AP
   assert.match(contract, /3,\s*1000,\s*5000/);
 });
 
+test("release manifest requires live Assistant appointment-cancellation 403 acceptance", () => {
+  const manifest = fs.readFileSync(path.join(root, "scripts", "write-build-manifest.cjs"), "utf8");
+  assert.ok(manifest.includes("assistant_appointment_cancellation_403_live_verified"));
+  assert.ok(manifest.includes("process.env.ORALYN_ASSISTANT_APPOINTMENT_CANCELLATION_403_LIVE_VERIFIED"));
+});
+
 test("browser capture cannot override exact service-catalogue release verification", () => {
   const workflow = fs.readFileSync(path.join(root, "..", ".github", "workflows", "oralyn-desktop.yml"), "utf8");
   assert.doesNotMatch(workflow, /echo "ORALYN_SERVICE_CATALOG_UI_VERIFIED=true"/);
