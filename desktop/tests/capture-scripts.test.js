@@ -202,6 +202,15 @@ test("real browser capture verifies keyboard-visible focus and reduced-motion be
 });
 
 
+test("patient booking capture permits vertical scrolling when the submit action remains reachable", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.match(source, /async function verifyBookingScrollReachability/);
+  assert.match(source, /window\.scrollTo\(0, scrollHeight\)/);
+  assert.match(source, /submitReachable/);
+  assert.match(source, /await verifyBookingScrollReachability\(height\)/);
+  assert.doesNotMatch(source, /verifyNoVerticalOverflow/);
+});
+
 test("real browser capture fails before screenshot when a responsive viewport has horizontal page overflow", () => {
   const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
   assert.match(source, /async function verifyNoHorizontalOverflow/);
