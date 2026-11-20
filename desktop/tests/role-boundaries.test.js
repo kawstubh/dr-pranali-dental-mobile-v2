@@ -236,6 +236,11 @@ test("Doctor settings embeds the real owner/admin-gated Assistant management com
 });
 
 
+test("browser capture cannot override exact service-catalogue release verification", () => {
+  const workflow = fs.readFileSync(path.join(root, "..", ".github", "workflows", "oralyn-desktop.yml"), "utf8");
+  assert.doesNotMatch(workflow, /echo "ORALYN_SERVICE_CATALOG_UI_VERIFIED=true"/);
+});
+
 test("Assistant staging contract verification is read-only and never creates a booking", () => {
   assert.match(assistantContractSource, /method: "OPTIONS"/);
   assert.match(assistantContractSource, /method: "GET"/);
