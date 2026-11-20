@@ -7,11 +7,11 @@ const portalOrigin = new URL(process.env.ORALYN_PORTAL_ORIGIN || "").origin;
 const report = [];
 const flags = {};
 
-async function request(url, options = {}, attempts = 2) {
+async function request(url, options = {}, attempts = 2, timeoutMs = 15000) {
   let lastError;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 15000);
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch(url, {
         redirect: "follow",
@@ -113,10 +113,10 @@ async function backendCommitMatchesPr(repo, deployedCommit, prHeadCommit) {
   };
 }
 
-async function waitForResponse(url, predicate, options = {}, attempts = 12, delayMs = 4000) {
+async function waitForResponse(url, predicate, options = {}, attempts = 12, delayMs = 4000, timeoutMs = 15000) {
   let last = { response: null, body: null, error: null };
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    const result = await request(url, options, 1);
+    const result = await request(url, options, 1, timeoutMs);
     const body = await jsonBody(result.response);
     last = { ...result, body };
     if (predicate(result.response, body)) return last;
@@ -144,8 +144,9 @@ async function main() {
       (response, body) => response?.status === 200 &&
         body?.commit_sha === expectedPortalCommit,
       { headers: { "Cache-Control": "no-store, no-cache", Pragma: "no-cache" } },
-      24,
-      4000,
+      3,
+      1000,
+      5000,
     ),
   ]);
 
