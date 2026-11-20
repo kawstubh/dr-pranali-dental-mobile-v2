@@ -236,6 +236,16 @@ test("Doctor settings embeds the real owner/admin-gated Assistant management com
 });
 
 
+test("staging release contract checks the exact approved catalogue and active API correction PR", () => {
+  const contract = fs.readFileSync(path.join(root, "scripts", "verify-staging-contract.cjs"), "utf8");
+  assert.match(contract, /githubPullRequest\("kawstubh\/universal-intelligence-engine", 64\)/);
+  assert.ok(contract.includes("approvedServiceNames"));
+  assert.ok(contract.includes("candidateServiceLabels"));
+  assert.ok(contract.includes("apiMissingLabels"));
+  assert.ok(contract.includes("candidateBookingPath"));
+  assert.doesNotMatch(contract, /serviceLabels\.length === 20/);
+});
+
 test("Assistant staging contract verification is read-only and never creates a booking", () => {
   assert.match(assistantContractSource, /method: "OPTIONS"/);
   assert.match(assistantContractSource, /method: "GET"/);
