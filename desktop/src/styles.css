@@ -4186,6 +4186,8 @@ main.oralyn-reference-layout {
 
 /* Preserve the clinic-approved Oralyn wordmark and app icon assets. */
 .oralyn-reference-story .oralyn-vector-brand {display:flex;align-items:center;width:max-content;max-width:100%;}
-.oralyn-approved-wordmark {display:block;width:clamp(66px,6vw,86px);max-height:88px;height:auto;object-fit:contain;filter:none;}
+.oralyn-approved-wordmark {display:block;width:clamp(112px,10vw,148px);max-width:100%;max-height:none;height:auto;object-fit:contain;object-position:left center;filter:none;background:transparent;}
 .oralyn-reference-card .oralyn-app-squircle {background:transparent;border-radius:22%;box-shadow:none;overflow:hidden;}
 .oralyn-reference-card .oralyn-app-squircle img {display:block!important;width:100%;height:100%;object-fit:contain;filter:none;}
+
+@media(max-width:640px){.oralyn-reference-story .oralyn-auth-brand .oralyn-approved-wordmark{width:clamp(92px,28vw,118px);max-height:none}}
