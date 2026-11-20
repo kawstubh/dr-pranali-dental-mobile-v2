@@ -6,9 +6,9 @@ on:
     paths:
       - 'desktop/**'
       - '.github/workflows/oralyn-desktop.yml'
-  # Feature-branch commits are validated by the PR event; avoid duplicate browser runs.
+  # The isolated Assistant-permission branch also runs exact-head CI on each push.
   push:
-    branches: [master]
+    branches: [master, fix/assistant-appointment-cancel-denied-20261120]
     paths:
       - 'desktop/**'
       - '.github/workflows/oralyn-desktop.yml'
