@@ -1,4 +1,5 @@
 const fs = require("node:fs");
+const path = require("node:path");
 const { isRuntimeEquivalentCompare } = require("./staging-commit-equivalence.cjs");
 
 const apiOrigin = new URL(process.env.VITE_DENTAL_API_URL || "").origin;
@@ -82,10 +83,10 @@ async function githubPullRequest(repo, number) {
 
 async function backendCommitMatchesPr(repo, deployedCommit, prHeadCommit) {
   if (!deployedCommit || !prHeadCommit) {
-    return { ok: false, detail: "deployed API commit or PR #60 head is unavailable" };
+    return { ok: false, detail: "deployed API commit or PR #64 head is unavailable" };
   }
   if (deployedCommit === prHeadCommit) {
-    return { ok: true, detail: "live API deployment commit exactly matches Draft PR #60 head " + prHeadCommit };
+    return { ok: true, detail: "live API deployment commit exactly matches Draft PR #64 head " + prHeadCommit };
   }
 
   const comparison = await request(
@@ -101,13 +102,13 @@ async function backendCommitMatchesPr(repo, deployedCommit, prHeadCommit) {
   if (isRuntimeEquivalentCompare(compareBody)) {
     return {
       ok: true,
-      detail: "live API runtime commit " + deployedCommit + " is an ancestor of PR #60 head " +
+      detail: "live API runtime commit " + deployedCommit + " is an ancestor of PR #64 head " +
         prHeadCommit + "; GitHub confirms every intervening change is a Markdown file under docs/ or a Python test under tests/, with no runtime or configuration changes",
     };
   }
   return {
     ok: false,
-    detail: "live API runtime commit " + deployedCommit + " differs from PR #60 head " + prHeadCommit +
+    detail: "live API runtime commit " + deployedCommit + " differs from PR #64 head " + prHeadCommit +
       " and the intervening commit range is not exclusively docs/*.md",
   };
 }
@@ -127,7 +128,7 @@ async function waitForResponse(url, predicate, options = {}, attempts = 12, dela
 async function main() {
   const originHeaders = { Origin: portalOrigin };
   const expectedPortalCommit = process.env.ORALYN_COMMIT_SHA || process.env.GITHUB_SHA || "";
-  const backendPr = await githubPullRequest("kawstubh/universal-intelligence-engine", 60);
+  const backendPr = await githubPullRequest("kawstubh/universal-intelligence-engine", 64);
   const expectedApiCommit = backendPr?.head?.sha || "";
 
   const [dentalHealthWait, portalManifestWait] = await Promise.all([
@@ -261,12 +262,76 @@ async function main() {
     "no patient-auth OpenAPI routes; protected APIs deny unauthenticated reads; public pages are account-free",
   );
 
+  const otherServiceLabel = "Other dental concern";
+  const catalogueSourcePath = path.resolve(process.cwd(), "../shared/dentalServices.ts");
+  const candidateBookingPath = path.resolve(process.cwd(), "public/patient/booking/index.html");
+  const catalogueSource = fs.readFileSync(catalogueSourcePath, "utf8");
+  const candidateBookingHtml = fs.readFileSync(candidateBookingPath, "utf8");
+  const candidateServiceLabels = [...catalogueSource.matchAll(
+    /\\{\\s*id:\\s*'[^']+'\\s*,\\s*name:\\s*'([^']+)'/g,
+  )].map((match) => match[1]);
+  const approvedServiceNames = [
+    "Dental Check-up & Consultation",
+    "Gum Treatment (Periodontal Care)",
+    "Tooth Sensitivity Treatment",
+    "TMJ & Jaw Pain Treatment",
+    "Scaling & Cleaning",
+    "Dental Sealants",
+    "Oral Hygiene Education",
+    "Teeth Whitening",
+    "Veneers",
+    "Smile Makeover",
+    "Tooth Filling",
+    "Root Canal Treatment",
+    "Dental Crowns & Caps",
+    "Dentures",
+    "Dental Implants",
+    "Tooth Extraction",
+    "Braces Treatment",
+    "Clear Aligners",
+    "Kids Dentistry",
+    "Emergency Dental Care",
+  ];
+  const sortLabels = (labels) => [...labels].sort((left, right) => left.localeCompare(right));
+  const sourceCatalogueOk = candidateServiceLabels.length === 20 &&
+    new Set(candidateServiceLabels).size === 20 &&
+    JSON.stringify(sortLabels(candidateServiceLabels)) === JSON.stringify(sortLabels(approvedServiceNames));
   const serviceSchema = openapi?.components?.schemas?.PublicAppointmentIn?.properties?.treatment_type?.enum || [];
-  const serviceLabels = serviceSchema.filter((label) => label !== "Other dental concern");
-  const catalogApiOk = serviceLabels.length === 20 && serviceSchema.includes("Other dental concern");
-  const catalogUiOk = serviceLabels.every((label) => bookingHtml.includes(label));
-  record("ORALYN_SERVICE_CATALOG_API_VERIFIED", catalogApiOk, "20 repository service labels plus Other in API schema");
-  record("ORALYN_SERVICE_CATALOG_UI_VERIFIED", catalogUiOk, "all 20 repository service labels present in public booking HTML");
+  const apiServiceLabels = serviceSchema.filter((label) => label !== otherServiceLabel);
+  const catalogApiOk = sourceCatalogueOk &&
+    serviceSchema.length === 21 &&
+    serviceSchema.filter((label) => label === otherServiceLabel).length === 1 &&
+    JSON.stringify(sortLabels(apiServiceLabels)) === JSON.stringify(sortLabels(approvedServiceNames));
+  const escapeHtml = (value) => value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+  const catalogUiOk = sourceCatalogueOk &&
+    candidateServiceLabels.every((label) =>
+      candidateBookingHtml.includes('<option value="' + escapeHtml(label) + '">')
+    ) &&
+    candidateBookingHtml.includes('<option value="' + otherServiceLabel + '">');
+  const apiMissingLabels = approvedServiceNames.filter((label) => !apiServiceLabels.includes(label));
+  const apiUnexpectedLabels = apiServiceLabels.filter((label) => !approvedServiceNames.includes(label));
+  record(
+    "ORALYN_SERVICE_CATALOG_API_VERIFIED",
+    catalogApiOk,
+    catalogApiOk
+      ? "live API OpenAPI enum exactly matches the twenty clinic-approved names plus Other"
+      : "candidate source labels=" + candidateServiceLabels.length +
+        "; live API labels=" + apiServiceLabels.length +
+        "; missing from live API=[" + apiMissingLabels.join("; ") +
+        "]; unexpected live API labels=[" + apiUnexpectedLabels.join("; ") + "]",
+  );
+  record(
+    "ORALYN_SERVICE_CATALOG_UI_VERIFIED",
+    catalogUiOk,
+    catalogUiOk
+      ? "candidate booking HTML contains all twenty clinic-approved option values plus Other"
+      : "candidate shared catalogue or booking HTML does not exactly match the approved twenty names plus Other",
+  );
 
   // One synthetic request per backend commit per IST day. The idempotency key
   // is stable across hourly CI runs, so retries cannot create duplicate rows.
@@ -335,7 +400,7 @@ async function main() {
     const bookingBlockReason = health?.database_identity_verified !== true || !branchIdentityOk
       ? "not attempted because the isolated synthetic database identity is not verified"
       : !apiCommitOk
-        ? "not attempted because the deployed API code does not match PR #60 or a verified docs-only descendant"
+        ? "not attempted because the deployed API code does not match PR #64 or a verified docs-only descendant"
         : "not attempted because the deployed API runtime commit is unavailable";
     record("ORALYN_GUEST_BOOKING_E2E_VERIFIED", false, bookingBlockReason);
     record("ORALYN_GUEST_BOOKING_IDEMPOTENCY_VERIFIED", false, bookingBlockReason);
