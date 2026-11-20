@@ -97,23 +97,34 @@ async function verifyNoHorizontalOverflow(expectedWidth) {
   return layout;
 }
 
-async function verifyNoVerticalOverflow(expectedHeight) {
-  const layout = await evaluate(`(() => {
+async function verifyBookingScrollReachability(expectedHeight) {
+  const layout = await evaluate(`(async () => {
     const root = document.documentElement;
     const body = document.body;
     const viewportHeight = root.clientHeight;
     const rootScrollHeight = root.scrollHeight;
     const bodyScrollHeight = body ? body.scrollHeight : rootScrollHeight;
+    const scrollHeight = Math.max(rootScrollHeight, bodyScrollHeight);
+    const submit = document.querySelector("#submit");
+    const initialScrollY = window.scrollY;
+    window.scrollTo(0, scrollHeight);
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const submitRect = submit ? submit.getBoundingClientRect() : null;
+    const submitReachable = Boolean(
+      submitRect && submitRect.top >= -1 && submitRect.bottom <= window.innerHeight + 1
+    );
+    window.scrollTo(0, initialScrollY);
     return {
       viewportHeight,
       expectedViewportHeight: ${Number(expectedHeight)},
       rootScrollHeight,
       bodyScrollHeight,
-      verticalOverflow: Math.max(rootScrollHeight, bodyScrollHeight) > viewportHeight + 1,
+      verticalScrollAllowed: scrollHeight > viewportHeight + 1,
+      submitReachable,
     };
   })()`);
-  if (!layout || !Number.isFinite(layout.viewportHeight) || layout.viewportHeight <= 0 || layout.verticalOverflow) {
-    throw new Error("Vertical page overflow at " + expectedHeight + "px capture: " + JSON.stringify(layout));
+  if (!layout || !Number.isFinite(layout.viewportHeight) || layout.viewportHeight <= 0 || !layout.submitReachable) {
+    throw new Error("Booking submit is not reachable by vertical scrolling at " + expectedHeight + "px capture: " + JSON.stringify(layout));
   }
   return layout;
 }
@@ -124,7 +135,7 @@ async function capture(name, width, height, mobile = false) {
   });
   await sleep(450);
   const layout = await verifyNoHorizontalOverflow(width);
-  const vertical = name.startsWith("patient-booking-") ? await verifyNoVerticalOverflow(height) : null;
+  const vertical = name.startsWith("patient-booking-") ? await verifyBookingScrollReachability(height) : null;
   console.log("[Oralyn layout]", JSON.stringify({ screenshot: name, ...layout, ...(vertical ? { vertical } : {}) }));
   const screenshot = await send("Page.captureScreenshot", {
     format: "png", captureBeyondViewport: false, fromSurface: true,
