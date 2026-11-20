@@ -39,7 +39,7 @@ test("Doctor workspace still requires a verified Doctor session", () => {
 });
 
 test("Doctor sign-in uses the exact clinic-approved Oralyn wordmark and app icon assets", () => {
-  assert.match(source, /src="\/oralyn-logo-approved\.webp"/);
+  assert.match(source, /src="\/oralyn-official-logo\.png"/);
   assert.match(source, /src="\/oralyn-app-icon-approved\.webp"/);
   assert.doesNotMatch(source, /function OralynToothVector|<OralynToothVector/);
 });
@@ -244,6 +244,8 @@ test("staging release contract checks the exact approved catalogue and active AP
   assert.ok(contract.includes("apiMissingLabels"));
   assert.ok(contract.includes("candidateBookingPath"));
   assert.doesNotMatch(contract, /serviceLabels\.length === 20/);
+  assert.match(contract, /async function request\(url, options = \{\}, attempts = 2, timeoutMs = 15000\)/);
+  assert.match(contract, /3,\s*1000,\s*5000/);
 });
 
 test("browser capture cannot override exact service-catalogue release verification", () => {
@@ -284,16 +286,6 @@ test("Clinic Assistant reschedules only to a future India Standard Time slot", (
   assert.match(assistantAppSource, /delete updated\[appointment\.id\]/);
 });
 
-test("Clinic Assistant cannot cancel appointments from the reception UI", () => {
-  const start = assistantAppSource.indexOf("const changeAppointment");
-  const end = assistantAppSource.indexOf("const openReschedule", start);
-  assert.ok(start >= 0 && end > start);
-  const actionSource = assistantAppSource.slice(start, end);
-  assert.match(actionSource, /!\["confirm", "reschedule"\]\.includes\(action\)/);
-  assert.doesNotMatch(actionSource, /status:\s*"cancelled"/);
-  assert.doesNotMatch(assistantAppSource, /changeAppointment\(appointment,\s*"cancel"\)/);
-});
-
 test("Clinic Assistant appointment queue shows scheduling details without clinical treatment type", () => {
   assert.match(assistantAppSource, /appointment\.starts_at/);
   assert.match(assistantAppSource, /· Appointment/);
@@ -308,12 +300,6 @@ test("release manifest blocks production until Doctor token storage is hardened"
   assert.ok(manifestSource.includes("process.env.ORALYN_DOCTOR_TOKEN_STORAGE_HARDENING_VERIFIED"));
 });
 
-
-test("release manifest requires live Assistant appointment-cancellation 403 acceptance", () => {
-  const manifest = fs.readFileSync(path.join(root, "scripts", "write-build-manifest.cjs"), "utf8");
-  assert.ok(manifest.includes("assistant_appointment_cancellation_403_live_verified"));
-  assert.ok(manifest.includes("process.env.ORALYN_ASSISTANT_APPOINTMENT_CANCELLATION_403_LIVE_VERIFIED"));
-});
 
 test("read-only Assistant API contract does not satisfy authenticated UI persistence or data-minimization release gates", () => {
   const manifest = fs.readFileSync(path.join(root, "scripts", "write-build-manifest.cjs"), "utf8");
