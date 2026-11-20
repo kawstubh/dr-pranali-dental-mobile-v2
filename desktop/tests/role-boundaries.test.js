@@ -236,6 +236,16 @@ test("Doctor settings embeds the real owner/admin-gated Assistant management com
 });
 
 
+test("staging release contract checks the exact approved catalogue and active API correction PR", () => {
+  const contract = fs.readFileSync(path.join(root, "scripts", "verify-staging-contract.cjs"), "utf8");
+  assert.match(contract, /githubPullRequest\("kawstubh\/universal-intelligence-engine", 64\)/);
+  assert.ok(contract.includes("approvedServiceNames"));
+  assert.ok(contract.includes("candidateServiceLabels"));
+  assert.ok(contract.includes("apiMissingLabels"));
+  assert.ok(contract.includes("candidateBookingPath"));
+  assert.doesNotMatch(contract, /serviceLabels\.length === 20/);
+});
+
 test("browser capture cannot override exact service-catalogue release verification", () => {
   const workflow = fs.readFileSync(path.join(root, "..", ".github", "workflows", "oralyn-desktop.yml"), "utf8");
   assert.doesNotMatch(workflow, /echo "ORALYN_SERVICE_CATALOG_UI_VERIFIED=true"/);
