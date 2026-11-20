@@ -294,6 +294,12 @@ test("release manifest blocks production until Doctor token storage is hardened"
 });
 
 
+test("release manifest requires live Assistant appointment-cancellation 403 acceptance", () => {
+  const manifest = fs.readFileSync(path.join(root, "scripts", "write-build-manifest.cjs"), "utf8");
+  assert.ok(manifest.includes("assistant_appointment_cancellation_403_live_verified"));
+  assert.ok(manifest.includes("process.env.ORALYN_ASSISTANT_APPOINTMENT_CANCELLATION_403_LIVE_VERIFIED"));
+});
+
 test("read-only Assistant API contract does not satisfy authenticated UI persistence or data-minimization release gates", () => {
   const manifest = fs.readFileSync(path.join(root, "scripts", "write-build-manifest.cjs"), "utf8");
   assert.ok(manifest.includes("assistant_api_contract_readonly_verified"));
