@@ -246,6 +246,11 @@ test("staging release contract checks the exact approved catalogue and active AP
   assert.doesNotMatch(contract, /serviceLabels\.length === 20/);
 });
 
+test("browser capture cannot override exact service-catalogue release verification", () => {
+  const workflow = fs.readFileSync(path.join(root, "..", ".github", "workflows", "oralyn-desktop.yml"), "utf8");
+  assert.doesNotMatch(workflow, /echo "ORALYN_SERVICE_CATALOG_UI_VERIFIED=true"/);
+});
+
 test("Assistant staging contract verification is read-only and never creates a booking", () => {
   assert.match(assistantContractSource, /method: "OPTIONS"/);
   assert.match(assistantContractSource, /method: "GET"/);
