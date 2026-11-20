@@ -57,6 +57,9 @@ test("CI records Doctor token storage hardening only after the regression suite"
   const gateIndex = assistantWorkflowSource.indexOf("Record memory-only Doctor token storage verification");
   assert.ok(testsIndex >= 0 && gateIndex > testsIndex);
   assert.match(assistantWorkflowSource, /ORALYN_DOCTOR_TOKEN_STORAGE_HARDENING_VERIFIED=true/);
+  assert.match(assistantWorkflowSource, /name: Record memory-only Doctor token storage verification\s+if: github\.event_name == 'pull_request'/);
+  assert.match(assistantWorkflowSource, /name: Verify live Assistant API contract \(read-only\)\s+if: github\.event_name == 'pull_request'/);
+  assert.doesNotMatch(assistantWorkflowSource, /head\.ref == 'feat\/oralyn-desktop-app'/);
 });
 
 test("public patient journey is served only by account-free static pages", () => {
