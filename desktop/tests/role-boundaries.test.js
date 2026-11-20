@@ -243,8 +243,10 @@ test("staging release contract checks the exact approved catalogue and active AP
   assert.ok(contract.includes("candidateServiceLabels"));
   assert.ok(contract.includes("apiMissingLabels"));
   assert.ok(contract.includes("candidateBookingPath"));
-  const catalogueParser = contract.split("\n").find((line) => line.includes("catalogueSource.matchAll"));
-  assert.ok(catalogueParser?.includes(String.raw`/\{\s*id:\s*'[^']+'\s*,\s*name:`));
+  const parserLines = contract.split("\n");
+  const parserIndex = parserLines.findIndex((line) => line.includes("catalogueSource.matchAll"));
+  assert.ok(parserIndex >= 0);
+  assert.ok(parserLines[parserIndex + 1]?.includes(String.raw`/\{\s*id:\s*'[^']+'\s*,\s*name:`));
   assert.doesNotMatch(contract, /serviceLabels\.length === 20/);
   assert.match(contract, /async function request\(url, options = \{\}, attempts = 2, timeoutMs = 15000\)/);
   assert.match(contract, /3,\s*1000,\s*5000/);
