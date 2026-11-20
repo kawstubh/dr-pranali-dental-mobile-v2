@@ -292,6 +292,16 @@ test("Clinic Assistant reschedules only to a future India Standard Time slot", (
   assert.match(assistantAppSource, /delete updated\[appointment\.id\]/);
 });
 
+test("Clinic Assistant cannot cancel appointments from the reception UI", () => {
+  const start = assistantAppSource.indexOf("const changeAppointment");
+  const end = assistantAppSource.indexOf("const openReschedule", start);
+  assert.ok(start >= 0 && end > start);
+  const actionSource = assistantAppSource.slice(start, end);
+  assert.match(actionSource, /!\["confirm", "reschedule"\]\.includes\(action\)/);
+  assert.doesNotMatch(actionSource, /status:\s*"cancelled"/);
+  assert.doesNotMatch(assistantAppSource, /changeAppointment\(appointment,\s*"cancel"\)/);
+});
+
 test("Clinic Assistant appointment queue shows scheduling details without clinical treatment type", () => {
   assert.match(assistantAppSource, /appointment\.starts_at/);
   assert.match(assistantAppSource, /· Appointment/);
