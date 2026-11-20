@@ -342,7 +342,7 @@ async function verifyPublicBookingForm() {
       timezoneNotice: document.body.innerText.includes("Asia/Kolkata"),
       accountFree: document.body.innerText.includes("No account or OTP is required."),
       logoVisible: (() => {
-        const logo = document.querySelector('header img[src="/oralyn-logo-approved.webp"]');
+        const logo = document.querySelector('header img[src="/oralyn-official-logo.png"]');
         const header = logo?.closest("header");
         const logoRect = logo?.getBoundingClientRect();
         const headerRect = header?.getBoundingClientRect();
@@ -579,7 +579,7 @@ async function captureAssistantAdminGate() {
       const wordmark = document.querySelector(".oralyn-vector-brand img");
       const appIcon = document.querySelector(".oralyn-app-squircle img");
       return {
-        wordmark: Boolean(wordmark && wordmark.complete && wordmark.naturalWidth > 0 && wordmark.getAttribute("src") === "/oralyn-logo-approved.webp"),
+        wordmark: Boolean(wordmark && wordmark.complete && wordmark.naturalWidth > 0 && wordmark.getAttribute("src") === "/oralyn-official-logo.png"),
         appIcon: Boolean(appIcon && appIcon.complete && appIcon.naturalWidth > 0 && appIcon.getAttribute("src") === "/oralyn-app-icon-approved.webp")
       };
     })()`);
