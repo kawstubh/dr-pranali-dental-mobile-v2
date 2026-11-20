@@ -2,13 +2,13 @@ name: Oralyn Desktop
 on:
   workflow_dispatch:
   pull_request:
-    branches: [master, feat/oralyn-desktop-app]
+    branches: [master, feat/oralyn-desktop-app, fix/oralyn-canonical-transparent-logo-20261120]
     paths:
       - 'desktop/**'
       - '.github/workflows/oralyn-desktop.yml'
   # Feature-branch commits are validated by the PR event; avoid duplicate browser runs.
   push:
-    branches: [master]
+    branches: [master, fix/assistant-appointment-cancel-denied-stacked-20261120]
     paths:
       - 'desktop/**'
       - '.github/workflows/oralyn-desktop.yml'
