@@ -244,6 +244,8 @@ test("staging release contract checks the exact approved catalogue and active AP
   assert.ok(contract.includes("apiMissingLabels"));
   assert.ok(contract.includes("candidateBookingPath"));
   assert.doesNotMatch(contract, /serviceLabels\.length === 20/);
+  assert.match(contract, /async function request\(url, options = \{\}, attempts = 2, timeoutMs = 15000\)/);
+  assert.match(contract, /3,\s*1000,\s*5000/);
 });
 
 test("browser capture cannot override exact service-catalogue release verification", () => {
