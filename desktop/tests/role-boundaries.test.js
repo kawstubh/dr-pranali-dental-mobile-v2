@@ -282,9 +282,9 @@ test("portal security header probe is a read-only GET check", () => {
   assert.match(portalHeadersSource, /strict-transport-security/i);
   assert.doesNotMatch(portalHeadersSource, /method:\s*"(?:POST|PATCH|DELETE)"/);
   assert.match(assistantWorkflowSource, /ORALYN_SECURITY_HEADERS_VERIFIED=true/);
-  assert.match(viteSource, /script-src 'self';/);
+  assert.match(viteSource, /script-src 'self' 'sha256-/);
   assert.match(viteSource, /font-src 'self';/);
-  assert.match(viteSource, /style-src 'self';/);
+  assert.match(viteSource, /style-src 'self' 'sha256-/);
   assert.doesNotMatch(viteSource, /unsafe-inline/);
   assert.doesNotMatch(source, /style=\{\{/);
 });
