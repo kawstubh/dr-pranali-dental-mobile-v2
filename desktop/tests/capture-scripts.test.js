@@ -247,11 +247,10 @@ test("release manifest separately verifies HTTP BearerAuth on every protected Op
   const staging = readFileSync(join(process.cwd(), "scripts", "verify-staging-contract.cjs"), "utf8");
   const manifest = readFileSync(join(process.cwd(), "scripts", "write-build-manifest.cjs"), "utf8");
 
-  assert.match(staging, /components\?\.securitySchemes\?\.BearerAuth/);
-  assert.match(staging, /bearerSchemeConfigured/);
-  assert.match(staging, /protectedOpenApiPaths/);
+  assert.match(staging, /require\("\.\/openapi-security\.cjs"\)/);
+  assert.match(staging, /inspectOpenApiBearerAuth\(openapi\)/);
+  assert.match(staging, /bearerAuthReport\.missingProtectedOperations/);
   assert.match(staging, /ORALYN_OPENAPI_BEARER_AUTH_VERIFIED/);
-  assert.match(staging, /Object\.prototype\.hasOwnProperty\.call\(entry, "BearerAuth"\)/);
   assert.match(manifest, /openapi_bearer_auth_verified/);
   assert.match(manifest, /ORALYN_OPENAPI_BEARER_AUTH_VERIFIED/);
 });
