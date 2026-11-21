@@ -2,6 +2,7 @@ const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const { isRuntimeEquivalentCompare } = require("./staging-commit-equivalence.cjs");
+const { inspectOpenApiBearerAuth } = require("./openapi-security.cjs");
 
 const apiOrigin = new URL(process.env.VITE_DENTAL_API_URL || "").origin;
 const portalOrigin = new URL(process.env.ORALYN_PORTAL_ORIGIN || "").origin;
@@ -289,48 +290,21 @@ async function main() {
     "/v1/dental/assistant/billing/invoices",
     "/v1/dental/clinic-assistants",
     "/v1/dental/doctor/patients/synthetic-only/clinical-notes",
-    "/v1/dental/doctor/patients/synthetic-only/treatment-plans",
-    "/v1/dental/doctor/patients/synthetic-only/documents",
-  ];
-  const protectedOpenApiPaths = paths.filter((path) =>
-    path === "/v1/dental/patients" ||
-    path === "/v1/dental/appointments" ||
-    path === "/v1/dental/clinic-assistants" ||
-    path.startsWith("/v1/dental/doctor/") ||
-    path.startsWith("/v1/dental/ai/doctor/") ||
-    (path.startsWith("/v1/dental/assistant/") && path !== "/v1/dental/assistant/auth/login")
-  );
-  const bearerScheme = openapi?.components?.securitySchemes?.BearerAuth;
-  const bearerSchemeConfigured = bearerScheme?.type === "http" &&
-    String(bearerScheme?.scheme || "").toLowerCase() === "bearer";
-  const httpMethods = new Set(["get", "post", "put", "patch", "delete", "options", "head", "trace"]);
-  const protectedOperations = protectedOpenApiPaths.flatMap((path) =>
-    Object.entries(openapi?.paths?.[path] || {})
-      .filter(([method, operation]) =>
-        httpMethods.has(method.toLowerCase()) && operation && typeof operation === "object"
-      )
-      .map(([method, operation]) => ({ path, method, operation }))
-  );
-  const bearerOperationsVerified = protectedOperations.length > 0 &&
-    protectedOperations.every(({ operation }) =>
-      Array.isArray(operation.security) &&
-      operation.security.some((entry) =>
-        entry && typeof entry === "object" &&
-        Object.prototype.hasOwnProperty.call(entry, "BearerAuth")
-      )
-    );
+    "/v1/dental/doctor/patients/synthetic-only/treatment-  const bearerAuthReport = inspectOpenApiBearerAuth(openapi);
   const bearerAuthOpenApiVerified = openapiResult.response?.status === 200 &&
-    bearerSchemeConfigured && bearerOperationsVerified;
+    bearerAuthReport.passed;
   record(
     "ORALYN_OPENAPI_BEARER_AUTH_VERIFIED",
     bearerAuthOpenApiVerified,
-    "BearerAuth HTTP scheme=" + bearerSchemeConfigured +
-      "; protected operations with explicit BearerAuth=" +
-      protectedOperations.filter(({ operation }) =>
-        Array.isArray(operation.security) &&
-        operation.security.some((entry) =>
-          entry && typeof entry === "object" &&
-          Object.prototype.hasOwnProperty.call(entry, "BearerAuth")
+    "BearerAuth HTTP scheme=" + bearerAuthReport.bearerSchemeConfigured +
+      "; protected dental operations with explicit BearerAuth=" +
+      bearerAuthReport.verifiedProtectedOperationCount + "/" +
+      bearerAuthReport.protectedOperationCount +
+      "; missing protected operations=[" + bearerAuthReport.missingProtectedOperations.join("; ") +
+      "]; missing public operations=[" + bearerAuthReport.missingPublicOperations.join("; ") +
+      "]; accidentally secured public operations=[" + bearerAuthReport.securedPublicOperations.join("; ") + "]",
+  );
+Auth")
         )
       ).length + "/" + protectedOperations.length
   );
