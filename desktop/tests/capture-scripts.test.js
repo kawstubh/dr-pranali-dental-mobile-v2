@@ -167,6 +167,8 @@ test("strict CSP release gate checks live patient routes and preview verificatio
   assert.match(staging, /all inline styles hash-allowlisted/);
   assert.match(manifest, /strict_content_security_policy_verified/);
   assert.match(manifest, /preview_security_headers_verified/);
+  assert.match(manifest, /legacy_public_patient_auth_surfaces_retired_verified/);
+  assert.match(staging, /ORALYN_LEGACY_PATIENT_AUTH_SURFACES_RETIRED_VERIFIED/);
   assert.match(workflow, /ORALYN_PREVIEW_SECURITY_HEADERS_VERIFIED=true/);
   assert.doesNotMatch(workflow, /echo ["']ORALYN_SECURITY_HEADERS_VERIFIED=true/);
 });
