@@ -155,6 +155,22 @@ test("release workflow derives live gates instead of hard-coding them true", () 
   );
 });
 
+test("strict CSP release gate checks live patient routes and preview verification cannot overwrite it", () => {
+  const workflow = readFileSync(join(process.cwd(), "..", ".github", "workflows", "oralyn-desktop.yml"), "utf8");
+  const staging = readFileSync(join(process.cwd(), "scripts", "verify-staging-contract.cjs"), "utf8");
+  const manifest = readFileSync(join(process.cwd(), "scripts", "write-build-manifest.cjs"), "utf8");
+
+  assert.match(staging, /function strictPortalCsp/);
+  assert.match(staging, /ORALYN_STRICT_CSP_VERIFIED/);
+  assert.match(staging, /'unsafe-inline'|'unsafe-eval'/);
+  assert.match(staging, /all inline scripts hash-allowlisted/);
+  assert.match(staging, /all inline styles hash-allowlisted/);
+  assert.match(manifest, /strict_content_security_policy_verified/);
+  assert.match(manifest, /preview_security_headers_verified/);
+  assert.match(workflow, /ORALYN_PREVIEW_SECURITY_HEADERS_VERIFIED=true/);
+  assert.doesNotMatch(workflow, /echo ["']ORALYN_SECURITY_HEADERS_VERIFIED=true/);
+});
+
 test("synthetic Doctor and Assistant fixtures record PWA state without duplicating the real-browser control gate", () => {
   const doctor = readFileSync(join(process.cwd(), "scripts", "capture-synthetic-doctor.cjs"), "utf8");
   const assistant = readFileSync(join(process.cwd(), "scripts", "capture-synthetic-assistant.cjs"), "utf8");
