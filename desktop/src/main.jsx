@@ -1066,20 +1066,7 @@ function Doctor({
                   disabled={!activePatient}
                 >
                   <small>{n}</small>
-                  <span
-                    style={{
-                      background: {
-                        "not-recorded": "#f4fbff",
-                        healthy: "#e9f4fa",
-                        caries: "#f5b8a9",
-                        filled: "#8dc8f4",
-                        rct: "#b8a9ef",
-                        crown: "#f4d58b",
-                        implant: "#91d8cc",
-                        missing: "#f3f5f8",
-                      }[findings[n] || "not-recorded"],
-                    }}
-                  >
+                  <span className={`finding-${findings[n] || "not-recorded"}`}>
                     ◒
                   </span>
                 </button>
@@ -1095,20 +1082,7 @@ function Doctor({
                   onClick={() => Q(String(n))}
                   disabled={!activePatient}
                 >
-                  <span
-                    style={{
-                      background: {
-                        "not-recorded": "#f4fbff",
-                        healthy: "#e9f4fa",
-                        caries: "#f5b8a9",
-                        filled: "#8dc8f4",
-                        rct: "#b8a9ef",
-                        crown: "#f4d58b",
-                        implant: "#91d8cc",
-                        missing: "#f3f5f8",
-                      }[findings[n] || "not-recorded"],
-                    }}
-                  >
+                  <span className={`finding-${findings[n] || "not-recorded"}`}>
                     ◒
                   </span>
                   <small>{n}</small>

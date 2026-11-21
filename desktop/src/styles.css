@@ -1022,6 +1022,14 @@ td {
   color: #6b879b;
   font-size: 12px;
 }
+.teeth span.finding-not-recorded { background: #f4fbff; }
+.teeth span.finding-healthy { background: #e9f4fa; }
+.teeth span.finding-caries { background: #f5b8a9; }
+.teeth span.finding-filled { background: #8dc8f4; }
+.teeth span.finding-rct { background: #b8a9ef; }
+.teeth span.finding-crown { background: #f4d58b; }
+.teeth span.finding-implant { background: #91d8cc; }
+.teeth span.finding-missing { background: #f3f5f8; }
 .disclaimer {
   font-size: 9px;
   color: #a0adba;
