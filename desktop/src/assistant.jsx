@@ -10,7 +10,6 @@ import {
   ShieldCheck,
   Users,
   Wallet,
-  XCircle,
 } from "lucide-react";
 import { resolveApiBase } from "./api.js";
 import "./assistant.css";
@@ -311,11 +310,15 @@ export default function AssistantApp() {
 
   const changeAppointment = async (appointment, action, startsAt = null) => {
     if (!token || busy) return;
+    if (!["confirm", "reschedule"].includes(action)) {
+      setError("Clinic Assistants cannot cancel appointments.");
+      return;
+    }
     setBusy(true);
     setError("");
     const body = action === "reschedule"
       ? { status: "rescheduled", starts_at: startsAt }
-      : { status: action === "confirm" ? "confirmed" : "cancelled" };
+      : { status: "confirmed" };
     try {
       const next = await assistantRequest(
         "/v1/dental/assistant/appointments/" + encodeURIComponent(appointment.id),
@@ -330,9 +333,7 @@ export default function AssistantApp() {
       setNotice(
         action === "confirm"
           ? "Appointment confirmed."
-          : action === "cancel"
-            ? "Appointment cancelled."
-            : "Appointment rescheduled to " + dateLabel(next?.starts_at || startsAt) + "."
+          : "Appointment rescheduled to " + dateLabel(next?.starts_at || startsAt) + "."
       );
     } catch (cause) {
       setError(cause?.message || "Appointment status could not be changed.");
@@ -482,7 +483,6 @@ export default function AssistantApp() {
                   <span className={"assistant-status status-" + String(appointment.status).replace(/[^a-z_]/g, "")}>{String(appointment.status).replaceAll("_", " ")}</span>
                   {appointment.status !== "confirmed" && !["cancelled", "completed", "no_show"].includes(appointment.status) && <button type="button" onClick={() => changeAppointment(appointment, "confirm")} disabled={busy}><CheckCircle2 size={15} /> Confirm</button>}
                   {!["cancelled", "completed", "no_show"].includes(appointment.status) && <button type="button" onClick={() => openReschedule(appointment)} disabled={busy}><CalendarDays size={15} /> Reschedule</button>}
-                  {!["cancelled", "completed", "no_show"].includes(appointment.status) && <button type="button" className="assistant-danger-button" onClick={() => changeAppointment(appointment, "cancel")} disabled={busy}><XCircle size={15} /> Cancel</button>}
                 </div>
                 {rescheduleDrafts[appointment.id]?.open && (
                   <form className="assistant-reschedule-form" onSubmit={(event) => saveReschedule(event, appointment)}>
