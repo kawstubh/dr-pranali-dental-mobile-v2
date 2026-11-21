@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Script } from "node:vm";
+import openApiSecurity from "../scripts/openapi-security.cjs";
+
+const { inspectOpenApiBearerAuth } = openApiSecurity;
 
 test("synthetic Doctor capture script parses before browser CI executes it", () => {
   const file = join(process.cwd(), "scripts", "capture-synthetic-doctor.cjs");
@@ -251,4 +254,85 @@ test("release manifest separately verifies HTTP BearerAuth on every protected Op
   assert.match(staging, /Object\.prototype\.hasOwnProperty\.call\(entry, "BearerAuth"\)/);
   assert.match(manifest, /openapi_bearer_auth_verified/);
   assert.match(manifest, /ORALYN_OPENAPI_BEARER_AUTH_VERIFIED/);
+});
+
+
+test("OpenAPI BearerAuth gate covers every protected dental operation and only explicit public exceptions", () => {
+  const bearer = { security: [{ BearerAuth: [] }] };
+  const openapi = {
+    components: {
+      securitySchemes: {
+        BearerAuth: { type: "http", scheme: "bearer", bearerFormat: "opaque" },
+      },
+    },
+    paths: {
+      "/v1/dental/health": { get: {} },
+      "/v1/dental/auth/password/login": { post: {} },
+      "/v1/dental/assistant/auth/login": { post: {} },
+      "/v1/dental/public/appointments": { post: {} },
+      "/v1/dental/billing/plans": { get: {} },
+      "/v1/dental/billing/razorpay/webhook": { post: {} },
+      "/v1/dental/workspaces/{clinic_id}/memberships": { get: bearer },
+      "/v1/dental/scans/screen": { post: bearer },
+      "/v1/dental/whatsapp/template": { post: bearer },
+      "/v1/dental/patients/{patient_id}/chart": { get: bearer, post: bearer },
+      "/v1/dental/billing/membership": { get: bearer },
+      "/v1/dental/assistant/appointments": { get: bearer },
+      "/v1/dental/doctor/patients/{patient_id}/documents/upload-intent": { post: bearer },
+      "/v1/dental/ai/doctor/patient-summary": { post: bearer },
+      "/v1/dental/auth/me": { get: bearer },
+      "/v1/dental/organisations": { post: bearer },
+    },
+  };
+
+  const result = inspectOpenApiBearerAuth(openapi);
+  assert.equal(result.passed, true);
+  assert.equal(result.expectedPublicOperationCount, 6);
+  assert.equal(result.missingPublicOperations.length, 0);
+  assert.equal(result.securedPublicOperations.length, 0);
+  assert.equal(result.missingProtectedOperations.length, 0);
+  assert.equal(result.protectedOperationCount, 11);
+  assert.equal(result.verifiedProtectedOperationCount, 11);
+});
+
+test("OpenAPI BearerAuth gate fails closed for newly added protected dental routes", () => {
+  const bearer = { security: [{ BearerAuth: [] }] };
+  const openapi = {
+    components: { securitySchemes: { BearerAuth: { type: "http", scheme: "bearer" } } },
+    paths: {
+      "/v1/dental/health": { get: {} },
+      "/v1/dental/auth/password/login": { post: {} },
+      "/v1/dental/assistant/auth/login": { post: {} },
+      "/v1/dental/public/appointments": { post: {} },
+      "/v1/dental/billing/plans": { get: {} },
+      "/v1/dental/billing/razorpay/webhook": { post: {} },
+      "/v1/dental/appointments": { get: bearer },
+      "/v1/dental/appointments/{appointment_id}/reschedule": { post: {} },
+    },
+  };
+
+  const result = inspectOpenApiBearerAuth(openapi);
+  assert.equal(result.passed, false);
+  assert.deepEqual(result.missingProtectedOperations, [
+    "POST /v1/dental/appointments/{appointment_id}/reschedule",
+  ]);
+});
+
+test("OpenAPI BearerAuth gate rejects a public operation that becomes protected", () => {
+  const openapi = {
+    components: { securitySchemes: { BearerAuth: { type: "http", scheme: "bearer" } } },
+    paths: {
+      "/v1/dental/health": { get: {} },
+      "/v1/dental/auth/password/login": { post: {} },
+      "/v1/dental/assistant/auth/login": { post: {} },
+      "/v1/dental/public/appointments": { post: { security: [{ BearerAuth: [] }] } },
+      "/v1/dental/billing/plans": { get: {} },
+      "/v1/dental/billing/razorpay/webhook": { post: {} },
+      "/v1/dental/appointments": { get: { security: [{ BearerAuth: [] }] } },
+    },
+  };
+
+  const result = inspectOpenApiBearerAuth(openapi);
+  assert.equal(result.passed, false);
+  assert.deepEqual(result.securedPublicOperations, ["POST /v1/dental/public/appointments"]);
 });
