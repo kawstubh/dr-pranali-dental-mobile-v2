@@ -1,3 +1,4 @@
+const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const { isRuntimeEquivalentCompare } = require("./staging-commit-equivalence.cjs");
@@ -58,6 +59,52 @@ function secureHeaders(headers, portal = false) {
   return {
     passed: checks.every(([, ok]) => ok),
     checks,
+  };
+}
+
+function inlineHashes(html, tag) {
+  const expression = tag === "style"
+    ? /<style\b[^>]*>([\s\S]*?)<\/style>/gi
+    : /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
+  const hashes = [];
+  for (const match of html.matchAll(expression)) {
+    if (tag === "script" && /\bsrc\s*=/.test(match[1])) continue;
+    const value = (tag === "style" ? match[1] : match[2]).replace(/\r\n?/g, "\n");
+    hashes.push("sha256-" + crypto.createHash("sha256").update(value, "utf8").digest("base64"));
+  }
+  return hashes;
+}
+
+function strictPortalCsp(headers, html, apiOrigin) {
+  const csp = String(headers?.get("content-security-policy") || "").trim();
+  if (!csp || /'unsafe-inline'|'unsafe-eval'/i.test(csp)) {
+    return { passed: false, detail: "missing CSP or unsafe inline/eval allowance" };
+  }
+  const directives = new Map(csp.split(";").map((part) => {
+    const [name, ...values] = part.trim().split(/\s+/);
+    return [String(name || "").toLowerCase(), values];
+  }));
+  const tokens = (name) => directives.get(name) || [];
+  const has = (name, value) => tokens(name).includes(value);
+  const scriptHashes = inlineHashes(html, "script");
+  const styleHashes = inlineHashes(html, "style");
+  const checks = [
+    ["default-src self", has("default-src", "'self'")],
+    ["base-uri self", has("base-uri", "'self'")],
+    ["form-action self", has("form-action", "'self'")],
+    ["frame-ancestors none", has("frame-ancestors", "'none'")],
+    ["object-src none", has("object-src", "'none'")],
+    ["script-src self", has("script-src", "'self'")],
+    ["style-src self", has("style-src", "'self'")],
+    ["font-src self", has("font-src", "'self'")],
+    ["connect-src portal and API", has("connect-src", "'self'") && tokens("connect-src").includes(apiOrigin)],
+    ["approved image sources", ["'self'", "data:", "blob:", "https://static.wixstatic.com"].every((value) => has("img-src", value))],
+    ["all inline scripts hash-allowlisted", scriptHashes.every((hash) => has("script-src", "'" + hash + "'"))],
+    ["all inline styles hash-allowlisted", styleHashes.every((hash) => has("style-src", "'" + hash + "'"))],
+  ];
+  return {
+    passed: checks.every(([, passed]) => passed),
+    detail: checks.map(([name, passed]) => name + "=" + passed).join(", "),
   };
 }
 
@@ -215,12 +262,14 @@ async function main() {
   const apiSecurity = secureHeaders(dentalHealthResult.response?.headers, false);
   const portalHomeResult = await request(portalOrigin + "/patient/home/");
   const portalBookingResult = await request(portalOrigin + "/patient/booking/");
-  const portalSecurity = secureHeaders(portalHomeResult.response?.headers, true);
+  const portalHomeSecurity = secureHeaders(portalHomeResult.response?.headers, true);
+  const portalBookingSecurity = secureHeaders(portalBookingResult.response?.headers, true);
   record(
     "ORALYN_SECURITY_HEADERS_VERIFIED",
-    apiSecurity.passed && portalSecurity.passed,
+    apiSecurity.passed && portalHomeSecurity.passed && portalBookingSecurity.passed,
     "API: " + apiSecurity.checks.map(([name, ok]) => name + "=" + ok).join(", ") +
-      "; portal: " + portalSecurity.checks.map(([name, ok]) => name + "=" + ok).join(", "),
+      "; patient home: " + portalHomeSecurity.checks.map(([name, ok]) => name + "=" + ok).join(", ") +
+      "; booking: " + portalBookingSecurity.checks.map(([name, ok]) => name + "=" + ok).join(", "),
   );
 
   const openapiResult = await request(apiOrigin + "/openapi.json");
@@ -252,6 +301,14 @@ async function main() {
     publicGetResult.response?.status === 405;
   const homeHtml = await textBody(portalHomeResult.response);
   const bookingHtml = await textBody(portalBookingResult.response);
+  const strictHomeCsp = strictPortalCsp(portalHomeResult.response?.headers, homeHtml, apiOrigin);
+  const strictBookingCsp = strictPortalCsp(portalBookingResult.response?.headers, bookingHtml, apiOrigin);
+  const strictCspOk = strictHomeCsp.passed && strictBookingCsp.passed;
+  record(
+    "ORALYN_STRICT_CSP_VERIFIED",
+    strictCspOk,
+    "patient home: " + strictHomeCsp.detail + "; booking: " + strictBookingCsp.detail,
+  );
   const hasPasswordInput = /<input\b[^>]*type=["']password/i.test(homeHtml + bookingHtml);
   const noPatientAuthUi = !hasPasswordInput &&
     !/href=["'][^"']*(patient\/login|patient\/signup|patient\/register)/i.test(homeHtml + bookingHtml);
@@ -440,6 +497,7 @@ main().catch((error) => {
     "ORALYN_STAGING_DATABASE_BRANCH_VERIFIED",
     "ORALYN_CORS_VERIFIED",
     "ORALYN_SECURITY_HEADERS_VERIFIED",
+    "ORALYN_STRICT_CSP_VERIFIED",
     "ORALYN_PATIENT_ACCOUNT_FREE_VERIFIED",
     "ORALYN_SERVICE_CATALOG_API_VERIFIED",
     "ORALYN_SERVICE_CATALOG_UI_VERIFIED",
