@@ -127,6 +127,7 @@ const checks = {
     apiOrigin !== stagingApiOrigin &&
     flag(process.env.ORALYN_PRODUCTION_API_ORIGIN_VERIFIED),
   backend_stack_verified: flag(process.env.ORALYN_BACKEND_STACK_VERIFIED),
+  openapi_bearer_auth_verified: flag(process.env.ORALYN_OPENAPI_BEARER_AUTH_VERIFIED),
   cors_verified_for_portal_origin: flag(process.env.ORALYN_CORS_VERIFIED),
   private_document_storage_verified: flag(process.env.ORALYN_PRIVATE_STORAGE_VERIFIED),
   document_malware_scanning_verified: flag(process.env.ORALYN_DOCUMENT_SCAN_VERIFIED),
