@@ -143,6 +143,7 @@ const checks = {
   assistant_appointment_cancellation_403_live_verified: flag(process.env.ORALYN_ASSISTANT_APPOINTMENT_CANCELLATION_403_LIVE_VERIFIED),
   patient_guest_booking_e2e_verified: flag(process.env.ORALYN_GUEST_BOOKING_E2E_VERIFIED),
   patient_account_routes_disabled_verified: flag(process.env.ORALYN_PATIENT_ACCOUNT_FREE_VERIFIED),
+  legacy_public_patient_auth_surfaces_retired_verified: flag(process.env.ORALYN_LEGACY_PATIENT_AUTH_SURFACES_RETIRED_VERIFIED),
   guest_booking_idempotency_verified: flag(process.env.ORALYN_GUEST_BOOKING_IDEMPOTENCY_VERIFIED),
   production_guest_rate_limiting_verified: flag(process.env.ORALYN_PRODUCTION_RATE_LIMITING_VERIFIED),
   assistant_ui_api_verified: flag(process.env.ORALYN_ASSISTANT_UI_API_VERIFIED),
