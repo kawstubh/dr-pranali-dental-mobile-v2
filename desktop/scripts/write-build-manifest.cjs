@@ -131,6 +131,7 @@ const checks = {
   private_document_storage_verified: flag(process.env.ORALYN_PRIVATE_STORAGE_VERIFIED),
   document_malware_scanning_verified: flag(process.env.ORALYN_DOCUMENT_SCAN_VERIFIED),
   https_security_headers_verified: flag(process.env.ORALYN_SECURITY_HEADERS_VERIFIED),
+  strict_content_security_policy_verified: flag(process.env.ORALYN_STRICT_CSP_VERIFIED),
   database_identity_verified: flag(process.env.ORALYN_DATABASE_IDENTITY_VERIFIED),
   staging_database_branch_verified: flag(process.env.ORALYN_STAGING_DATABASE_BRANCH_VERIFIED),
   backup_restore_verified: flag(process.env.ORALYN_BACKUP_RESTORE_VERIFIED),
@@ -175,6 +176,7 @@ const manifest = {
   evidence: {
     assistant_api_contract_readonly_verified: flag(process.env.ORALYN_ASSISTANT_API_CONTRACT_READONLY_VERIFIED),
     guest_booking_browser_e2e_verified: flag(process.env.ORALYN_GUEST_BOOKING_BROWSER_E2E_VERIFIED),
+    preview_security_headers_verified: flag(process.env.ORALYN_PREVIEW_SECURITY_HEADERS_VERIFIED),
   },
   checks,
   blockers,
