@@ -148,7 +148,7 @@ async function verifyFonts() {
     const probe = document.createElement("span");
     probe.textContent = "Oralyn Display Font Probe";
     probe.setAttribute("aria-hidden", "true");
-    probe.style.cssText = "position:fixed;left:-10000px;top:0;font-family:'Playfair Display',serif;font-size:32px;font-weight:600;white-space:nowrap;";
+    probe.className = "oralyn-font-probe";
     document.body.appendChild(probe);
     const [bodyResponse, displayResponse] = await Promise.all([
       fetch("/fonts/PlusJakartaSans-Variable.ttf", { cache: "no-store" }),

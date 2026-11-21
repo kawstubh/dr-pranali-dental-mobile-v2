@@ -12,6 +12,15 @@
   font-weight: 400 900;
   font-display: swap;
 }
+.oralyn-font-probe {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  font-family: "Playfair Display", serif;
+  font-size: 32px;
+  font-weight: 600;
+  white-space: nowrap;
+}
 :root {
   font-family: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
   color: #16314c;

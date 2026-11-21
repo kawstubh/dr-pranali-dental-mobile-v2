@@ -104,6 +104,9 @@ test("headless capture stores its Chrome profile outside the Vite-watched projec
 
 test("browser font acceptance attaches a Playfair probe and verifies both local font resources", () => {
   assert.match(captureScript, /Oralyn Display Font Probe/);
+  assert.match(captureScript, /probe\.className = "oralyn-font-probe"/);
+  assert.doesNotMatch(captureScript, /probe\.style\.cssText/);
+  assert.match(css, /\.oralyn-font-probe\s*\{/);
   assert.match(captureScript, /\/fonts\/PlusJakartaSans-Variable\.ttf/);
   assert.match(captureScript, /\/fonts\/PlayfairDisplay-Variable\.ttf/);
   assert.match(captureScript, /document\.fonts\.load\('600 32px "Playfair Display"'/);

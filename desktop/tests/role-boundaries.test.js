@@ -283,7 +283,8 @@ test("portal security header probe is a read-only GET check", () => {
   assert.doesNotMatch(portalHeadersSource, /method:\s*"(?:POST|PATCH|DELETE)"/);
   assert.match(assistantWorkflowSource, /ORALYN_SECURITY_HEADERS_VERIFIED=true/);
   assert.match(viteSource, /script-src 'self';/);
-  assert.match(viteSource, /style-src 'self' https:\/\/fonts\.googleapis\.com;/);
+  assert.match(viteSource, /font-src 'self';/);
+  assert.match(viteSource, /style-src 'self';/);
   assert.doesNotMatch(viteSource, /unsafe-inline/);
   assert.doesNotMatch(source, /style=\{\{/);
 });
