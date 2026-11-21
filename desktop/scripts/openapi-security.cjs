@@ -51,7 +51,10 @@ function inspectOpenApiBearerAuth(openapi) {
 
   const hasBearerAuth = (operation) =>
     Array.isArray(operation?.security) &&
-    operation.security.some((entry) =>
+    operation.security.length > 0 &&
+    // OpenAPI security entries are OR alternatives. Every alternative must
+    // require BearerAuth; an empty {} entry would make the route anonymous.
+    operation.security.every((entry) =>
       entry &&
       typeof entry === "object" &&
       Array.isArray(entry.BearerAuth)
