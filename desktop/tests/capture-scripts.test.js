@@ -335,3 +335,29 @@ test("OpenAPI BearerAuth gate rejects a public operation that becomes protected"
   assert.equal(result.passed, false);
   assert.deepEqual(result.securedPublicOperations, ["POST /v1/dental/public/appointments"]);
 });
+
+
+test("OpenAPI BearerAuth gate rejects anonymous OR and non-Bearer security alternatives", () => {
+  const openapi = {
+    components: { securitySchemes: { BearerAuth: { type: "http", scheme: "bearer" } } },
+    paths: {
+      "/v1/dental/health": { get: {} },
+      "/v1/dental/auth/password/login": { post: {} },
+      "/v1/dental/assistant/auth/login": { post: {} },
+      "/v1/dental/public/appointments": { post: {} },
+      "/v1/dental/billing/plans": { get: {} },
+      "/v1/dental/billing/razorpay/webhook": { post: {} },
+      "/v1/dental/patients": { get: { security: [{ BearerAuth: [] }, {}] } },
+      "/v1/dental/appointments": { get: { security: [{ ApiKeyAuth: [] }] } },
+      "/v1/dental/assistant/appointments": { get: { security: [] } },
+    },
+  };
+
+  const result = inspectOpenApiBearerAuth(openapi);
+  assert.equal(result.passed, false);
+  assert.deepEqual(result.missingProtectedOperations, [
+    "GET /v1/dental/patients",
+    "GET /v1/dental/appointments",
+    "GET /v1/dental/assistant/appointments",
+  ]);
+});
