@@ -290,7 +290,10 @@ async function main() {
     "/v1/dental/assistant/billing/invoices",
     "/v1/dental/clinic-assistants",
     "/v1/dental/doctor/patients/synthetic-only/clinical-notes",
-    "/v1/dental/doctor/patients/synthetic-only/treatment-  const bearerAuthReport = inspectOpenApiBearerAuth(openapi);
+    "/v1/dental/doctor/patients/synthetic-only/treatment-plans",
+    "/v1/dental/doctor/patients/synthetic-only/documents",
+  ];
+  const bearerAuthReport = inspectOpenApiBearerAuth(openapi);
   const bearerAuthOpenApiVerified = openapiResult.response?.status === 200 &&
     bearerAuthReport.passed;
   record(
@@ -303,10 +306,6 @@ async function main() {
       "; missing protected operations=[" + bearerAuthReport.missingProtectedOperations.join("; ") +
       "]; missing public operations=[" + bearerAuthReport.missingPublicOperations.join("; ") +
       "]; accidentally secured public operations=[" + bearerAuthReport.securedPublicOperations.join("; ") + "]",
-  );
-Auth")
-        )
-      ).length + "/" + protectedOperations.length
   );
   const protectedResults = await Promise.all(protectedPaths.map((path) => request(apiOrigin + path, { headers: originHeaders })));
   const protected401 = protectedResults.every((item) => item.response?.status === 401);
