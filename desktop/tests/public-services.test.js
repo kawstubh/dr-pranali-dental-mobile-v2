@@ -23,6 +23,33 @@ const services = [...catalogue.matchAll(
   image: match[5],
 }));
 
+const approvedServiceNames = [
+  "Dental Check-up & Consultation",
+  "Gum Treatment (Periodontal Care)",
+  "Tooth Sensitivity Treatment",
+  "TMJ & Jaw Pain Treatment",
+  "Scaling & Cleaning",
+  "Dental Sealants",
+  "Oral Hygiene Education",
+  "Teeth Whitening",
+  "Veneers",
+  "Smile Makeover",
+  "Tooth Filling",
+  "Root Canal Treatment",
+  "Dental Crowns & Caps",
+  "Dentures",
+  "Dental Implants",
+  "Tooth Extraction",
+  "Braces Treatment",
+  "Clear Aligners",
+  "Kids Dentistry",
+  "Emergency Dental Care",
+];
+
+test("shared catalogue matches the exact clinic-approved twenty service names", () => {
+  assert.deepEqual(services.map((service) => service.name).sort(), [...approvedServiceNames].sort());
+});
+
 const escapeHtml = (value) => value
   .replaceAll("&", "&amp;")
   .replaceAll("<", "&lt;")

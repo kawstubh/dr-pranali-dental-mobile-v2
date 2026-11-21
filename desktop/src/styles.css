@@ -12,6 +12,15 @@
   font-weight: 400 900;
   font-display: swap;
 }
+.oralyn-font-probe {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  font-family: "Playfair Display", serif;
+  font-size: 32px;
+  font-weight: 600;
+  white-space: nowrap;
+}
 :root {
   font-family: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
   color: #16314c;
@@ -1022,6 +1031,14 @@ td {
   color: #6b879b;
   font-size: 12px;
 }
+.teeth span.finding-not-recorded { background: #f4fbff; }
+.teeth span.finding-healthy { background: #e9f4fa; }
+.teeth span.finding-caries { background: #f5b8a9; }
+.teeth span.finding-filled { background: #8dc8f4; }
+.teeth span.finding-rct { background: #b8a9ef; }
+.teeth span.finding-crown { background: #f4d58b; }
+.teeth span.finding-implant { background: #91d8cc; }
+.teeth span.finding-missing { background: #f3f5f8; }
 .disclaimer {
   font-size: 9px;
   color: #a0adba;
@@ -4186,6 +4203,8 @@ main.oralyn-reference-layout {
 
 /* Preserve the clinic-approved Oralyn wordmark and app icon assets. */
 .oralyn-reference-story .oralyn-vector-brand {display:flex;align-items:center;width:max-content;max-width:100%;}
-.oralyn-approved-wordmark {display:block;width:clamp(66px,6vw,86px);max-height:88px;height:auto;object-fit:contain;filter:none;}
+.oralyn-approved-wordmark {display:block;width:clamp(112px,10vw,148px);max-width:100%;max-height:none;height:auto;object-fit:contain;object-position:left center;filter:none;background:transparent;}
 .oralyn-reference-card .oralyn-app-squircle {background:transparent;border-radius:22%;box-shadow:none;overflow:hidden;}
 .oralyn-reference-card .oralyn-app-squircle img {display:block!important;width:100%;height:100%;object-fit:contain;filter:none;}
+
+@media(max-width:640px){.oralyn-reference-story .oralyn-auth-brand .oralyn-approved-wordmark{width:clamp(92px,28vw,118px);max-height:none}}

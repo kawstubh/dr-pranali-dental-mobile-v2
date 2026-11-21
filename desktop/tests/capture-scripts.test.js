@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Script } from "node:vm";
+import openApiSecurity from "../scripts/openapi-security.cjs";
+
+const { inspectOpenApiBearerAuth } = openApiSecurity;
 
 test("synthetic Doctor capture script parses before browser CI executes it", () => {
   const file = join(process.cwd(), "scripts", "capture-synthetic-doctor.cjs");
@@ -63,7 +66,7 @@ test("real browser capture verifies legacy Assistant admin route redirects to Do
 
 test("real browser capture verifies the approved Oralyn wordmark and app icon load", () => {
   const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
-  assert.match(source, /oralyn-logo-approved\.webp/);
+  assert.match(source, /oralyn-official-logo\.png/);
   assert.match(source, /oralyn-app-icon-approved\.webp/);
   assert.match(source, /approvedLogoAssets\.wordmark/);
   assert.match(source, /approvedLogoAssets\.appIcon/);
@@ -155,6 +158,24 @@ test("release workflow derives live gates instead of hard-coding them true", () 
   );
 });
 
+test("strict CSP release gate checks live patient routes and preview verification cannot overwrite it", () => {
+  const workflow = readFileSync(join(process.cwd(), "..", ".github", "workflows", "oralyn-desktop.yml"), "utf8");
+  const staging = readFileSync(join(process.cwd(), "scripts", "verify-staging-contract.cjs"), "utf8");
+  const manifest = readFileSync(join(process.cwd(), "scripts", "write-build-manifest.cjs"), "utf8");
+
+  assert.match(staging, /function strictPortalCsp/);
+  assert.match(staging, /ORALYN_STRICT_CSP_VERIFIED/);
+  assert.match(staging, /'unsafe-inline'|'unsafe-eval'/);
+  assert.match(staging, /all inline scripts hash-allowlisted/);
+  assert.match(staging, /all inline styles hash-allowlisted/);
+  assert.match(manifest, /strict_content_security_policy_verified/);
+  assert.match(manifest, /preview_security_headers_verified/);
+  assert.match(manifest, /legacy_public_patient_auth_surfaces_retired_verified/);
+  assert.match(staging, /ORALYN_LEGACY_PATIENT_AUTH_SURFACES_RETIRED_VERIFIED/);
+  assert.match(workflow, /ORALYN_PREVIEW_SECURITY_HEADERS_VERIFIED=true/);
+  assert.doesNotMatch(workflow, /echo ["']ORALYN_SECURITY_HEADERS_VERIFIED=true/);
+});
+
 test("synthetic Doctor and Assistant fixtures record PWA state without duplicating the real-browser control gate", () => {
   const doctor = readFileSync(join(process.cwd(), "scripts", "capture-synthetic-doctor.cjs"), "utf8");
   const assistant = readFileSync(join(process.cwd(), "scripts", "capture-synthetic-assistant.cjs"), "utf8");
@@ -202,6 +223,15 @@ test("real browser capture verifies keyboard-visible focus and reduced-motion be
 });
 
 
+test("patient booking capture permits vertical scrolling when the submit action remains reachable", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.match(source, /async function verifyBookingScrollReachability/);
+  assert.match(source, /window\.scrollTo\(0, scrollHeight\)/);
+  assert.match(source, /submitReachable/);
+  assert.match(source, /await verifyBookingScrollReachability\(height\)/);
+  assert.doesNotMatch(source, /verifyNoVerticalOverflow/);
+});
+
 test("real browser capture fails before screenshot when a responsive viewport has horizontal page overflow", () => {
   const source = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
   assert.match(source, /async function verifyNoHorizontalOverflow/);
@@ -210,4 +240,124 @@ test("real browser capture fails before screenshot when a responsive viewport ha
   assert.match(source, /Math\.max\(rootScrollWidth, bodyScrollWidth\) > viewportWidth \+ 1/);
   assert.match(source, /await verifyNoHorizontalOverflow\(width\)/);
   assert.match(source, /Horizontal page overflow at/);
+});
+
+
+test("release manifest separately verifies HTTP BearerAuth on every protected OpenAPI operation", () => {
+  const staging = readFileSync(join(process.cwd(), "scripts", "verify-staging-contract.cjs"), "utf8");
+  const manifest = readFileSync(join(process.cwd(), "scripts", "write-build-manifest.cjs"), "utf8");
+
+  assert.match(staging, /require\("\.\/openapi-security\.cjs"\)/);
+  assert.match(staging, /inspectOpenApiBearerAuth\(openapi\)/);
+  assert.match(staging, /bearerAuthReport\.missingProtectedOperations/);
+  assert.match(staging, /ORALYN_OPENAPI_BEARER_AUTH_VERIFIED/);
+  assert.match(manifest, /openapi_bearer_auth_verified/);
+  assert.match(manifest, /ORALYN_OPENAPI_BEARER_AUTH_VERIFIED/);
+});
+
+
+test("OpenAPI BearerAuth gate covers every protected dental operation and only explicit public exceptions", () => {
+  const bearer = { security: [{ BearerAuth: [] }] };
+  const openapi = {
+    components: {
+      securitySchemes: {
+        BearerAuth: { type: "http", scheme: "bearer", bearerFormat: "opaque" },
+      },
+    },
+    paths: {
+      "/v1/dental/health": { get: {} },
+      "/v1/dental/auth/password/login": { post: {} },
+      "/v1/dental/assistant/auth/login": { post: {} },
+      "/v1/dental/public/appointments": { post: {} },
+      "/v1/dental/billing/plans": { get: {} },
+      "/v1/dental/billing/razorpay/webhook": { post: {} },
+      "/v1/dental/workspaces/{clinic_id}/memberships": { get: bearer },
+      "/v1/dental/scans/screen": { post: bearer },
+      "/v1/dental/whatsapp/template": { post: bearer },
+      "/v1/dental/patients/{patient_id}/chart": { get: bearer, post: bearer },
+      "/v1/dental/billing/membership": { get: bearer },
+      "/v1/dental/assistant/appointments": { get: bearer },
+      "/v1/dental/doctor/patients/{patient_id}/documents/upload-intent": { post: bearer },
+      "/v1/dental/ai/doctor/patient-summary": { post: bearer },
+      "/v1/dental/auth/me": { get: bearer },
+      "/v1/dental/organisations": { post: bearer },
+    },
+  };
+
+  const result = inspectOpenApiBearerAuth(openapi);
+  assert.equal(result.passed, true);
+  assert.equal(result.expectedPublicOperationCount, 6);
+  assert.equal(result.missingPublicOperations.length, 0);
+  assert.equal(result.securedPublicOperations.length, 0);
+  assert.equal(result.missingProtectedOperations.length, 0);
+  assert.equal(result.protectedOperationCount, 11);
+  assert.equal(result.verifiedProtectedOperationCount, 11);
+});
+
+test("OpenAPI BearerAuth gate fails closed for newly added protected dental routes", () => {
+  const bearer = { security: [{ BearerAuth: [] }] };
+  const openapi = {
+    components: { securitySchemes: { BearerAuth: { type: "http", scheme: "bearer" } } },
+    paths: {
+      "/v1/dental/health": { get: {} },
+      "/v1/dental/auth/password/login": { post: {} },
+      "/v1/dental/assistant/auth/login": { post: {} },
+      "/v1/dental/public/appointments": { post: {} },
+      "/v1/dental/billing/plans": { get: {} },
+      "/v1/dental/billing/razorpay/webhook": { post: {} },
+      "/v1/dental/appointments": { get: bearer },
+      "/v1/dental/appointments/{appointment_id}/reschedule": { post: {} },
+    },
+  };
+
+  const result = inspectOpenApiBearerAuth(openapi);
+  assert.equal(result.passed, false);
+  assert.deepEqual(result.missingProtectedOperations, [
+    "POST /v1/dental/appointments/{appointment_id}/reschedule",
+  ]);
+});
+
+test("OpenAPI BearerAuth gate rejects a public operation that becomes protected", () => {
+  const openapi = {
+    components: { securitySchemes: { BearerAuth: { type: "http", scheme: "bearer" } } },
+    paths: {
+      "/v1/dental/health": { get: {} },
+      "/v1/dental/auth/password/login": { post: {} },
+      "/v1/dental/assistant/auth/login": { post: {} },
+      "/v1/dental/public/appointments": { post: { security: [{ BearerAuth: [] }] } },
+      "/v1/dental/billing/plans": { get: {} },
+      "/v1/dental/billing/razorpay/webhook": { post: {} },
+      "/v1/dental/appointments": { get: { security: [{ BearerAuth: [] }] } },
+    },
+  };
+
+  const result = inspectOpenApiBearerAuth(openapi);
+  assert.equal(result.passed, false);
+  assert.deepEqual(result.securedPublicOperations, ["POST /v1/dental/public/appointments"]);
+});
+
+
+test("OpenAPI BearerAuth gate rejects anonymous OR and non-Bearer security alternatives", () => {
+  const openapi = {
+    components: { securitySchemes: { BearerAuth: { type: "http", scheme: "bearer" } } },
+    paths: {
+      "/v1/dental/health": { get: {} },
+      "/v1/dental/auth/password/login": { post: {} },
+      "/v1/dental/assistant/auth/login": { post: {} },
+      "/v1/dental/public/appointments": { post: {} },
+      "/v1/dental/billing/plans": { get: {} },
+      "/v1/dental/billing/razorpay/webhook": { post: {} },
+      "/v1/dental/patients": { get: { security: [{ BearerAuth: [] }, {}] } },
+      "/v1/dental/appointments": { get: { security: [{ ApiKeyAuth: [] }] } },
+      "/v1/dental/assistant/appointments": { get: { security: [] } },
+    },
+  };
+
+  const result = inspectOpenApiBearerAuth(openapi);
+  assert.equal(result.passed, false);
+  assert.deepEqual(result.missingProtectedOperations, [
+    "GET /v1/dental/patients",
+    "GET /v1/dental/appointments",
+    "GET /v1/dental/assistant/appointments",
+  ]);
 });

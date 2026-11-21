@@ -352,7 +352,7 @@ function App() {
         </div>
       )}
       <aside className={mobile ? "sidebar open" : "sidebar"}>
-        <div className="brand"><img src="/oralyn-logo-approved.webp" alt="Oralyn official wordmark" /><button className="close" onClick={() => B(false)}>
+        <div className="brand"><img src="/oralyn-app-icon-approved.webp" alt="Oralyn app icon" /><button className="close" onClick={() => B(false)}>
             <X />
           </button>
         </div>
@@ -487,7 +487,7 @@ function App() {
 }
 function OralynVectorBrand() {
   return <div className="oralyn-vector-brand" aria-label="Oralyn — Smart Dental Care for Healthier Smiles">
-    <img className="oralyn-approved-wordmark" src="/oralyn-logo-approved.webp" alt="Oralyn — Smart Dental Care for Healthier Smiles" />
+    <img className="oralyn-approved-wordmark" src="/oralyn-official-logo.png" alt="Oralyn — Smart Dental Care for Healthier Smiles" />
   </div>;
 }
 function OralynClinicIllustration() {
@@ -1066,20 +1066,7 @@ function Doctor({
                   disabled={!activePatient}
                 >
                   <small>{n}</small>
-                  <span
-                    style={{
-                      background: {
-                        "not-recorded": "#f4fbff",
-                        healthy: "#e9f4fa",
-                        caries: "#f5b8a9",
-                        filled: "#8dc8f4",
-                        rct: "#b8a9ef",
-                        crown: "#f4d58b",
-                        implant: "#91d8cc",
-                        missing: "#f3f5f8",
-                      }[findings[n] || "not-recorded"],
-                    }}
-                  >
+                  <span className={`finding-${findings[n] || "not-recorded"}`}>
                     ◒
                   </span>
                 </button>
@@ -1095,20 +1082,7 @@ function Doctor({
                   onClick={() => Q(String(n))}
                   disabled={!activePatient}
                 >
-                  <span
-                    style={{
-                      background: {
-                        "not-recorded": "#f4fbff",
-                        healthy: "#e9f4fa",
-                        caries: "#f5b8a9",
-                        filled: "#8dc8f4",
-                        rct: "#b8a9ef",
-                        crown: "#f4d58b",
-                        implant: "#91d8cc",
-                        missing: "#f3f5f8",
-                      }[findings[n] || "not-recorded"],
-                    }}
-                  >
+                  <span className={`finding-${findings[n] || "not-recorded"}`}>
                     ◒
                   </span>
                   <small>{n}</small>
