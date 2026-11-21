@@ -287,10 +287,53 @@ async function main() {
     "/v1/dental/assistant/patients",
     "/v1/dental/assistant/appointments",
     "/v1/dental/assistant/billing/invoices",
+    "/v1/dental/clinic-assistants",
     "/v1/dental/doctor/patients/synthetic-only/clinical-notes",
     "/v1/dental/doctor/patients/synthetic-only/treatment-plans",
     "/v1/dental/doctor/patients/synthetic-only/documents",
   ];
+  const protectedOpenApiPaths = paths.filter((path) =>
+    path === "/v1/dental/patients" ||
+    path === "/v1/dental/appointments" ||
+    path === "/v1/dental/clinic-assistants" ||
+    path.startsWith("/v1/dental/doctor/") ||
+    path.startsWith("/v1/dental/ai/doctor/") ||
+    (path.startsWith("/v1/dental/assistant/") && path !== "/v1/dental/assistant/auth/login")
+  );
+  const bearerScheme = openapi?.components?.securitySchemes?.BearerAuth;
+  const bearerSchemeConfigured = bearerScheme?.type === "http" &&
+    String(bearerScheme?.scheme || "").toLowerCase() === "bearer";
+  const httpMethods = new Set(["get", "post", "put", "patch", "delete", "options", "head", "trace"]);
+  const protectedOperations = protectedOpenApiPaths.flatMap((path) =>
+    Object.entries(openapi?.paths?.[path] || {})
+      .filter(([method, operation]) =>
+        httpMethods.has(method.toLowerCase()) && operation && typeof operation === "object"
+      )
+      .map(([method, operation]) => ({ path, method, operation }))
+  );
+  const bearerOperationsVerified = protectedOperations.length > 0 &&
+    protectedOperations.every(({ operation }) =>
+      Array.isArray(operation.security) &&
+      operation.security.some((entry) =>
+        entry && typeof entry === "object" &&
+        Object.prototype.hasOwnProperty.call(entry, "BearerAuth")
+      )
+    );
+  const bearerAuthOpenApiVerified = openapiResult.response?.status === 200 &&
+    bearerSchemeConfigured && bearerOperationsVerified;
+  record(
+    "ORALYN_OPENAPI_BEARER_AUTH_VERIFIED",
+    bearerAuthOpenApiVerified,
+    "BearerAuth HTTP scheme=" + bearerSchemeConfigured +
+      "; protected operations with explicit BearerAuth=" +
+      protectedOperations.filter(({ operation }) =>
+        Array.isArray(operation.security) &&
+        operation.security.some((entry) =>
+          entry && typeof entry === "object" &&
+          Object.prototype.hasOwnProperty.call(entry, "BearerAuth")
+        )
+      ).length + "/" + protectedOperations.length
+  );
   const protectedResults = await Promise.all(protectedPaths.map((path) => request(apiOrigin + path, { headers: originHeaders })));
   const protected401 = protectedResults.every((item) => item.response?.status === 401);
   const legacyResult = await request(apiOrigin + "/v1/dental/patient/linked-records", { headers: originHeaders });
@@ -497,6 +540,7 @@ main().catch((error) => {
     "ORALYN_STAGING_DATABASE_BRANCH_VERIFIED",
     "ORALYN_CORS_VERIFIED",
     "ORALYN_SECURITY_HEADERS_VERIFIED",
+    "ORALYN_OPENAPI_BEARER_AUTH_VERIFIED",
     "ORALYN_STRICT_CSP_VERIFIED",
     "ORALYN_PATIENT_ACCOUNT_FREE_VERIFIED",
     "ORALYN_LEGACY_PATIENT_AUTH_SURFACES_RETIRED_VERIFIED",
