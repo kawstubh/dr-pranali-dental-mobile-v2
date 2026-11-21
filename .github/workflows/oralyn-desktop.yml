@@ -96,7 +96,7 @@ jobs:
             exit 1
           fi
           node scripts/verify-portal-security-headers.cjs
-          echo "ORALYN_SECURITY_HEADERS_VERIFIED=true" >> "$GITHUB_ENV"
+          echo "ORALYN_PREVIEW_SECURITY_HEADERS_VERIFIED=true" >> "$GITHUB_ENV"
           test -x "$CHROME_BIN" || { echo "::error::Configured Chrome path is not executable: $CHROME_BIN"; exit 1; }
           "$CHROME_BIN" --version
           node scripts/capture-actual-desktop.cjs
