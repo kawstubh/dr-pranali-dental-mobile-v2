@@ -201,18 +201,30 @@ const newIdempotencyKey = () => {
 };
 let idempotencyKey = newIdempotencyKey();
 let requestPending = false;
+let idempotencyStorageReady = false;
+let pendingFromPreviousPage = false;
 try {
   idempotencyKey = sessionStorage.getItem(idempotencyStorageKey) || idempotencyKey;
   sessionStorage.setItem(idempotencyStorageKey, idempotencyKey);
+  idempotencyStorageReady = sessionStorage.getItem(idempotencyStorageKey) === idempotencyKey;
   requestPending = sessionStorage.getItem(pendingStorageKey) === "1";
-} catch {}
+  pendingFromPreviousPage = requestPending;
+} catch {
+  idempotencyStorageReady = false;
+}
 const rotateIdempotencyKey = () => {
   idempotencyKey = newIdempotencyKey();
   requestPending = false;
+  pendingFromPreviousPage = false;
   try {
     sessionStorage.setItem(idempotencyStorageKey, idempotencyKey);
     sessionStorage.removeItem(pendingStorageKey);
-  } catch {}
+    idempotencyStorageReady =
+      sessionStorage.getItem(idempotencyStorageKey) === idempotencyKey &&
+      sessionStorage.getItem(pendingStorageKey) === null;
+  } catch {
+    idempotencyStorageReady = false;
+  }
 };
 const clearValidationMessage = () => {
   if (message.classList.contains("error")) {
@@ -236,11 +248,11 @@ form.addEventListener("invalid", (event) => {
   }
 }, true);
 form.addEventListener("input", () => {
-  if (requestPending) rotateIdempotencyKey();
+  if (requestPending && !pendingFromPreviousPage) rotateIdempotencyKey();
   clearValidationMessage();
 });
 form.addEventListener("change", () => {
-  if (requestPending) rotateIdempotencyKey();
+  if (requestPending && !pendingFromPreviousPage) rotateIdempotencyKey();
   clearValidationMessage();
 });
 const today = new Date();
@@ -300,8 +312,28 @@ form.addEventListener("submit", async (event) => {
     return;
   }
   const button = document.getElementById("submit");
+  if (!idempotencyStorageReady) {
+    message.className = "msg error";
+    message.textContent = "Secure browser session storage is unavailable. Enable browser storage or call the clinic to request an appointment.";
+    return;
+  }
   requestPending = true;
-  try { sessionStorage.setItem(pendingStorageKey, "1"); } catch {}
+  pendingFromPreviousPage = false;
+  try {
+    sessionStorage.setItem(pendingStorageKey, "1");
+    if (
+      sessionStorage.getItem(idempotencyStorageKey) !== idempotencyKey ||
+      sessionStorage.getItem(pendingStorageKey) !== "1"
+    ) {
+      throw new Error("Booking retry state could not be saved.");
+    }
+  } catch {
+    idempotencyStorageReady = false;
+    requestPending = false;
+    message.className = "msg error";
+    message.textContent = "Secure browser session storage is unavailable. Enable browser storage or call the clinic to request an appointment.";
+    return;
+  }
   button.disabled = true;
   button.textContent = "Sending request...";
   try {
@@ -320,6 +352,10 @@ form.addEventListener("submit", async (event) => {
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {
+      if (response.status === 409 && result.detail?.code === "IDEMPOTENCY_KEY_REUSED") {
+        rotateIdempotencyKey();
+        throw new Error("The saved request key was used with different details. A new secure key is ready; please review and send again.");
+      }
       const serverMessage = typeof result.detail === "string"
         ? result.detail
         : typeof result.detail?.message === "string" ? result.detail.message : "";
