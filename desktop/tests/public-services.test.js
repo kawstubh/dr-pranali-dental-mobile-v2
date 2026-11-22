@@ -102,3 +102,18 @@ test("guest booking exposes required and future IST validation", () => {
   assert.match(booking, /Please choose a future date and time\./);
   assert.doesNotMatch(booking, /min="2026-11-13"/);
 });
+
+test("guest booking fails closed when sessionStorage cannot persist its idempotency state", () => {
+  assert.match(booking, /let idempotencyStorageReady = false/);
+  assert.match(booking, /sessionStorage\\.getItem\\(idempotencyStorageKey\\) === idempotencyKey/);
+  assert.match(booking, /if \\(!idempotencyStorageReady\\)/);
+  assert.match(booking, /sessionStorage\\.getItem\\(pendingStorageKey\\) !== "1"/);
+  assert.match(booking, /Secure browser session storage is unavailable/);
+});
+
+test("guest booking preserves a pending retry key across reload and rotates on a changed-payload conflict", () => {
+  assert.match(booking, /pendingFromPreviousPage = requestPending/);
+  assert.match(booking, /requestPending && !pendingFromPreviousPage/);
+  assert.match(booking, /result\\.detail\\?\\.code === "IDEMPOTENCY_KEY_REUSED"/);
+  assert.match(booking, /A new secure key is ready/);
+});
