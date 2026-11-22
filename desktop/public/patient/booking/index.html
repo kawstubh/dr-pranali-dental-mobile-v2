@@ -202,20 +202,17 @@ const newIdempotencyKey = () => {
 let idempotencyKey = newIdempotencyKey();
 let requestPending = false;
 let idempotencyStorageReady = false;
-let pendingFromPreviousPage = false;
 try {
   idempotencyKey = sessionStorage.getItem(idempotencyStorageKey) || idempotencyKey;
   sessionStorage.setItem(idempotencyStorageKey, idempotencyKey);
   idempotencyStorageReady = sessionStorage.getItem(idempotencyStorageKey) === idempotencyKey;
   requestPending = sessionStorage.getItem(pendingStorageKey) === "1";
-  pendingFromPreviousPage = requestPending;
 } catch {
   idempotencyStorageReady = false;
 }
 const rotateIdempotencyKey = () => {
   idempotencyKey = newIdempotencyKey();
   requestPending = false;
-  pendingFromPreviousPage = false;
   try {
     sessionStorage.setItem(idempotencyStorageKey, idempotencyKey);
     sessionStorage.removeItem(pendingStorageKey);
@@ -247,14 +244,8 @@ form.addEventListener("invalid", (event) => {
     serviceSelect.focus();
   }
 }, true);
-form.addEventListener("input", () => {
-  if (requestPending && !pendingFromPreviousPage) rotateIdempotencyKey();
-  clearValidationMessage();
-});
-form.addEventListener("change", () => {
-  if (requestPending && !pendingFromPreviousPage) rotateIdempotencyKey();
-  clearValidationMessage();
-});
+form.addEventListener("input", clearValidationMessage);
+form.addEventListener("change", clearValidationMessage);
 const today = new Date();
 const clinicParts = new Intl.DateTimeFormat("en-GB", {timeZone:"Asia/Kolkata",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(today);
 const clinicPart = (type) => clinicParts.find((part) => part.type === type)?.value || "";
@@ -317,8 +308,8 @@ form.addEventListener("submit", async (event) => {
     message.textContent = "Secure browser session storage is unavailable. Enable browser storage or call the clinic to request an appointment.";
     return;
   }
+  // Keep the key after ambiguous network failures; rotate only on conflict or success.
   requestPending = true;
-  pendingFromPreviousPage = false;
   try {
     sessionStorage.setItem(pendingStorageKey, "1");
     if (
