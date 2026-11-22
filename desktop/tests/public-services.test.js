@@ -111,9 +111,11 @@ test("guest booking fails closed when sessionStorage cannot persist its idempote
   assert.ok(booking.includes("Secure browser session storage is unavailable"));
 });
 
-test("guest booking preserves a pending retry key across reload and rotates on a changed-payload conflict", () => {
-  assert.ok(booking.includes("pendingFromPreviousPage = requestPending"));
-  assert.ok(booking.includes("requestPending && !pendingFromPreviousPage"));
+test("guest booking preserves its idempotency key after ambiguous failures and rotates only on conflict or success", () => {
+  assert.ok(booking.includes('requestPending = sessionStorage.getItem(pendingStorageKey) === "1"'));
+  assert.match(booking, /form\.addEventListener\("input", clearValidationMessage\)/);
+  assert.match(booking, /form\.addEventListener\("change", clearValidationMessage\)/);
+  assert.doesNotMatch(booking, /pendingFromPreviousPage/);
   assert.ok(booking.includes('result.detail?.code === "IDEMPOTENCY_KEY_REUSED"'));
-  assert.ok(booking.includes("A new secure key is ready"));
+  assert.equal((booking.match(/rotateIdempotencyKey\(\);/g) || []).length, 2);
 });
