@@ -203,6 +203,25 @@ html{scroll-padding-top:112px}
 @keyframes oralynDockFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @media(prefers-reduced-motion:reduce){.oralyn-dock-center,.dock-center>span{animation:none!important}.oralyn-glass-header,.oralyn-nav a,.oralyn-nav button,.dock-item{transition:none!important}}
 
+
+/* MOBILE QA FIXES — prevent horizontal clipping */
+@media(max-width:650px){
+ html,body{max-width:100%;overflow-x:hidden}
+ .oralyn-nav{gap:7px;padding-inline:10px}
+ .oralyn-nav .logo img{width:100px;height:44px}
+ .oralyn-nav .actions{gap:6px}
+ .oralyn-nav .actions .oralyn-open-portal{padding-inline:9px;font-size:8px;white-space:nowrap}
+ .hero-grid,.hero-copy{min-width:0;width:100%}
+ .hero-copy h1,h1{font-size:clamp(33px,9vw,38px);line-height:1.12;letter-spacing:-.045em;overflow-wrap:normal}
+ .hero-copy .lead{max-width:100%;overflow-wrap:break-word}
+ .trust{gap:9px}
+ .trust span{font-size:9px}
+ .dash-wrap{width:100%;max-width:100%;min-width:0;overflow:hidden}
+ .dash-wrap .dashboard{zoom:.54;width:185.2%;max-width:none}
+ .float-note{right:4px}
+ .oralyn-mobile-dock{max-width:calc(100vw - 28px)}
+}
+
 </style>
 </head>
 <body>
