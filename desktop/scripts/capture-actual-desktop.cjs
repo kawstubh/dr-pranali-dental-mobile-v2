@@ -3,6 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const os = require("node:os");
 const crypto = require("node:crypto");
+const { inspectSyntheticStagingBookingWriteGate } = require("./staging-write-guard.cjs");
 
 const root = process.cwd();
 const output = process.env.ORALYN_CAPTURE_OUTPUT ? path.resolve(process.env.ORALYN_CAPTURE_OUTPUT) : path.join(root, "evidence", "actual-desktop");
@@ -659,20 +660,41 @@ async function captureAssistantAdminGate() {
     accessibilityResults.guestBookingKeyboardFocus = await verifyKeyboardFocus();
     fontResults.patientBookingValidation = await verifyPublicBookingForm();
     accessibilityResults.guestBookingRequiredLabels = fontResults.patientBookingValidation.requiredLabelFields;
-    const livePortalOrigin = new URL(process.env.ORALYN_PORTAL_ORIGIN || baseUrl).origin;
-    await send("Page.navigate", { url: livePortalOrigin + "/patient/booking/" });
-    await waitFor(() => evaluate(
-      "location.origin === " + JSON.stringify(livePortalOrigin) + " && Boolean(document.querySelector('#booking'))"
-    ));
-    await evaluate(
-      "sessionStorage.setItem('oralyn_public_booking_idempotency', " + JSON.stringify(bookingSeed.idempotencyKey) + ");" +
-      "sessionStorage.removeItem('oralyn_public_booking_pending');"
-    );
-    await send("Page.reload", { ignoreCache: true });
-    await waitFor(() => evaluate(
-      "location.origin === " + JSON.stringify(livePortalOrigin) + " && Boolean(document.querySelector('#booking'))"
-    ));
-    fontResults.guestBookingBrowserE2E = await submitSyntheticGuestBooking(bookingSeed);
+    const bookingWriteGate = inspectSyntheticStagingBookingWriteGate({
+      ...process.env,
+      ORALYN_ENVIRONMENT: environment,
+    });
+    if (bookingWriteGate.allowed) {
+      const livePortalOrigin = new URL(process.env.ORALYN_PORTAL_ORIGIN || baseUrl).origin;
+      await send("Page.navigate", { url: livePortalOrigin + "/patient/booking/" });
+      await waitFor(() => evaluate(
+        "location.origin === " + JSON.stringify(livePortalOrigin) + " && Boolean(document.querySelector('#booking'))"
+      ));
+      await evaluate(
+        "sessionStorage.setItem('oralyn_public_booking_idempotency', " + JSON.stringify(bookingSeed.idempotencyKey) + ");" +
+        "sessionStorage.removeItem('oralyn_public_booking_pending');"
+      );
+      await send("Page.reload", { ignoreCache: true });
+      await waitFor(() => evaluate(
+        "location.origin === " + JSON.stringify(livePortalOrigin) + " && Boolean(document.querySelector('#booking'))"
+      ));
+      fontResults.guestBookingBrowserE2E = await submitSyntheticGuestBooking(bookingSeed);
+      if (fontResults.guestBookingBrowserE2E.passed && process.env.GITHUB_ENV) {
+        fs.appendFileSync(process.env.GITHUB_ENV, "ORALYN_GUEST_BOOKING_BROWSER_E2E_VERIFIED=true\\n");
+      }
+    } else {
+      const reason = "Live synthetic booking write skipped; missing required attestation: " +
+        bookingWriteGate.missingGates.join(", ");
+      fontResults.guestBookingBrowserE2E = {
+        passed: false,
+        skipped: true,
+        requestCount: 0,
+        httpStatus: null,
+        duplicateClickBlocked: false,
+        reason,
+      };
+      console.log("[Oralyn booking safety]", reason);
+    }
     fontResults.assistantAdmin = await captureAssistantAdminGate();
 
     if (runtimeErrors.length) {
@@ -701,7 +723,9 @@ async function captureAssistantAdminGate() {
       "assistant_admin_redirect_gate=passed",
       "guest_booking_validation=passed",
       "guest_booking_browser_e2e=" + fontResults.guestBookingBrowserE2E.passed,
-      "guest_booking_browser_http_status=" + fontResults.guestBookingBrowserE2E.httpStatus,
+      "guest_booking_browser_e2e_skipped=" + Boolean(fontResults.guestBookingBrowserE2E.skipped),
+      "guest_booking_browser_e2e_skip_reason=" + (fontResults.guestBookingBrowserE2E.reason || "none"),
+      "guest_booking_browser_http_status=" + (fontResults.guestBookingBrowserE2E.httpStatus ?? "not-run"),
       "guest_booking_browser_duplicate_click_blocked=" + fontResults.guestBookingBrowserE2E.duplicateClickBlocked,
       "public_booking_api_origin=" + fontResults.patientBookingValidation.apiOrigin,
       "guest_booking_service_count=" + fontResults.patientBookingValidation.catalogueCount,
