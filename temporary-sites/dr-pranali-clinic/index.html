@@ -477,7 +477,33 @@
       .services-editorial-grid { gap: 2rem 1.25rem; }
     }
     @media(max-width:560px){.services-editorial-grid{grid-template-columns:1fr}.hero-title{font-size:2.5rem}.scano-content h2,.visit-info h2,.services-header h2{font-size:2rem}.scano-machine-card{padding:1.4rem .75rem 2rem}.scano-poster-strip{gap:.75rem;flex-wrap:wrap}.visit-map-container{height:300px}}
-  </style>
+  
+/* Split editorial hero */
+.hero-split-section{padding:5.25rem 0 5.5rem;background:var(--bg-linen);overflow:hidden}
+.hero-split-grid{max-width:1200px;margin:0 auto;padding:0 2rem;display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,.98fr);gap:4rem;align-items:center}
+.hero-copy-block{padding:1rem 0}
+.hero-badge-pill{display:inline-flex;align-items:center;gap:.65rem;padding:.55rem 1rem;border-radius:9999px;background:rgba(27,59,43,.06);color:var(--forest-green);font-size:.76rem;font-weight:600;letter-spacing:.025em;margin-bottom:1.5rem}
+.badge-dot{width:8px;height:8px;border-radius:50%;background:#78977D;box-shadow:0 0 0 4px rgba(120,151,125,.13)}
+.hero-main-title{font-family:var(--font-serif);font-size:clamp(2.8rem,5vw,4.35rem);font-weight:400;line-height:1.09;letter-spacing:-.035em;color:var(--forest-green);max-width:650px;margin:0 0 1.35rem}
+.hero-lead-text{font-size:1.05rem;line-height:1.8;color:var(--muted-slate);max-width:550px;margin:0 0 2rem}
+.hero-actions{display:flex;gap:.85rem;flex-wrap:wrap}
+.hero-trust-row{display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap;margin-top:3rem;padding-top:1.5rem;border-top:1px solid rgba(27,59,43,.12)}
+.trust-item{display:flex;flex-direction:column;gap:.18rem}
+.trust-item strong{font-size:.83rem;font-weight:600;color:var(--forest-green)}
+.trust-item span{font-size:.7rem;color:var(--muted-slate)}
+.trust-divider{width:1px;height:30px;background:rgba(27,59,43,.16)}
+.hero-visual-block{min-width:0}
+.hero-image-card{position:relative;padding:0 0 2.1rem 1.2rem}
+.hero-main-img{display:block;width:100%;height:570px;object-fit:cover;border-radius:46% 46% 28px 28px;box-shadow:0 25px 65px -36px rgba(27,59,43,.35)}
+.hero-float-card{position:absolute;left:0;bottom:0;display:flex;align-items:center;gap:.85rem;padding:1rem 1.25rem;background:rgba(255,255,255,.78);border:1px solid rgba(255,255,255,.8);border-radius:18px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 14px 34px rgba(27,59,43,.09)}
+.float-icon{width:38px;height:38px;display:grid;place-items:center;border-radius:50%;background:#E8E2D5;color:#1B3B2B;font-size:1.15rem}
+.float-info{display:flex;flex-direction:column;gap:.15rem}
+.float-title{font-size:.8rem;font-weight:600;color:#1B3B2B}
+.float-sub{font-size:.7rem;color:#5F6B7A}
+@media(max-width:850px){.hero-split-section{padding:3.5rem 0 4rem}.hero-split-grid{grid-template-columns:1fr;gap:2.5rem}.hero-copy-block{order:1}.hero-visual-block{order:2}.hero-main-img{height:440px;max-width:620px;margin:0 auto}.hero-image-card{padding-left:.5rem}}
+@media(max-width:560px){.hero-split-grid{padding:0 1.25rem}.hero-main-title{font-size:2.65rem}.hero-lead-text{font-size:.96rem}.hero-trust-row{gap:.8rem;margin-top:2rem}.trust-item strong{font-size:.73rem}.trust-item span{font-size:.64rem}.hero-main-img{height:360px;border-radius:42% 42% 24px 24px}.hero-float-card{padding:.75rem .9rem;gap:.6rem}.float-title{font-size:.72rem}.float-sub{font-size:.64rem}}
+
+</style>
 </head>
 <body>
 
@@ -499,17 +525,34 @@
 
   <main class="container">
     <!-- Hero Section -->
-    <section class="hero" id="about">
-      <p class="hero-eyebrow">Modern AI-Assisted Oral Screening · Taloja Phase 2</p>
-      <h1 class="hero-title">Gentle, boutique dental care tailored to your comfort.</h1>
-      <p class="hero-desc">
-        Experience calm, personalized dentistry paired with modern scanO AI oral screening for painless, preventive care.
-      </p>
-      <div class="hero-cta-group">
-        <a href="#scano" class="btn-primary">Explore scanO Screening</a>
-        <a href="tel:+919137007432" class="btn-secondary">Call +91 91370 07432</a>
+    <!-- ==================== HERO SECTION ==================== -->
+    <section class="hero-split-section" id="about">
+      <div class="hero-split-grid">
+        <div class="hero-copy-block">
+          <div class="hero-badge-pill"><span class="badge-dot"></span><span>scanO AI Oral Screening · Taloja Phase 2</span></div>
+          <h1 class="hero-main-title">Gentle, boutique dental care tailored to your comfort.</h1>
+          <p class="hero-lead-text">Experience calm, personalized dentistry paired with modern scanO AI oral screening for painless, preventive care.</p>
+          <div class="hero-actions">
+            <a href="#scano" class="btn-primary">Explore scanO Screening</a>
+            <a href="tel:+919137007432" class="btn-secondary">Call +91 91370 07432</a>
+          </div>
+          <div class="hero-trust-row">
+            <div class="trust-item"><strong>Dr. Pranali</strong><span>Dental Surgeon</span></div>
+            <div class="trust-divider"></div>
+            <div class="trust-item"><strong>scanO AI</strong><span>Oral Screening</span></div>
+            <div class="trust-divider"></div>
+            <div class="trust-item"><strong>Krishna Sagar CHS</strong><span>Taloja Phase 2</span></div>
+          </div>
+        </div>
+        <div class="hero-visual-block">
+          <div class="hero-image-card">
+            <img src="https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=1100&q=80" alt="Welcoming modern dental consultation space" class="hero-main-img" loading="eager">
+            <div class="hero-float-card"><div class="float-icon">✧</div><div class="float-info"><span class="float-title">Boutique Patient Experience</span><span class="float-sub">Thoughtful consultations and care</span></div></div>
+          </div>
+        </div>
       </div>
     </section>
+    <!-- ==================== END HERO SECTION ==================== -->
 
     <!-- Dedicated scanO AI Spotlight -->
     <!-- ==================== scanO AI SHOWCASE SECTION ==================== -->
