@@ -526,6 +526,71 @@
 .float-title{font-size:.85rem;font-weight:600;color:var(--forest-green)}
 .float-sub{font-size:.75rem;color:var(--muted-slate)}
 @media(max-width:900px){.hero-split-grid{grid-template-columns:1fr;gap:2.5rem}.hero-copy-block{text-align:center}.hero-lead-text{margin-left:auto;margin-right:auto}.hero-actions{justify-content:center}.hero-trust-row{justify-content:center;flex-wrap:wrap}.hero-float-card{left:50%;transform:translateX(-50%);bottom:-1rem;width:90%;justify-content:center}}
+
+/* Mobile refinement: compact navigation, tighter sections and shorter page rhythm */
+@media (max-width: 900px) {
+  header { top: .5rem; margin: 0 0 1rem; padding: 0 .75rem; }
+  .nav-bar { width: 100%; max-width: 760px; gap: 1rem; padding: .6rem .85rem; border-radius: 18px; }
+  .nav-links { display:flex; gap:1rem; overflow-x:auto; white-space:nowrap; scrollbar-width:none; font-size:.78rem; }
+  .nav-links::-webkit-scrollbar { display:none; }
+  .nav-bar > .btn-primary { white-space:nowrap; padding:.58rem .9rem; font-size:.78rem; }
+  .container { padding:0 1.1rem; }
+  .hero-split-section { padding:1.6rem 0 2.2rem; }
+  .hero-split-grid { gap:1.35rem; }
+  .hero-main-title { font-size:clamp(2rem,7vw,3rem); line-height:1.1; margin-bottom:.8rem; }
+  .hero-lead-text { font-size:.92rem; line-height:1.55; margin-bottom:1.15rem; }
+  .hero-badge-pill { margin-bottom:.8rem; font-size:.66rem; }
+  .hero-actions { gap:.6rem; margin-bottom:1.25rem; }
+  .hero-trust-row { margin-top:1rem; padding-top:.85rem; gap:.8rem; }
+  .hero-main-img { height:clamp(220px,48vw,340px); border-radius:26px; }
+  .hero-image-card { aspect-ratio:auto; padding:0 0 1.2rem; }
+  .hero-float-card { bottom:0; left:.6rem; transform:none; width:auto; max-width:calc(100% - 1.2rem); padding:.55rem .75rem; }
+  .scano-spotlight { margin:1.5rem auto 2rem !important; padding:1.5rem 1.1rem !important; border-radius:24px !important; }
+  .scano-spotlight > div { gap:1.5rem !important; }
+  .scano-spotlight img { max-height:245px !important; }
+  .scano-spotlight h2 { font-size:1.85rem !important; margin-bottom:1rem !important; }
+  .scano-spotlight h3 { font-size:1rem !important; }
+  .scano-spotlight p { font-size:.86rem !important; }
+  .services-section { padding:1rem 0 2.5rem; }
+  .services-header { margin-bottom:1.4rem; }
+  .services-header h2 { font-size:1.9rem; }
+  .services-editorial-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.35rem 1rem; }
+  .service-img-wrap { aspect-ratio:5/4; border-radius:17px; margin-bottom:.7rem; }
+  .service-tag { font-size:.63rem; }
+  .service-name { font-size:1.08rem; line-height:1.2; }
+  .service-desc { font-size:.78rem; line-height:1.45; }
+  .visit-section { padding:1.8rem 0; margin-bottom:2rem; }
+  .visit-grid { gap:1.5rem; }
+  .visit-info h2 { font-size:1.9rem; margin-bottom:1rem; }
+  .info-block { margin-bottom:1rem; }
+  .visit-map-container { height:260px; border-radius:18px; }
+  footer { padding:1.5rem 0; font-size:.75rem; }
+}
+@media (max-width: 560px) {
+  .nav-bar { flex-wrap:wrap; justify-content:space-between; border-radius:16px; }
+  .brand-mark img { width:112px; max-width:30vw; }
+  .nav-links { order:3; width:100%; justify-content:space-between; gap:.8rem; padding:.25rem .15rem 0; font-size:.72rem; }
+  .nav-bar > .btn-primary { padding:.5rem .75rem; font-size:.72rem; }
+  .container { padding:0 .9rem; }
+  .hero-split-grid { padding:0 .1rem; }
+  .hero-copy-block { text-align:left; }
+  .hero-actions { justify-content:flex-start; }
+  .hero-trust-row { justify-content:flex-start; }
+  .trust-divider { height:24px; }
+  .trust-item strong { font-size:.7rem; }
+  .trust-item span { font-size:.62rem; }
+  .hero-main-img { height:230px; }
+  .hero-float-card { left:.4rem; bottom:0; }
+  .scano-spotlight { padding:1.2rem .9rem !important; }
+  .scano-spotlight > div { grid-template-columns:1fr !important; }
+  .scano-spotlight img { max-height:210px !important; }
+  .scano-spotlight [style*="padding:2.5rem 2rem 3rem"] { padding:1.2rem 1rem 1.8rem !important; }
+  .services-editorial-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.1rem .75rem; }
+  .service-name { font-size:.98rem; }
+  .service-desc { font-size:.73rem; }
+  .visit-map-container { height:220px; }
+}
+
 </style>
 </head>
 <body>
