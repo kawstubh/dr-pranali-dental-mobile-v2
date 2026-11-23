@@ -100,7 +100,6 @@ jobs:
           test -x "$CHROME_BIN" || { echo "::error::Configured Chrome path is not executable: $CHROME_BIN"; exit 1; }
           "$CHROME_BIN" --version
           node scripts/capture-actual-desktop.cjs
-          echo "ORALYN_GUEST_BOOKING_BROWSER_E2E_VERIFIED=true" >> "$GITHUB_ENV"
           ORALYN_CAPTURE_OUTPUT=evidence/synthetic-doctor node scripts/capture-synthetic-doctor.cjs
           ORALYN_CAPTURE_OUTPUT=evidence/synthetic-assistant node scripts/capture-synthetic-assistant.cjs
       - name: Record responsive browser acceptance gates
