@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Script } from "node:vm";
 import openApiSecurity from "../scripts/openapi-security.cjs";
+import stagingWriteGuard from "../scripts/staging-write-guard.cjs";
 
 const { inspectOpenApiBearerAuth } = openApiSecurity;
 
@@ -104,6 +105,52 @@ test("Assistant intake clears contact fields after the API-backed save resolves"
   assert.ok(source.includes('setPatientForm({ name: "", phone: "" })'));
   assert.ok(source.includes("Patient contact details added."));
   assert.ok(source.includes('assistantRequest("/v1/dental/assistant/patients"'));
+});
+
+
+const { inspectSyntheticStagingBookingWriteGate } = stagingWriteGuard;
+
+test("live browser booking writes require staging database identity, branch identity and API commit attestation", () => {
+  const valid = {
+    ORALYN_ENVIRONMENT: "staging",
+    ORALYN_DATABASE_IDENTITY_VERIFIED: "true",
+    ORALYN_STAGING_DATABASE_BRANCH_VERIFIED: "true",
+    ORALYN_STAGING_API_COMMIT_VERIFIED: "true",
+  };
+  assert.deepEqual(inspectSyntheticStagingBookingWriteGate(valid), {
+    allowed: true,
+    missingGates: [],
+  });
+
+  for (const gate of [
+    "ORALYN_DATABASE_IDENTITY_VERIFIED",
+    "ORALYN_STAGING_DATABASE_BRANCH_VERIFIED",
+    "ORALYN_STAGING_API_COMMIT_VERIFIED",
+  ]) {
+    const result = inspectSyntheticStagingBookingWriteGate({ ...valid, [gate]: "false" });
+    assert.equal(result.allowed, false);
+    assert.ok(result.missingGates.includes(gate));
+  }
+
+  const production = inspectSyntheticStagingBookingWriteGate({
+    ...valid,
+    ORALYN_ENVIRONMENT: "production",
+  });
+  assert.equal(production.allowed, false);
+  assert.ok(production.missingGates.includes("ORALYN_ENVIRONMENT=staging"));
+});
+
+test("browser capture skips live synthetic writes when any staging attestation is missing", () => {
+  const capture = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  const workflow = readFileSync(join(process.cwd(), "..", ".github", "workflows", "oralyn-desktop.yml"), "utf8");
+  assert.match(capture, /inspectSyntheticStagingBookingWriteGate/);
+  assert.match(capture, /if \(bookingWriteGate\.allowed\)/);
+  assert.match(capture, /Live synthetic booking write skipped/);
+  assert.match(capture, /ORALYN_GUEST_BOOKING_BROWSER_E2E_VERIFIED=true/);
+  assert.doesNotMatch(
+    workflow,
+    /echo ["']ORALYN_GUEST_BOOKING_BROWSER_E2E_VERIFIED=true["']\s*>>\s*["']\$GITHUB_ENV["']/,
+  );
 });
 
 test("live staging contract probe writes only one idempotent synthetic booking after database identity verification", () => {
