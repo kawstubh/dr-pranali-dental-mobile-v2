@@ -680,7 +680,7 @@ async function captureAssistantAdminGate() {
       ));
       fontResults.guestBookingBrowserE2E = await submitSyntheticGuestBooking(bookingSeed);
       if (fontResults.guestBookingBrowserE2E.passed && process.env.GITHUB_ENV) {
-        fs.appendFileSync(process.env.GITHUB_ENV, "ORALYN_GUEST_BOOKING_BROWSER_E2E_VERIFIED=true\\n");
+        fs.appendFileSync(process.env.GITHUB_ENV, "ORALYN_GUEST_BOOKING_BROWSER_E2E_VERIFIED=true" + String.fromCharCode(10));
       }
     } else {
       const reason = "Live synthetic booking write skipped; missing required attestation: " +
