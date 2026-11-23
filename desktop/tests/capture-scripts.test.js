@@ -108,11 +108,12 @@ test("Assistant intake clears contact fields after the API-backed save resolves"
 });
 
 
-const { inspectSyntheticStagingBookingWriteGate } = stagingWriteGuard;
+const { APPROVED_STAGING_PORTAL_ORIGIN, inspectSyntheticStagingBookingWriteGate } = stagingWriteGuard;
 
 test("live browser booking writes require staging database identity, branch identity and API commit attestation", () => {
   const valid = {
     ORALYN_ENVIRONMENT: "staging",
+    ORALYN_PORTAL_ORIGIN: APPROVED_STAGING_PORTAL_ORIGIN,
     ORALYN_DATABASE_IDENTITY_VERIFIED: "true",
     ORALYN_STAGING_DATABASE_BRANCH_VERIFIED: "true",
     ORALYN_STAGING_API_COMMIT_VERIFIED: "true",
