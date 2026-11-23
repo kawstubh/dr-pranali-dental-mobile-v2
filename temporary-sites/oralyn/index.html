@@ -167,18 +167,81 @@ footer{background:var(--deep);color:#b9c8d5}
 @media(max-width:900px){.navlinks{background:rgba(250,248,243,.98)}}
 @media(max-width:650px){.portal-content{padding:25px 18px}.hero{padding-top:55px}}
 
+
+/* ORALYN CLINICAL FUTURE — CLINICAL GLASS NAVIGATION PREVIEW */
+@media(min-width:901px){.oralyn-nav .menu-toggle{display:none!important}}
+
+:root{--oralyn-glass:rgba(255,255,255,.76);--oralyn-line:rgba(128,184,211,.28);--oralyn-cyan:#50dce4;--oralyn-ocean:#071b32}
+html{scroll-padding-top:112px}
+.oralyn-glass-header{position:sticky;top:12px;z-index:120;margin:12px auto 0;width:min( calc(100% - 32px), 1440px);border:1px solid rgba(255,255,255,.92);border-radius:20px;background:var(--oralyn-glass);backdrop-filter:blur(22px) saturate(155%);-webkit-backdrop-filter:blur(22px) saturate(155%);box-shadow:0 14px 38px rgba(16,60,91,.10),inset 0 1px rgba(255,255,255,.95);transition:background .3s ease,box-shadow .3s ease,transform .3s ease}
+.oralyn-glass-header.is-scrolled{background:rgba(247,252,255,.91);box-shadow:0 16px 42px rgba(16,60,91,.15),inset 0 1px rgba(255,255,255,.9)}
+.oralyn-nav{min-height:76px;gap:clamp(12px,2vw,28px);padding:0 22px}
+.oralyn-nav .logo img{width:150px;height:54px}
+.oralyn-nav .navlinks{gap:clamp(12px,1.8vw,27px)}
+.oralyn-nav .navlinks>a,.oralyn-nav .drop>button{position:relative;padding:12px 2px;color:#102c50;font-size:11px;font-weight:800;white-space:nowrap;transition:color .28s ease}
+.oralyn-nav .navlinks>a:after,.oralyn-nav .drop>button:after{content:"";position:absolute;left:0;right:100%;bottom:4px;height:2px;border-radius:4px;background:linear-gradient(90deg,#00aeb5,#50dce4);box-shadow:0 0 12px rgba(0,191,194,.35);transition:right .3s ease}
+.oralyn-nav .navlinks>a:hover,.oralyn-nav .drop>button:hover,.oralyn-nav .navlinks>a:focus-visible{color:#008e9b}
+.oralyn-nav .navlinks>a:hover:after,.oralyn-nav .drop>button:hover:after,.oralyn-nav .drop.open>button:after{right:0}
+.oralyn-nav .drop>button{display:flex;align-items:center;gap:7px}
+.oralyn-nav .nav-chevron{color:#008e9b;font-size:15px;transition:transform .25s ease}
+.oralyn-nav .drop.open .nav-chevron{transform:rotate(180deg)}
+.oralyn-nav .dropmenu{top:calc(100% + 17px);width:260px;padding:9px;border:1px solid rgba(128,184,211,.25);border-radius:16px;background:rgba(255,255,255,.94);backdrop-filter:blur(20px);box-shadow:0 22px 48px rgba(7,27,50,.14);opacity:0;visibility:hidden;transform:translateY(8px);transition:opacity .22s ease,transform .22s ease,visibility .22s}
+.oralyn-nav .drop.open .dropmenu{display:block;opacity:1;visibility:visible;transform:translateY(0)}
+.oralyn-nav .dropmenu a{padding:12px;border-radius:10px;color:#102c50}
+.oralyn-nav .dropmenu a:hover,.oralyn-nav .dropmenu a:focus-visible{background:linear-gradient(110deg,#e8f9fb,#f4fcff)}
+.oralyn-nav .dropmenu small{margin-top:3px;color:#698196;font-size:9px}
+.oralyn-nav .actions{gap:10px;flex-shrink:0}
+.oralyn-nav .actions .outline{border:1px solid rgba(16,76,111,.25);background:rgba(255,255,255,.45)}
+.oralyn-nav .oralyn-open-portal{color:#06283b;background:linear-gradient(110deg,#08b9bc,#50dce4);box-shadow:0 8px 22px rgba(0,191,194,.24);transition:transform .28s ease,box-shadow .28s ease,filter .28s ease}
+.oralyn-nav .oralyn-open-portal:hover{transform:translateY(-2px);filter:saturate(1.15);box-shadow:0 12px 28px rgba(0,191,194,.34)}
+.oralyn-nav .menu-toggle{border-radius:13px;background:rgba(255,255,255,.75)}
+.oralyn-mobile-dock{display:none}
+.oralyn-nav a:focus-visible,.oralyn-nav button:focus-visible,.oralyn-mobile-dock a:focus-visible{outline:3px solid rgba(0,174,181,.45);outline-offset:4px}
+@media(min-width:901px){.oralyn-glass-header{width:calc(100% - 48px)}}
+@media(min-width:901px) and (max-width:1120px){.oralyn-nav{padding:0 14px;gap:12px}.oralyn-nav .logo img{width:122px}.oralyn-nav .navlinks{gap:12px}.oralyn-nav .navlinks>a,.oralyn-nav .drop>button{font-size:10px}.oralyn-nav .actions .btn{padding-inline:13px;font-size:9px}}
+@media(max-width:900px){.oralyn-glass-header{top:8px;margin-top:8px;width:calc(100% - 20px);border-radius:17px}.oralyn-nav{min-height:68px;padding:0 14px}.oralyn-nav .navlinks{top:68px;left:0;right:0;padding:13px 18px 18px;border:1px solid rgba(128,184,211,.22);border-top:0;border-radius:0 0 17px 17px;background:rgba(248,252,255,.97);backdrop-filter:blur(22px);box-shadow:0 18px 28px rgba(7,27,50,.12)}.oralyn-nav .navlinks.open{display:flex}.oralyn-nav .navlinks>a,.oralyn-nav .drop>button{padding:13px 4px;font-size:12px}.oralyn-nav .dropmenu{position:static;width:100%;margin:3px 0 8px;box-shadow:none}.oralyn-nav .actions .outline{display:none}.oralyn-nav .actions .btn{min-height:38px;padding:0 13px;font-size:9px}.oralyn-mobile-dock{position:fixed;z-index:130;left:50%;bottom:calc(12px + env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-around;gap:4px;width:min(460px,calc(100% - 28px));min-height:70px;padding:7px 10px;border:1px solid rgba(133,205,224,.28);border-radius:999px;background:rgba(7,27,50,.88);backdrop-filter:blur(24px) saturate(150%);-webkit-backdrop-filter:blur(24px) saturate(150%);box-shadow:0 18px 44px rgba(7,27,50,.28),inset 0 1px rgba(255,255,255,.12);transform:translateX(-50%)}.dock-item{display:flex;flex:1;min-width:0;min-height:50px;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:20px;color:#b9d0df;font-size:9px;font-weight:700;transition:color .25s ease,background .25s ease}.dock-item svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.dock-item:first-child svg{fill:currentColor;stroke:currentColor}.dock-item.is-active{color:#50dce4;background:rgba(80,220,228,.11)}.dock-center{display:grid;place-items:center;flex:1;min-width:0;height:60px;margin-top:-24px}.dock-center>span{display:grid;place-items:center;width:60px;height:60px;border:2px solid rgba(80,220,228,.9);border-radius:50%;background:radial-gradient(circle at 35% 25%,#f2ffff,#8debf0 35%,#0a9cae 72%,#07506d);box-shadow:0 0 0 5px rgba(80,220,228,.12),0 10px 25px rgba(0,191,194,.3);animation:oralynDockFloat 3.6s ease-in-out infinite}.dock-center img{width:40px;height:40px;object-fit:contain;filter:brightness(0) invert(1)}body{padding-bottom:calc(94px + env(safe-area-inset-bottom))}.oralyn-glass-header .navlinks{max-height:min(70vh,520px);overflow-y:auto}}
+@keyframes oralynDockFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@media(prefers-reduced-motion:reduce){.oralyn-dock-center,.dock-center>span{animation:none!important}.oralyn-glass-header,.oralyn-nav a,.oralyn-nav button,.dock-item{transition:none!important}}
+
+
+/* MOBILE QA FIXES — prevent horizontal clipping */
+@media(max-width:650px){
+ html,body{max-width:100%;overflow-x:hidden}
+ .oralyn-nav{gap:7px;padding-inline:10px}
+ .oralyn-nav .logo img{width:100px;height:44px}
+ .oralyn-nav .actions{gap:6px}
+ .oralyn-nav .actions .oralyn-open-portal{padding-inline:9px;font-size:8px;white-space:nowrap}
+ .hero-grid,.hero-copy{min-width:0;width:100%}
+ .hero-copy h1,h1{font-size:clamp(33px,9vw,38px);line-height:1.12;letter-spacing:-.045em;overflow-wrap:normal}
+ .hero-copy .lead{max-width:100%;overflow-wrap:break-word}
+ .trust{gap:9px}
+ .trust span{font-size:9px}
+ .dash-wrap{width:100%;max-width:100%;min-width:0;overflow:hidden}
+ .dash-wrap .dashboard{zoom:.54;width:185.2%;max-width:none}
+ .float-note{right:4px}
+ .oralyn-mobile-dock{max-width:calc(100vw - 28px)}
+}
+
 </style>
 </head>
 <body>
-<header><div class="wrap nav">
+<header class="oralyn-glass-header"><div class="wrap nav oralyn-nav">
 <a class="logo" href="#home" aria-label="Oralyn home"><img src="https://raw.githubusercontent.com/kawstubh/dr-pranali-dental-mobile-v2/temporary-public-sites/temporary-sites/oralyn/assets/oralyn-official-logo.png" alt="Oralyn official logo"></a>
 <nav class="navlinks" id="navlinks" aria-label="Main navigation">
-<div class="drop" id="platformDrop"><button type="button" aria-expanded="false">Platform &#9662;</button><div class="dropmenu"><a href="#patient">Oralyn Patient<small>Patient access and appointments</small></a><a href="#doctor">Oralyn Doctor<small>Professional clinical workspace</small></a><a href="#assistant">Oralyn Assistant<small>Clinic operations</small></a></div></div>
-<a href="#uie">UIE Dentistry</a><a href="#downloads">Downloads</a><a href="#portals">Portals</a><a href="#pricing">Pricing</a>
+<div class="drop" id="platformDrop"><button type="button" aria-expanded="false">Platform <span class="nav-chevron">⌄</span></button><div class="dropmenu"><a href="#patient">Oralyn Patient<small>Patient access and appointments</small></a><a href="#doctor">Oralyn Doctor<small>Professional clinical workspace</small></a><a href="#assistant">Oralyn Assistant<small>Clinic operations</small></a></div></div>
+<a href="#uie">UIE Dentistry</a><a href="#downloads">Downloads</a><a href="#pricing">Pricing</a>
+<div class="drop" id="resourcesDrop"><button type="button" aria-expanded="false">Resources <span class="nav-chevron">⌄</span></button><div class="dropmenu"><a href="#why">Why Oralyn<small>Our platform principles</small></a><a href="#architecture">How it works<small>Connected ecosystem</small></a><a href="#portals">Workspace preview<small>Explore the three portals</small></a></div></div>
 </nav>
-<div class="actions"><a class="btn outline small" href="https://oralyn-staging-all-portals-web.onrender.com/patient/home/" target="_blank" rel="noopener">Patient Sign In</a><a class="btn primary small" href="#portals">Open Portal &rarr;</a><button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation" aria-expanded="false"><span></span><span></span><span></span></button></div>
+<div class="actions"><a class="btn outline small" href="https://oralyn-staging-all-portals-web.onrender.com/patient/home/" target="_blank" rel="noopener">Patient Sign In</a><a class="btn primary small oralyn-open-portal" href="#portals">Open Portal <span aria-hidden="true">→</span></a><button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation" aria-expanded="false"><span></span><span></span><span></span></button></div>
 </div></header>
 <nav class="rail" aria-label="Section navigation"><a class="active" href="#platform">01</a><a href="#uie">02</a><a href="#downloads">03</a><a href="#portals">04</a><a href="#pricing">05</a></nav>
+<nav class="oralyn-mobile-dock" aria-label="Mobile navigation">
+<a class="dock-item is-active" href="#home" aria-label="Home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></a>
+<a class="dock-item" href="#platform" aria-label="Platform"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Platform</span></a>
+<a class="dock-center" href="#home" aria-label="Oralyn home"><span><img src="https://raw.githubusercontent.com/kawstubh/dr-pranali-dental-mobile-v2/temporary-public-sites/temporary-sites/oralyn/assets/oralyn-official-logo.png" alt=""></span></a>
+<a class="dock-item" href="#downloads" aria-label="Downloads"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 19v2h16v-2"/></svg><span>Downloads</span></a>
+<a class="dock-item" href="#portals" aria-label="Account"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Account</span></a>
+</nav>
 <main>
 <section class="hero" id="home"><div class="wrap hero-grid">
 <div class="hero-copy"><span class="eyebrow">The connected dental practice platform</span><h1>Better connected care.<span>Smarter dental practice.</span></h1><p class="lead">Oralyn brings patients, dental professionals and clinic operations into one connected digital ecosystem. A clearer experience for patients. A more organised workspace for doctors. Better-connected operations for the entire practice.</p><div class="hero-buttons"><a class="btn primary" href="#platform">Explore Oralyn &rarr;</a><a class="btn outline" href="#uie">Discover UIE Dentistry</a></div><div class="trust"><span><b>&#10003;</b>Connected workflows</span><span><b>&#10003;</b>Role-based experiences</span><span><b>&#10003;</b>Doctor-led clinical workflows</span></div></div>
@@ -215,11 +278,18 @@ footer{background:var(--deep);color:#b9c8d5}
 <script>
 (function(){
 "use strict";
-var menu=document.getElementById("menuToggle"),nav=document.getElementById("navlinks"),drop=document.getElementById("platformDrop"),dropButton=drop.querySelector("button");
-menu.addEventListener("click",function(){var open=nav.classList.toggle("open");menu.setAttribute("aria-expanded",String(open));});
-dropButton.addEventListener("click",function(){var open=drop.classList.toggle("open");dropButton.setAttribute("aria-expanded",String(open));});
-document.addEventListener("click",function(e){if(!drop.contains(e.target)){drop.classList.remove("open");dropButton.setAttribute("aria-expanded","false");}});
-nav.querySelectorAll("a").forEach(function(a){a.addEventListener("click",function(){nav.classList.remove("open");menu.setAttribute("aria-expanded","false");});});
+var menu=document.getElementById("menuToggle"),nav=document.getElementById("navlinks");
+var drops=Array.prototype.slice.call(document.querySelectorAll(".oralyn-nav .drop"));
+if(menu&&nav){menu.addEventListener("click",function(){var open=nav.classList.toggle("open");menu.setAttribute("aria-expanded",String(open));});}
+drops.forEach(function(drop){var button=drop.querySelector("button");button.addEventListener("click",function(e){e.stopPropagation();var open=!drop.classList.contains("open");drops.forEach(function(other){other.classList.remove("open");other.querySelector("button").setAttribute("aria-expanded","false");});drop.classList.toggle("open",open);button.setAttribute("aria-expanded",String(open));});});
+document.addEventListener("click",function(e){drops.forEach(function(drop){if(!drop.contains(e.target)){drop.classList.remove("open");drop.querySelector("button").setAttribute("aria-expanded","false");}});});
+nav.querySelectorAll("a").forEach(function(a){a.addEventListener("click",function(){nav.classList.remove("open");if(menu)menu.setAttribute("aria-expanded","false");});});
+var header=document.querySelector(".oralyn-glass-header");
+function updateHeader(){if(header)header.classList.toggle("is-scrolled",window.scrollY>18);}
+window.addEventListener("scroll",updateHeader,{passive:true});updateHeader();
+var dockLinks=Array.prototype.slice.call(document.querySelectorAll(".oralyn-mobile-dock a[href^='#']"));
+function activateDock(id){dockLinks.forEach(function(a){a.classList.toggle("is-active",a.getAttribute("href")==="#"+id);});}
+if("IntersectionObserver"in window){var dockObserver=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){activateDock(entry.target.id);}});},{rootMargin:"-25% 0px -60% 0px"});["home","platform","downloads","portals"].forEach(function(id){var el=document.getElementById(id);if(el)dockObserver.observe(el);});}
 var data={
 patient:{eyebrow:"For patients",title:"Your dental care, made simpler.",description:"Find clinic information, manage appointments and stay connected with your dental care journey through a welcoming patient experience.",features:["Appointment discovery and booking","Patient profile and visit information","Clinic services and communication"],url:"https://oralyn-staging-all-portals-web.onrender.com/patient/home/",action:"Open patient staging portal",brand:"ORALYN PATIENT",preview:"patient"},
 doctor:{eyebrow:"For dental professionals",title:"A focused workspace for doctors.",description:"A professional environment for organising patient information, clinical workflows and doctor-facing intelligence capabilities.",features:["Clinical workspace and patient records","Appointment and treatment workflows","Doctor-facing UIE Dentistry tools"],url:"https://oralyn-staging-all-portals-web.onrender.com/",action:"Open doctor staging portal",brand:"ORALYN DOCTOR",preview:"doctor"},
