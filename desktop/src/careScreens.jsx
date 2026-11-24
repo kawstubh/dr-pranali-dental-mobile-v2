@@ -12,6 +12,7 @@ import {
   AlertCircle,
   MessageCircle,
   Send,
+  CalendarClock,
 } from "lucide-react";
 import { dentalApi } from "./api.js";
 import { normaliseList } from "./data.js";
@@ -730,4 +731,46 @@ export function PatientCommunication({ token, activePatient }) {
       </section>
     </>
   );
+}
+
+
+export function DoctorFollowUpWorklist({ appointments = [], patients = [], onOpenAppointments }) {
+  const now = Date.now();
+  const patientById = new Map(patients.map((patient) => [String(patient.id), patient]));
+  const rows = appointments.filter((appointment) => appointment && appointment.id != null).map((appointment) => {
+    const status = String(appointment.status || "scheduled").toLowerCase();
+    const instant = new Date(appointment.starts_at || "");
+    const validDate = Number.isFinite(instant.getTime());
+    const past = validDate && instant.getTime() < now && !["completed", "cancelled", "no_show"].includes(status);
+    const needsConfirmation = status === "requested";
+    const noShowReview = status === "no_show";
+    if (!needsConfirmation && !noShowReview && !past) return null;
+    const patient = patientById.get(String(appointment.patient_id));
+    return {
+      id: String(appointment.id),
+      name: appointment.patient_name || patient?.name || "Patient",
+      phone: patient?.phone || "Not recorded",
+      visit: appointment.treatment_type || "Dental visit",
+      date: validDate ? instant : null,
+      status,
+      reason: needsConfirmation ? "Awaiting clinic confirmation" : noShowReview ? "No-show recorded — staff review" : "Past appointment — status review",
+    };
+  }).filter(Boolean).sort((a,b) => (a.date?.getTime() || 0) - (b.date?.getTime() || 0));
+
+  return <>
+    <CareHeader eyebrow="PRACTICE OPERATIONS" title="Follow-up worklist" description="A staff review queue built from existing appointment statuses and dates. No automatic recall dates or messages are generated." action={<button className="outline" onClick={onOpenAppointments}>Open appointments</button>} />
+    <div className="metricgrid three">
+      <div className="metric"><span>Awaiting confirmation</span><strong>{rows.filter(row => row.status === "requested").length}</strong></div>
+      <div className="metric"><span>No-show reviews</span><strong>{rows.filter(row => row.status === "no_show").length}</strong></div>
+      <div className="metric"><span>Past visits to review</span><strong>{rows.filter(row => row.reason === "Past appointment — status review").length}</strong></div>
+    </div>
+    <section className="panel care-panel">
+      <div className="care-panel-heading"><CalendarClock /><div><h2>Needs clinic attention</h2><p>{rows.length} records · derived from the active clinic appointment list</p></div></div>
+      {rows.length ? rows.map(row => <article className="care-record" key={row.id}>
+        <div className="care-record-top"><div><b>{row.name}</b><small>{row.visit} · {row.phone}</small></div><span className="care-pill private">{row.status.replaceAll("_"," ")}</span></div>
+        <p>{row.reason}{row.date ? ` · ${row.date.toLocaleString("en-IN", {dateStyle:"medium",timeStyle:"short"})}` : ""}</p>
+      </article>) : <StateMessage>No appointments currently meet these staff-review conditions.</StateMessage>}
+    </section>
+    <p className="care-hint">This is an operational review queue, not a clinical recall engine. Staff must verify the record and decide the next action. It does not send WhatsApp/SMS, alter appointment statuses or infer treatment schedules.</p>
+  </>;
 }
