@@ -241,7 +241,8 @@ test("Doctor settings embeds the real owner/admin-gated Assistant management com
 
 test("staging release contract checks the exact approved catalogue and active API correction PR", () => {
   const contract = fs.readFileSync(path.join(root, "scripts", "verify-staging-contract.cjs"), "utf8");
-  assert.match(contract, /githubPullRequest\("kawstubh\/universal-intelligence-engine", 63\)/);
+  assert.match(contract, /githubPullRequest\("kawstubh\/universal-intelligence-engine", 67\)/);
+  assert.ok(contract.includes("expected Draft PR #25 head"));
   assert.ok(contract.includes("approvedServiceNames"));
   assert.ok(contract.includes("candidateServiceLabels"));
   assert.ok(contract.includes("apiMissingLabels"));
