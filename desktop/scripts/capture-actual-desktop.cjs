@@ -3,6 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const os = require("node:os");
 const crypto = require("node:crypto");
+const { inspectSyntheticStagingBookingWriteGate } = require("./staging-write-guard.cjs");
 
 const root = process.cwd();
 const output = process.env.ORALYN_CAPTURE_OUTPUT ? path.resolve(process.env.ORALYN_CAPTURE_OUTPUT) : path.join(root, "evidence", "actual-desktop");
@@ -97,23 +98,34 @@ async function verifyNoHorizontalOverflow(expectedWidth) {
   return layout;
 }
 
-async function verifyNoVerticalOverflow(expectedHeight) {
-  const layout = await evaluate(`(() => {
+async function verifyBookingScrollReachability(expectedHeight) {
+  const layout = await evaluate(`(async () => {
     const root = document.documentElement;
     const body = document.body;
     const viewportHeight = root.clientHeight;
     const rootScrollHeight = root.scrollHeight;
     const bodyScrollHeight = body ? body.scrollHeight : rootScrollHeight;
+    const scrollHeight = Math.max(rootScrollHeight, bodyScrollHeight);
+    const submit = document.querySelector("#submit");
+    const initialScrollY = window.scrollY;
+    window.scrollTo(0, scrollHeight);
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const submitRect = submit ? submit.getBoundingClientRect() : null;
+    const submitReachable = Boolean(
+      submitRect && submitRect.top >= -1 && submitRect.bottom <= window.innerHeight + 1
+    );
+    window.scrollTo(0, initialScrollY);
     return {
       viewportHeight,
       expectedViewportHeight: ${Number(expectedHeight)},
       rootScrollHeight,
       bodyScrollHeight,
-      verticalOverflow: Math.max(rootScrollHeight, bodyScrollHeight) > viewportHeight + 1,
+      verticalScrollAllowed: scrollHeight > viewportHeight + 1,
+      submitReachable,
     };
   })()`);
-  if (!layout || !Number.isFinite(layout.viewportHeight) || layout.viewportHeight <= 0 || layout.verticalOverflow) {
-    throw new Error("Vertical page overflow at " + expectedHeight + "px capture: " + JSON.stringify(layout));
+  if (!layout || !Number.isFinite(layout.viewportHeight) || layout.viewportHeight <= 0 || !layout.submitReachable) {
+    throw new Error("Booking submit is not reachable by vertical scrolling at " + expectedHeight + "px capture: " + JSON.stringify(layout));
   }
   return layout;
 }
@@ -124,7 +136,7 @@ async function capture(name, width, height, mobile = false) {
   });
   await sleep(450);
   const layout = await verifyNoHorizontalOverflow(width);
-  const vertical = name.startsWith("patient-booking-") ? await verifyNoVerticalOverflow(height) : null;
+  const vertical = name.startsWith("patient-booking-") ? await verifyBookingScrollReachability(height) : null;
   console.log("[Oralyn layout]", JSON.stringify({ screenshot: name, ...layout, ...(vertical ? { vertical } : {}) }));
   const screenshot = await send("Page.captureScreenshot", {
     format: "png", captureBeyondViewport: false, fromSurface: true,
@@ -137,7 +149,7 @@ async function verifyFonts() {
     const probe = document.createElement("span");
     probe.textContent = "Oralyn Display Font Probe";
     probe.setAttribute("aria-hidden", "true");
-    probe.style.cssText = "position:fixed;left:-10000px;top:0;font-family:'Playfair Display',serif;font-size:32px;font-weight:600;white-space:nowrap;";
+    probe.className = "oralyn-font-probe";
     document.body.appendChild(probe);
     const [bodyResponse, displayResponse] = await Promise.all([
       fetch("/fonts/PlusJakartaSans-Variable.ttf", { cache: "no-store" }),
@@ -342,7 +354,7 @@ async function verifyPublicBookingForm() {
       timezoneNotice: document.body.innerText.includes("Asia/Kolkata"),
       accountFree: document.body.innerText.includes("No account or OTP is required."),
       logoVisible: (() => {
-        const logo = document.querySelector('header img[src="/oralyn-logo-approved.webp"]');
+        const logo = document.querySelector('header img[src="/oralyn-official-logo.png"]');
         const header = logo?.closest("header");
         const logoRect = logo?.getBoundingClientRect();
         const headerRect = header?.getBoundingClientRect();
@@ -579,7 +591,7 @@ async function captureAssistantAdminGate() {
       const wordmark = document.querySelector(".oralyn-vector-brand img");
       const appIcon = document.querySelector(".oralyn-app-squircle img");
       return {
-        wordmark: Boolean(wordmark && wordmark.complete && wordmark.naturalWidth > 0 && wordmark.getAttribute("src") === "/oralyn-logo-approved.webp"),
+        wordmark: Boolean(wordmark && wordmark.complete && wordmark.naturalWidth > 0 && wordmark.getAttribute("src") === "/oralyn-official-logo.png"),
         appIcon: Boolean(appIcon && appIcon.complete && appIcon.naturalWidth > 0 && appIcon.getAttribute("src") === "/oralyn-app-icon-approved.webp")
       };
     })()`);
@@ -648,20 +660,41 @@ async function captureAssistantAdminGate() {
     accessibilityResults.guestBookingKeyboardFocus = await verifyKeyboardFocus();
     fontResults.patientBookingValidation = await verifyPublicBookingForm();
     accessibilityResults.guestBookingRequiredLabels = fontResults.patientBookingValidation.requiredLabelFields;
-    const livePortalOrigin = new URL(process.env.ORALYN_PORTAL_ORIGIN || baseUrl).origin;
-    await send("Page.navigate", { url: livePortalOrigin + "/patient/booking/" });
-    await waitFor(() => evaluate(
-      "location.origin === " + JSON.stringify(livePortalOrigin) + " && Boolean(document.querySelector('#booking'))"
-    ));
-    await evaluate(
-      "sessionStorage.setItem('oralyn_public_booking_idempotency', " + JSON.stringify(bookingSeed.idempotencyKey) + ");" +
-      "sessionStorage.removeItem('oralyn_public_booking_pending');"
-    );
-    await send("Page.reload", { ignoreCache: true });
-    await waitFor(() => evaluate(
-      "location.origin === " + JSON.stringify(livePortalOrigin) + " && Boolean(document.querySelector('#booking'))"
-    ));
-    fontResults.guestBookingBrowserE2E = await submitSyntheticGuestBooking(bookingSeed);
+    const bookingWriteGate = inspectSyntheticStagingBookingWriteGate({
+      ...process.env,
+      ORALYN_ENVIRONMENT: environment,
+    });
+    if (bookingWriteGate.allowed) {
+      const livePortalOrigin = new URL(process.env.ORALYN_PORTAL_ORIGIN || baseUrl).origin;
+      await send("Page.navigate", { url: livePortalOrigin + "/patient/booking/" });
+      await waitFor(() => evaluate(
+        "location.origin === " + JSON.stringify(livePortalOrigin) + " && Boolean(document.querySelector('#booking'))"
+      ));
+      await evaluate(
+        "sessionStorage.setItem('oralyn_public_booking_idempotency', " + JSON.stringify(bookingSeed.idempotencyKey) + ");" +
+        "sessionStorage.removeItem('oralyn_public_booking_pending');"
+      );
+      await send("Page.reload", { ignoreCache: true });
+      await waitFor(() => evaluate(
+        "location.origin === " + JSON.stringify(livePortalOrigin) + " && Boolean(document.querySelector('#booking'))"
+      ));
+      fontResults.guestBookingBrowserE2E = await submitSyntheticGuestBooking(bookingSeed);
+      if (fontResults.guestBookingBrowserE2E.passed && process.env.GITHUB_ENV) {
+        fs.appendFileSync(process.env.GITHUB_ENV, "ORALYN_GUEST_BOOKING_BROWSER_E2E_VERIFIED=true" + String.fromCharCode(10));
+      }
+    } else {
+      const reason = "Live synthetic booking write skipped; missing required attestation: " +
+        bookingWriteGate.missingGates.join(", ");
+      fontResults.guestBookingBrowserE2E = {
+        passed: false,
+        skipped: true,
+        requestCount: 0,
+        httpStatus: null,
+        duplicateClickBlocked: false,
+        reason,
+      };
+      console.log("[Oralyn booking safety]", reason);
+    }
     fontResults.assistantAdmin = await captureAssistantAdminGate();
 
     if (runtimeErrors.length) {
@@ -690,7 +723,9 @@ async function captureAssistantAdminGate() {
       "assistant_admin_redirect_gate=passed",
       "guest_booking_validation=passed",
       "guest_booking_browser_e2e=" + fontResults.guestBookingBrowserE2E.passed,
-      "guest_booking_browser_http_status=" + fontResults.guestBookingBrowserE2E.httpStatus,
+      "guest_booking_browser_e2e_skipped=" + Boolean(fontResults.guestBookingBrowserE2E.skipped),
+      "guest_booking_browser_e2e_skip_reason=" + (fontResults.guestBookingBrowserE2E.reason || "none"),
+      "guest_booking_browser_http_status=" + (fontResults.guestBookingBrowserE2E.httpStatus ?? "not-run"),
       "guest_booking_browser_duplicate_click_blocked=" + fontResults.guestBookingBrowserE2E.duplicateClickBlocked,
       "public_booking_api_origin=" + fontResults.patientBookingValidation.apiOrigin,
       "guest_booking_service_count=" + fontResults.patientBookingValidation.catalogueCount,

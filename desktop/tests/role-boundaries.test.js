@@ -39,7 +39,7 @@ test("Doctor workspace still requires a verified Doctor session", () => {
 });
 
 test("Doctor sign-in uses the exact clinic-approved Oralyn wordmark and app icon assets", () => {
-  assert.match(source, /src="\/oralyn-logo-approved\.webp"/);
+  assert.match(source, /src="\/oralyn-official-logo\.png"/);
   assert.match(source, /src="\/oralyn-app-icon-approved\.webp"/);
   assert.doesNotMatch(source, /function OralynToothVector|<OralynToothVector/);
 });
@@ -57,6 +57,9 @@ test("CI records Doctor token storage hardening only after the regression suite"
   const gateIndex = assistantWorkflowSource.indexOf("Record memory-only Doctor token storage verification");
   assert.ok(testsIndex >= 0 && gateIndex > testsIndex);
   assert.match(assistantWorkflowSource, /ORALYN_DOCTOR_TOKEN_STORAGE_HARDENING_VERIFIED=true/);
+  assert.match(assistantWorkflowSource, /name: Record memory-only Doctor token storage verification\s+if: github\.event_name == 'pull_request'/);
+  assert.match(assistantWorkflowSource, /name: Verify live Assistant API contract \(read-only\)\s+if: github\.event_name == 'pull_request'/);
+  assert.doesNotMatch(assistantWorkflowSource, /head\.ref == 'feat\/oralyn-desktop-app'/);
 });
 
 test("public patient journey is served only by account-free static pages", () => {
@@ -236,6 +239,34 @@ test("Doctor settings embeds the real owner/admin-gated Assistant management com
 });
 
 
+test("staging release contract checks the exact approved catalogue and active API correction PR", () => {
+  const contract = fs.readFileSync(path.join(root, "scripts", "verify-staging-contract.cjs"), "utf8");
+  assert.match(contract, /githubPullRequest\("kawstubh\/universal-intelligence-engine", 67\)/);
+  assert.ok(contract.includes("expected Draft PR #25 head"));
+  assert.ok(contract.includes("approvedServiceNames"));
+  assert.ok(contract.includes("candidateServiceLabels"));
+  assert.ok(contract.includes("apiMissingLabels"));
+  assert.ok(contract.includes("candidateBookingPath"));
+  const parserLines = contract.split("\n");
+  const parserIndex = parserLines.findIndex((line) => line.includes("catalogueSource.matchAll"));
+  assert.ok(parserIndex >= 0);
+  assert.ok(parserLines[parserIndex + 1]?.includes(String.raw`/\{\s*id:\s*'[^']+'\s*,\s*name:`));
+  assert.doesNotMatch(contract, /serviceLabels\.length === 20/);
+  assert.match(contract, /async function request\(url, options = \{\}, attempts = 2, timeoutMs = 15000\)/);
+  assert.match(contract, /3,\s*1000,\s*5000/);
+});
+
+test("release manifest requires live Assistant appointment-cancellation 403 acceptance", () => {
+  const manifest = fs.readFileSync(path.join(root, "scripts", "write-build-manifest.cjs"), "utf8");
+  assert.ok(manifest.includes("assistant_appointment_cancellation_403_live_verified"));
+  assert.ok(manifest.includes("process.env.ORALYN_ASSISTANT_APPOINTMENT_CANCELLATION_403_LIVE_VERIFIED"));
+});
+
+test("browser capture cannot override exact service-catalogue release verification", () => {
+  const workflow = fs.readFileSync(path.join(root, "..", ".github", "workflows", "oralyn-desktop.yml"), "utf8");
+  assert.doesNotMatch(workflow, /echo "ORALYN_SERVICE_CATALOG_UI_VERIFIED=true"/);
+});
+
 test("Assistant staging contract verification is read-only and never creates a booking", () => {
   assert.match(assistantContractSource, /method: "OPTIONS"/);
   assert.match(assistantContractSource, /method: "GET"/);
@@ -251,7 +282,13 @@ test("portal security header probe is a read-only GET check", () => {
   assert.match(portalHeadersSource, /content-security-policy/i);
   assert.match(portalHeadersSource, /strict-transport-security/i);
   assert.doesNotMatch(portalHeadersSource, /method:\s*"(?:POST|PATCH|DELETE)"/);
-  assert.match(assistantWorkflowSource, /ORALYN_SECURITY_HEADERS_VERIFIED=true/);
+  assert.match(assistantWorkflowSource, /ORALYN_PREVIEW_SECURITY_HEADERS_VERIFIED=true/);
+  assert.doesNotMatch(assistantWorkflowSource, /echo "ORALYN_SECURITY_HEADERS_VERIFIED=true"/);
+  assert.match(viteSource, /script-src 'self' 'sha256-/);
+  assert.match(viteSource, /font-src 'self';/);
+  assert.match(viteSource, /style-src 'self' 'sha256-/);
+  assert.doesNotMatch(viteSource, /unsafe-inline/);
+  assert.doesNotMatch(source, /style=\{\{/);
 });
 
 

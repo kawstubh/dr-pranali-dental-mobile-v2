@@ -23,6 +23,33 @@ const services = [...catalogue.matchAll(
   image: match[5],
 }));
 
+const approvedServiceNames = [
+  "Dental Check-up & Consultation",
+  "Gum Treatment (Periodontal Care)",
+  "Tooth Sensitivity Treatment",
+  "TMJ & Jaw Pain Treatment",
+  "Scaling & Cleaning",
+  "Dental Sealants",
+  "Oral Hygiene Education",
+  "Teeth Whitening",
+  "Veneers",
+  "Smile Makeover",
+  "Tooth Filling",
+  "Root Canal Treatment",
+  "Dental Crowns & Caps",
+  "Dentures",
+  "Dental Implants",
+  "Tooth Extraction",
+  "Braces Treatment",
+  "Clear Aligners",
+  "Kids Dentistry",
+  "Emergency Dental Care",
+];
+
+test("shared catalogue matches the exact clinic-approved twenty service names", () => {
+  assert.deepEqual(services.map((service) => service.name).sort(), [...approvedServiceNames].sort());
+});
+
 const escapeHtml = (value) => value
   .replaceAll("&", "&amp;")
   .replaceAll("<", "&lt;")
@@ -74,4 +101,21 @@ test("guest booking exposes required and future IST validation", () => {
   assert.match(booking, /Please complete all required fields/);
   assert.match(booking, /Please choose a future date and time\./);
   assert.doesNotMatch(booking, /min="2026-11-13"/);
+});
+
+test("guest booking fails closed when sessionStorage cannot persist its idempotency state", () => {
+  assert.ok(booking.includes("let idempotencyStorageReady = false"));
+  assert.ok(booking.includes("sessionStorage.getItem(idempotencyStorageKey) === idempotencyKey"));
+  assert.ok(booking.includes("if (!idempotencyStorageReady)"));
+  assert.ok(booking.includes('sessionStorage.getItem(pendingStorageKey) !== "1"'));
+  assert.ok(booking.includes("Secure browser session storage is unavailable"));
+});
+
+test("guest booking preserves its idempotency key after ambiguous failures and rotates only on conflict or success", () => {
+  assert.ok(booking.includes('requestPending = sessionStorage.getItem(pendingStorageKey) === "1"'));
+  assert.match(booking, /form\.addEventListener\("input", clearValidationMessage\)/);
+  assert.match(booking, /form\.addEventListener\("change", clearValidationMessage\)/);
+  assert.doesNotMatch(booking, /pendingFromPreviousPage/);
+  assert.ok(booking.includes('result.detail?.code === "IDEMPOTENCY_KEY_REUSED"'));
+  assert.equal((booking.match(/rotateIdempotencyKey\(\);/g) || []).length, 2);
 });

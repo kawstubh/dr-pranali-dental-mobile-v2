@@ -71,3 +71,10 @@
 .assistant-reschedule-actions{display:flex;gap:9px;flex-wrap:wrap}
 .assistant-reschedule-actions button{min-height:42px}
 @media(max-width:640px){.assistant-reschedule-actions{display:grid}.assistant-reschedule-actions button{width:100%}}
+
+
+/* User-approved transparent Oralyn master: preserve its square artwork without horizontal-wordmark clipping. */
+.assistant-brand img{width:104px;max-height:64px;height:auto;object-fit:contain}
+.assistant-logo{width:136px;max-height:none;height:auto;object-fit:contain;margin:0 auto 14px}
+.assistant-loading img{width:120px;max-width:45vw;height:auto;object-fit:contain}
+@media(max-width:640px){.assistant-brand img{width:88px;max-height:54px}.assistant-logo{width:112px}.assistant-loading img{width:104px}}

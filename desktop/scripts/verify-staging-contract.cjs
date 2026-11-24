@@ -1,16 +1,19 @@
+const crypto = require("node:crypto");
 const fs = require("node:fs");
+const path = require("node:path");
 const { isRuntimeEquivalentCompare } = require("./staging-commit-equivalence.cjs");
+const { inspectOpenApiBearerAuth } = require("./openapi-security.cjs");
 
 const apiOrigin = new URL(process.env.VITE_DENTAL_API_URL || "").origin;
 const portalOrigin = new URL(process.env.ORALYN_PORTAL_ORIGIN || "").origin;
 const report = [];
 const flags = {};
 
-async function request(url, options = {}, attempts = 2) {
+async function request(url, options = {}, attempts = 2, timeoutMs = 15000) {
   let lastError;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 15000);
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch(url, {
         redirect: "follow",
@@ -60,6 +63,52 @@ function secureHeaders(headers, portal = false) {
   };
 }
 
+function inlineHashes(html, tag) {
+  const expression = tag === "style"
+    ? /<style\b[^>]*>([\s\S]*?)<\/style>/gi
+    : /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
+  const hashes = [];
+  for (const match of html.matchAll(expression)) {
+    if (tag === "script" && /\bsrc\s*=/.test(match[1])) continue;
+    const value = (tag === "style" ? match[1] : match[2]).replace(/\r\n?/g, "\n");
+    hashes.push("sha256-" + crypto.createHash("sha256").update(value, "utf8").digest("base64"));
+  }
+  return hashes;
+}
+
+function strictPortalCsp(headers, html, apiOrigin) {
+  const csp = String(headers?.get("content-security-policy") || "").trim();
+  if (!csp || /'unsafe-inline'|'unsafe-eval'/i.test(csp)) {
+    return { passed: false, detail: "missing CSP or unsafe inline/eval allowance" };
+  }
+  const directives = new Map(csp.split(";").map((part) => {
+    const [name, ...values] = part.trim().split(/\s+/);
+    return [String(name || "").toLowerCase(), values];
+  }));
+  const tokens = (name) => directives.get(name) || [];
+  const has = (name, value) => tokens(name).includes(value);
+  const scriptHashes = inlineHashes(html, "script");
+  const styleHashes = inlineHashes(html, "style");
+  const checks = [
+    ["default-src self", has("default-src", "'self'")],
+    ["base-uri self", has("base-uri", "'self'")],
+    ["form-action self", has("form-action", "'self'")],
+    ["frame-ancestors none", has("frame-ancestors", "'none'")],
+    ["object-src none", has("object-src", "'none'")],
+    ["script-src self", has("script-src", "'self'")],
+    ["style-src self", has("style-src", "'self'")],
+    ["font-src self", has("font-src", "'self'")],
+    ["connect-src portal and API", has("connect-src", "'self'") && tokens("connect-src").includes(apiOrigin)],
+    ["approved image sources", ["'self'", "data:", "blob:", "https://static.wixstatic.com"].every((value) => has("img-src", value))],
+    ["all inline scripts hash-allowlisted", scriptHashes.every((hash) => has("script-src", "'" + hash + "'"))],
+    ["all inline styles hash-allowlisted", styleHashes.every((hash) => has("style-src", "'" + hash + "'"))],
+  ];
+  return {
+    passed: checks.every(([, passed]) => passed),
+    detail: checks.map(([name, passed]) => name + "=" + passed).join(", "),
+  };
+}
+
 function githubApiHeaders() {
   const token = String(process.env.GITHUB_TOKEN || "").trim();
   if (!token) throw new Error("Staging release contract requires a read-only GitHub Actions token.");
@@ -82,10 +131,10 @@ async function githubPullRequest(repo, number) {
 
 async function backendCommitMatchesPr(repo, deployedCommit, prHeadCommit) {
   if (!deployedCommit || !prHeadCommit) {
-    return { ok: false, detail: "deployed API commit or PR #60 head is unavailable" };
+    return { ok: false, detail: "deployed API commit or PR #67 head is unavailable" };
   }
   if (deployedCommit === prHeadCommit) {
-    return { ok: true, detail: "live API deployment commit exactly matches Draft PR #60 head " + prHeadCommit };
+    return { ok: true, detail: "live API deployment commit exactly matches Draft PR #67 head " + prHeadCommit };
   }
 
   const comparison = await request(
@@ -101,21 +150,21 @@ async function backendCommitMatchesPr(repo, deployedCommit, prHeadCommit) {
   if (isRuntimeEquivalentCompare(compareBody)) {
     return {
       ok: true,
-      detail: "live API runtime commit " + deployedCommit + " is an ancestor of PR #60 head " +
+      detail: "live API runtime commit " + deployedCommit + " is an ancestor of PR #67 head " +
         prHeadCommit + "; GitHub confirms every intervening change is a Markdown file under docs/ or a Python test under tests/, with no runtime or configuration changes",
     };
   }
   return {
     ok: false,
-    detail: "live API runtime commit " + deployedCommit + " differs from PR #60 head " + prHeadCommit +
+    detail: "live API runtime commit " + deployedCommit + " differs from PR #67 head " + prHeadCommit +
       " and the intervening commit range is not exclusively docs/*.md",
   };
 }
 
-async function waitForResponse(url, predicate, options = {}, attempts = 12, delayMs = 4000) {
+async function waitForResponse(url, predicate, options = {}, attempts = 12, delayMs = 4000, timeoutMs = 15000) {
   let last = { response: null, body: null, error: null };
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    const result = await request(url, options, 1);
+    const result = await request(url, options, 1, timeoutMs);
     const body = await jsonBody(result.response);
     last = { ...result, body };
     if (predicate(result.response, body)) return last;
@@ -127,7 +176,7 @@ async function waitForResponse(url, predicate, options = {}, attempts = 12, dela
 async function main() {
   const originHeaders = { Origin: portalOrigin };
   const expectedPortalCommit = process.env.ORALYN_COMMIT_SHA || process.env.GITHUB_SHA || "";
-  const backendPr = await githubPullRequest("kawstubh/universal-intelligence-engine", 60);
+  const backendPr = await githubPullRequest("kawstubh/universal-intelligence-engine", 67);
   const expectedApiCommit = backendPr?.head?.sha || "";
 
   const [dentalHealthWait, portalManifestWait] = await Promise.all([
@@ -143,8 +192,9 @@ async function main() {
       (response, body) => response?.status === 200 &&
         body?.commit_sha === expectedPortalCommit,
       { headers: { "Cache-Control": "no-store, no-cache", Pragma: "no-cache" } },
-      24,
-      4000,
+      3,
+      1000,
+      5000,
     ),
   ]);
 
@@ -213,12 +263,14 @@ async function main() {
   const apiSecurity = secureHeaders(dentalHealthResult.response?.headers, false);
   const portalHomeResult = await request(portalOrigin + "/patient/home/");
   const portalBookingResult = await request(portalOrigin + "/patient/booking/");
-  const portalSecurity = secureHeaders(portalHomeResult.response?.headers, true);
+  const portalHomeSecurity = secureHeaders(portalHomeResult.response?.headers, true);
+  const portalBookingSecurity = secureHeaders(portalBookingResult.response?.headers, true);
   record(
     "ORALYN_SECURITY_HEADERS_VERIFIED",
-    apiSecurity.passed && portalSecurity.passed,
+    apiSecurity.passed && portalHomeSecurity.passed && portalBookingSecurity.passed,
     "API: " + apiSecurity.checks.map(([name, ok]) => name + "=" + ok).join(", ") +
-      "; portal: " + portalSecurity.checks.map(([name, ok]) => name + "=" + ok).join(", "),
+      "; patient home: " + portalHomeSecurity.checks.map(([name, ok]) => name + "=" + ok).join(", ") +
+      "; booking: " + portalBookingSecurity.checks.map(([name, ok]) => name + "=" + ok).join(", "),
   );
 
   const openapiResult = await request(apiOrigin + "/openapi.json");
@@ -236,10 +288,25 @@ async function main() {
     "/v1/dental/assistant/patients",
     "/v1/dental/assistant/appointments",
     "/v1/dental/assistant/billing/invoices",
+    "/v1/dental/clinic-assistants",
     "/v1/dental/doctor/patients/synthetic-only/clinical-notes",
     "/v1/dental/doctor/patients/synthetic-only/treatment-plans",
     "/v1/dental/doctor/patients/synthetic-only/documents",
   ];
+  const bearerAuthReport = inspectOpenApiBearerAuth(openapi);
+  const bearerAuthOpenApiVerified = openapiResult.response?.status === 200 &&
+    bearerAuthReport.passed;
+  record(
+    "ORALYN_OPENAPI_BEARER_AUTH_VERIFIED",
+    bearerAuthOpenApiVerified,
+    "BearerAuth HTTP scheme=" + bearerAuthReport.bearerSchemeConfigured +
+      "; protected dental operations with explicit BearerAuth=" +
+      bearerAuthReport.verifiedProtectedOperationCount + "/" +
+      bearerAuthReport.protectedOperationCount +
+      "; missing protected operations=[" + bearerAuthReport.missingProtectedOperations.join("; ") +
+      "]; missing public operations=[" + bearerAuthReport.missingPublicOperations.join("; ") +
+      "]; accidentally secured public operations=[" + bearerAuthReport.securedPublicOperations.join("; ") + "]",
+  );
   const protectedResults = await Promise.all(protectedPaths.map((path) => request(apiOrigin + path, { headers: originHeaders })));
   const protected401 = protectedResults.every((item) => item.response?.status === 401);
   const legacyResult = await request(apiOrigin + "/v1/dental/patient/linked-records", { headers: originHeaders });
@@ -250,6 +317,14 @@ async function main() {
     publicGetResult.response?.status === 405;
   const homeHtml = await textBody(portalHomeResult.response);
   const bookingHtml = await textBody(portalBookingResult.response);
+  const strictHomeCsp = strictPortalCsp(portalHomeResult.response?.headers, homeHtml, apiOrigin);
+  const strictBookingCsp = strictPortalCsp(portalBookingResult.response?.headers, bookingHtml, apiOrigin);
+  const strictCspOk = strictHomeCsp.passed && strictBookingCsp.passed;
+  record(
+    "ORALYN_STRICT_CSP_VERIFIED",
+    strictCspOk,
+    "patient home: " + strictHomeCsp.detail + "; booking: " + strictBookingCsp.detail,
+  );
   const hasPasswordInput = /<input\b[^>]*type=["']password/i.test(homeHtml + bookingHtml);
   const noPatientAuthUi = !hasPasswordInput &&
     !/href=["'][^"']*(patient\/login|patient\/signup|patient\/register)/i.test(homeHtml + bookingHtml);
@@ -261,12 +336,76 @@ async function main() {
     "no patient-auth OpenAPI routes; protected APIs deny unauthenticated reads; public pages are account-free",
   );
 
+  const otherServiceLabel = "Other dental concern";
+  const catalogueSourcePath = path.resolve(process.cwd(), "../shared/dentalServices.ts");
+  const candidateBookingPath = path.resolve(process.cwd(), "public/patient/booking/index.html");
+  const catalogueSource = fs.readFileSync(catalogueSourcePath, "utf8");
+  const candidateBookingHtml = fs.readFileSync(candidateBookingPath, "utf8");
+  const candidateServiceLabels = [...catalogueSource.matchAll(
+    /\{\s*id:\s*'[^']+'\s*,\s*name:\s*'([^']+)'/g,
+  )].map((match) => match[1]);
+  const approvedServiceNames = [
+    "Dental Check-up & Consultation",
+    "Gum Treatment (Periodontal Care)",
+    "Tooth Sensitivity Treatment",
+    "TMJ & Jaw Pain Treatment",
+    "Scaling & Cleaning",
+    "Dental Sealants",
+    "Oral Hygiene Education",
+    "Teeth Whitening",
+    "Veneers",
+    "Smile Makeover",
+    "Tooth Filling",
+    "Root Canal Treatment",
+    "Dental Crowns & Caps",
+    "Dentures",
+    "Dental Implants",
+    "Tooth Extraction",
+    "Braces Treatment",
+    "Clear Aligners",
+    "Kids Dentistry",
+    "Emergency Dental Care",
+  ];
+  const sortLabels = (labels) => [...labels].sort((left, right) => left.localeCompare(right));
+  const sourceCatalogueOk = candidateServiceLabels.length === 20 &&
+    new Set(candidateServiceLabels).size === 20 &&
+    JSON.stringify(sortLabels(candidateServiceLabels)) === JSON.stringify(sortLabels(approvedServiceNames));
   const serviceSchema = openapi?.components?.schemas?.PublicAppointmentIn?.properties?.treatment_type?.enum || [];
-  const serviceLabels = serviceSchema.filter((label) => label !== "Other dental concern");
-  const catalogApiOk = serviceLabels.length === 20 && serviceSchema.includes("Other dental concern");
-  const catalogUiOk = serviceLabels.every((label) => bookingHtml.includes(label));
-  record("ORALYN_SERVICE_CATALOG_API_VERIFIED", catalogApiOk, "20 repository service labels plus Other in API schema");
-  record("ORALYN_SERVICE_CATALOG_UI_VERIFIED", catalogUiOk, "all 20 repository service labels present in public booking HTML");
+  const apiServiceLabels = serviceSchema.filter((label) => label !== otherServiceLabel);
+  const catalogApiOk = sourceCatalogueOk &&
+    serviceSchema.length === 21 &&
+    serviceSchema.filter((label) => label === otherServiceLabel).length === 1 &&
+    JSON.stringify(sortLabels(apiServiceLabels)) === JSON.stringify(sortLabels(approvedServiceNames));
+  const escapeHtml = (value) => value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+  const catalogUiOk = sourceCatalogueOk &&
+    candidateServiceLabels.every((label) =>
+      candidateBookingHtml.includes('<option value="' + escapeHtml(label) + '">')
+    ) &&
+    candidateBookingHtml.includes('<option value="' + otherServiceLabel + '">');
+  const apiMissingLabels = approvedServiceNames.filter((label) => !apiServiceLabels.includes(label));
+  const apiUnexpectedLabels = apiServiceLabels.filter((label) => !approvedServiceNames.includes(label));
+  record(
+    "ORALYN_SERVICE_CATALOG_API_VERIFIED",
+    catalogApiOk,
+    catalogApiOk
+      ? "live API OpenAPI enum exactly matches the twenty clinic-approved names plus Other"
+      : "candidate source labels=" + candidateServiceLabels.length +
+        "; live API labels=" + apiServiceLabels.length +
+        "; missing from live API=[" + apiMissingLabels.join("; ") +
+        "]; unexpected live API labels=[" + apiUnexpectedLabels.join("; ") + "]",
+  );
+  record(
+    "ORALYN_SERVICE_CATALOG_UI_VERIFIED",
+    catalogUiOk,
+    catalogUiOk
+      ? "candidate booking HTML contains all twenty clinic-approved option values plus Other"
+      : "candidate shared catalogue or booking HTML does not exactly match the approved twenty names plus Other",
+  );
 
   // One synthetic request per backend commit per IST day. The idempotency key
   // is stable across hourly CI runs, so retries cannot create duplicate rows.
@@ -335,7 +474,7 @@ async function main() {
     const bookingBlockReason = health?.database_identity_verified !== true || !branchIdentityOk
       ? "not attempted because the isolated synthetic database identity is not verified"
       : !apiCommitOk
-        ? "not attempted because the deployed API code does not match PR #60 or a verified docs-only descendant"
+        ? "not attempted because the deployed API code does not match PR #67 or a verified docs-only descendant"
         : "not attempted because the deployed API runtime commit is unavailable";
     record("ORALYN_GUEST_BOOKING_E2E_VERIFIED", false, bookingBlockReason);
     record("ORALYN_GUEST_BOOKING_IDEMPOTENCY_VERIFIED", false, bookingBlockReason);
@@ -350,7 +489,7 @@ async function main() {
     "ORALYN_STAGING_PORTAL_COMMIT_VERIFIED",
     portalCommitOk,
     "live portal manifest commit " + (livePortalManifest?.commit_sha || "unavailable") +
-      " compared with expected Draft PR #18 head " + (expectedPortalCommit || "unavailable"),
+      " compared with expected Draft PR #25 head " + (expectedPortalCommit || "unavailable"),
   );
   record("ORALYN_STAGING_API_COMMIT_VERIFIED", apiCommitOk, apiCommitCheck.detail);
 
@@ -374,7 +513,10 @@ main().catch((error) => {
     "ORALYN_STAGING_DATABASE_BRANCH_VERIFIED",
     "ORALYN_CORS_VERIFIED",
     "ORALYN_SECURITY_HEADERS_VERIFIED",
+    "ORALYN_OPENAPI_BEARER_AUTH_VERIFIED",
+    "ORALYN_STRICT_CSP_VERIFIED",
     "ORALYN_PATIENT_ACCOUNT_FREE_VERIFIED",
+    "ORALYN_LEGACY_PATIENT_AUTH_SURFACES_RETIRED_VERIFIED",
     "ORALYN_SERVICE_CATALOG_API_VERIFIED",
     "ORALYN_SERVICE_CATALOG_UI_VERIFIED",
     "ORALYN_GUEST_BOOKING_E2E_VERIFIED",
