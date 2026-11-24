@@ -446,6 +446,10 @@ export function DoctorPatientJourney({ token, activePatient, appointments = [] }
       setLoading(false); setError("");
       return () => { live = false; };
     }
+    // Clear the previous patient's private records before requesting the next
+    // patient's data. If any request fails, never leave another patient's data
+    // visible under the newly selected patient's identity.
+    setPlans([]); setNotes([]); setInvoices([]); setMessages([]);
     setLoading(true); setError("");
     Promise.all([
       dentalApi.doctorTreatmentPlans(token, activePatient.id),
@@ -459,7 +463,10 @@ export function DoctorPatientJourney({ token, activePatient, appointments = [] }
       setInvoices(normaliseList(invoiceResult));
       setMessages(normaliseList(messageResult));
     }).catch((err) => {
-      if (live) setError(err?.message || "The patient journey could not be loaded.");
+      if (live) {
+        setPlans([]); setNotes([]); setInvoices([]); setMessages([]);
+        setError(err?.message || "The patient journey could not be loaded.");
+      }
     }).finally(() => { if (live) setLoading(false); });
     return () => { live = false; };
   }, [token, activePatient?.id, refreshKey, scopeKey]);
