@@ -35,6 +35,13 @@ test("Doctor clinical routes resolve to the matching workspace page", () => {
     role: "doctor",
     page: "appointments",
   });
+  for (const page of ["crm", "journey", "followups"]) {
+    assert.deepEqual(resolvePortalRoute(`/doctor/${page}`), {
+      role: "doctor",
+      page,
+    });
+    assert.equal(portalPath("doctor", page), `/doctor/${page}`);
+  }
 });
 
 test("unknown role or page segments fail closed to the Doctor dashboard or public home", () => {
