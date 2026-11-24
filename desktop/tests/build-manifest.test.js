@@ -31,7 +31,7 @@ test("staging manifest records verified public gates without claiming live booki
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     fs.writeFileSync(filePath, html, "utf8");
   }
-  const asset = Buffer.from("synthetic static portal asset");
+  const asset = Buffer.from("synthetic static portal asset https://oralyn-staging-api-assistant.onrender.com");
   fs.writeFileSync(path.join(assetDir, "app.js"), asset);
   fs.writeFileSync(
     path.join(outputDir, "sw.js"),
@@ -145,9 +145,12 @@ test("staging manifest records verified public gates without claiming live booki
       assert.equal(manifest.checks[gate], false, gate);
       assert.ok(manifest.blockers.includes(gate), gate);
     }
+    const injectedAsset = fs.readFileSync(path.join(assetDir, "app.js"));
+    assert.ok(injectedAsset.toString("utf8").includes("https://oralyn-staging-api-assistant.onrender.com"));
+    assert.ok(!injectedAsset.toString("utf8").includes("__ORALYN_API_ORIGIN__"));
     assert.equal(
       manifest.files.find((file) => file.path === "assets/app.js")?.sha256,
-      crypto.createHash("sha256").update(asset).digest("hex"),
+      crypto.createHash("sha256").update(injectedAsset).digest("hex"),
     );
 
   } finally {
@@ -268,6 +271,7 @@ test("build manifest accepts an already-injected booking API origin on repeated 
   const bookingDir = path.join(outputDir, "patient", "booking");
   fs.mkdirSync(bookingDir, { recursive: true });
   fs.writeFileSync(path.join(outputDir, "index.html"), "<!doctype html>", "utf8");
+  fs.writeFileSync(path.join(outputDir, "app.js"), 'const API_ORIGIN = "https://oralyn-staging-api-assistant.onrender.com";', "utf8");
   fs.writeFileSync(
     path.join(bookingDir, "index.html"),
     '<meta name="oralyn-api-origin" content="https://oralyn-staging-api-assistant.onrender.com">',
@@ -306,6 +310,7 @@ test("production API origin attestation remains false until independently verifi
   const bookingDir = path.join(outputDir, "patient", "booking");
   fs.mkdirSync(bookingDir, { recursive: true });
   fs.writeFileSync(path.join(outputDir, "index.html"), "<!doctype html>", "utf8");
+  fs.writeFileSync(path.join(outputDir, "app.js"), 'const API_ORIGIN = "https://api.oralyn.example.test";', "utf8");
   fs.writeFileSync(
     path.join(bookingDir, "index.html"),
     '<meta name="oralyn-api-origin" content="__ORALYN_API_ORIGIN__">',

@@ -50,7 +50,7 @@ test("development keeps the same-origin Vite proxy instead of an arbitrary confi
 });
 
 test("production API configuration fails closed when the API origin is missing", () => {
-  assert.deepEqual(resolveApiBase({}), {
+  assert.deepEqual(resolveApiBase({ VITE_DENTAL_API_URL: "" }), {
     base: "",
     error: "API_BASE_NOT_CONFIGURED",
   });
