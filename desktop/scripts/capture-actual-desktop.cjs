@@ -340,7 +340,7 @@ async function verifyPublicBookingForm() {
       minDate: date.min,
       expectedMinDate: today,
       timezoneNotice: document.body.innerText.includes("Asia/Kolkata"),
-      accountFree: document.body.innerText.includes("No account or OTP is required."),
+      accountFree: /No account or OTP (?:is )?required\./i.test(document.body.innerText),
       logoVisible: (() => {
         const logo = document.querySelector('header img[src="/oralyn-logo-approved.webp"]');
         const header = logo?.closest("header");
