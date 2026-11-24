@@ -31,7 +31,7 @@ test("staging manifest records verified public gates without claiming live booki
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     fs.writeFileSync(filePath, html, "utf8");
   }
-  const asset = Buffer.from("synthetic static portal asset __ORALYN_API_ORIGIN__");
+  const asset = Buffer.from("synthetic static portal asset https://oralyn-staging-api-assistant.onrender.com");
   fs.writeFileSync(path.join(assetDir, "app.js"), asset);
   fs.writeFileSync(
     path.join(outputDir, "sw.js"),
@@ -271,7 +271,7 @@ test("build manifest accepts an already-injected booking API origin on repeated 
   const bookingDir = path.join(outputDir, "patient", "booking");
   fs.mkdirSync(bookingDir, { recursive: true });
   fs.writeFileSync(path.join(outputDir, "index.html"), "<!doctype html>", "utf8");
-  fs.writeFileSync(path.join(outputDir, "app.js"), 'const API_ORIGIN = "__ORALYN_API_ORIGIN__";', "utf8");
+  fs.writeFileSync(path.join(outputDir, "app.js"), 'const API_ORIGIN = "https://oralyn-staging-api-assistant.onrender.com";', "utf8");
   fs.writeFileSync(
     path.join(bookingDir, "index.html"),
     '<meta name="oralyn-api-origin" content="https://oralyn-staging-api-assistant.onrender.com">',
