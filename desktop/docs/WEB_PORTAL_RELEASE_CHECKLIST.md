@@ -1,6 +1,6 @@
 # Oralyn Web Portal — Current Release Checklist
 
-**Last verified:** 24 November 2026, 13:43 IST. Historical entries retain their original timestamps.
+**Last verified:** 24 November 2026, 14:03 IST. Historical entries retain their original timestamps.
 **Release decision: BLOCKED for production.** This is a synthetic staging release candidate. PR #18 is closed/merged to `master`; PR #22 is Open/Draft but superseded by PR #25; PR #24 is closed without merging. Current candidate PRs #25, #30, #63, #66 and #67 remain Open/Draft/unmerged.
 **Current snapshot:** the latest release-watch addendum at the end of this file supersedes earlier deployment, branch, CI and Neon observations.
 
@@ -725,3 +725,15 @@ The branch counts differ; do not treat the restore branch as a synchronized mirr
 - GitHub Actions headless Chrome remains the browser evidence path; no paid browser service or wallet top-up was used.
 - Production remains **BLOCKED**. Real authenticated Doctor login/persistence, real Assistant login and live server-side least-privilege/cross-clinic 403 acceptance, private document quarantine/scanning/cleanup, verified backup/restore, monitoring/rollback, production shared rate limiting, always-on hosting, production database, privacy/data-residency review, custom domain and explicit production approval remain unverified.
 - No Render deployment, database migration/write, production secret change, PR merge, paid infrastructure activation, patient-data transfer, or destructive action occurred.
+
+
+## CI and verifier follow-up — 24 November 2026, 14:03 IST
+
+- The staging verifier now reads the current backend security candidate PR #67 and labels the portal candidate as PR #25. The frontend workflow also runs on direct pushes to the Render-connected `feat/oralyn-desktop-app` branch; Render auto-deploy itself is still not gated on CI.
+- Exact-head workflow [#962](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/45356086765) on `2a2330e7...` succeeded with 151 tests, 0 failures, 0 skipped and zero npm vulnerabilities. Its live release manifest remained blocked.
+- The first verifier-target correction in commit `429c022d...` caused workflow [#963](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/45356658539) to fail one unit assertion: `role-boundaries.test.js` still expected PR #63. This was a stale test expectation, not an application or staging failure. Commit `f751144c...` updated the assertion to PR #67 and added the PR #25 manifest-label assertion.
+- Exact-head workflow [#964](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/45356824155) on `f751144ce1f6cc1a1e3acf7c21d41074477756af` completed successfully: 151 tests, 0 failures, 0 skipped; root and desktop npm audits each found zero vulnerabilities; build, live contract probes, read-only Assistant API contract, headless-Chrome captures and artifact uploads completed.
+- The corrected live contract now explicitly compares the deployed API commit with backend PR #67 head `ac6a978d4f48261d2eabd02e241a52a285a2154d` and the live portal manifest with frontend PR #25 head `f751144ce1f6cc1a1e3acf7c21d41074477756af`. It reports: API health/readiness, database identity, Neon branch identity, CORS, baseline security headers, public account-free patient routes, UI service catalogue, read-only Assistant API contract and preview security headers PASS. It reports BearerAuth 0/63, strict CSP, API catalogue parity, guest-booking E2E, booking idempotency, portal commit attestation and API commit attestation BLOCK.
+- The API mismatch is now explicit: deployed API `a9ca4ecf...` differs from PR #67 head `ac6a978d...`; the intervening range includes runtime changes. The portal mismatch is also explicit: live portal manifest `94cd8576...` differs from PR #25 head `f751144c...`. Therefore the browser write guard sent zero live booking POSTs.
+- Doctor and Assistant captures remain synthetic UI fixtures. `staging_authenticated_e2e=false`, `doctor_password_login_verified=false`, `staging_assistant_login_verified=false`, and cross-organisation denial is a fixture-only 403, not backend acceptance. Browser metadata reports zero application runtime errors. Headless Chrome emitted non-fatal D-Bus/zygote/unsupported-flag runner warnings; the workflow still completed successfully.
+- No deployment, migration, secret change, merge, production action or real-patient-data operation followed this CI run.
