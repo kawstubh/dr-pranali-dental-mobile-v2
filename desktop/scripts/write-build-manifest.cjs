@@ -128,7 +128,7 @@ function injectCanonicalOrigin(directory) {
 }
 injectCanonicalOrigin(outputDir);
 
-const applicationBundles = walk(outputDir).filter((file) => /\\.(?:js|mjs)$/i.test(file.path));
+const applicationBundles = walk(outputDir).filter((file) => /\.(?:js|mjs)$/i.test(file.path));
 if (apiOrigin && !applicationBundles.some((file) => {
   const absolute = path.join(outputDir, file.path);
   return fs.readFileSync(absolute, "utf8").includes(apiOrigin);
