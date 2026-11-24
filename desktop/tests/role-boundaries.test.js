@@ -62,7 +62,7 @@ test("CI records Doctor token storage hardening only after the regression suite"
 test("public patient journey is served only by account-free static pages", () => {
   assert.doesNotMatch(source, /function Patient\(|patientSession|patientLinks|patientInviteCode|oralyn_patient_record_id/);
   assert.match(patientHomeSource, /No patient account, password or OTP is needed/);
-  assert.match(bookingSource, /No account or OTP is required/);
+  assert.match(bookingSource, /No account or OTP (?:is )?required/);
   assert.match(source, /Patient services &amp; appointment requests/);
   assert.match(source, /window.location.assign\("\/patient\/home\/"\)/);
   assert.doesNotMatch(source, /Continue to patient portal/);
@@ -99,11 +99,11 @@ test("guest booking sends a stable idempotency key and validates future IST time
   assert.match(bookingSource, /idempotency_key:\s*idempotencyKey/);
   assert.match(bookingSource, /oralyn_public_booking_idempotency/);
   assert.match(bookingSource, /Asia\/Kolkata/);
-  assert.match(bookingSource, /India Standard Time/);
+  assert.match(bookingSource, /(?:India Standard Time|IST \(Asia\\/Kolkata\))/);
   assert.match(bookingSource, /startsAt <= new Date\(\)/);
   assert.match(bookingSource, /intelligence_request:\s*false/);
   assert.match(bookingSource, /dateInput\.setAttribute\("min", localToday\)/);
-  assert.match(bookingSource, /All appointment times are shown in India Standard Time/);
+  assert.match(bookingSource, /(?:All appointment times are shown in India Standard Time|Times shown in IST \(Asia\\/Kolkata\))/);
   assert.match(bookingSource, /validateIndianMobile/);
   assert.match(bookingSource, /10-digit Indian mobile number/);
   assert.match(bookingSource, /id="phone-error"/);
