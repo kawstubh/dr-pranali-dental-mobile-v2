@@ -789,7 +789,7 @@ function AccountSettings({ user, activeWorkspace, onSignOut }) {
   );
 }
 
-function DoctorCRM({ appointments, patients, token, refresh, ping }) {
+function DoctorCRM({ appointments, patients, token, refresh, ping, onOpenPatient }) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
@@ -835,7 +835,7 @@ function DoctorCRM({ appointments, patients, token, refresh, ping }) {
         </div>
         <div className="tablewrap">
           <table>
-            <thead><tr><th>Patient</th><th>Contact</th><th>Visit</th><th>Appointment</th><th>Journey stage</th></tr></thead>
+            <thead><tr><th>Patient</th><th>Contact</th><th>Visit</th><th>Appointment</th><th>Journey stage</th><th>Patient record</th></tr></thead>
             <tbody>
               {visibleRows.map((row) => (
                 <tr key={row.id}>
@@ -849,9 +849,16 @@ function DoctorCRM({ appointments, patients, token, refresh, ping }) {
                     </select>
                     {busyId === row.id && <small className="crm-subline">Saving…</small>}
                   </td>
+                  <td>
+                    <div className="crm-record-actions">
+                      <button className="link" onClick={() => onOpenPatient?.(row.patientId, "clinical")} disabled={!row.patientId}>Clinical</button>
+                      <button className="link" onClick={() => onOpenPatient?.(row.patientId, "notes")} disabled={!row.patientId}>Notes</button>
+                      <button className="link" onClick={() => onOpenPatient?.(row.patientId, "messages")} disabled={!row.patientId}>Messages</button>
+                    </div>
+                  </td>
                 </tr>
               ))}
-              {!visibleRows.length && <tr><td colSpan={5}><div className="empty-state">No appointment journeys match this stage. The CRM does not create sample or synthetic patient rows.</div></td></tr>}
+              {!visibleRows.length && <tr><td colSpan={6}><div className="empty-state">No appointment journeys match this stage. The CRM does not create sample or synthetic patient rows.</div></td></tr>}
             </tbody>
           </table>
         </div>
@@ -1301,7 +1308,7 @@ function Doctor({
         </div>
       </>
     );
-  if (page === "crm") return <DoctorCRM appointments={appointments} patients={patients} token={token} refresh={refresh} ping={ping} />;
+  if (page === "crm") return <DoctorCRM appointments={appointments} patients={patients} token={token} refresh={refresh} ping={ping} onOpenPatient={(patientId, targetPage) => { setSelectedPatientId(String(patientId)); P(targetPage); }} />;
   if (page === "appointments")
     return (
       <>
