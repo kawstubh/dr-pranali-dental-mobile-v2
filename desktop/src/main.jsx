@@ -28,6 +28,7 @@ import {
   MapPin,
   Activity,
   CalendarCheck,
+  CalendarClock,
   FileHeart,
   Receipt,
   Building2,
