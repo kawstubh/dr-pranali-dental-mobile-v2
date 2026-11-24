@@ -2,7 +2,7 @@ name: Oralyn Desktop
 on:
   workflow_dispatch:
   pull_request:
-    branches: [master, feat/oralyn-desktop-app]
+    branches: [master, feat/oralyn-desktop-app, fix/oralyn-iphone-booking-layout]
     paths:
       - 'desktop/**'
       - '.github/workflows/oralyn-desktop.yml'
