@@ -40,7 +40,7 @@ import { dentalApi } from "./api.js";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import { normaliseList, normaliseUser, formatTime, isSameLocalDay } from "./data.js";
 import { buildPatientCrmRows, getPatientCrmSummary, CRM_STATUSES } from "./crm.js";
-import { DoctorCareManagement, DoctorClinicalNotes, PatientCommunication } from "./careScreens.jsx";
+import { DoctorCareManagement, DoctorClinicalNotes, PatientCommunication, DoctorPatientJourney } from "./careScreens.jsx";
 import AssistantApp, { AssistantManagement } from "./assistant.jsx";
 import { createPortalNavigator, resolvePortalRoute } from "./routing.js";
 import { createControllerChangeHandler } from "./serviceWorkerLifecycle.js";
@@ -331,6 +331,7 @@ function App() {
       "Practice",
       [
         ["crm", "Patient CRM", Users],
+        ["journey", "Patient journey", Activity],
         ["treatments", "Treatment plans", HeartPulse],
         ["billing", "Billing & invoices", Wallet],
         ["files", "Private documents", FileText],
@@ -1378,6 +1379,8 @@ function Doctor({
     return <DoctorCareManagement page={page} token={token} activePatient={activePatient} ping={ping} />;
   if (page === "notes")
     return <DoctorClinicalNotes token={token} activePatient={activePatient} />;
+  if (page === "journey")
+    return <DoctorPatientJourney token={token} activePatient={activePatient} appointments={appointments} />;
   if (page === "messages")
     return <PatientCommunication token={token} activePatient={activePatient} />;
   if (page === "settings")
