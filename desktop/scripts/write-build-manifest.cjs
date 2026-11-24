@@ -128,6 +128,31 @@ function injectCanonicalOrigin(directory) {
 }
 injectCanonicalOrigin(outputDir);
 
+const apiOriginMarker = "__ORALYN_API_ORIGIN__";
+let apiOriginBundles = 0;
+function injectApiOrigin(directory) {
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      injectApiOrigin(absolute);
+      continue;
+    }
+    if (!entry.isFile() || !/\\.(?:js|mjs)$/i.test(entry.name)) continue;
+    const source = fs.readFileSync(absolute, "utf8");
+    if (!source.includes(apiOriginMarker)) continue;
+    const configuredSource = source.split(apiOriginMarker).join(apiOrigin || "");
+    if (configuredSource.includes(apiOriginMarker)) {
+      throw new Error("Unresolved Oralyn API-origin placeholder in " + absolute);
+    }
+    fs.writeFileSync(absolute, configuredSource, "utf8");
+    apiOriginBundles += 1;
+  }
+}
+injectApiOrigin(outputDir);
+if (apiOrigin && apiOriginBundles === 0) {
+  throw new Error("Configured Oralyn API origin was not injected into any application bundle.");
+}
+
 const bookingPagePath = path.join(outputDir, "patient", "booking", "index.html");
 if (!fs.existsSync(bookingPagePath)) {
   throw new Error("Public booking page is missing from the portal build.");
