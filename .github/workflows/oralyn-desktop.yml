@@ -6,9 +6,9 @@ on:
     paths:
       - 'desktop/**'
       - '.github/workflows/oralyn-desktop.yml'
-  # Feature-branch commits are validated by the PR event; avoid duplicate browser runs.
+  # The Render-connected branch auto-deploys; validate direct pushes there as well.
   push:
-    branches: [master, fix/assistant-appointment-cancel-denied-stacked-20261120]
+    branches: [master, feat/oralyn-desktop-app, fix/assistant-appointment-cancel-denied-stacked-20261120]
     paths:
       - 'desktop/**'
       - '.github/workflows/oralyn-desktop.yml'
