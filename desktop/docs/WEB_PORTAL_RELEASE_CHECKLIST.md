@@ -1,7 +1,8 @@
 # Oralyn Web Portal — Current Release Checklist
 
-**Last verified:** 15 November 2026, 17:12 UTC (22:42 IST). All timestamps in the verification log below are UTC unless marked IST.
-**Release decision: BLOCKED for production.** This is a synthetic staging release candidate. All PRs remain open, Draft and unmerged.
+**Last verified:** 24 November 2026, 13:43 IST. Historical entries retain their original timestamps.
+**Release decision: BLOCKED for production.** This is a synthetic staging release candidate. PR #18 is closed/merged to `master`; PR #22 is Open/Draft but superseded by PR #25; PR #24 is closed without merging. Current candidate PRs #25, #30, #63, #66 and #67 remain Open/Draft/unmerged.
+**Current snapshot:** the latest release-watch addendum at the end of this file supersedes earlier deployment, branch, CI and Neon observations.
 
 ## Product contract
 
@@ -15,7 +16,7 @@
 - Use the exact clinic-approved Oralyn logo and app icon.
 - Google Business Profile is a discovery/referral entry point only; no booking-link change is claimed.
 
-## Current repositories and pull requests
+## Historical source and PR baseline — 15 Nov 2026
 
 ### Frontend — PR #18
 - Repository: kawstubh/dr-pranali-dental-mobile-v2
@@ -644,3 +645,83 @@ The staging contract and CI success do not constitute production approval. Both 
 - The build manifest records `guest_booking_browser_e2e_verified=true`. Release status remains **BLOCKED** for production on the remaining 18 gates: production API origin, private document storage/scanning, backup/restore, monitoring/rollback, real Doctor auth, real Assistant role acceptance, production rate limiting, Assistant UI/data-minimization acceptance, authenticated cross-tenant E2E/screenshots, always-on hosting, production database/privacy review, custom domain and explicit production approval.
 - Doctor/Assistant workspace artifacts remain synthetic UI fixtures only; they do **not** establish real authenticated Doctor/Assistant acceptance or server-side cross-tenant acceptance. Keep document upload/download/sharing disabled.
 - TinyFish is not used or required. Browser testing is performed by the repository's GitHub Actions headless-Chrome runner. No paid browser service, production deployment, production migration, secret change, PR merge or real patient-data transfer occurred. PR #18 remains Draft and unmerged.
+
+
+## Scheduled release-watch verification — 24 November 2026, 13:43 IST
+
+This addendum supersedes older service, deployment, CI, branch and synthetic-database observations above. It records metadata and aggregate counts only; no patient rows or credentials were read.
+
+### Current Draft candidates and exact-head CI
+
+- Frontend PR [#25](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/pull/25) is Open/Draft/unmerged. Pre-addendum head: `6b9432c9481d8660ccb95e4562f4ba035254450c`, based on the Render-connected `feat/oralyn-desktop-app` branch at `94cd8576fd427b1a6288c4786d35cf7f5cca7b86`. Exact-head workflow [#960](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/45177622071) succeeded: 151/151 tests, zero failures/skips, root and desktop npm audits at zero vulnerabilities, staging-targeted build and responsive headless-Chrome captures passed.
+- Assistant UI child PR [#30](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/pull/30) is Open/Draft/unmerged at `c374374fcbe35bc2f841e74a9e857df09aee8ffe`. Exact-head workflow [#961](https://github.com/kawstubh/dr-pranali-dental-mobile-v2/actions/runs/45236825610) succeeded: 152/152 tests, zero failures/skips, both npm audits at zero vulnerabilities, build and browser captures passed. Doctor and Assistant workspaces are synthetic UI fixtures only; `staging_authenticated_e2e=false`, `doctor_password_login_verified=false`, and `staging_assistant_login_verified=false`.
+- Backend shared-rate-limit PR [#67](https://github.com/kawstubh/universal-intelligence-engine/pull/67) is Open/Draft/unmerged at `ac6a978d4f48261d2eabd02e241a52a285a2154d`, stacked on backend candidate PR #63 head `98b8e087576b74906f7106d63cf20b2c67515d4e`. PostgreSQL CI [#399](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/45353100116) passed 272 tests and Ruff; Engine Tests [#460](https://github.com/kawstubh/universal-intelligence-engine/actions/runs/45353100282) passed 267 tests, skipped 5, and Ruff passed. No live deployment or migration follows from these CI results.
+- PR #66 remains a separate Open/Draft integration-branch reconciliation candidate. No PR was merged or retargeted in this run.
+
+### Current Render service and deployment identities
+
+Re-read service and deployment metadata; all listed services report not suspended. Candidate PR commits remain undeployed.
+
+| Service | Render branch | Latest LIVE commit |
+|---|---|---|
+| Canonical SPA `srv-dbr2ttsipgvc739a4tmg` | `feat/oralyn-desktop-app` | `94cd8576fd427b1a6288c4786d35cf7f5cca7b86` — `dep-dbt2nldbedkc73cqakcg` |
+| Static portal companion `srv-dbr2qgek1f9s73dq82j0` | `feat/oralyn-desktop-app` | `94cd8576fd427b1a6288c4786d35cf7f5cca7b86` — `dep-dbt2nldbedkc73dq82j0` |
+| Active Assistant API `srv-dbr8m159fdbs73dl404g` | `feat/oralyn-clinic-assistant-rbac` | `a9ca4ecf13a237427433126a54f717560b2a6b0d` — `dep-dbtfbrm7bikc73cg2n90` |
+| Synthetic API `srv-dbr2qcmk1f9s73dq7pt0` | `feat/oralyn-backend-release-integration-20261113` | `0673a684c2728dd8ee8c8d1577997edc6b8beae7` — `dep-dbr78u6c6qcc73d1usa0` |
+| Legacy Patient web `srv-dbq8cd0m7kps738n21c0` | `feat/oralyn-iphone-pwa` | `df36d56e81f570fade41455baa82820e28413117` — `dep-dbq9lpivcj2c73a1k0q0` |
+| Legacy Patient test `srv-dbq9cmjbc2fs739c2pbg` | `feat/oralyn-iphone-pwa` | `df36d56e81f570fade41455baa82820e28413117` — `dep-dbq9lpivcj2c73a1k0bg` |
+
+- Render auto-deploy is enabled on these services. The canonical SPA and active API have no native Render health-check path configured. GitHub branch metadata reports the Render-connected frontend and active API branches as unprotected.
+- The legacy Patient web/test services remain public and LIVE. Source at their deployed commit imports `signInWithGoogle`, displays “Continue with Google”, and calls Supabase `signInWithIdToken`. This directly conflicts with the approved account-free patient journey. Do not suspend/delete these services without an ownership and traffic review; no service was changed.
+- The PR #25 and #30 candidate commits are not deployed. The backend PR #67 candidate is not deployed to either API service.
+
+### Latest live staging contract recorded by frontend CI #960
+
+The CI job completed, but the immutable release manifest correctly remains **BLOCKED**:
+
+Passed:
+- API health/readiness and backend-stack checks.
+- Live database host/name and expected Neon branch identity checks.
+- Exact portal-origin CORS/preflight and baseline security-header presence.
+- Public patient account-free route contract and unauthenticated protected-read denial.
+- Candidate UI catalogue: twenty approved service options plus Other.
+- Responsive local-preview browser capture, required booking labels/validation, keyboard focus, reduced motion, approved logo/fonts, PWA shell, and zero application runtime errors.
+
+Blocked or deliberately skipped:
+- OpenAPI HTTP BearerAuth: false; 0/63 protected dental operations explicitly declare BearerAuth.
+- Strict CSP: false on patient home and booking.
+- Live API catalogue parity: seven canonical approved labels are missing and seven expanded legacy aliases are exposed.
+- Server-side guest-booking E2E and idempotency replay: not attempted because deployed API runtime commit `a9ca4ecf...` does not match backend candidate PR #63 head `98b8e087...`; the range is not docs-only.
+- Candidate portal deployment identity: false; the live portal manifest commit was unavailable compared with PR #25 head.
+- The browser write guard skipped the live synthetic booking POST because API commit attestation was missing. Zero live booking writes were sent by that run.
+
+### Backend security candidate and migration gate
+
+- PR #67 implements PostgreSQL atomic fixed-window rate-limit counters shared across workers/instances. It stores HMAC-SHA256 client identity digests rather than raw IPs and fails closed with HTTP 503 when the shared table or a valid key is unavailable.
+- Migration `0016_shared_rate_limit_buckets` depends on `0015_document_cleanup_leases`; the candidate chain therefore requires migrations 0014, 0015 and 0016.
+- The stable `DENTAL_RATE_LIMIT_HASH_KEY` must be at least 32 bytes and consistently provisioned. Its presence in Render secrets was not inspected and is **unverified**; no secret was read or changed.
+- The active API remains LIVE on `a9ca4ecf...`; the synthetic API remains LIVE on `0673a684...`. Neither runs PR #67 head `ac6a978d...`. Do not claim distributed rate limiting is operational until the candidate is deployed to an approved isolated target, migrations and key are verified, and cross-instance/restart tests pass.
+
+### Synthetic Neon inventory — aggregate-only
+
+Project `oralyn-staging-synthetic` (`silent-king-54610898`) is Free-tier and synthetic-only. Project HIPAA mode is false, public connections are not blocked, and the IP allowlist is empty. Both inspected branches are Ready but unprotected; both automatic snapshot schedules are empty. One manual snapshot exists (`snap-late-surf-a1j1sljm`, 32,800,768 bytes).
+
+| Aggregate | Main `br-proud-scene-a1g7g3qo` | Restore `br-steep-bonus-a1yqarg7` |
+|---|---:|---:|
+| Alembic revision | `0013_public_booking_idempotency` | `0013_public_booking_idempotency` |
+| Patients | 9 | 26 |
+| Appointments | 9 | 26 |
+| Public booking requests | 8 | 25 |
+| Assistant accounts / sessions | 0 / 0 | 0 / 0 |
+| Documents | 0 | 0 |
+| Audit events | 10 | 27 |
+
+The branch counts differ; do not treat the restore branch as a synchronized mirror or a completed application-level restore rehearsal. The private `oralyn-private-documents` bucket exists only on the restore branch and contains zero objects; the main branch has no matching bucket. Candidate migrations 0014–0016 are not applied on either inspected branch. The Render API's exact Neon project/branch mapping remains unverified; these observations must not be used to infer the active API's database target. No patient rows were read and no SQL writes, migrations, storage changes or snapshot operations occurred.
+
+### Availability, observability and release decision
+
+- This run's external read-only retrieval attempts returned HTTP 503 for the canonical portal and API health/version/OpenAPI URLs. Render metadata still reports the deployments LIVE. Treat the 503 as an unresolved external probe, not proof of a confirmed application outage.
+- Render log retrieval and service-configuration changes were not performed because the connected Render session has no owner-selected workspace. No workspace was selected automatically.
+- GitHub Actions headless Chrome remains the browser evidence path; no paid browser service or wallet top-up was used.
+- Production remains **BLOCKED**. Real authenticated Doctor login/persistence, real Assistant login and live server-side least-privilege/cross-clinic 403 acceptance, private document quarantine/scanning/cleanup, verified backup/restore, monitoring/rollback, production shared rate limiting, always-on hosting, production database, privacy/data-residency review, custom domain and explicit production approval remain unverified.
+- No Render deployment, database migration/write, production secret change, PR merge, paid infrastructure activation, patient-data transfer, or destructive action occurred.
