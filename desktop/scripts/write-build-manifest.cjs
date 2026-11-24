@@ -137,7 +137,7 @@ function injectApiOrigin(directory) {
       injectApiOrigin(absolute);
       continue;
     }
-    if (!entry.isFile() || !/\\.(?:js|mjs)$/i.test(entry.name)) continue;
+    if (!entry.isFile() || !/\.(?:js|mjs)$/i.test(entry.name)) continue;
     const source = fs.readFileSync(absolute, "utf8");
     if (!source.includes(apiOriginMarker)) continue;
     const configuredSource = source.split(apiOriginMarker).join(apiOrigin || "");
