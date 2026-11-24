@@ -7,7 +7,7 @@ const ENV = import.meta.env || {};
  */
 export function resolveApiBase(env = ENV) {
   if (env.DEV) return { base: "", error: null };
-  const configured = String(env.VITE_DENTAL_API_URL || "__ORALYN_API_ORIGIN__").trim();
+  const configured = String(env.VITE_DENTAL_API_URL ?? "__ORALYN_API_ORIGIN__").trim();
   if (configured === "same-origin") return { base: "", error: null };
   if (!configured) return { base: "", error: "API_BASE_NOT_CONFIGURED" };
 
