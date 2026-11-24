@@ -28,6 +28,7 @@ import {
   MapPin,
   Activity,
   CalendarCheck,
+  CalendarClock,
   FileHeart,
   Receipt,
   Building2,
@@ -39,7 +40,8 @@ import "./styles.css";
 import { dentalApi } from "./api.js";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import { normaliseList, normaliseUser, formatTime, isSameLocalDay } from "./data.js";
-import { DoctorCareManagement, DoctorClinicalNotes, PatientCommunication } from "./careScreens.jsx";
+import { buildPatientCrmRows, getPatientCrmSummary, CRM_STATUSES } from "./crm.js";
+import { DoctorCareManagement, DoctorClinicalNotes, PatientCommunication, DoctorPatientJourney, DoctorFollowUpWorklist } from "./careScreens.jsx";
 import AssistantApp, { AssistantManagement } from "./assistant.jsx";
 import { createPortalNavigator, resolvePortalRoute } from "./routing.js";
 import { createControllerChangeHandler } from "./serviceWorkerLifecycle.js";
@@ -324,6 +326,9 @@ function App() {
         ["clinical", "Clinical workspace", ClipboardList],
         ["notes", "Clinical notes", FileText],
         ["appointments", "Appointments", CalendarDays],
+        ["crm", "Patient CRM", Users],
+        ["journey", "Patient journey", Activity],
+        ["followups", "Follow-up worklist", CalendarClock],
       ],
     ],
     [
@@ -784,6 +789,79 @@ function AccountSettings({ user, activeWorkspace, onSignOut }) {
   );
 }
 
+function DoctorCRM({ appointments, patients, token, refresh, ping }) {
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [busyId, setBusyId] = useState("");
+  const [error, setError] = useState("");
+  const rows = buildPatientCrmRows(appointments, patients);
+  const summary = getPatientCrmSummary(rows);
+  const visibleRows = rows.filter((row) => {
+    const matchesStatus = statusFilter === "all" || row.status === statusFilter;
+    return matchesStatus;
+  });
+  const updateStage = async (row, status) => {
+    if (!CRM_STATUSES.includes(status) || status === row.status) return;
+    setBusyId(row.id);
+    setError("");
+    try {
+      await dentalApi.updateAppointment(token, row.appointmentId, { status });
+      await refresh();
+      ping("Patient journey status updated.");
+    } catch (err) {
+      setError(err?.message || "The patient journey could not be updated.");
+    } finally {
+      setBusyId("");
+    }
+  };
+  return (
+    <>
+      <Title eyebrow="PATIENT RELATIONSHIP MANAGEMENT" title="Patient CRM" desc="Track appointment enquiries through booking and completed visits using the clinic's existing records." />
+      <div className="metricgrid">
+        <Metric Icon={Users} label="Total journeys" value={summary.total} detail="Existing appointment records" />
+        <Metric Icon={Clock} label="Awaiting confirmation" value={summary.awaiting} detail="Requests requiring clinic follow-up" />
+        <Metric Icon={CalendarCheck} label="Booked / rescheduled" value={summary.booked} detail="Confirmed or scheduled visits" />
+        <Metric Icon={CheckCircle2} label="Completed visits" value={summary.completed} detail={`${summary.noShows} no-shows recorded`} />
+      </div>
+      <Panel title="Patient enquiry and appointment pipeline" sub="Updates are saved through the existing clinic appointment API. No separate lead database or automated messaging is claimed.">
+        {error && <div className="autherror" role="alert">{error}</div>}
+        <div className="calendarbar">
+          <b>{rows.length} patient journeys</b>
+          <label className="crm-filter">Filter stage
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+              <option value="all">All stages</option>
+              {CRM_STATUSES.map((status) => <option key={status} value={status}>{status.replaceAll("_", " ")}</option>)}
+            </select>
+          </label>
+        </div>
+        <div className="tablewrap">
+          <table>
+            <thead><tr><th>Patient</th><th>Contact</th><th>Visit</th><th>Appointment</th><th>Journey stage</th></tr></thead>
+            <tbody>
+              {visibleRows.map((row) => (
+                <tr key={row.id}>
+                  <td><b>{row.patientName}</b><small className="crm-subline">Record {row.patientId || "not linked"}</small></td>
+                  <td>{row.phone}</td>
+                  <td>{row.visitType}</td>
+                  <td>{row.startsAt && Number.isFinite(new Date(row.startsAt).getTime()) ? new Date(row.startsAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : "Time not recorded"}</td>
+                  <td>
+                    <select aria-label={`Journey stage for ${row.patientName}`} value={row.status} disabled={busyId === row.id} onChange={(event) => updateStage(row, event.target.value)}>
+                      {CRM_STATUSES.map((status) => <option key={status} value={status}>{status.replaceAll("_", " ")}</option>)}
+                    </select>
+                    {busyId === row.id && <small className="crm-subline">Saving…</small>}
+                  </td>
+                </tr>
+              ))}
+              {!visibleRows.length && <tr><td colSpan={5}><div className="empty-state">No appointment journeys match this stage. The CRM does not create sample or synthetic patient rows.</div></td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+      <p className="care-hint">Current V1 uses real, clinic-authorised appointment records only. Lead-source attribution, WhatsApp campaigns, automated recalls, referral tracking and dedicated CRM tickets remain future modules.</p>
+    </>
+  );
+}
+
+
 function Doctor({
   page,
   P,
@@ -1223,6 +1301,7 @@ function Doctor({
         </div>
       </>
     );
+  if (page === "crm") return <DoctorCRM appointments={appointments} patients={patients} token={token} refresh={refresh} ping={ping} />;
   if (page === "appointments")
     return (
       <>
@@ -1302,6 +1381,10 @@ function Doctor({
     return <DoctorCareManagement page={page} token={token} activePatient={activePatient} ping={ping} />;
   if (page === "notes")
     return <DoctorClinicalNotes token={token} activePatient={activePatient} />;
+  if (page === "journey")
+    return <DoctorPatientJourney token={token} activePatient={activePatient} appointments={appointments} />;
+  if (page === "followups")
+    return <DoctorFollowUpWorklist appointments={appointments} patients={patients} onOpenAppointments={() => P("appointments")} />;
   if (page === "messages")
     return <PatientCommunication token={token} activePatient={activePatient} />;
   if (page === "settings")
