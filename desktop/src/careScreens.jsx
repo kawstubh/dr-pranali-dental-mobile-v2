@@ -427,6 +427,75 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
   );
 }
 
+
+export function DoctorPatientJourney({ token, activePatient, appointments = [] }) {
+  const [plans, setPlans] = useState([]);
+  const [notes, setNotes] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+  const scopeKey = `${token || ""}:${activePatient?.id || ""}:${refreshKey}`;
+
+  useEffect(() => {
+    let live = true;
+    if (!token || !activePatient?.id) {
+      setPlans([]); setNotes([]); setInvoices([]); setMessages([]);
+      setLoading(false); setError("");
+      return () => { live = false; };
+    }
+    setLoading(true); setError("");
+    Promise.all([
+      dentalApi.doctorTreatmentPlans(token, activePatient.id),
+      dentalApi.doctorClinicalNotes(token, activePatient.id),
+      dentalApi.doctorInvoices(token, activePatient.id),
+      dentalApi.doctorMessages(token, activePatient.id),
+    ]).then(([planResult, noteResult, invoiceResult, messageResult]) => {
+      if (!live) return;
+      setPlans(normaliseList(planResult));
+      setNotes(normaliseList(noteResult));
+      setInvoices(normaliseList(invoiceResult));
+      setMessages(normaliseList(messageResult));
+    }).catch((err) => {
+      if (live) setError(err?.message || "The patient journey could not be loaded.");
+    }).finally(() => { if (live) setLoading(false); });
+    return () => { live = false; };
+  }, [token, activePatient?.id, refreshKey, scopeKey]);
+
+  if (!activePatient?.id) {
+    return <><CareHeader eyebrow="PATIENT JOURNEY" title="Patient timeline" description="A consolidated, read-only view of clinic activity." /><StateMessage>Select a patient before viewing their journey.</StateMessage></>;
+  }
+
+  const events = [
+    ...appointments.filter((item) => String(item.patient_id) === String(activePatient.id)).map((item) => ({
+      id: `appointment-${item.id}`, kind: "Appointment", title: item.treatment_type || "Dental visit",
+      detail: `Status: ${String(item.status || "not recorded").replaceAll("_", " ")}`,
+      at: item.starts_at, source: "Appointment record",
+    })),
+    ...plans.map((item) => ({ id: `plan-${item.id}`, kind: "Treatment plan", title: item.title || "Treatment plan", detail: item.status || "Status not recorded", at: item.updated_at || item.created_at, source: "Treatment plan" })),
+    ...notes.map((item) => ({ id: `note-${item.id}`, kind: "Clinical note", title: item.title || "Clinical note", detail: "Private Doctor record", at: item.updated_at || item.created_at, source: "Clinical note" })),
+    ...invoices.map((item) => ({ id: `invoice-${item.id}`, kind: "Invoice", title: item.invoice_number || "Invoice", detail: `${String(item.status || "status not recorded").replaceAll("_", " ")} · ${inr(item.total_paise)}`, at: item.created_at, source: "Billing record" })),
+    ...messages.map((item) => ({ id: `message-${item.id}`, kind: "Message", title: item.sender_type === "doctor" ? "Clinic message" : "Patient message", detail: item.body || "", at: item.created_at, source: "Message record" })),
+  ].filter((item) => item.at && Number.isFinite(new Date(item.at).getTime()))
+   .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+
+  return <>
+    <CareHeader eyebrow="PATIENT JOURNEY" title="Patient timeline" description={`A read-only chronology of recorded clinic activity for ${activePatient.name || activePatient.id}. No clinical conclusions or follow-up dates are inferred.`} action={<button className="outline" onClick={() => setRefreshKey((value) => value + 1)}><RefreshCw size={16} /> Refresh timeline</button>} />
+    {error && <StateMessage error>{error}</StateMessage>}
+    {loading ? <StateMessage>Loading authorised clinic records…</StateMessage> : (
+      <section className="panel care-panel">
+        <div className="care-panel-heading"><HeartPulse /><div><h2>Recorded activity</h2><p>{events.length} events · newest first · clinic records only</p></div></div>
+        {events.length ? events.map((event) => <article className="care-record" key={event.id}>
+          <div className="care-record-top"><div><b>{event.title}</b><small>{event.kind} · {event.source}</small></div><time>{dateLabel(event.at)}</time></div>
+          <p>{event.detail}</p>
+        </article>) : <StateMessage>No dated appointments, treatment plans, notes, invoices or messages were found for this patient.</StateMessage>}
+      </section>
+    )}
+    <p className="care-hint">This timeline aggregates existing authorised records. It does not generate recall recommendations, alter records, send messages or replace the clinician's review.</p>
+  </>;
+}
+
 export function DoctorClinicalNotes({ token, activePatient }) {
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(false);
