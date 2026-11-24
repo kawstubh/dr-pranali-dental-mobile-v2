@@ -211,3 +211,8 @@ test("real browser capture fails before screenshot when a responsive viewport ha
   assert.match(source, /await verifyNoHorizontalOverflow\(width\)/);
   assert.match(source, /Horizontal page overflow at/);
 });
+
+test("real browser booking capture accepts the approved account-free copy", () => {
+  const capture = readFileSync(join(process.cwd(), "scripts", "capture-actual-desktop.cjs"), "utf8");
+  assert.ok(capture.includes('accountFree: /No account or OTP (?:is )?required\\./i.test(document.body.innerText)'));
+});
