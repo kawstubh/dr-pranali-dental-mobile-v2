@@ -12,6 +12,7 @@ import {
   AlertCircle,
   MessageCircle,
   Send,
+  CalendarClock,
 } from "lucide-react";
 import { dentalApi } from "./api.js";
 import { normaliseList } from "./data.js";
@@ -427,6 +428,82 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
   );
 }
 
+export function DoctorPatientJourney({ token, activePatient, appointments = [] }) {
+  const [plans, setPlans] = useState([]);
+  const [notes, setNotes] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+  const scopeKey = `${token || ""}:${activePatient?.id || ""}:${refreshKey}`;
+
+  useEffect(() => {
+    let live = true;
+    if (!token || !activePatient?.id) {
+      setPlans([]); setNotes([]); setInvoices([]); setMessages([]);
+      setLoading(false); setError("");
+      return () => { live = false; };
+    }
+    // Clear the previous patient's private records before requesting the next
+    // patient's data. If any request fails, never leave another patient's data
+    // visible under the newly selected patient's identity.
+    setPlans([]); setNotes([]); setInvoices([]); setMessages([]);
+    setLoading(true); setError("");
+    Promise.all([
+      dentalApi.doctorTreatmentPlans(token, activePatient.id),
+      dentalApi.doctorClinicalNotes(token, activePatient.id),
+      dentalApi.doctorInvoices(token, activePatient.id),
+      dentalApi.doctorMessages(token, activePatient.id),
+    ]).then(([planResult, noteResult, invoiceResult, messageResult]) => {
+      if (!live) return;
+      setPlans(normaliseList(planResult));
+      setNotes(normaliseList(noteResult));
+      setInvoices(normaliseList(invoiceResult));
+      setMessages(normaliseList(messageResult));
+    }).catch((err) => {
+      if (live) {
+        setPlans([]); setNotes([]); setInvoices([]); setMessages([]);
+        setError(err?.message || "The patient journey could not be loaded.");
+      }
+    }).finally(() => { if (live) setLoading(false); });
+    return () => { live = false; };
+  }, [token, activePatient?.id, refreshKey, scopeKey]);
+
+  if (!activePatient?.id) {
+    return <><CareHeader eyebrow="PATIENT JOURNEY" title="Patient timeline" description="A consolidated, read-only view of clinic activity." /><StateMessage>Select a patient before viewing their journey.</StateMessage></>;
+  }
+
+  const events = [
+    ...appointments.filter((item) => String(item.patient_id) === String(activePatient.id)).map((item) => ({
+      id: `appointment-${item.id}`, kind: "Appointment", title: item.treatment_type || "Dental visit",
+      detail: `Status: ${String(item.status || "not recorded").replaceAll("_", " ")}`,
+      at: item.starts_at, source: "Appointment record",
+    })),
+    ...plans.map((item) => ({ id: `plan-${item.id}`, kind: "Treatment plan", title: item.title || "Treatment plan", detail: item.status || "Status not recorded", at: item.updated_at || item.created_at, source: "Treatment plan" })),
+    ...notes.map((item) => ({ id: `note-${item.id}`, kind: "Clinical note", title: item.title || "Clinical note", detail: "Private Doctor record", at: item.updated_at || item.created_at, source: "Clinical note" })),
+    ...invoices.map((item) => ({ id: `invoice-${item.id}`, kind: "Invoice", title: item.invoice_number || "Invoice", detail: `${String(item.status || "status not recorded").replaceAll("_", " ")} · ${inr(item.total_paise)}`, at: item.created_at, source: "Billing record" })),
+    ...messages.map((item) => ({ id: `message-${item.id}`, kind: "Message", title: item.sender_type === "doctor" ? "Clinic message" : "Patient message", detail: item.body || "", at: item.created_at, source: "Message record" })),
+  ].filter((item) => item.at && Number.isFinite(new Date(item.at).getTime()))
+   .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+
+  return <>
+    <CareHeader eyebrow="PATIENT JOURNEY" title="Patient timeline" description={`A read-only chronology of recorded clinic activity for ${activePatient.name || activePatient.id}. No clinical conclusions or follow-up dates are inferred.`} action={<button className="outline" onClick={() => setRefreshKey((value) => value + 1)}><RefreshCw size={16} /> Refresh timeline</button>} />
+    {error && <StateMessage error>{error}</StateMessage>}
+    {loading ? <StateMessage>Loading authorised clinic records…</StateMessage> : (
+      <section className="panel care-panel">
+        <div className="care-panel-heading"><HeartPulse /><div><h2>Recorded activity</h2><p>{events.length} events · newest first · clinic records only</p></div></div>
+        {events.length ? events.map((event) => <article className="care-record" key={event.id}>
+          <div className="care-record-top"><div><b>{event.title}</b><small>{event.kind} · {event.source}</small></div><time>{dateLabel(event.at)}</time></div>
+          <p>{event.detail}</p>
+        </article>) : <StateMessage>No dated appointments, treatment plans, notes, invoices or messages were found for this patient.</StateMessage>}
+      </section>
+    )}
+    <p className="care-hint">This timeline aggregates existing authorised records. It does not generate recall recommendations, alter records, send messages or replace the clinician's review.</p>
+  </>;
+}
+
+
 export function DoctorClinicalNotes({ token, activePatient }) {
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -661,4 +738,45 @@ export function PatientCommunication({ token, activePatient }) {
       </section>
     </>
   );
+}
+
+export function DoctorFollowUpWorklist({ appointments = [], patients = [], onOpenAppointments }) {
+  const now = Date.now();
+  const patientById = new Map(patients.map((patient) => [String(patient.id), patient]));
+  const rows = appointments.filter((appointment) => appointment && appointment.id != null).map((appointment) => {
+    const status = String(appointment.status || "scheduled").toLowerCase();
+    const instant = new Date(appointment.starts_at || "");
+    const validDate = Number.isFinite(instant.getTime());
+    const past = validDate && instant.getTime() < now && !["completed", "cancelled", "no_show"].includes(status);
+    const needsConfirmation = status === "requested";
+    const noShowReview = status === "no_show";
+    if (!needsConfirmation && !noShowReview && !past) return null;
+    const patient = patientById.get(String(appointment.patient_id));
+    return {
+      id: String(appointment.id),
+      name: appointment.patient_name || patient?.name || "Patient",
+      phone: patient?.phone || "Not recorded",
+      visit: appointment.treatment_type || "Dental visit",
+      date: validDate ? instant : null,
+      status,
+      reason: needsConfirmation ? "Awaiting clinic confirmation" : noShowReview ? "No-show recorded — staff review" : "Past appointment — status review",
+    };
+  }).filter(Boolean).sort((a,b) => (a.date?.getTime() || 0) - (b.date?.getTime() || 0));
+
+  return <>
+    <CareHeader eyebrow="PRACTICE OPERATIONS" title="Follow-up worklist" description="A staff review queue built from existing appointment statuses and dates. No automatic recall dates or messages are generated." action={<button className="outline" onClick={onOpenAppointments}>Open appointments</button>} />
+    <div className="metricgrid three">
+      <div className="metric"><span>Awaiting confirmation</span><strong>{rows.filter(row => row.status === "requested").length}</strong></div>
+      <div className="metric"><span>No-show reviews</span><strong>{rows.filter(row => row.status === "no_show").length}</strong></div>
+      <div className="metric"><span>Past visits to review</span><strong>{rows.filter(row => row.reason === "Past appointment — status review").length}</strong></div>
+    </div>
+    <section className="panel care-panel">
+      <div className="care-panel-heading"><CalendarClock /><div><h2>Needs clinic attention</h2><p>{rows.length} records · derived from the active clinic appointment list</p></div></div>
+      {rows.length ? rows.map(row => <article className="care-record" key={row.id}>
+        <div className="care-record-top"><div><b>{row.name}</b><small>{row.visit} · {row.phone}</small></div><span className="care-pill private">{row.status.replaceAll("_"," ")}</span></div>
+        <p>{row.reason}{row.date ? ` · ${row.date.toLocaleString("en-IN", {dateStyle:"medium",timeStyle:"short"})}` : ""}</p>
+      </article>) : <StateMessage>No appointments currently meet these staff-review conditions.</StateMessage>}
+    </section>
+    <p className="care-hint">This is an operational review queue, not a clinical recall engine. Staff must verify the record and decide the next action. It does not send WhatsApp/SMS, alter appointment statuses or infer treatment schedules.</p>
+  </>;
 }
