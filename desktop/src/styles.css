@@ -4224,3 +4224,20 @@ main.oralyn-reference-layout {
   .clinical .teeth button small { font-size: 12px !important; }
   .clinical .legend span { font-size: 11px !important; }
 }
+
+/* Shared patient record actions inside the CRM pipeline. */
+.crm-record-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.7rem;
+  min-width: 150px;
+}
+.crm-record-actions .link {
+  padding: 0.25rem 0;
+  white-space: nowrap;
+}
+.crm-record-actions .link:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
