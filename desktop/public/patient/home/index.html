@@ -12,6 +12,27 @@
 @media(max-width:980px){.service-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:700px){.service-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.service-body{padding:13px;min-height:190px}.service-card h3{font-size:15px}.service-card p{font-size:12px}}
 @media(max-width:380px){.service-grid{grid-template-columns:1fr}}
+
+/* Patient portal service cards: compact, title-matched thumbnails. */
+.service-grid{align-items:stretch;gap:14px}
+.service-card{border-radius:14px;box-shadow:0 3px 12px rgba(12,59,130,.045)}
+.service-media{height:92px;min-height:92px;display:grid;place-items:center;overflow:hidden;background:#f1f8fb;border-bottom:1px solid #e8f0f5}
+.service-media img{display:block;width:100%;height:100%;object-fit:cover;object-position:center}
+.service-fallback{font-size:27px;line-height:1}
+.service-body{padding:12px 13px;min-height:0;gap:7px}
+.service-card h3{font-family:'Plus Jakarta Sans',Arial,sans-serif;font-size:15px;line-height:1.35;font-weight:750}
+.service-card p{font-size:12px;line-height:1.45}
+.service-link{margin-top:2px;font-size:12px}
+@media(max-width:700px){
+ .service-grid{gap:10px}
+ .service-media{height:76px;min-height:76px}
+ .service-body{padding:10px;min-height:0;gap:6px}
+ .service-card h3{font-size:13px;line-height:1.3}
+ .service-card p{font-size:11px;line-height:1.4}
+ .service-link{font-size:11px}
+}
+@media(max-width:380px){.service-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
 </style>
 </head>
 <body>
@@ -26,7 +47,7 @@
 <section class="service-section" id="services" aria-labelledby="services-title">
 <div class="section-head"><div><h2 id="services-title">Dental services</h2><p>Browse the clinic's 20 services by name and category. Select a service to pre-fill your appointment request; the clinic team will confirm the right visit and timing.</p></div></div>
 <div class="service-grid">
-<article class="service-card">
+<article class="service-card"><div class="service-media"><img src="/services/checkup.png" alt="Dental Check-up & Consultation" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="service-fallback" hidden aria-hidden="true">🦷</span></div>
 <div class="service-body">
 <div class="service-category">General</div>
 <h3>Dental Check-up &amp; Consultation</h3>
@@ -34,7 +55,7 @@
 <a class="service-link" href="/patient/booking/?service=checkup">Request this service</a>
 </div>
 </article>
-<article class="service-card">
+<article class="service-card"><div class="service-media"><img src="/services/scaling.png" alt="Scaling & Cleaning" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="service-fallback" hidden aria-hidden="true">🦷</span></div>
 <div class="service-body">
 <div class="service-category">Preventive</div>
 <h3>Scaling &amp; Cleaning</h3>
@@ -42,7 +63,7 @@
 <a class="service-link" href="/patient/booking/?service=scaling">Request this service</a>
 </div>
 </article>
-<article class="service-card">
+<article class="service-card"><div class="service-media"><img src="/services/whitening.png" alt="Teeth Whitening" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="service-fallback" hidden aria-hidden="true">🦷</span></div>
 <div class="service-body">
 <div class="service-category">Cosmetic</div>
 <h3>Teeth Whitening</h3>
@@ -50,7 +71,7 @@
 <a class="service-link" href="/patient/booking/?service=whitening">Request this service</a>
 </div>
 </article>
-<article class="service-card">
+<article class="service-card"><div class="service-media"><img src="/services/filling.png" alt="Tooth Filling" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="service-fallback" hidden aria-hidden="true">🦷</span></div>
 <div class="service-body">
 <div class="service-category">Restorative</div>
 <h3>Tooth Filling</h3>
@@ -58,7 +79,7 @@
 <a class="service-link" href="/patient/booking/?service=filling">Request this service</a>
 </div>
 </article>
-<article class="service-card">
+<article class="service-card"><div class="service-media"><img src="/services/rct.png" alt="Root Canal Treatment (RCT)" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="service-fallback" hidden aria-hidden="true">🦷</span></div>
 <div class="service-body">
 <div class="service-category">Restorative</div>
 <h3>Root Canal Treatment (RCT)</h3>
@@ -66,7 +87,7 @@
 <a class="service-link" href="/patient/booking/?service=rct">Request this service</a>
 </div>
 </article>
-<article class="service-card">
+<article class="service-card"><div class="service-media"><img src="/services/crowns.png" alt="Dental Crowns & Caps" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="service-fallback" hidden aria-hidden="true">🦷</span></div>
 <div class="service-body">
 <div class="service-category">Restorative</div>
 <h3>Dental Crowns &amp; Caps</h3>
@@ -74,7 +95,7 @@
 <a class="service-link" href="/patient/booking/?service=crowns">Request this service</a>
 </div>
 </article>
-<article class="service-card">
+<article class="service-card"><div class="service-media"><img src="/services/implants.png" alt="Dental Implants" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="service-fallback" hidden aria-hidden="true">🦷</span></div>
 <div class="service-body">
 <div class="service-category">Surgical</div>
 <h3>Dental Implants</h3>
@@ -82,7 +103,7 @@
 <a class="service-link" href="/patient/booking/?service=implants">Request this service</a>
 </div>
 </article>
-<article class="service-card">
+<article class="service-card"><div class="service-media"><img src="/services/extraction.png" alt="Tooth Extraction" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="service-fallback" hidden aria-hidden="true">🦷</span></div>
 <div class="service-body">
 <div class="service-category">Surgical</div>
 <h3>Tooth Extraction</h3>
@@ -90,7 +111,7 @@
 <a class="service-link" href="/patient/booking/?service=extraction">Request this service</a>
 </div>
 </article>
-<article class="service-card">
+<article class="service-card"><div class="service-media"><img src="/services/braces.png" alt="Braces Treatment" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="service-fallback" hidden aria-hidden="true">🦷</span></div>
 <div class="service-body">
 <div class="service-category">Orthodontic</div>
 <h3>Braces Treatment</h3>
@@ -98,7 +119,7 @@
 <a class="service-link" href="/patient/booking/?service=braces">Request this service</a>
 </div>
 </article>
-<article class="service-card">
+<article class="service-card"><div class="service-media"><img src="/services/aligners.png" alt="Clear Aligners (Invisible Braces)" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="service-fallback" hidden aria-hidden="true">🦷</span></div>
 <div class="service-body">
 <div class="service-category">Orthodontic</div>
 <h3>Clear Aligners (Invisible Braces)</h3>
@@ -106,7 +127,7 @@
 <a class="service-link" href="/patient/booking/?service=aligners">Request this service</a>
 </div>
 </article>
-<article class="service-card">
+<article class="service-card"><div class="service-media"><img src="/services/dentures.png" alt="Dentures (Full / Partial)" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="service-fallback" hidden aria-hidden="true">🦷</span></div>
 <div class="service-body">
 <div class="service-category">Restorative</div>
 <h3>Dentures (Full / Partial)</h3>
@@ -114,7 +135,7 @@
 <a class="service-link" href="/patient/booking/?service=dentures">Request this service</a>
 </div>
 </article>
-<article class="service-card">
+<article class="service-card"><div class="service-media"><img src="/services/veneers.png" alt="Veneers (Smile Makeover)" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="service-fallback" hidden aria-hidden="true">🦷</span></div>
 <div class="service-body">
 <div class="service-category">Cosmetic</div>
 <h3>Veneers (Smile Makeover)</h3>
@@ -122,7 +143,7 @@
 <a class="service-link" href="/patient/booking/?service=veneers">Request this service</a>
 </div>
 </article>
-<article class="service-card">
+<article class="service-card"><div class="service-media"><img src="/services/gum-care.png" alt="Gum Treatment (Periodontal Care)" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="service-fallback" hidden aria-hidden="true">🦷</span></div>
 <div class="service-body">
 <div class="service-category">General</div>
 <h3>Gum Treatment (Periodontal Care)</h3>
@@ -130,7 +151,7 @@
 <a class="service-link" href="/patient/booking/?service=gum-care">Request this service</a>
 </div>
 </article>
-<article class="service-card">
+<article class="service-card"><div class="service-media"><img src="/services/kids.png" alt="Kids Dentistry (Child Care)" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="service-fallback" hidden aria-hidden="true">🦷</span></div>
 <div class="service-body">
 <div class="service-category">Pediatric</div>
 <h3>Kids Dentistry (Child Care)</h3>
@@ -138,7 +159,7 @@
 <a class="service-link" href="/patient/booking/?service=kids">Request this service</a>
 </div>
 </article>
-<article class="service-card">
+<article class="service-card"><div class="service-media"><img src="/services/emergency.png" alt="Emergency Dental Care" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="service-fallback" hidden aria-hidden="true">🦷</span></div>
 <div class="service-body">
 <div class="service-category">Emergency</div>
 <h3>Emergency Dental Care</h3>
@@ -146,7 +167,7 @@
 <a class="service-link" href="/patient/booking/?service=emergency">Request this service</a>
 </div>
 </article>
-<article class="service-card">
+<article class="service-card"><div class="service-media"><img src="/services/sensitivity.png" alt="Tooth Sensitivity Treatment" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="service-fallback" hidden aria-hidden="true">🦷</span></div>
 <div class="service-body">
 <div class="service-category">General</div>
 <h3>Tooth Sensitivity Treatment</h3>
@@ -154,7 +175,7 @@
 <a class="service-link" href="/patient/booking/?service=sensitivity">Request this service</a>
 </div>
 </article>
-<article class="service-card">
+<article class="service-card"><div class="service-media"><img src="/services/sealants.png" alt="Dental Sealants (Cavity Prevention)" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="service-fallback" hidden aria-hidden="true">🦷</span></div>
 <div class="service-body">
 <div class="service-category">Preventive</div>
 <h3>Dental Sealants (Cavity Prevention)</h3>
@@ -162,7 +183,7 @@
 <a class="service-link" href="/patient/booking/?service=sealants">Request this service</a>
 </div>
 </article>
-<article class="service-card">
+<article class="service-card"><div class="service-media"><img src="/services/hygiene.png" alt="Oral Hygiene Education" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="service-fallback" hidden aria-hidden="true">🦷</span></div>
 <div class="service-body">
 <div class="service-category">Preventive</div>
 <h3>Oral Hygiene Education</h3>
@@ -170,7 +191,7 @@
 <a class="service-link" href="/patient/booking/?service=hygiene">Request this service</a>
 </div>
 </article>
-<article class="service-card">
+<article class="service-card"><div class="service-media"><img src="/services/smile-makeover.png" alt="Smile Makeover (Cosmetic Dentistry)" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="service-fallback" hidden aria-hidden="true">🦷</span></div>
 <div class="service-body">
 <div class="service-category">Cosmetic</div>
 <h3>Smile Makeover (Cosmetic Dentistry)</h3>
@@ -178,7 +199,7 @@
 <a class="service-link" href="/patient/booking/?service=smile-makeover">Request this service</a>
 </div>
 </article>
-<article class="service-card">
+<article class="service-card"><div class="service-media"><img src="/services/tmj.png" alt="TMJ & Jaw Pain Treatment" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="service-fallback" hidden aria-hidden="true">🦷</span></div>
 <div class="service-body">
 <div class="service-category">General</div>
 <h3>TMJ &amp; Jaw Pain Treatment</h3>
