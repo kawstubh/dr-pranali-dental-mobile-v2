@@ -834,7 +834,7 @@ function DoctorCRM({ appointments, patients, token, refresh, ping, onOpenPatient
           </label>
         </div>
         <div className="tablewrap">
-          <table>
+          <table className="crm-pipeline-table">
             <thead><tr><th>Patient</th><th>Contact</th><th>Visit</th><th>Appointment</th><th>Journey stage</th><th>Patient record</th></tr></thead>
             <tbody>
               {visibleRows.map((row) => (
