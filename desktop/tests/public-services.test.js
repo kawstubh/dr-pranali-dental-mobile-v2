@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
@@ -8,7 +8,6 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const cataloguePath = path.join(repositoryRoot, "shared", "dentalServices.ts");
 const homePath = path.join(repositoryRoot, "desktop", "public", "patient", "home", "index.html");
 const bookingPath = path.join(repositoryRoot, "desktop", "public", "patient", "booking", "index.html");
-const publicServicesPath = path.join(repositoryRoot, "desktop", "public", "services");
 
 const catalogue = readFileSync(cataloguePath, "utf8");
 const home = readFileSync(homePath, "utf8");
@@ -30,18 +29,16 @@ const escapeHtml = (value) => value
   .replaceAll('"', "&quot;")
   .replaceAll("'", "&#39;");
 
-test("the public catalogue publishes all twenty shared dental services with local images", () => {
+test("the public catalogue publishes all twenty services as compact, image-free service cards", () => {
   assert.equal(services.length, 20);
   assert.equal(new Set(services.map((service) => service.id)).size, 20);
-  assert.equal(new Set(services.map((service) => service.image)).size, 20);
   assert.equal((home.match(/<article class="service-card">/g) || []).length, 20);
   assert.ok(home.includes("@media(max-width:700px){.service-grid{grid-template-columns:repeat(2"));
+  assert.doesNotMatch(home, /class="service-image"|<img src="\/services\//);
+  assert.match(home, /min-height:176px/);
   assert.ok(home.includes("@media(max-width:380px){.service-grid{grid-template-columns:1fr"));
 
   for (const service of services) {
-    const image = `${service.image}.png`;
-    assert.ok(existsSync(path.join(publicServicesPath, image)), `Missing public image ${image}`);
-    assert.ok(home.includes(`/services/${image}`), `Home page does not reference ${image}`);
     assert.ok(home.includes(escapeHtml(service.name)), `Home page is missing ${service.name}`);
     assert.ok(home.includes(`/patient/booking/?service=${service.id}`), `Service link is missing for ${service.id}`);
     assert.ok(booking.includes(`<option value="${escapeHtml(service.name)}">`), `Booking option is missing for ${service.name}`);
