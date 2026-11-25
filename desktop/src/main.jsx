@@ -1660,7 +1660,7 @@ function WorkspaceManagement({ token, user, workspaces, activeWorkspace, workspa
 
 const currentPath = window.location.pathname;
 const normalizedPath = currentPath.replace(/\/+$/, "") || "/";
-const publicPatientPaths = new Set(["/patient/home", "/patient/booking"]);
+const publicPatientPaths = new Set(["/patient/home", "/patient/booking", "/patient/track"]);
 const isAssistantRoute = /^\/assistant(?:\/|$)/.test(currentPath);
 const isLegacyAssistantAdminRoute = /^\/assistant-admin(?:\/|$)/.test(currentPath);
 const isPublicPatientAlias = publicPatientPaths.has(normalizedPath) && !currentPath.endsWith("/");
