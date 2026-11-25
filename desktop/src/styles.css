@@ -4241,3 +4241,16 @@ main.oralyn-reference-layout {
   opacity: 0.45;
   cursor: not-allowed;
 }
+
+
+/* Compact patient CRM rows without changing other clinical tables. */
+.crm-pipeline-table th,
+.crm-pipeline-table td {
+  padding: 9px 14px;
+  vertical-align: middle;
+}
+.crm-pipeline-table .crm-subline {
+  display: block;
+  margin-top: 3px;
+  line-height: 1.25;
+}
