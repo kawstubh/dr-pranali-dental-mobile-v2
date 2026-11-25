@@ -356,13 +356,15 @@ function Dashboard({ token, logout }) {
         <DoctorAIActionCard token={token} patient={selectedPatient} title="Follow-up & Recall Recommendations" description="Recall timing and follow-up considerations; no appointment is created automatically." capability="follow_up" run={doctorFollowUp}/>
         <DoctorScanCard token={token} patient={selectedPatient}/>
         <IntelligenceCard token={token} patient={selectedPatient} title="Clinical Research" description="Evidence-backed research with sources." goal="Answer an evidence-based clinical question and show sources and uncertainty." />
-        {['Product & Supplier Intelligence','Practice Intelligence','Referral Intelligence'].map((x,i)=><View key={x} style={styles.intelCard}><Text style={styles.intelNum}>0{i+4}</Text><View style={{flex:1}}><Text style={styles.intelName}>{x}</Text><Text style={styles.comingSoon}>Coming soon</Text></View></View>)}
+        <ClinicalResearchCard token={token} patient={selectedPatient} moduleKey="product_supplier" title="Product & Supplier Intelligence" description="Research dental materials, instruments, consumables and supplier questions. Verify product specifications and source claims before purchasing." placeholder="e.g. Compare glass ionomer cement options for this indication, or list the instruments and consumables required…" buttonLabel="Research products & supplies" />
+        <ClinicalResearchCard token={token} patient={selectedPatient} moduleKey="practice" title="Practice Intelligence" description="Explore clinic workflow, stock planning, recall operations and practice improvement using the information supplied in your question." placeholder="e.g. Build a checklist for tracking implant stock and expiry dates…" buttonLabel="Analyse practice workflow" />
+        <ClinicalResearchCard token={token} patient={selectedPatient} moduleKey="referral" title="Referral Intelligence" description="Review specialist referral considerations and prepare clinician-reviewed referral guidance. No referral is sent automatically." placeholder="e.g. What findings would support referral to an endodontist in this case?" buttonLabel="Research referral guidance" />
       </View>}
     </ScrollView>
   </SafeAreaView>;
 }
 
-function ClinicalResearchCard({ token, patient }) {
+function ClinicalResearchCard({ token, patient, moduleKey = 'clinical_research', title = 'Clinical Research', description = 'Ask an evidence-based clinical question. Sources are shown when returned.', placeholder = 'Ask a clinical question…', buttonLabel = 'Ask clinical research' }) {
   const [question,setQuestion]=useState('');
   const [status,setStatus]=useState('idle');
   const [result,setResult]=useState(null);
@@ -371,14 +373,14 @@ function ClinicalResearchCard({ token, patient }) {
   const run=async()=>{
     if(!question.trim())return;
     setStatus('loading');setResult(null);setEditing(false);
-    try{const response=await runDentalIntelligence(token,{patient_id:patient?.id||null,goal:question.trim(),language:'en',locale:'IN-MH',context:{}});setResult(response||{});setEdited(typeof response?.answer==='string'?response.answer:JSON.stringify(response?.answer||'',null,2));setStatus('result');}
+    try{const response=await runDentalIntelligence(token,{patient_id:patient?.id||null,goal:question.trim(),language:'en',locale:'IN-MH',context:{module:moduleKey, patient_context: patient ? 'selected_patient' : 'none'}});setResult(response||{});setEdited(typeof response?.answer==='string'?response.answer:JSON.stringify(response?.answer||'',null,2));setStatus('result');}
     catch(e){setResult({error:e?.message||'Clinical AI is unavailable. Please retry.'});setStatus('error');}
   };
   const evidence=extractEvidence(result);
   return <View style={styles.intelCardLarge}>
     <View style={styles.intelCardHead}><View style={{flex:1}}><Text style={styles.intelName}>Clinical Research</Text><Text style={styles.intelSub}>Ask an evidence-based clinical question. Sources are shown when returned.</Text></View><Text style={styles.aiBadge}>AI</Text></View>
-    <TextInput value={question} onChangeText={setQuestion} placeholder="Ask a clinical questionâ€¦" placeholderTextColor="#91A0AE" multiline style={styles.intelQuestionInput}/>
-    <Pressable disabled={!question.trim()||status==='loading'} onPress={run} style={[styles.intelRunButton,(!question.trim()||status==='loading')&&{opacity:0.5}]}><Text style={styles.intelRunText}>{status==='loading'?'Researchingâ€¦':'Ask clinical research'}</Text></Pressable>
+    <TextInput value={question} onChangeText={setQuestion} placeholder={placeholder} placeholderTextColor="#91A0AE" multiline style={styles.intelQuestionInput}/>
+    <Pressable disabled={!question.trim()||status==='loading'} onPress={run} style={[styles.intelRunButton,(!question.trim()||status==='loading')&&{opacity:0.5}]}><Text style={styles.intelRunText}>{status==='loading'?'Working…':buttonLabel}</Text></Pressable>
     {status==='loading'&&<View style={styles.intelSkeleton}><View style={styles.skeletonLineWide}/><View style={styles.skeletonLine}/><View style={styles.skeletonLineShort}/><Text style={styles.intelLoading}>Retrieving evidence and reasoningâ€¦</Text></View>}
     {status==='error'&&<View style={styles.intelError}><Text style={styles.intelErrorTitle}>Could not complete</Text><Text style={styles.intelErrorText}>{result?.error}</Text><Pressable onPress={run} style={styles.intelRetry}><Text style={styles.intelRetryText}>Retry</Text></Pressable></View>}
     {status==='result'&&<View style={styles.intelResult}><View style={styles.aiVerify}><Text style={styles.aiVerifyText}>AI suggestion, doctor to verify</Text></View>{editing?<TextInput multiline value={edited} onChangeText={setEdited} style={styles.intelEditInput}/>:<Text style={styles.intelAnswer}>{typeof result?.answer==='string'?result.answer:JSON.stringify(result?.answer||result,null,2)}</Text>}{!!evidence.length&&<View style={styles.sourceBox}><Text style={styles.sourceTitle}>Sources / evidence</Text>{evidence.slice(0,6).map((item,index)=><View key={index} style={styles.sourceItem}><Text style={styles.sourceName}>{item.title||item.source||'Evidence'}</Text>{!!item.url&&<Text style={styles.sourceUrl}>{item.url}</Text>}{!!item.content&&<Text style={styles.sourceContent}>{item.content}</Text>}</View>)}</View>}<Text style={styles.intelSafety}>Nothing from this result is written to the dental chart or treatment plan automatically.</Text><View style={styles.intelActions}><Pressable onPress={()=>Alert.alert('Accepted','Accepted for this session only. No clinical record was changed.')} style={styles.acceptButton}><Text style={styles.acceptText}>Accept</Text></Pressable><Pressable onPress={()=>setEditing(v=>!v)} style={styles.editButton}><Text style={styles.editText}>{editing?'Preview':'Edit'}</Text></Pressable><Pressable onPress={()=>{setStatus('idle');setResult(null)}} style={styles.dismissButton}><Text style={styles.dismissText}>Dismiss</Text></Pressable></View></View>}
