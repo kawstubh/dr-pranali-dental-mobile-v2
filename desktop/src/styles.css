@@ -4241,3 +4241,57 @@ main.oralyn-reference-layout {
   opacity: 0.45;
   cursor: not-allowed;
 }
+
+
+/* Clinical workspace patient header: balanced type and stable grid sizing. */
+.patientbar {
+  display: grid;
+  grid-template-columns: 42px minmax(220px, 1.45fr) minmax(190px, 1fr) minmax(118px, .7fr) minmax(150px, .82fr);
+  align-items: center;
+  gap: 14px;
+}
+.patient-identity { min-width: 0; }
+.patient-identity h2 {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 9px;
+  min-width: 0;
+  font-size: 17px !important;
+  line-height: 1.3 !important;
+}
+.patient-identity h2 em {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  margin: 0;
+  padding: 4px 8px;
+  font-size: 10px !important;
+  line-height: 1.25 !important;
+}
+.patient-identity p {
+  overflow-wrap: anywhere;
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+  margin-top: 5px;
+}
+.patient-select-wrap { min-width: 0; gap: 6px; font-size: 12px !important; }
+.patient-select { max-width: none; min-width: 0; font-size: 13px !important; }
+.patientbar .next { min-width: 0; }
+.patientbar .next small { display: block; font-size: 11px !important; line-height: 1.35 !important; }
+.patientbar .next b { display: block; font-size: 12px !important; line-height: 1.4 !important; overflow-wrap: anywhere; }
+.patientbar > .outline { min-width: 0; width: 100%; padding: 10px 12px; font-size: 13px !important; line-height: 1.35 !important; white-space: normal; }
+
+@media (max-width: 1120px) {
+  .patientbar {
+    grid-template-columns: 42px minmax(0, 1fr) minmax(180px, .9fr);
+  }
+  .patientbar .next { grid-column: 2; }
+  .patientbar > .outline { grid-column: 3; grid-row: 2; }
+}
+@media (max-width: 700px) {
+  .patientbar { grid-template-columns: 42px minmax(0, 1fr); gap: 12px; }
+  .patientbar .patient-select-wrap,
+  .patientbar .next,
+  .patientbar > .outline { grid-column: 1 / -1; grid-row: auto; }
+}
