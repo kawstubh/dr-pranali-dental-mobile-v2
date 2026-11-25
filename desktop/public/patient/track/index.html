@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0C3B82">
+<meta name="oralyn-api-origin" content="__ORALYN_API_ORIGIN__">
+<link rel="icon" type="image/png" href="/oralyn-tooth-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<title>Track appointment | Dr Pranali Dental Clinic</title>
+<style>
+@font-face{font-family:Plus;src:url('/fonts/PlusJakartaSans-Variable.ttf')}@font-face{font-family:Playfair;src:url('/fonts/PlayfairDisplay-Variable.ttf')}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 12% 8%,rgba(0,198,200,.11),transparent 34%),radial-gradient(ellipse at 88% 28%,rgba(10,132,232,.09),transparent 32%),#f3f9fc;color:#12304a;font-family:Plus,Arial,sans-serif}
+header{height:76px;background:#ffffffed;border-bottom:1px solid #e4edf2;padding:0 max(20px,calc((100vw - 1080px)/2));display:flex;align-items:center;justify-content:space-between}
+header img{width:124px;max-height:70px;object-fit:contain}.pill{border:1px solid #d7e8ed;border-radius:999px;padding:9px 15px;color:#0b7280;text-decoration:none;font-size:12px;font-weight:750}
+main{width:min(100% - 32px,600px);margin:42px auto}.panel{background:white;border:1px solid #e1ebf0;border-radius:22px;padding:clamp(22px,5vw,38px);box-shadow:0 24px 70px #0c3b8210;position:relative}.panel:before{content:"";position:absolute;top:0;left:28px;right:28px;height:3px;background:linear-gradient(90deg,#00c6c8,#0a84e8);border-radius:0 0 4px 4px}
+.kicker{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#078c98;font-weight:800}h1{font:700 clamp(29px,5vw,38px)/1.1 Playfair,Georgia,serif;margin:12px 0 8px}p{color:#687f90;font-size:13px;line-height:1.55}
+label{display:block;font-size:12px;font-weight:750;color:#35536a;margin:15px 0}input{display:block;width:100%;min-height:48px;margin-top:7px;padding:11px 12px;border:1px solid #d5e1e8;border-radius:11px;background:#fbfdfe;color:#12304a;font:inherit;font-size:16px}input:focus{outline:3px solid #0a84e822;border-color:#0a84e8}
+button{width:100%;min-height:50px;border:0;border-radius:12px;background:linear-gradient(105deg,#087fbd,#0a84e8);color:white;font:inherit;font-weight:800;cursor:pointer;margin-top:8px}button:disabled{opacity:.6;cursor:wait}
+.msg{display:none;margin-top:14px;padding:13px;border-radius:12px;font-size:13px;line-height:1.5}.msg.error{display:block;background:#fff2f0;color:#9a2d22;border:1px solid #f4d4cf}.msg.success{display:block;background:#e9faf7;color:#075f56;border:1px solid #c8eee7}
+.result{display:none;margin-top:18px;padding:18px;border:1px solid #dcebef;border-radius:14px;background:#f8fcfd}.result.show{display:block}.status{display:inline-block;padding:6px 11px;border-radius:20px;background:#e5f7f5;color:#08756e;font-weight:800;font-size:12px;text-transform:capitalize}.detail{margin:12px 0 0;font-size:13px;color:#35536a}.detail b{display:block;color:#12304a;margin-bottom:3px}.note{font-size:11px;color:#718596;margin-top:16px}.back{display:inline-block;margin-top:18px;color:#087fbd;font-size:12px;font-weight:750;text-decoration:none}
+@media(max-width:600px){header{height:64px;padding:0 14px}header img{width:100px}main{margin:16px auto}.panel{border-radius:17px;padding:22px 17px}}
+</style>
+</head>
+<body>
+<header><a href="/patient/home/"><img src="/oralyn-official-logo.png" alt="Oralyn"></a><a class="pill" href="/patient/booking/">Request appointment</a></header>
+<main><section class="panel">
+<div class="kicker">Dr Pranali Dental Clinic · Taloja</div>
+<h1>Track your appointment</h1>
+<p>Enter the booking reference and the phone number used when you made the request. We’ll show the current appointment status.</p>
+<form id="lookup" novalidate>
+<label for="reference">Booking reference<input id="reference" name="reference" required maxlength="20" minlength="20" autocomplete="off" placeholder="ORL-XXXXXXXXXXXXXXXX" pattern="ORL-[A-Fa-f0-9]{16}"></label>
+<label for="phone">Registered phone number<input id="phone" name="phone" required type="tel" autocomplete="tel" maxlength="40" placeholder="Phone number used for booking"></label>
+<button id="submit" type="submit">Check appointment status</button>
+</form>
+<div id="message" class="msg" role="status" aria-live="polite"></div>
+<section id="result" class="result" aria-live="polite">
+<span id="status" class="status"></span>
+<div class="detail"><b>Appointment date and time</b><span id="date"></span></div>
+<div class="detail"><b>Dental service</b><span id="service"></span></div>
+</section>
+<p class="note">For privacy, both details must match the original booking. This page does not display clinical records. If you need help, contact the clinic directly.</p>
+<a class="back" href="/patient/home/">← Back to patient home</a>
+</section></main>
+<script>
+const API_BASE=(()=>{const configured=document.querySelector('meta[name="oralyn-api-origin"]')?.content?.trim()||"";if(!configured||configured==="__ORALYN_API_ORIGIN__")return "";try{const url=new URL(configured);return url.protocol==="https:"&&!url.username&&!url.password&&url.pathname==="/"&&!url.search&&!url.hash?url.origin:""}catch{return ""}})();
+const form=document.getElementById("lookup"),button=document.getElementById("submit"),message=document.getElementById("message"),result=document.getElementById("result");
+form.addEventListener("submit",async event=>{event.preventDefault();message.className="msg";message.textContent="";result.classList.remove("show");
+const reference=document.getElementById("reference").value.trim().toUpperCase(),phone=document.getElementById("phone").value.trim();
+if(!/^ORL-[A-F0-9]{16}$/.test(reference)||phone.replace(/\D/g,"").length<7){message.className="msg error";message.textContent="Enter a valid booking reference and the phone number used for booking.";return}
+if(!API_BASE){message.className="msg error";message.textContent="Appointment tracking is temporarily unavailable. Please contact the clinic.";return}
+button.disabled=true;button.textContent="Checking...";
+try{const response=await fetch(API_BASE+"/v1/dental/public/appointments/lookup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({reference,phone})});const data=await response.json().catch(()=>({}));
+if(!response.ok){const detail=data.detail;throw new Error(typeof detail==="string"?detail:detail?.message||"We could not match those details. Check them or contact the clinic.")}
+const labels={requested:"Request received",confirmed:"Confirmed",scheduled:"Scheduled",completed:"Completed",cancelled:"Cancelled",rescheduled:"Rescheduled",no_show:"Missed appointment"};
+document.getElementById("status").textContent=labels[data.status]||"Status updated";
+const date=new Date(data.starts_at);document.getElementById("date").textContent=Number.isNaN(date.getTime())?"Contact the clinic":new Intl.DateTimeFormat("en-IN",{dateStyle:"long",timeStyle:"short",timeZone:"Asia/Kolkata"}).format(date)+" IST";
+document.getElementById("service").textContent=data.treatment_type||"Please contact the clinic";
+result.classList.add("show");message.className="msg success";message.textContent="Your booking details were matched successfully.";
+}catch(error){message.className="msg error";message.textContent=error.message||"Unable to check the appointment. Please try again."}
+finally{button.disabled=false;button.textContent="Check appointment status"}
+});
+</script>
+</body></html>
