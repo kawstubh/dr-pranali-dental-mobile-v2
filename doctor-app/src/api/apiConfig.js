@@ -1,6 +1,5 @@
-// Expo inlines EXPO_PUBLIC_* values into the native JavaScript bundle.
-// Pull-request builds and local builds use staging; only a push to master
-// explicitly injects the production API URL from the release workflow.
+// Keep the Doctor portal and public booking flow on the same staging API.
+// The release workflow must explicitly inject the production API URL for releases.
 export const DOCTOR_API_URL =
   process.env.EXPO_PUBLIC_DENTAL_API_URL ||
-  'https://oralyn-multitenant-staging.onrender.com';
+  'https://oralyn-staging-api-assistant.onrender.com';
