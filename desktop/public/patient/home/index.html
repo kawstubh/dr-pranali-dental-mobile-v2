@@ -33,6 +33,14 @@
 }
 @media(max-width:380px){.service-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
+
+.service-quick-select{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:18px 0 4px;padding:12px 14px;background:#fff;border:1px solid #dcecf3;border-radius:13px}
+.service-quick-select label{font-size:13px;font-weight:750;color:#0c3b82}
+.service-quick-select select{flex:1;min-width:210px;max-width:420px;padding:11px 12px;border:1px solid #cfe1eb;border-radius:9px;background:#fff;color:#12304a;font:600 13px 'Plus Jakarta Sans',Arial,sans-serif}
+.service-quick-select button{border:0;border-radius:9px;padding:11px 16px;background:#00c6c8;color:#063c58;font:800 13px 'Plus Jakarta Sans',Arial,sans-serif;cursor:pointer}
+.service-media{background:linear-gradient(135deg,#f2f9fc,#e8f5fb)}
+.service-media img{object-fit:contain;padding:5px}
+
 </style>
 </head>
 <body>
@@ -46,6 +54,16 @@
 </section>
 <section class="service-section" id="services" aria-labelledby="services-title">
 <div class="section-head"><div><h2 id="services-title">Dental services</h2><p>Browse the clinic's 20 services by name and category. Select a service to pre-fill your appointment request; the clinic team will confirm the right visit and timing.</p></div></div>
+
+<form class="service-quick-select" action="/patient/booking/" method="get">
+<label for="service-quick-pick">Choose a service</label>
+<select id="service-quick-pick" name="service" required>
+<option value="" selected disabled>Select from all 20 dental services</option>
+<option value="checkup">Dental Check-up &amp; Consultation</option><option value="scaling">Scaling &amp; Cleaning</option><option value="whitening">Teeth Whitening</option><option value="filling">Tooth Filling</option><option value="rct">Root Canal Treatment (RCT)</option><option value="crowns">Dental Crowns &amp; Caps</option><option value="implants">Dental Implants</option><option value="extraction">Tooth Extraction</option><option value="braces">Braces Treatment</option><option value="aligners">Clear Aligners (Invisible Braces)</option><option value="dentures">Dentures (Full / Partial)</option><option value="veneers">Veneers (Smile Makeover)</option><option value="gum-care">Gum Treatment (Periodontal Care)</option><option value="kids">Kids Dentistry (Child Care)</option><option value="emergency">Emergency Dental Care</option><option value="sensitivity">Tooth Sensitivity Treatment</option><option value="sealants">Dental Sealants (Cavity Prevention)</option><option value="hygiene">Oral Hygiene Education</option><option value="smile-makeover">Smile Makeover (Cosmetic Dentistry)</option><option value="tmj">TMJ &amp; Jaw Pain Treatment</option>
+</select>
+<button type="submit">Continue</button>
+</form>
+
 <div class="service-grid">
 <article class="service-card"><div class="service-media"><img src="/services/checkup.png" alt="Dental Check-up & Consultation" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="service-fallback" hidden aria-hidden="true">🦷</span></div>
 <div class="service-body">
