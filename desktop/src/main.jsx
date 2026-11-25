@@ -780,6 +780,10 @@ function AccountSettings({ user, activeWorkspace, onSignOut }) {
             <div><small>Organisation</small><b>{activeWorkspace?.organisation_name || "Not returned"}</b></div>
           </div>
         </Panel>
+        <Panel title="Oralyn plans & subscription" sub="Review clinic plans, team limits and available upgrades.">
+          <p className="care-hint">Compare Oralyn Solo, Clinic, Pro and Multi-Clinic plans. Subscription enquiries are handled by the Oralyn team; no plan or payment is changed from this portal.</p>
+          <a className="outline" href="https://oralyn-platform-temporary.onrender.com/#pricing" target="_blank" rel="noreferrer">View Oralyn plan pricing</a>
+        </Panel>
         <Panel title="Privacy and access" sub="Oralyn keeps clinical records behind role and clinic permissions.">
           <p className="care-hint">Patient-facing AI diagnosis and self-diagnosis are not available. Clinical notes remain private. Private document uploads, downloads, review and patient sharing are disabled until secure private storage and fail-closed malware scanning are configured and verified.</p>
           <button className="outline" onClick={onSignOut}>Sign out securely</button>
