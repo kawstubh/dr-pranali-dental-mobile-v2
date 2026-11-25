@@ -1022,7 +1022,7 @@ function Doctor({
               .join("")
               .toUpperCase() || "—"}
           </span>
-          <div>
+          <div className="patient-identity">
             <h2>
               {activePatient?.name || "No patient selected"}{" "}
               <em>{activePatient ? "Clinic patient" : "No active record"}</em>
