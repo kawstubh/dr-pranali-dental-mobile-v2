@@ -2,7 +2,7 @@ const DEFAULT_PAGES = Object.freeze({
   doctor: "dashboard",
 });
 
-const PUBLIC_PATIENT_PAGES = new Set(["home", "booking"]);
+const PUBLIC_PATIENT_PAGES = new Set(["home", "booking", "track"]);
 
 const ALLOWED_PAGES = Object.freeze({
   doctor: new Set([
