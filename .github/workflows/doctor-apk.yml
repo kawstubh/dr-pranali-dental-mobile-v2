@@ -6,7 +6,7 @@ permissions:
 on:
   workflow_dispatch:
   push:
-    branches: [master, ui/brand-and-services]
+    branches: [master, ui/brand-and-services, fix/doctor-navigation-uie-diagnostics-20261126]
   pull_request:
     branches: [master]
 
