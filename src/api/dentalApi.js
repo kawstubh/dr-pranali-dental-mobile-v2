@@ -1,4 +1,4 @@
-const API_URL = 'https://dr-pranali-dental-api.onrender.com';
+const API_URL = 'https://oralyn-staging-api-assistant.onrender.com';
 const REQUEST_TIMEOUT_MS = 15000;
 
 async function request(path, options = {}) {
