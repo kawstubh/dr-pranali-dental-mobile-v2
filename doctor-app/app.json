@@ -1,22 +1,21 @@
 {
   "expo": {
     "owner": "kaus2b",
-    "name": "Dr. Pranali Dental Doctor",
+    "name": "Oralyn Doctor",
     "slug": "dr-pranali-dental-doctor",
     "version": "1.0.2",
     "orientation": "portrait",
-    "icon": "./assets/approved-clinic-icon.png",
+    "icon": "./assets/oralyn-icon.png",
     "splash": {
-      "image": "./assets/approved-clinic-logo-white.png",
+      "image": "./assets/oralyn-splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#0C3B82"
     },
     "android": {
       "package": "com.drpranali.dental.doctor",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/approved-clinic-icon.png",
-        "backgroundColor": "#0C3B82",
-        "monochromeImage": "./assets/doctor-monochrome.png"
+        "foregroundImage": "./assets/oralyn-icon.png",
+        "backgroundColor": "#F4FBFF"
       }
     },
     "ios": {
@@ -40,7 +39,7 @@
       }
     },
     "web": {
-      "favicon": "./assets/doctor-favicon.png"
+      "favicon": "./assets/oralyn-icon.png"
     }
   }
 }

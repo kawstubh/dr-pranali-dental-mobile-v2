@@ -13,7 +13,7 @@ import { listAppointments, listPatients, updateAppointment, getHealth, getDental
 import { getStoredDoctorSession, signInWithPassword, signOutGoogle } from './src/auth/googleAuth';
 import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
 
-const clinicLogo = require('./assets/approved-clinic-logo-white.png');
+const clinicLogo = require('./assets/oralyn-logo.png');
 
 const C = {
   ...BRAND.colors,
@@ -30,7 +30,7 @@ function SafeImage({ source, style, resizeMode = 'cover', placeholder = '✚' })
   if (failed) {
     return <View style={[style, styles.imageFallback]}><Text style={styles.imageFallbackText}>{placeholder}</Text></View>;
   }
-  return <ExpoImage source={source} placeholder={require('./assets/approved-clinic-icon.png')} style={style} contentFit={resizeMode} transition={150} onError={() => setFailed(true)} />;
+  return <ExpoImage source={source} placeholder={require('./assets/oralyn-icon.png')} style={style} contentFit={resizeMode} transition={150} onError={() => setFailed(true)} />;
 }
 
 function AppointmentCard({ item, token, onChanged }) {
@@ -316,7 +316,7 @@ function Dashboard({ token, logout }) {
     <View style={styles.header}>
       <View style={styles.headerBrand}>
         <SafeImage source={clinicLogo} style={styles.headerLogo} resizeMode="contain" placeholder="✚" />
-        <View><Text style={styles.headerTitle}>{BRAND.name}</Text><Text style={styles.headerSub}>Dental Clinic • Taloja</Text></View>
+        <View><Text style={styles.headerTitle}>{BRAND.name}</Text><Text style={styles.headerSub}>Oralyn • Doctor Workspace</Text></View>
       </View>
       <Pressable onPress={()=>{logout();}} style={styles.headerAction}><Text style={styles.headerActionText}>Sign out</Text></Pressable>
     </View>
