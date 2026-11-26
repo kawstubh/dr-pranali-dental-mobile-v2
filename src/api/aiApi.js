@@ -1,6 +1,6 @@
 import { supabase } from '../auth/googleAuth';
 
-const API_URL = 'https://dr-pranali-dental-api.onrender.com';
+const API_URL = 'https://oralyn-staging-api-assistant.onrender.com';
 
 async function sessionToken() {
   const { data } = await supabase.auth.getSession();
