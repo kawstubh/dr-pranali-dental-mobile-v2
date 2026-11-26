@@ -1,6 +1,10 @@
-// Both native apps use the same Oralyn API origin. Never fall back to a retired host.
+// Both native apps use the verified Oralyn staging API origin.
+// A build-time override is supported, but an unset variable must never
+// produce an empty URL or silently fall back to a retired host.
+const DEFAULT_DOCTOR_API_URL = 'https://dr-pranali-dental-api-staging.onrender.com';
+
 export const DOCTOR_API_URL = String(
-  process.env.EXPO_PUBLIC_DENTAL_API_URL || ''
+  process.env.EXPO_PUBLIC_DENTAL_API_URL || DEFAULT_DOCTOR_API_URL
 ).trim();
 
 export function requireDoctorApiUrl() {
