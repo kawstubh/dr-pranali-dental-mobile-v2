@@ -9,7 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import { PillTabBar } from './src/premium/components';
 import AssistantWorkspace from './src/assistant/AssistantWorkspace';
 import { listAppointments, listPatients, updateAppointment, getHealth, getDentalChart, saveDentalChartEntry, getPeriodontogram, savePeriodontogramEntry } from './src/api/doctorApi';
-import { getStoredDoctorSession, signInWithGoogle, signOutGoogle } from './src/auth/googleAuth';
+import { getStoredDoctorSession, signInWithPassword, signOutGoogle } from './src/auth/googleAuth';
 import { runDentalIntelligence, extractEvidence, doctorPatientSummary, doctorTreatmentPlan, doctorChartInsights, doctorFollowUp, doctorDailySummary, doctorScanAnalysis, approveDoctorAI } from './src/api/intelligenceApi';
 
 const clinicLogo = require('./assets/dr-pranali-branded-logo.png');
@@ -454,17 +454,24 @@ function Stat({n,t}){return <View style={styles.stat}><Text style={styles.statN}
 function Empty({text}){return <View style={styles.empty}><Text style={styles.emptyText}>{text}</Text></View>}
 
 function GoogleLoginScreen({ onSignedIn }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   const login = async () => {
+    if (!email.trim() || !password) {
+      setError('Enter your registered clinic email and password.');
+      return;
+    }
     setBusy(true);
     setError('');
     try {
-      const session = await signInWithGoogle('https://dr-pranali-dental-api.onrender.com');
+      const session = await signInWithPassword(email, password);
       onSignedIn(session.access_token);
     } catch (e) {
-      setError(e?.message || 'Google sign-in failed.');
+      const code = e?.code || e?.errorCode || e?.name;
+      setError((code ? '[' + code + '] ' : '') + (e?.message || 'Doctor login failed.'));
     } finally {
       setBusy(false);
     }
@@ -473,18 +480,46 @@ function GoogleLoginScreen({ onSignedIn }) {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={styles.loginWrap}>
+      <ScrollView contentContainerStyle={styles.loginWrap} keyboardShouldPersistTaps="handled">
         <Image source={clinicLogo} style={styles.loginLogo} resizeMode="contain" />
         <Text style={styles.kicker}>DOCTOR PORTAL</Text>
         <Text style={styles.loginTitle}>Dr. Pranali Dental Clinic</Text>
-        <Text style={styles.loginSub}>Sign in with the Google account authorized for this clinic.</Text>
+        <Text style={styles.loginSub}>Sign in with your clinic-issued email and password.</Text>
         <View style={styles.card}>
-          <Text style={styles.label}>Secure doctor authentication</Text>
-          <Text style={styles.help}>This uses native Android Google Sign-In. No Expo OAuth proxy and no OTP are used.</Text>
-          <Pressable disabled={busy} onPress={login} style={[styles.primary, busy && {opacity:0.6}]}>
-            {busy ? <ActivityIndicator color={C.white} /> : <Text style={styles.primaryText}>Continue with Google</Text>}
+          <Text style={styles.label}>Clinic email</Text>
+          <TextInput
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            textContentType="username"
+            accessibilityLabel="Clinic email"
+            placeholder="doctor@clinic.com"
+            placeholderTextColor="#91A0AE"
+            style={styles.input}
+            editable={!busy}
+            returnKeyType="next"
+          />
+          <Text style={[styles.label, { marginTop: 14 }]}>Password</Text>
+          <TextInput
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            textContentType="password"
+            accessibilityLabel="Password"
+            placeholder="Enter your password"
+            placeholderTextColor="#91A0AE"
+            style={styles.input}
+            editable={!busy}
+            onSubmitEditing={login}
+            returnKeyType="go"
+          />
+          <Pressable disabled={busy} onPress={login} style={[styles.primary, busy && { opacity: 0.6 }]}>
+            {busy ? <ActivityIndicator color={C.white} /> : <Text style={styles.primaryText}>Secure doctor login</Text>}
           </Pressable>
-          {!!error && <View style={styles.loginError}><Text style={styles.loginErrorTitle}>Sign-in error</Text><Text style={styles.loginErrorText}>{error}</Text></View>}
+          <Text style={styles.help}>Your clinic administrator issues and manages your account. Public sign-up is disabled.</Text>
+          {!!error && <View accessibilityRole="alert" style={styles.loginError}><Text style={styles.loginErrorTitle}>Sign-in error</Text><Text style={styles.loginErrorText}>{error}</Text></View>}
         </View>
       </ScrollView>
     </SafeAreaView>
