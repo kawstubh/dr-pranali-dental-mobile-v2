@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Keep Doctor authentication on the same staging API as the Doctor data client.
 // The password-login route is distinct from the retired /auth/login route.
-const API_BASE = 'https://dr-pranali-dental-api-staging.onrender.com';
+const API_BASE = 'https://oralyn-staging-api-assistant.onrender.com';
 const PASSWORD_LOGIN_PATH = '/v1/dental/auth/password/login';
 
 export class DoctorAuthError extends Error {
