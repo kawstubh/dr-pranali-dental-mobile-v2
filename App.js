@@ -22,7 +22,7 @@ import { requestPublicAppointment, getDentalHealth } from './src/api/dentalApi';
 import { getAIConsent, giveAIConsent, linkPatient, patientAIChat, explainTreatment, deleteAIHistory, registerExpoPushToken } from './src/api/aiApi';
 
 // Production HTTPS API. The patient app does not require the phone and computer to share a Wi-Fi network.
-const API_URL = 'https://dr-pranali-dental-api.onrender.com';
+const API_URL = 'https://oralyn-staging-api-assistant.onrender.com';
 const PHONE = '9137007432';
 const WHATSAPP = '919137007432';
 
