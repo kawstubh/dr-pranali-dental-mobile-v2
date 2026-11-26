@@ -1,6 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE = 'https://dr-pranali-dental-api.onrender.com';
+// Keep Doctor authentication on the same staging API as the Doctor data client.
+// The password-login route is distinct from the retired /auth/login route.
+const API_BASE = 'https://dr-pranali-dental-api-staging.onrender.com';
+const PASSWORD_LOGIN_PATH = '/v1/dental/auth/password/login';
 
 export class DoctorAuthError extends Error {
   constructor(message, status = null) {
@@ -15,7 +18,7 @@ export async function signInWithPassword(email, password) {
   if (!normalizedEmail || !password) throw new DoctorAuthError('Enter your registered clinic email and password.');
   let response;
   try {
-    response = await fetch(API_BASE + '/v1/dental/auth/login', {
+    response = await fetch(API_BASE + PASSWORD_LOGIN_PATH, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({ email: normalizedEmail, password }),
@@ -34,7 +37,7 @@ export async function signInWithPassword(email, password) {
     }
     throw new DoctorAuthError(message || 'Doctor login is temporarily unavailable. Please try again.', response.status);
   }
-  if (!payload?.access_token || payload?.user?.role !== 'doctor' && payload?.user?.role !== 'admin') {
+  if (!payload?.access_token || (payload?.user?.role !== 'doctor' && payload?.user?.role !== 'admin')) {
     throw new DoctorAuthError('The clinic service returned an invalid doctor session.');
   }
   await AsyncStorage.setItem('doctor_session', payload.access_token);
