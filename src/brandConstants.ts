@@ -1,5 +1,5 @@
 export const BRAND = {
-  name: 'Dr. Pranali Dental',
+  name: 'Oralyn',
   tagline: 'Healthy Smiles • Happier Lives',
   supportEmail: '',
   colors: {
