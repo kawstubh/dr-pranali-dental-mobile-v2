@@ -72,3 +72,11 @@ test("public patient account and linked-record API methods are absent from the s
   assert.ok(!/\/v1\/dental\/patient\//.test(api));
   assert.ok(!/patientClinicalNotes|patientMessages|sendPatientMessage|patientLinkedRecords/.test(api));
 });
+
+test("Doctor selected patient survives refresh and duplicate names are distinguishable", () => {
+  assert.ok(main.includes("oralyn:doctor:selected-patient:"));
+  assert.ok(main.includes("window.sessionStorage.setItem(selectionStorageKey"));
+  assert.ok(main.includes("window.sessionStorage.getItem(selectionStorageKey"));
+  assert.ok(main.includes("patient.phone ? patient.phone.slice(-4)"));
+  assert.ok(main.includes("String(patient.id).slice(0, 8)"));
+});

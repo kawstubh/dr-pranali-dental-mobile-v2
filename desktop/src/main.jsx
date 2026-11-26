@@ -898,6 +898,7 @@ function Doctor({
   onRefreshWorkspaces,
   onSignOut,
 }) {
+  const selectionStorageKey = `oralyn:doctor:selected-patient:${activeWorkspace?.id || activeWorkspace?.clinic_id || "clinic"}:${user?.id || user?.doctor_id || "doctor"}`;
   const [selectedPatientId, setSelectedPatientId] = useState("");
   const [appointmentEdits, setAppointmentEdits] = useState({});
   const [appointmentBusyId, setAppointmentBusyId] = useState("");
@@ -953,10 +954,19 @@ function Doctor({
       if (Object.keys(findings).length) F({});
       return;
     }
-    if (!patients.some((patient) => String(patient.id) === String(selectedPatientId))) {
-      setSelectedPatientId(String(patients[0].id));
+    const patientExists = (id) => patients.some((patient) => String(patient.id) === String(id));
+    if (patientExists(selectedPatientId)) {
+      try { window.sessionStorage.setItem(selectionStorageKey, String(selectedPatientId)); } catch { /* storage may be unavailable */ }
+      return;
     }
-  }, [patients, selectedPatientId, findings, F]);
+    let rememberedPatientId = "";
+    try { rememberedPatientId = window.sessionStorage.getItem(selectionStorageKey) || ""; } catch { /* storage may be unavailable */ }
+    if (patientExists(rememberedPatientId)) {
+      setSelectedPatientId(String(rememberedPatientId));
+      return;
+    }
+    setSelectedPatientId(String(patients[0].id));
+  }, [patients, selectedPatientId, findings, F, selectionStorageKey]);
   const activePatient = patients.find((patient) => String(patient.id) === String(selectedPatientId)) || patients[0] || null;
   useEffect(() => {
     if (!activePatient?.id) return;
@@ -1043,7 +1053,7 @@ function Doctor({
             <small>Selected patient</small>
             <select className="patient-select" value={activePatient?.id || ""} onChange={(event) => setSelectedPatientId(event.target.value)} disabled={!patients.length}>
               <option value="">Select patient</option>
-              {patients.map((patient) => <option key={patient.id} value={patient.id}>{patient.name || patient.id}</option>)}
+              {patients.map((patient) => <option key={patient.id} value={patient.id}>{patient.name || "Unnamed patient"} · {patient.phone ? patient.phone.slice(-4) : String(patient.id).slice(0, 8)}</option>)}
             </select>
           </label>
           <div className="next">
