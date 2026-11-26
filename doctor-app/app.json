@@ -25,7 +25,7 @@
       "@react-native-google-signin/google-signin"
     ],
     "extra": {
-      "apiUrl": "https://dr-pranali-dental-api.onrender.com",
+      "apiUrl": "https://dr-pranali-dental-api-staging.onrender.com",
       "eas": {
         "projectId": "67bbd408-3b22-4a4c-8063-a2425edb4ef1"
       }
