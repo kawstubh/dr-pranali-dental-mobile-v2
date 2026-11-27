@@ -20,7 +20,8 @@ test("public clinic demo intake is account-free and uses the anonymous API", () 
   assert.match(demo, /name="website"/);
   assert.match(demo, /credentials:"omit"/);
   assert.match(demo, /trial starts only after the workspace is provisioned/i);
-  assert.doesNotMatch(demo, /patient login|patient password|patient OTP/i);
+  assert.doesNotMatch(demo, /<input[^>]+type=["']password/i);
+  assert.doesNotMatch(demo, /name=["'](?:otp|verification_code)["']/i);
 });
 
 test("owner activation consumes only the one-time token and never asks for clinic identity", () => {
