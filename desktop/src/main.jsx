@@ -734,9 +734,9 @@ function Title({ eyebrow, title, desc, action, M }) {
     </div>
   );
 }
-function Metric({ Icon, label, value, detail }) {
-  return (
-    <div className="metric">
+function Metric({ Icon, label, value, detail, onClick }) {
+  const content = (
+    <>
       <div className="metrichead">
         <span>{label}</span>
         <i>
@@ -745,7 +745,14 @@ function Metric({ Icon, label, value, detail }) {
       </div>
       <strong>{value}</strong>
       <small>{detail}</small>
-    </div>
+    </>
+  );
+  return onClick ? (
+    <button type="button" className="metric metric-action" onClick={onClick} aria-label={`${label}: ${value}. Open related section.`}>
+      {content}
+    </button>
+  ) : (
+    <div className="metric">{content}</div>
   );
 }
 function Panel({ title, sub, children, action }) {
@@ -1473,24 +1480,28 @@ function Doctor({
           label="Today's appointments"
           value={todayAppointments.length}
           detail="Live appointments scheduled for today"
+          onClick={() => P("appointments")}
         />
         <Metric
           Icon={HeartPulse}
           label="Active treatments"
           value={dashboardCount("active_treatment_plan_count")}
           detail="Proposed, accepted and in-progress plans"
+          onClick={() => P("treatments")}
         />
         <Metric
           Icon={Users}
           label="Pending requests"
           value={dashboardSummary ? dashboardCount("pending_appointment_requests") : appointments.filter((a) => a.status === "requested").length}
           detail="Awaiting clinic confirmation"
+          onClick={() => P("appointments")}
         />
         <Metric
           Icon={Wallet}
           label="Collected to date"
           value={dashboardMoney("collected_total_paise")}
           detail="Receipts recorded against issued invoices"
+          onClick={() => P("billing")}
         />
       </div>
       <div className="dashgrid">
