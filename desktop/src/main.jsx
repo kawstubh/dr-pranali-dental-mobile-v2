@@ -31,6 +31,7 @@ import {
   CalendarClock,
   FileHeart,
   Receipt,
+  ScanLine,
   Building2,
   Menu,
   MessageCircle,
