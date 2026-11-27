@@ -10,6 +10,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, "..");
 const source = fs.readFileSync(path.join(root, "src", "main.jsx"), "utf8");
 const assistantContractSource = fs.readFileSync(path.join(root, "scripts", "verify-assistant-staging-contract.cjs"), "utf8");
+const stagingContractSource = fs.readFileSync(path.join(root, "scripts", "verify-staging-contract.cjs"), "utf8");
 const portalHeadersSource = fs.readFileSync(path.join(root, "scripts", "verify-portal-security-headers.cjs"), "utf8");
 const assistantWorkflowSource = fs.readFileSync(path.join(root, "..", ".github", "workflows", "oralyn-desktop.yml"), "utf8");
 const authStorageCheckSource = fs.readFileSync(path.join(root, "scripts", "verify-memory-only-auth.cjs"), "utf8");
@@ -251,12 +252,15 @@ test("Assistant staging contract verification is read-only and never creates a b
 });
 
 
-test("portal security header probe is a read-only GET check", () => {
+test("portal security headers release gate is based on live deployed headers, not local preview", () => {
   assert.match(portalHeadersSource, /http:\/\/127\.0\.0\.1:4176/);
   assert.match(portalHeadersSource, /content-security-policy/i);
   assert.match(portalHeadersSource, /strict-transport-security/i);
   assert.doesNotMatch(portalHeadersSource, /method:\s*"(?:POST|PATCH|DELETE)"/);
-  assert.match(assistantWorkflowSource, /ORALYN_SECURITY_HEADERS_VERIFIED=true/);
+  assert.match(assistantWorkflowSource, /node scripts\/verify-portal-security-headers\.cjs/);
+  assert.doesNotMatch(assistantWorkflowSource, /echo ["']ORALYN_SECURITY_HEADERS_VERIFIED=true/);
+  assert.match(stagingContractSource, /secureHeaders\(portalHomeResult\.response\?\.headers, true\)/);
+  assert.match(stagingContractSource, /record\(\s*"ORALYN_SECURITY_HEADERS_VERIFIED"/);
 });
 
 
