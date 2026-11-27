@@ -311,11 +311,15 @@ export default function AssistantApp() {
 
   const changeAppointment = async (appointment, action, startsAt = null) => {
     if (!token || busy) return;
+    if (!["confirm", "reschedule"].includes(action)) {
+      setError("Clinic Assistants cannot cancel appointments.");
+      return;
+    }
     setBusy(true);
     setError("");
     const body = action === "reschedule"
       ? { status: "rescheduled", starts_at: startsAt }
-      : { status: action === "confirm" ? "confirmed" : "cancelled" };
+      : { status: "confirmed" };
     try {
       const next = await assistantRequest(
         "/v1/dental/assistant/appointments/" + encodeURIComponent(appointment.id),
@@ -330,9 +334,7 @@ export default function AssistantApp() {
       setNotice(
         action === "confirm"
           ? "Appointment confirmed."
-          : action === "cancel"
-            ? "Appointment cancelled."
-            : "Appointment rescheduled to " + dateLabel(next?.starts_at || startsAt) + "."
+          : "Appointment rescheduled to " + dateLabel(next?.starts_at || startsAt) + "."
       );
     } catch (cause) {
       setError(cause?.message || "Appointment status could not be changed.");
