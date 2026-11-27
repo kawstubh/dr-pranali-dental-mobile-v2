@@ -428,6 +428,133 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
   );
 }
 
+
+const IMAGE_CATEGORIES = ["X-ray", "Intraoral", "Extraoral", "Before", "After", "Other"];
+
+export function DoctorImagingWorkspace({ activePatient }) {
+  const [images, setImages] = useState([]);
+  const [category, setCategory] = useState("X-ray");
+  const [selectedId, setSelectedId] = useState("");
+  const [beforeId, setBeforeId] = useState("");
+  const [afterId, setAfterId] = useState("");
+  const [mode, setMode] = useState("viewer");
+  const [zoom, setZoom] = useState(1);
+  const [rotation, setRotation] = useState(0);
+  const [fit, setFit] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    setImages([]);
+    setSelectedId("");
+    setBeforeId("");
+    setAfterId("");
+    setZoom(1);
+    setRotation(0);
+    setError("");
+  }, [activePatient?.id]);
+
+  useEffect(() => () => {
+    images.forEach((image) => URL.revokeObjectURL(image.url));
+  }, [images]);
+
+  const selected = images.find((image) => image.id === selectedId) || images[0] || null;
+  const before = images.find((image) => image.id === beforeId) || null;
+  const after = images.find((image) => image.id === afterId) || null;
+
+  const addImages = (event) => {
+    const files = Array.from(event.target.files || []);
+    setError("");
+    const valid = files.filter((file) => /^image\/(jpeg|png|webp)$/i.test(file.type) && file.size > 0 && file.size <= 20 * 1024 * 1024);
+    if (valid.length !== files.length) setError("Only JPEG, PNG or WebP images up to 20 MB each are accepted.");
+    if (!valid.length) return;
+    const next = valid.map((file) => ({
+      id: globalThis.crypto?.randomUUID?.() || `local-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      url: URL.createObjectURL(file),
+      category,
+      addedAt: new Date().toISOString(),
+    }));
+    setImages((current) => [...next, ...current]);
+    setSelectedId(next[0].id);
+    if (category === "Before" && !beforeId) setBeforeId(next[0].id);
+    if (category === "After" && !afterId) setAfterId(next[0].id);
+    event.target.value = "";
+  };
+
+  const removeImage = (id) => {
+    setImages((current) => {
+      const target = current.find((image) => image.id === id);
+      if (target) URL.revokeObjectURL(target.url);
+      return current.filter((image) => image.id !== id);
+    });
+    if (selectedId === id) setSelectedId("");
+    if (beforeId === id) setBeforeId("");
+    if (afterId === id) setAfterId("");
+  };
+
+  if (!activePatient?.id) {
+    return <><CareHeader eyebrow="CLINICAL IMAGING" title="Images & X-rays" description="Review radiographs and clinical photographs for a selected patient." /><StateMessage>Select a patient from the clinical workspace before opening imaging.</StateMessage></>;
+  }
+
+  return (
+    <>
+      <CareHeader eyebrow="CLINICAL IMAGING" title="Images & X-rays" description={`Local review workspace for ${activePatient.name || activePatient.id}. Images selected here stay in this browser session and are not uploaded or saved to the patient record.`} />
+      <div className="imaging-patient-strip">
+        <div><span className="imaging-kicker">ACTIVE PATIENT</span><b>{activePatient.name || "Selected patient"}</b><small>{activePatient.id}</small></div>
+        <span className="imaging-local-badge"><LockKeyhole size={14}/> Local preview only</span>
+      </div>
+      {error && <StateMessage error>{error}</StateMessage>}
+      <section className="panel imaging-toolbar">
+        <div className="imaging-upload-copy"><div className="imaging-icon"><Upload size={20}/></div><div><b>Add clinical images</b><small>JPEG, PNG or WebP · up to 20 MB per image · browser session only</small></div></div>
+        <div className="imaging-upload-actions">
+          <select aria-label="Image category" value={category} onChange={(event) => setCategory(event.target.value)}>{IMAGE_CATEGORIES.map((item) => <option key={item}>{item}</option>)}</select>
+          <label className="primary imaging-file-button"><Plus size={16}/> Add images<input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={addImages}/></label>
+        </div>
+      </section>
+      <div className="imaging-tabs" role="tablist" aria-label="Imaging tools">
+        <button className={mode === "viewer" ? "selected" : ""} onClick={() => setMode("viewer")}> <ScanLine size={16}/> X-ray viewer</button>
+        <button className={mode === "gallery" ? "selected" : ""} onClick={() => setMode("gallery")}><Images size={16}/> Image gallery <span>{images.length}</span></button>
+        <button className={mode === "compare" ? "selected" : ""} onClick={() => setMode("compare")}><Columns size={16}/> Before & after</button>
+      </div>
+      {mode === "viewer" && (
+        <div className="imaging-layout">
+          <section className="panel imaging-viewer-panel">
+            <div className="imaging-panel-head"><div><b>Image viewer</b><small>{selected ? selected.name : "Select an image from the gallery"}</small></div><div className="imaging-controls">
+              <button className="outline" title="Zoom out" aria-label="Zoom out" disabled={!selected} onClick={() => setZoom((value) => Math.max(.5, +(value - .25).toFixed(2)))}><ZoomOut size={16}/></button>
+              <span>{Math.round(zoom * 100)}%</span>
+              <button className="outline" title="Zoom in" aria-label="Zoom in" disabled={!selected} onClick={() => setZoom((value) => Math.min(4, +(value + .25).toFixed(2)))}><ZoomIn size={16}/></button>
+              <button className="outline" title="Rotate image" aria-label="Rotate image" disabled={!selected} onClick={() => setRotation((value) => (value + 90) % 360)}><RotateCw size={16}/></button>
+              <button className="outline" title="Reset view" disabled={!selected} onClick={() => {setZoom(1);setRotation(0);setFit(true);}}>Reset</button>
+            </div></div>
+            <div className="imaging-canvas">
+              {selected ? <img src={selected.url} alt={selected.name} style={{transform:`scale(${zoom}) rotate(${rotation}deg)`}} /> : <div className="imaging-empty"><ScanLine size={42}/><b>No image selected</b><span>Add an image or choose one from the gallery.</span></div>}
+            </div>
+            {selected && <div className="imaging-image-meta"><span>{selected.category} · {(selected.size / 1024).toFixed(0)} KB</span><button className="link" onClick={() => removeImage(selected.id)}>Remove from session</button></div>}
+          </section>
+          <aside className="panel imaging-queue"><div className="imaging-panel-head"><div><b>Image queue</b><small>{images.length} session image{images.length === 1 ? "" : "s"}</small></div></div>
+            {images.length ? images.map((image) => <button key={image.id} className={selected?.id === image.id ? "imaging-queue-item active" : "imaging-queue-item"} onClick={() => {setSelectedId(image.id);setZoom(1);setRotation(0);}}><img src={image.url} alt=""/><span><b>{image.name}</b><small>{image.category}</small></span></button>) : <p className="imaging-queue-empty">Images added in this session will appear here.</p>}
+          </aside>
+        </div>
+      )}
+      {mode === "gallery" && (
+        <section className="panel imaging-gallery-panel"><div className="imaging-panel-head"><div><b>Patient image gallery</b><small>Session-only previews · no server persistence</small></div></div>
+          {images.length ? <div className="imaging-gallery-grid">{images.map((image) => <article className="imaging-gallery-card" key={image.id}><button className="imaging-thumb" onClick={() => {setSelectedId(image.id);setMode("viewer");}}><img src={image.url} alt={image.name}/></button><div><b title={image.name}>{image.name}</b><small>{image.category} · {(image.size / 1024).toFixed(0)} KB</small><div className="imaging-card-actions"><button className="link" onClick={() => {setSelectedId(image.id);setMode("viewer");}}>Open viewer</button><button className="link danger-link" onClick={() => removeImage(image.id)}>Remove</button></div></div></article>)}</div> : <div className="imaging-empty imaging-gallery-empty"><Images size={38}/><b>Your gallery is empty</b><span>Add clinical images above to preview them here.</span></div>}
+        </section>
+      )}
+      {mode === "compare" && (
+        <section className="panel imaging-compare-panel"><div className="imaging-panel-head"><div><b>Before-and-after comparison</b><small>Side-by-side visual review. No automated clinical assessment is performed.</small></div></div>
+          <div className="imaging-compare-selects"><label>Before image<select value={beforeId} onChange={(event) => setBeforeId(event.target.value)}><option value="">Choose image</option>{images.map((image) => <option key={image.id} value={image.id}>{image.name} · {image.category}</option>)}</select></label><label>After image<select value={afterId} onChange={(event) => setAfterId(event.target.value)}><option value="">Choose image</option>{images.map((image) => <option key={image.id} value={image.id}>{image.name} · {image.category}</option>)}</select></label></div>
+          <div className="imaging-compare-grid">{[["Before",before],["After",after]].map(([label,image]) => <div className="imaging-compare-side" key={label}><b>{label}</b>{image ? <><img src={image.url} alt={`${label}: ${image.name}`}/><small>{image.name}</small></> : <div className="imaging-empty"><Images size={30}/><span>Select a {label.toLowerCase()} image</span></div>}</div>)}</div>
+          <p className="care-hint">For accurate comparison, use clinically appropriate images with consistent views and acquisition conditions. Clinical interpretation remains with the treating dentist.</p>
+        </section>
+      )}
+      <p className="imaging-disclaimer"><LockKeyhole size={14}/> Temporary local preview only. This staging interface does not yet store or retrieve clinical images from secure patient storage.</p>
+    </>
+  );
+}
+
 export function DoctorPatientJourney({ token, activePatient, appointments = [] }) {
   const [plans, setPlans] = useState([]);
   const [notes, setNotes] = useState([]);
