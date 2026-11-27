@@ -570,6 +570,7 @@ function LoginScreen({ loading, error, onLogin, onPatient, onAssistant }) {
           </form>
           <div className="oralyn-auth-divider"><span>SECURE CLINIC ACCESS</span></div>
           <div className="oralyn-reference-admin-note">Your account is issued and managed by your clinic administrator. Public sign-up is disabled.</div>
+          <a className="oralyn-team-link" href="/demo/" style={{ textDecoration: "none" }}>Request a 3-day clinic demo <span>→</span></a>
           <button className="oralyn-team-link" onClick={onAssistant}>Clinic Assistant sign in <span>→</span></button>
           <button className="oralyn-patient-link" onClick={onPatient}>Patient services &amp; appointment requests <span>→</span></button>
         </div>
