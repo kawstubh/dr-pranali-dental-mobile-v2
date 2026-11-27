@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0C3B82">
+<meta name="oralyn-api-origin" content="https://oralyn-staging-api-assistant.onrender.com">
+<title>Request an Oralyn demo</title>
+<style>
+:root{font-family:Inter,Arial,sans-serif;color:#17334a;background:#f4fbff}*{box-sizing:border-box}body{margin:0;min-height:100vh}header{height:82px;background:#fff;border-bottom:1px solid #dfebf2;display:flex;align-items:center;justify-content:space-between;padding:0 max(18px,calc((100vw - 1040px)/2))}header strong{font-size:22px;letter-spacing:-.7px;color:#0c3b82}header a{color:#0a84e8;text-decoration:none;font-size:13px;font-weight:700}.wrap{width:min(100% - 28px,620px);margin:32px auto}.panel{background:#fff;border:1px solid #e0ebf2;border-radius:20px;padding:28px;box-shadow:0 14px 40px rgba(12,59,130,.06)}.eyebrow{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:#078c98;font-weight:800}h1{font-size:clamp(27px,4vw,36px);line-height:1.14;letter-spacing:-.8px;margin:8px 0}p{color:#627789;line-height:1.5;margin:8px 0 18px}label{display:block;font-size:13px;font-weight:750;color:#35536a;margin:14px 0}input{display:block;width:100%;margin-top:7px;border:1px solid #cbdbe5;border-radius:10px;padding:12px;font:inherit;font-size:16px;min-height:48px}input:focus{outline:0;border-color:#0a84e8;box-shadow:0 0 0 3px rgba(10,132,232,.12)}button{border:0;border-radius:11px;padding:13px 18px;background:#0a84e8;color:#fff;font:inherit;font-weight:800;cursor:pointer;width:100%;min-height:48px;margin-top:8px}button:disabled{opacity:.6;cursor:wait}.note{font-size:12px;color:#6b7e8e;line-height:1.45}.msg{display:none;margin-top:14px;border-radius:12px;padding:13px;line-height:1.45}.msg.error{display:block;background:#fff2f0;color:#9a2d22}.msg.success{display:block;background:#e9faf7;color:#075f56}.hp{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}@media(max-width:520px){header{height:72px;padding:0 16px}.wrap{margin:12px auto}.panel{padding:20px 16px;border-radius:15px}h1{font-size:28px}}
+</style>
+</head>
+<body>
+<header><strong>oralyn</strong><a href="/">Back to portal</a></header>
+<main class="wrap"><section class="panel">
+<div class="eyebrow">For dental clinics</div>
+<h1>Request your 3-day Oralyn demo</h1>
+<p>Tell us about your clinic. Our team will verify your details before creating a separate, secure clinic workspace. Your 3-day trial starts only after the workspace is provisioned.</p>
+<form id="demo-form">
+<label>Clinic name *<input name="clinic_name" required minlength="2" maxlength="200" autocomplete="organization" placeholder="Your clinic name"></label>
+<label>Your name *<input name="owner_name" required minlength="2" maxlength="200" autocomplete="name" placeholder="Clinic owner or lead doctor"></label>
+<label>Work email *<input name="email" type="email" required maxlength="320" autocomplete="email" placeholder="you@clinic.com"></label>
+<label>Mobile number *<input name="phone" type="tel" required minlength="10" maxlength="15" autocomplete="tel" inputmode="tel" placeholder="10-digit Indian mobile number"></label>
+<label class="hp" aria-hidden="true">Leave this field empty<input name="website" tabindex="-1" autocomplete="off"></label>
+<button id="submit" type="submit">Request demo</button>
+<div id="message" class="msg" role="status" aria-live="polite"></div>
+<p class="note">Submitting this form does not create a clinic account or start a subscription. We will contact you to verify the request. No patient login is involved.</p>
+</form></section></main>
+<script>
+const apiOrigin=document.querySelector('meta[name="oralyn-api-origin"]')?.content||"";
+const form=document.getElementById("demo-form"),button=document.getElementById("submit"),message=document.getElementById("message");
+let idempotencyKey="";
+function show(kind,text){message.className="msg "+kind;message.textContent=text;}
+form.addEventListener("submit",async event=>{
+ event.preventDefault(); if(!form.reportValidity())return;
+ if(!idempotencyKey){idempotencyKey=crypto.randomUUID?crypto.randomUUID():Array.from(crypto.getRandomValues(new Uint8Array(24)),x=>x.toString(16).padStart(2,"0")).join("");}
+ const data=new FormData(form); const payload={idempotency_key:idempotencyKey,clinic_name:String(data.get("clinic_name")||"").trim(),owner_name:String(data.get("owner_name")||"").trim(),email:String(data.get("email")||"").trim(),phone:String(data.get("phone")||"").trim(),website:String(data.get("website")||"")};
+ button.disabled=true;button.textContent="Sending…";message.className="msg";message.textContent="";
+ try{
+  const response=await fetch(apiOrigin+"/v1/dental/public/demo-requests",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),credentials:"omit",referrerPolicy:"no-referrer"});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(result?.detail?.message||result?.detail||"We could not submit the request. Please try again.");
+  show("success",result.message||"Your request has been received. Our team will verify your details before activating a 3-day demo.");
+  form.reset();idempotencyKey="";
+ }catch(error){show("error",error.message||"Connection problem. Please retry; your request key is retained to prevent duplicates.");}
+ finally{button.disabled=false;button.textContent="Request demo";}
+});
+</script>
+</body></html>
