@@ -15,7 +15,7 @@ export default defineConfig({
   },
   preview: {
     host: "0.0.0.0",
-    allowedHosts: ["oralyn-web-portal-spa.onrender.com", "oralyn-staging-all-portals-web.onrender.com"],
+    allowedHosts: ["oralyn-web-portal-spa.onrender.com", "oralyn-staging-all-portals-web.onrender.com", "dr-pranali-clinic-preview.onrender.com"],
     headers: {
       "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
       "X-Content-Type-Options": "nosniff",
