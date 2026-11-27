@@ -70,45 +70,46 @@ function githubApiHeaders() {
   };
 }
 
-async function githubPullRequest(repo, number) {
+async function githubBranchHead(repo, branch) {
   const result = await request(
-    "https://api.github.com/repos/" + repo + "/pulls/" + number,
+    "https://api.github.com/repos/" + repo + "/git/ref/heads/" + branch,
     { headers: githubApiHeaders() },
     2,
   );
-  if (!result.response || result.response.status !== 200) return null;
-  return jsonBody(result.response);
+  if (!result.response || result.response.status !== 200) return "";
+  const body = await jsonBody(result.response);
+  return String(body?.object?.sha || "");
 }
 
-async function backendCommitMatchesPr(repo, deployedCommit, prHeadCommit) {
-  if (!deployedCommit || !prHeadCommit) {
-    return { ok: false, detail: "deployed API commit or PR #60 head is unavailable" };
+async function backendCommitMatchesBranch(repo, deployedCommit, branchHeadCommit) {
+  if (!deployedCommit || !branchHeadCommit) {
+    return { ok: false, detail: "deployed API commit or release branch head is unavailable" };
   }
-  if (deployedCommit === prHeadCommit) {
-    return { ok: true, detail: "live API deployment commit exactly matches Draft PR #60 head " + prHeadCommit };
+  if (deployedCommit === branchHeadCommit) {
+    return { ok: true, detail: "live API deployment commit exactly matches release branch head " + branchHeadCommit };
   }
 
   const comparison = await request(
-    "https://api.github.com/repos/" + repo + "/compare/" + deployedCommit + "..." + prHeadCommit,
+    "https://api.github.com/repos/" + repo + "/compare/" + deployedCommit + "..." + branchHeadCommit,
     { headers: githubApiHeaders() },
     2,
   );
   if (!comparison.response || comparison.response.status !== 200) {
-    return { ok: false, detail: "GitHub could not verify the deployed-to-PR commit range; exact commit match is required" };
+    return { ok: false, detail: "GitHub could not verify the deployed-to-branch commit range; exact commit match is required" };
   }
 
   const compareBody = await jsonBody(comparison.response);
   if (isRuntimeEquivalentCompare(compareBody)) {
     return {
       ok: true,
-      detail: "live API runtime commit " + deployedCommit + " is an ancestor of PR #60 head " +
-        prHeadCommit + "; GitHub confirms every intervening change is a Markdown file under docs/ or a Python test under tests/, with no runtime or configuration changes",
+      detail: "live API runtime commit " + deployedCommit + " is an ancestor of release branch head " +
+        branchHeadCommit + "; GitHub confirms every intervening change is documentation or Python tests, with no runtime or configuration changes",
     };
   }
   return {
     ok: false,
-    detail: "live API runtime commit " + deployedCommit + " differs from PR #60 head " + prHeadCommit +
-      " and the intervening commit range is not exclusively docs/*.md",
+    detail: "live API runtime commit " + deployedCommit + " differs from release branch head " + branchHeadCommit +
+      " and the intervening commit range contains runtime or configuration changes",
   };
 }
 
@@ -127,8 +128,11 @@ async function waitForResponse(url, predicate, options = {}, attempts = 12, dela
 async function main() {
   const originHeaders = { Origin: portalOrigin };
   const expectedPortalCommit = process.env.ORALYN_COMMIT_SHA || process.env.GITHUB_SHA || "";
-  const backendPr = await githubPullRequest("kawstubh/universal-intelligence-engine", 60);
-  const expectedApiCommit = backendPr?.head?.sha || "";
+  const apiReleaseBranch = "feat/oralyn-clinic-assistant-rbac";
+  const expectedApiCommit = await githubBranchHead(
+    "kawstubh/universal-intelligence-engine",
+    apiReleaseBranch,
+  );
 
   const [dentalHealthWait, portalManifestWait] = await Promise.all([
     waitForResponse(
@@ -186,7 +190,7 @@ async function main() {
   );
 
   const apiRuntimeCommit = String(health?.deployment_commit || "");
-  const apiCommitCheck = await backendCommitMatchesPr(
+  const apiCommitCheck = await backendCommitMatchesBranch(
     "kawstubh/universal-intelligence-engine",
     apiRuntimeCommit,
     expectedApiCommit,
@@ -335,7 +339,7 @@ async function main() {
     const bookingBlockReason = health?.database_identity_verified !== true || !branchIdentityOk
       ? "not attempted because the isolated synthetic database identity is not verified"
       : !apiCommitOk
-        ? "not attempted because the deployed API code does not match PR #60 or a verified docs-only descendant"
+        ? "not attempted because the deployed API code does not match the current release branch or a verified docs/test-only descendant"
         : "not attempted because the deployed API runtime commit is unavailable";
     record("ORALYN_GUEST_BOOKING_E2E_VERIFIED", false, bookingBlockReason);
     record("ORALYN_GUEST_BOOKING_IDEMPOTENCY_VERIFIED", false, bookingBlockReason);
