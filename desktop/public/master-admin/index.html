@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer"><meta name="theme-color" content="#0C3B82">
+<meta name="oralyn-api-origin" content="https://oralyn-staging-api-assistant.onrender.com">
+<title>Oralyn Master Admin</title>
+<style>
+:root{font-family:Inter,Arial,sans-serif;color:#17334a;background:#f4fbff}*{box-sizing:border-box}body{margin:0;min-height:100vh}header{height:76px;background:#fff;border-bottom:1px solid #dfebf2;display:flex;align-items:center;justify-content:space-between;padding:0 max(18px,calc((100vw - 1160px)/2))}header strong{font-size:22px;color:#0c3b82}header span{font-size:11px;letter-spacing:.12em;color:#078c98;font-weight:800}.wrap{width:min(100% - 28px,1160px);margin:26px auto}.panel,.card{background:#fff;border:1px solid #e0ebf2;border-radius:16px;padding:22px;box-shadow:0 10px 30px rgba(12,59,130,.045)}.login{max-width:480px;margin:50px auto}.eyebrow{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:#078c98;font-weight:800}h1{font-size:30px;line-height:1.15;margin:8px 0}h2{font-size:18px;margin:0 0 12px}p{color:#627789;line-height:1.5}label{display:block;font-size:13px;font-weight:750;color:#35536a;margin:13px 0}input{display:block;width:100%;margin-top:7px;border:1px solid #cbdbe5;border-radius:10px;padding:11px;font:inherit;font-size:16px;min-height:46px}button{border:0;border-radius:10px;padding:11px 15px;background:#0a84e8;color:#fff;font:inherit;font-weight:800;cursor:pointer;min-height:42px}button:disabled{opacity:.55;cursor:wait}.secondary{background:#edf6fc;color:#0b4f7c}.danger{background:#fff1ef;color:#9a2d22}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.stack{display:grid;gap:12px}.item{border:1px solid #e3edf3;border-radius:12px;padding:14px}.item strong{display:block;color:#17334a}.meta{font-size:12px;color:#718497;line-height:1.5;margin:5px 0}.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}.verify{display:flex;align-items:flex-start;gap:8px;font-size:12px;font-weight:600}.verify input{width:auto;min-height:auto;margin:1px 0}.msg{display:none;padding:12px;border-radius:10px;margin:12px 0;line-height:1.45}.msg.error{display:block;background:#fff2f0;color:#9a2d22}.msg.success{display:block;background:#e9faf7;color:#075f56}.empty{padding:18px;text-align:center;color:#73879a;border:1px dashed #cbdbe5;border-radius:12px}.hidden{display:none!important}.activation{word-break:break-all;background:#f4fbff;padding:10px;border-radius:8px;font-size:12px;margin-top:8px}.pill{display:inline-block;background:#edf6fc;color:#0b5e8a;padding:4px 8px;border-radius:20px;font-size:11px;font-weight:800}.muted{font-size:12px;color:#718497}@media(max-width:760px){.grid{grid-template-columns:1fr}.wrap{margin:12px auto}.panel,.card{padding:16px}.login{margin:24px auto}h1{font-size:26px}}
+</style>
+</head>
+<body>
+<header><strong>oralyn</strong><span>MASTER ADMIN · RESTRICTED</span></header>
+<main class="wrap">
+<section id="login-panel" class="panel login">
+<div class="eyebrow">Platform operations</div><h1>Master Admin sign in</h1>
+<p>Use the separately authorised Oralyn platform-admin account. Clinic accounts without Master Admin permission cannot access this workspace.</p>
+<form id="login-form">
+<label>Admin email<input name="email" type="email" autocomplete="username" required></label>
+<label>Password<input name="password" type="password" autocomplete="current-password" required></label>
+<button id="login-button" type="submit">Sign in securely</button>
+</form><div id="login-message" class="msg" role="status" aria-live="polite"></div>
+</section>
+<section id="dashboard" class="hidden">
+<div class="toolbar"><div><div class="eyebrow">Platform overview</div><h1>Clinic onboarding</h1><div class="muted">Manage demo requests and clinic entitlements. Patient clinical records are not exposed here.</div></div><button id="logout" class="secondary">Sign out</button></div>
+<div id="dashboard-message" class="msg" role="status" aria-live="polite"></div>
+<div class="grid">
+<section class="panel"><h2>Demo requests</h2><div id="requests" class="stack"><div class="empty">Loading requests…</div></div></section>
+<section class="panel"><h2>Clinic workspaces</h2><div id="clinics" class="stack"><div class="empty">Loading clinics…</div></div></section>
+</div>
+</section>
+</main>
+<script>
+const API=document.querySelector('meta[name="oralyn-api-origin"]')?.content||"";
+let token="";
+const $=id=>document.getElementById(id);
+function show(id,kind,text){const el=$(id);el.className="msg "+kind;el.textContent=text;}
+async function api(path,{method="GET",body}={}){const response=await fetch(API+path,{method,headers:{"Content-Type":"application/json",...(token?{Authorization:"Bearer "+token}:{})},...(body?{body:JSON.stringify(body)}:{}),credentials:"omit",referrerPolicy:"no-referrer"});const data=await response.json().catch(()=>({}));if(!response.ok){const detail=data?.detail;throw new Error(typeof detail==="string"?detail:detail?.message||detail?.code||"Request failed ("+response.status+")");}return data;}
+function node(tag,cls,text){const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=String(text);return el;}
+async function loadDashboard(){
+ $("requests").replaceChildren(node("div","empty","Loading requests…"));$("clinics").replaceChildren(node("div","empty","Loading clinics…"));
+ try{
+  const [requests,clinics]=await Promise.all([api("/v1/dental/master-admin/demo-requests"),api("/v1/dental/master-admin/clinics")]);
+  renderRequests(requests.requests||[]);renderClinics(clinics.clinics||[]);
+ }catch(error){show("dashboard-message","error",error.message);if(/AUTH_REQUIRED|SESSION_INVALID|expired|invalid/i.test(error.message)){token="";$("dashboard").classList.add("hidden");$("login-panel").classList.remove("hidden");}}
+}
+function renderRequests(items){
+ const root=$("requests");root.replaceChildren();
+ if(!items.length){root.append(node("div","empty","No demo requests waiting for review."));return;}
+ for(const item of items){
+  const card=node("article","item");card.append(node("strong", "",item.clinic_name||"Clinic request"));
+  card.append(node("div","meta",(item.owner_name||"")+" · "+(item.email||"")+" · "+(item.phone||"")));
+  card.append(node("span","pill",item.status||"pending"));
+  if(item.status!=="provisioned"){
+   const verify=node("label","verify");const check=node("input");check.type="checkbox";const labelText=node("span","","I verified this owner's email and mobile number directly.");verify.append(check,labelText);card.append(verify);
+   const action=node("button","","Provision 3-day demo");action.disabled=true;check.addEventListener("change",()=>{action.disabled=!check.checked;});
+   action.addEventListener("click",async()=>{
+    action.disabled=true;action.textContent="Provisioning…";
+    try{
+     const result=await api("/v1/dental/master-admin/demo-requests/"+encodeURIComponent(item.id)+"/provision",{method:"POST",body:{verification_confirmed:true}});
+     const url=result.activation_url||((location.origin+(result.activation_path||"/owner-activate/"))+"?token="+encodeURIComponent(result.activation_token||""));
+     const detail=node("div","activation","One-time owner activation link: "+url);
+     const copy=node("button","secondary","Copy activation link");copy.addEventListener("click",()=>navigator.clipboard.writeText(url).then(()=>show("dashboard-message","success","Activation link copied. Send it securely to the verified clinic owner.")));
+     card.append(detail,copy);
+     action.textContent="Provisioned";action.disabled=true;await loadDashboard();
+    }catch(error){show("dashboard-message","error",error.message);action.textContent="Retry provisioning";action.disabled=!check.checked;}
+   });
+   card.append(action);
+  }else{card.append(node("div","meta","Workspace: "+(item.clinic_id||"Provisioned")));}
+  root.append(card);
+ }
+}
+function renderClinics(items){
+ const root=$("clinics");root.replaceChildren();
+ if(!items.length){root.append(node("div","empty","No clinic workspaces found."));return;}
+ for(const item of items){
+  const card=node("article","item");card.append(node("strong","",item.name||"Clinic"));
+  card.append(node("div","meta","Clinic ID: "+item.id));
+  card.append(node("span","pill",item.entitlement_status||"entitlement pending"));
+  if(item.trial_ends_at)card.append(node("div","meta","Trial ends: "+new Date(Number(item.trial_ends_at)*1000).toLocaleString()));
+  if(item.current_period_end)card.append(node("div","meta","Paid period ends: "+new Date(Number(item.current_period_end)*1000).toLocaleString()));
+  root.append(card);
+ }
+}
+$("login-form").addEventListener("submit",async event=>{
+ event.preventDefault();const button=$("login-button");button.disabled=true;button.textContent="Verifying…";
+ const data=new FormData(event.currentTarget);
+ try{
+  const result=await api("/v1/dental/auth/password/login",{method:"POST",body:{email:String(data.get("email")||"").trim(),password:String(data.get("password")||"")}});
+  token=result.access_token||"";
+  if(!token)throw new Error("The authentication service did not return a session.");
+  await api("/v1/dental/master-admin/demo-requests");
+  $("login-panel").classList.add("hidden");$("dashboard").classList.remove("hidden");show("dashboard-message","success","Master Admin access verified.");
+  await loadDashboard();
+ }catch(error){token="";show("login-message","error",error.message);}
+ finally{button.disabled=false;button.textContent="Sign in securely";event.currentTarget.reset();}
+});
+$("logout").addEventListener("click",async()=>{const current=token;token="";try{await fetch(API+"/v1/dental/auth/logout",{method:"POST",headers:{Authorization:"Bearer "+current},credentials:"omit"});}catch{}$("dashboard").classList.add("hidden");$("login-panel").classList.remove("hidden");});
+</script>
+</body></html>
