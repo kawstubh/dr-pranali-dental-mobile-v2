@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0C3B82">
+<meta name="oralyn-api-origin" content="https://oralyn-staging-api-assistant.onrender.com">
+<title>Activate your Oralyn clinic account</title>
+<style>
+:root{font-family:Inter,Arial,sans-serif;color:#17334a;background:#f4fbff}*{box-sizing:border-box}body{margin:0;min-height:100vh}header{height:82px;background:#fff;border-bottom:1px solid #dfebf2;display:flex;align-items:center;justify-content:space-between;padding:0 max(18px,calc((100vw - 1040px)/2))}header strong{font-size:22px;letter-spacing:-.7px;color:#0c3b82}header a{color:#0a84e8;text-decoration:none;font-size:13px;font-weight:700}.wrap{width:min(100% - 28px,560px);margin:32px auto}.panel{background:#fff;border:1px solid #e0ebf2;border-radius:20px;padding:28px;box-shadow:0 14px 40px rgba(12,59,130,.06)}.eyebrow{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:#078c98;font-weight:800}h1{font-size:clamp(27px,4vw,36px);line-height:1.14;letter-spacing:-.8px;margin:8px 0}p{color:#627789;line-height:1.5;margin:8px 0 18px}label{display:block;font-size:13px;font-weight:750;color:#35536a;margin:14px 0}input{display:block;width:100%;margin-top:7px;border:1px solid #cbdbe5;border-radius:10px;padding:12px;font:inherit;font-size:16px;min-height:48px}button{border:0;border-radius:11px;padding:13px 18px;background:#0a84e8;color:#fff;font:inherit;font-weight:800;cursor:pointer;width:100%;min-height:48px;margin-top:8px}button:disabled{opacity:.6;cursor:wait}.note{font-size:12px;color:#6b7e8e;line-height:1.45}.msg{display:none;margin-top:14px;border-radius:12px;padding:13px;line-height:1.45}.msg.error{display:block;background:#fff2f0;color:#9a2d22}.msg.success{display:block;background:#e9faf7;color:#075f56}@media(max-width:520px){header{height:72px;padding:0 16px}.wrap{margin:12px auto}.panel{padding:20px 16px;border-radius:15px}h1{font-size:28px}}
+</style>
+</head>
+<body>
+<header><strong>oralyn</strong><a href="/">Back to portal</a></header>
+<main class="wrap"><section class="panel">
+<div class="eyebrow">Secure account activation</div>
+<h1>Set your clinic password</h1>
+<p>This one-time activation link is valid for 24 hours. Choose a strong password of at least 12 characters. Your clinic's 3-day demo starts from workspace provisioning, not from this password step.</p>
+<form id="activation-form">
+<label>New password *<input name="password" type="password" minlength="12" maxlength="256" autocomplete="new-password" required></label>
+<label>Confirm password *<input name="confirm" type="password" minlength="12" maxlength="256" autocomplete="new-password" required></label>
+<button id="submit" type="submit">Activate clinic account</button>
+<div id="message" class="msg" role="status" aria-live="polite"></div>
+<p class="note">Never share this activation link. It can be used once only.</p>
+</form></section></main>
+<script>
+const apiOrigin=document.querySelector('meta[name="oralyn-api-origin"]')?.content||"";
+const params=new URLSearchParams(window.location.search);const token=params.get("token")||"";
+if(token){history.replaceState(null,"",window.location.pathname);}
+const form=document.getElementById("activation-form"),button=document.getElementById("submit"),message=document.getElementById("message");
+function show(kind,text){message.className="msg "+kind;message.textContent=text;}
+if(!token){form.querySelectorAll("input,button").forEach(el=>el.disabled=true);show("error","This activation link is missing. Open the complete one-time link sent by the Oralyn team.");}
+form.addEventListener("submit",async event=>{
+ event.preventDefault();if(!form.reportValidity())return;
+ const data=new FormData(form),password=String(data.get("password")||""),confirm=String(data.get("confirm")||"");
+ if(password!==confirm){show("error","The passwords do not match.");return;}
+ button.disabled=true;button.textContent="Activating…";
+ try{
+  const response=await fetch(apiOrigin+"/v1/dental/public/owner-activate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token,password}),credentials:"omit",referrerPolicy:"no-referrer"});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(result?.detail?.message||result?.detail||"This link is invalid or has expired.");
+  show("success","Your clinic account is activated. You can now sign in to the Doctor portal using your clinic email and new password.");
+  form.reset();form.querySelectorAll("input").forEach(el=>el.disabled=true);
+  button.textContent="Account activated";
+ }catch(error){show("error",error.message||"We could not activate this account. Contact Oralyn support.");button.disabled=false;button.textContent="Activate clinic account";}
+});
+</script>
+</body></html>
