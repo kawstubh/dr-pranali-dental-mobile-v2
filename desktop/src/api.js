@@ -157,6 +157,8 @@ export const dentalApi = {
     request("/v1/dental/intelligence/run", { token, method: "POST", body }),
   publicAppointment: (body) =>
     request("/v1/dental/public/appointments", { method: "POST", body }),
+  publicOwnerActivate: (body) =>
+    request("/v1/dental/public/owner-activate", { method: "POST", body }),
   doctorTreatmentPlans: (token, patientId) =>
     request(`/v1/dental/doctor/patients/${encodeURIComponent(patientId)}/treatment-plans`, { token }),
   createTreatmentPlan: (token, patientId, body) =>
