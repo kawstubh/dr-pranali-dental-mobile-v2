@@ -162,7 +162,10 @@ test("public client does not expose linked-record billing or document methods", 
 test("staging contract requires exact Neon branch identity and verified runtime-code equivalence before synthetic booking", () => {
   assert.match(stagingContractSource, /database_branch_identity_verified === true/);
   assert.match(stagingContractSource, /ORALYN_STAGING_DATABASE_BRANCH_VERIFIED/);
-  assert.match(stagingContractSource, /backendCommitMatchesPr/);
+  assert.match(stagingContractSource, /githubBranchHead/);
+  assert.match(stagingContractSource, /backendCommitMatchesBranch/);
+  assert.match(stagingContractSource, /feat\/oralyn-clinic-assistant-rbac/);
+  assert.doesNotMatch(stagingContractSource, /PR #60/);
   assert.match(stagingContractSource, /isRuntimeEquivalentCompare/);
   assert.match(stagingContractSource, /process\.env\.GITHUB_TOKEN/);
   assert.match(stagingContractSource, /Authorization: "Bearer " \+ token/);
