@@ -44,6 +44,7 @@ import { normaliseList, normaliseUser, formatTime, isSameLocalDay } from "./data
 import { buildPatientCrmRows, getPatientCrmSummary, CRM_STATUSES } from "./crm.js";
 import { DoctorCareManagement, DoctorClinicalNotes, PatientCommunication, DoctorPatientJourney, DoctorFollowUpWorklist, DoctorImagingWorkspace } from "./careScreens.jsx";
 import AssistantApp, { AssistantManagement } from "./assistant.jsx";
+import OwnerActivation from "./OwnerActivation.jsx";
 import { createPortalNavigator, resolvePortalRoute } from "./routing.js";
 import { createControllerChangeHandler } from "./serviceWorkerLifecycle.js";
 function doctorDisplayName(user) {
@@ -1770,6 +1771,7 @@ function WorkspaceManagement({ token, user, workspaces, activeWorkspace, workspa
 const currentPath = window.location.pathname;
 const normalizedPath = currentPath.replace(/\/+$/, "") || "/";
 const publicPatientPaths = new Set(["/patient/home", "/patient/booking"]);
+const isOwnerActivationRoute = normalizedPath === "/owner-activate";
 const isAssistantRoute = /^\/assistant(?:\/|$)/.test(currentPath);
 const isLegacyAssistantAdminRoute = /^\/assistant-admin(?:\/|$)/.test(currentPath);
 const isPublicPatientAlias = publicPatientPaths.has(normalizedPath) && !currentPath.endsWith("/");
@@ -1788,7 +1790,9 @@ if (redirectPatientRoute) {
 if (isLegacyAssistantAdminRoute) window.location.replace("/doctor/settings");
 createRoot(document.getElementById("root")).render(
   <ErrorBoundary>
-    {isAssistantRoute ? (
+    {isOwnerActivationRoute ? (
+      <OwnerActivation />
+    ) : isAssistantRoute ? (
       <AssistantApp />
     ) : redirectPatientRoute || isLegacyAssistantAdminRoute ? (
       <main className="redirect-screen" role="status">Opening the secure clinic workspace…</main>
