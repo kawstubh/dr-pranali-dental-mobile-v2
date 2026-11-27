@@ -6,9 +6,10 @@ on:
     paths:
       - 'desktop/**'
       - '.github/workflows/oralyn-desktop.yml'
-  # Feature-branch commits are validated by the PR event; avoid duplicate browser runs.
+  # The deployed feature branch must run the same gates on every direct commit.
+  # Keep pull_request validation as well; duplicate validation is safer than an untested deploy.
   push:
-    branches: [master]
+    branches: [master, feat/oralyn-desktop-app]
     paths:
       - 'desktop/**'
       - '.github/workflows/oralyn-desktop.yml'
