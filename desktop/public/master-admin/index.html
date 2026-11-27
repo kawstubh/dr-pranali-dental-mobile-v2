@@ -58,7 +58,8 @@ function renderRequests(items){
     action.disabled=true;action.textContent="Provisioning…";
     try{
      const result=await api("/v1/dental/master-admin/demo-requests/"+encodeURIComponent(item.id)+"/provision",{method:"POST",body:{verification_confirmed:true}});
-     const url=result.activation_url||((location.origin+(result.activation_path||"/owner-activate/"))+"?token="+encodeURIComponent(result.activation_token||""));
+     const activationPath=(result.activation_path||"/owner-activate").replace(/\/?$/,"/");
+     const url=result.activation_url||(location.origin+activationPath+"?token="+encodeURIComponent(result.activation_token||""));
      const detail=node("div","activation","One-time owner activation link: "+url);
      const copy=node("button","secondary","Copy activation link");copy.addEventListener("click",()=>navigator.clipboard.writeText(url).then(()=>show("dashboard-message","success","Activation link copied. Send it securely to the verified clinic owner.")));
      card.append(detail,copy);
