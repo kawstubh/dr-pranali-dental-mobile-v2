@@ -165,7 +165,8 @@ test("public patient booking remains separate from Doctor identity and tenant AP
 test("Clinic Assistant has a distinct SPA route, identity and memory-only session namespace", () => {
   assert.ok(source.includes('import AssistantApp, { AssistantManagement } from "./assistant.jsx";'));
   assert.ok(source.includes('const isAssistantRoute = /^\\/assistant(?:\\/|$)/.test(currentPath);'));
-  assert.ok(source.includes("{isAssistantRoute ? ("));
+  assert.ok(source.includes("{isOwnerActivationRoute ? ("));
+  assert.ok(source.includes(") : isAssistantRoute ? ("));
   assert.ok(source.includes("<AssistantApp />"));
   assert.ok(assistantAppSource.includes("/v1/dental/assistant/auth/login"));
   assert.ok(!assistantAppSource.includes("sessionStorage"));
