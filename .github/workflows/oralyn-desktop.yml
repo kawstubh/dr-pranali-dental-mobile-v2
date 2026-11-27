@@ -44,9 +44,10 @@ jobs:
         run: npm ci
       - name: Run desktop regression tests
         run: npm test
-      - name: Record memory-only Doctor token storage verification
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feat/oralyn-desktop-app'
-        run: echo "ORALYN_DOCTOR_TOKEN_STORAGE_HARDENING_VERIFIED=true" >> "$GITHUB_ENV"
+      - name: Verify memory-only Doctor and Assistant token storage
+        run: |
+          node scripts/verify-memory-only-auth.cjs
+          echo "ORALYN_DOCTOR_TOKEN_STORAGE_HARDENING_VERIFIED=true" >> "$GITHUB_ENV"
       - name: Audit dependencies
         run: npm audit --audit-level=low
       - name: Build staging-targeted desktop bundle
@@ -56,7 +57,6 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/verify-staging-contract.cjs
       - name: Verify live Assistant API contract (read-only)
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feat/oralyn-desktop-app'
         run: |
           node scripts/verify-assistant-staging-contract.cjs
           echo "ORALYN_ASSISTANT_API_CONTRACT_READONLY_VERIFIED=true" >> "$GITHUB_ENV"
