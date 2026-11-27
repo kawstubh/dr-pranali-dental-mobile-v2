@@ -381,6 +381,27 @@ main {
   box-shadow: var(--shadow);
   min-width: 0;
 }
+.metric-action {
+  appearance: none;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+}
+.metric-action:hover {
+  transform: translateY(-2px);
+  border-color: #79cbd8;
+  box-shadow: 0 10px 24px rgba(10, 84, 130, .12);
+}
+.metric-action:focus-visible {
+  outline: 3px solid rgba(10, 132, 232, .35);
+  outline-offset: 3px;
+}
+.metric-action:active {
+  transform: translateY(0);
+}
 .metrichead {
   display: flex;
   justify-content: space-between;
