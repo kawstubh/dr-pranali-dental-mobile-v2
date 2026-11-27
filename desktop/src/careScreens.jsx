@@ -13,6 +13,12 @@ import {
   MessageCircle,
   Send,
   CalendarClock,
+  Images,
+  Columns,
+  ZoomIn,
+  ZoomOut,
+  RotateCw,
+  ScanLine,
 } from "lucide-react";
 import { dentalApi } from "./api.js";
 import { normaliseList } from "./data.js";
@@ -440,7 +446,6 @@ export function DoctorImagingWorkspace({ activePatient }) {
   const [mode, setMode] = useState("viewer");
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
-  const [fit, setFit] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -530,7 +535,7 @@ export function DoctorImagingWorkspace({ activePatient }) {
               <span>{Math.round(zoom * 100)}%</span>
               <button className="outline" title="Zoom in" aria-label="Zoom in" disabled={!selected} onClick={() => setZoom((value) => Math.min(4, +(value + .25).toFixed(2)))}><ZoomIn size={16}/></button>
               <button className="outline" title="Rotate image" aria-label="Rotate image" disabled={!selected} onClick={() => setRotation((value) => (value + 90) % 360)}><RotateCw size={16}/></button>
-              <button className="outline" title="Reset view" disabled={!selected} onClick={() => {setZoom(1);setRotation(0);setFit(true);}}>Reset</button>
+              <button className="outline" title="Reset view" disabled={!selected} onClick={() => {setZoom(1);setRotation(0);}}>Reset</button>
             </div></div>
             <div className="imaging-canvas">
               {selected ? <img src={selected.url} alt={selected.name} style={{transform:`scale(${zoom}) rotate(${rotation}deg)`}} /> : <div className="imaging-empty"><ScanLine size={42}/><b>No image selected</b><span>Add an image or choose one from the gallery.</span></div>}
