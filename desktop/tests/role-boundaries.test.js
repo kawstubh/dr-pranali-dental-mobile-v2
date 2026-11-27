@@ -306,6 +306,20 @@ test("Clinic Assistant reschedules only to a future India Standard Time slot", (
   assert.match(assistantAppSource, /delete updated\[appointment\.id\]/);
 });
 
+test("Clinic Assistant cannot cancel appointments and rejected actions do not lock the workspace", () => {
+  const start = assistantAppSource.indexOf("const changeAppointment");
+  const end = assistantAppSource.indexOf("const openReschedule", start);
+  assert.ok(start >= 0 && end > start);
+  const actionSource = assistantAppSource.slice(start, end);
+  const guardIndex = actionSource.indexOf('if (!["confirm", "reschedule"].includes(action))');
+  const busyIndex = actionSource.indexOf("setBusy(true)");
+  assert.ok(guardIndex >= 0 && busyIndex > guardIndex, "reject unsupported actions before setting busy");
+  assert.match(actionSource, /!\["confirm", "reschedule"\]\.includes\(action\)/);
+  assert.doesNotMatch(actionSource, /status:\s*"cancelled"/);
+  assert.doesNotMatch(assistantAppSource, /changeAppointment\(appointment,\s*"cancel"\)/);
+  assert.doesNotMatch(assistantAppSource, /XCircle/);
+});
+
 test("Clinic Assistant appointment queue shows scheduling details without clinical treatment type", () => {
   assert.match(assistantAppSource, /appointment\.starts_at/);
   assert.match(assistantAppSource, /· Appointment/);
