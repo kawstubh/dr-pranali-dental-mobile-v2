@@ -12,6 +12,7 @@ const PUBLIC_OPENAPI_OPERATIONS = new Set([
   "post /v1/dental/auth/password/login",
   "post /v1/dental/assistant/auth/login",
   "post /v1/dental/public/appointments",
+  "post /v1/dental/public/demo-requests",
   "get /v1/dental/billing/plans",
   "post /v1/dental/billing/razorpay/webhook",
 ]);
