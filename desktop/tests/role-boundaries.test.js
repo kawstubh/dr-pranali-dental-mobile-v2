@@ -290,3 +290,18 @@ test("read-only Assistant API contract does not satisfy authenticated UI persist
   assert.ok(manifest.includes("assistant_ui_api_verified"));
   assert.ok(manifest.includes("assistant_data_minimization_live_verified"));
 });
+
+
+test("Clinic Assistant cannot cancel appointments and rejected actions do not lock the workspace", () => {
+  const start = assistantAppSource.indexOf("const changeAppointment");
+  const end = assistantAppSource.indexOf("const openReschedule", start);
+  assert.ok(start >= 0 && end > start);
+  const actionSource = assistantAppSource.slice(start, end);
+  const guardIndex = actionSource.indexOf('if (!["confirm", "reschedule"].includes(action))');
+  const busyIndex = actionSource.indexOf("setBusy(true)");
+  assert.ok(guardIndex >= 0 && busyIndex > guardIndex, "reject unsupported actions before setting busy");
+  assert.match(actionSource, /!\["confirm", "reschedule"\]\.includes\(action\)/);
+  assert.doesNotMatch(actionSource, /status:\s*"cancelled"/);
+  assert.doesNotMatch(assistantAppSource, /changeAppointment\(appointment,\s*"cancel"\)/);
+  assert.doesNotMatch(assistantAppSource, /XCircle/);
+});
