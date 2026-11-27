@@ -437,7 +437,7 @@ export function DoctorCareManagement({ page, token, activePatient, ping }) {
 
 const IMAGE_CATEGORIES = ["X-ray", "Intraoral", "Extraoral", "Before", "After", "Other"];
 
-export function DoctorImagingWorkspace({ activePatient }) {
+export function DoctorImagingWorkspace({ activePatient, patients = [], onSelectPatient }) {
   const [images, setImages] = useState([]);
   const [category, setCategory] = useState("X-ray");
   const [selectedId, setSelectedId] = useState("");
@@ -512,7 +512,7 @@ export function DoctorImagingWorkspace({ activePatient }) {
       <CareHeader eyebrow="CLINICAL IMAGING" title="Images & X-rays" description={`Local review workspace for ${activePatient.name || activePatient.id}. Images selected here stay in this browser session and are not uploaded or saved to the patient record.`} />
       <div className="imaging-patient-strip">
         <div><span className="imaging-kicker">ACTIVE PATIENT</span><b>{activePatient.name || "Selected patient"}</b><small>{activePatient.id}</small></div>
-        <span className="imaging-local-badge"><LockKeyhole size={14}/> Local preview only</span>
+        <div className="imaging-patient-actions"><label>Change patient<select value={activePatient.id} onChange={(event) => onSelectPatient?.(event.target.value)}>{patients.map((patient) => <option key={patient.id} value={patient.id}>{patient.name || patient.id}</option>)}</select></label><span className="imaging-local-badge"><LockKeyhole size={14}/> Local preview only</span></div>
       </div>
       {error && <StateMessage error>{error}</StateMessage>}
       <section className="panel imaging-toolbar">
