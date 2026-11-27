@@ -84,8 +84,8 @@ function renderClinics(items){
  }
 }
 $("login-form").addEventListener("submit",async event=>{
- event.preventDefault();const button=$("login-button");button.disabled=true;button.textContent="Verifying…";
- const data=new FormData(event.currentTarget);
+ event.preventDefault();const form=event.currentTarget;const button=$("login-button");button.disabled=true;button.textContent="Verifying…";
+ const data=new FormData(form);
  try{
   const result=await api("/v1/dental/auth/password/login",{method:"POST",body:{email:String(data.get("email")||"").trim(),password:String(data.get("password")||"")}});
   token=result.access_token||"";
@@ -94,7 +94,7 @@ $("login-form").addEventListener("submit",async event=>{
   $("login-panel").classList.add("hidden");$("dashboard").classList.remove("hidden");show("dashboard-message","success","Master Admin access verified.");
   await loadDashboard();
  }catch(error){token="";show("login-message","error",error.message);}
- finally{button.disabled=false;button.textContent="Sign in securely";event.currentTarget.reset();}
+ finally{button.disabled=false;button.textContent="Sign in securely";form.reset();}
 });
 $("logout").addEventListener("click",async()=>{const current=token;token="";try{await fetch(API+"/v1/dental/auth/logout",{method:"POST",headers:{Authorization:"Bearer "+current},credentials:"omit"});}catch{}$("dashboard").classList.add("hidden");$("login-panel").classList.remove("hidden");});
 </script>
