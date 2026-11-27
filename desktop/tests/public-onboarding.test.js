@@ -33,3 +33,19 @@ test("owner activation consumes only the one-time token and never asks for clini
   assert.match(activation, /credentials:"omit"/);
   assert.match(activation, /This one-time activation link is valid for 24 hours/i);
 });
+
+const admin = await readFile(
+  new URL("../public/master-admin/index.html", import.meta.url),
+  "utf8",
+);
+
+test("Master Admin console is server-authorised and keeps session credentials in memory", () => {
+  assert.match(admin, /\/v1\/dental\/auth\/password\/login/);
+  assert.match(admin, /\/v1\/dental\/master-admin\/demo-requests/);
+  assert.match(admin, /\/v1\/dental\/master-admin\/clinics/);
+  assert.match(admin, /verification_confirmed:true/);
+  assert.match(admin, /I verified this owner's email and mobile number directly/);
+  assert.match(admin, /let token=""/);
+  assert.doesNotMatch(admin, /localStorage|sessionStorage/);
+  assert.doesNotMatch(admin, /\/v1\/dental\/patients|\/v1\/dental\/doctor\/patients/);
+});
