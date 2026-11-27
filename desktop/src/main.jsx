@@ -1415,7 +1415,7 @@ function Doctor({
       </>
     );
   if (page === "imaging")
-    return <DoctorImagingWorkspace activePatient={activePatient} />;
+    return <DoctorImagingWorkspace activePatient={activePatient} patients={patients} onSelectPatient={setSelectedPatientId} />;
   if (page === "files")
     return <DoctorCareManagement page={page} token={token} activePatient={activePatient} ping={ping} />;
   if (page === "billing")
