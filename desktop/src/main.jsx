@@ -41,7 +41,7 @@ import { dentalApi } from "./api.js";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import { normaliseList, normaliseUser, formatTime, isSameLocalDay } from "./data.js";
 import { buildPatientCrmRows, getPatientCrmSummary, CRM_STATUSES } from "./crm.js";
-import { DoctorCareManagement, DoctorClinicalNotes, PatientCommunication, DoctorPatientJourney, DoctorFollowUpWorklist } from "./careScreens.jsx";
+import { DoctorCareManagement, DoctorClinicalNotes, PatientCommunication, DoctorPatientJourney, DoctorFollowUpWorklist, DoctorImagingWorkspace } from "./careScreens.jsx";
 import AssistantApp, { AssistantManagement } from "./assistant.jsx";
 import { createPortalNavigator, resolvePortalRoute } from "./routing.js";
 import { createControllerChangeHandler } from "./serviceWorkerLifecycle.js";
@@ -336,6 +336,7 @@ function App() {
       [
         ["treatments", "Treatment plans", HeartPulse],
         ["billing", "Billing & invoices", Wallet],
+        ["imaging", "Images & X-rays", ScanLine],
         ["files", "Private documents", FileText],
         ["messages", "Patient messages", MessageCircle],
         ["reports", "Reports & analytics", BarChart3],
@@ -1412,6 +1413,8 @@ function Doctor({
         <AccountSettings user={user} activeWorkspace={activeWorkspace} onSignOut={onSignOut} />
       </>
     );
+  if (page === "imaging")
+    return <DoctorImagingWorkspace activePatient={activePatient} />;
   if (page === "files")
     return <DoctorCareManagement page={page} token={token} activePatient={activePatient} ping={ping} />;
   if (page === "billing")
