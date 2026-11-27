@@ -12,6 +12,7 @@ const source = fs.readFileSync(path.join(root, "src", "main.jsx"), "utf8");
 const assistantContractSource = fs.readFileSync(path.join(root, "scripts", "verify-assistant-staging-contract.cjs"), "utf8");
 const portalHeadersSource = fs.readFileSync(path.join(root, "scripts", "verify-portal-security-headers.cjs"), "utf8");
 const assistantWorkflowSource = fs.readFileSync(path.join(root, "..", ".github", "workflows", "oralyn-desktop.yml"), "utf8");
+const authStorageCheckSource = fs.readFileSync(path.join(root, "scripts", "verify-memory-only-auth.cjs"), "utf8");
 const careSource = fs.readFileSync(path.join(root, "src", "careScreens.jsx"), "utf8");
 const apiSource = fs.readFileSync(path.join(root, "src", "api.js"), "utf8");
 const assistantAppSource = fs.readFileSync(path.join(root, "src", "assistant.jsx"), "utf8");
@@ -52,11 +53,15 @@ test("Doctor bearer token is memory-only and never persisted in browser storage"
   assert.match(source, /setToken\(""\)/);
 });
 
-test("CI records Doctor token storage hardening only after the regression suite", () => {
+test("CI verifies Doctor and Assistant memory-only token storage after regression tests on every deploy", () => {
   const testsIndex = assistantWorkflowSource.indexOf("Run desktop regression tests");
-  const gateIndex = assistantWorkflowSource.indexOf("Record memory-only Doctor token storage verification");
+  const gateIndex = assistantWorkflowSource.indexOf("Verify memory-only Doctor and Assistant token storage");
   assert.ok(testsIndex >= 0 && gateIndex > testsIndex);
+  assert.match(assistantWorkflowSource, /node scripts\/verify-memory-only-auth\.cjs/);
   assert.match(assistantWorkflowSource, /ORALYN_DOCTOR_TOKEN_STORAGE_HARDENING_VERIFIED=true/);
+  assert.match(authStorageCheckSource, /Doctor access token must remain in component memory/);
+  assert.match(authStorageCheckSource, /Assistant access token must remain in component memory/);
+  assert.match(authStorageCheckSource, /auth tokens must not be persisted in browser storage/);
 });
 
 test("public patient journey is served only by account-free static pages", () => {
