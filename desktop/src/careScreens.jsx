@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   FileText,
   Receipt,
@@ -444,6 +444,8 @@ export function DoctorImagingWorkspace({ activePatient }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    imagesRef.current.forEach((image) => URL.revokeObjectURL(image.url));
+    imagesRef.current = [];
     setImages([]);
     setSelectedId("");
     setBeforeId("");
@@ -453,9 +455,11 @@ export function DoctorImagingWorkspace({ activePatient }) {
     setError("");
   }, [activePatient?.id]);
 
+  const imagesRef = useRef(images);
+  useEffect(() => { imagesRef.current = images; }, [images]);
   useEffect(() => () => {
-    images.forEach((image) => URL.revokeObjectURL(image.url));
-  }, [images]);
+    imagesRef.current.forEach((image) => URL.revokeObjectURL(image.url));
+  }, []);
 
   const selected = images.find((image) => image.id === selectedId) || images[0] || null;
   const before = images.find((image) => image.id === beforeId) || null;
