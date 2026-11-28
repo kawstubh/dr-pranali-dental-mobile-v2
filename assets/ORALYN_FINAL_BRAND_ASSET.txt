@@ -1,0 +1,13 @@
+ORALYN — FINAL APPROVED BRAND LOGO
+=================================
+
+Canonical display image: oralyn-official-logo.png (1920 x 1883 RGBA, transparent).
+Canonical SHA-256: 8D2E4342146AD1F02AAA040DE2D372822B2E368DF3519C35DBADF99BE1DB2376
+Original source artwork is preserved unchanged as oralyn-original-source-1231x1207.png.
+Original source SHA-256: F0BFD671CA7CA8A0122F027A6E9B7F02B676CB7D98003B9ADF32227788CA6803
+
+Full HD landscape delivery: oralyn-brand-logo-fullhd-1920x1080.png.
+Use the 1920 x 1883 complete logo for all headers, portals, in-app brand areas and splash screens.
+Use proportionally padded derivatives of that same logo for APK launcher icons, PWA icons and dock icons.
+Never crop, redraw, recolour, stretch or substitute the old tooth-only logo.
+Android notification status glyphs may remain monochrome only where the OS requires it.

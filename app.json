@@ -13,7 +13,7 @@
                  "android":  {
                                  "package":  "com.drpranali.dental",
                                  "adaptiveIcon":  {
-                                                      "foregroundImage":  "./assets/oralyn-icon.png",
+                                                      "foregroundImage":  "./assets/oralyn-adaptive-foreground.png",
                                                       "backgroundColor":  "#F4FBFF",
                                                       "monochromeImage":  "./assets/patient-monochrome.png"
                                                   }
