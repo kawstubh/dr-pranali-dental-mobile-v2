@@ -1,6 +1,6 @@
 ﻿export const BRAND = {
   name: 'Oralyn',
-  tagline: 'Healthy Smiles â€¢ Happier Lives',
+  tagline: 'Smart Dental Care For Healthier Smiles',
   supportEmail: '',
   colors: {
     navy: '#0C3B82',

@@ -100,9 +100,7 @@ function WelcomeScreen({ onStart }) {
       <ScrollView contentContainerStyle={styles.welcomeContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <LanguageSwitch />
         <View style={styles.loginBrand}>
-          <SafeImage source={require('./assets/oralyn-logo.png')} style={styles.loginBrandLogo} resizeMode="contain" />
-          <Text style={styles.loginBrandName}>Oralyn</Text>
-          <Text style={styles.loginBrandClinic}>SMART DENTAL CARE FOR HEALTHIER SMILES</Text>
+          <SafeImage source={require('./assets/oralyn-official-logo.png')} style={styles.loginBrandLogo} resizeMode="contain" />
         </View>
 
         <Text style={styles.welcomeTitle}>Healthy Smiles</Text>
@@ -190,7 +188,7 @@ function HomeScreen({ go, clinic }) {
         </View>
 
         <View style={styles.heroCopy}>
-          <View style={styles.brandLine}><SafeImage source={require('./assets/oralyn-logo.png')} style={styles.brandLineLogo} resizeMode="contain" /><Text style={styles.brand}>Oralyn</Text></View>
+          <View style={styles.brandLine}><SafeImage source={require('./assets/oralyn-official-logo.png')} style={styles.brandLineLogo} resizeMode="contain" /></View>
           <Text style={styles.heroTitle}>Healthy Smile,</Text>
           <Text style={[styles.heroTitle, styles.heroBlue]}>Happy You!</Text>
           <Text style={styles.heroSub}>Expert dental care for you and your family, with gentle treatment and modern technology.</Text>
@@ -636,7 +634,8 @@ const styles = StyleSheet.create({
   smallInfo: { color: COLORS.text, fontSize: 11.5, lineHeight: 18, textAlign: 'center', marginTop: 2 },
   byAppointment: { color: COLORS.muted, fontSize: 11, textAlign: 'center', marginTop: 2 },
   heroCopy: { flex: 1, paddingTop: 8 },
-  brandLine: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 9 },
+  brandLine: { flexDirection: 'row', alignItems: 'center', marginBottom: 9 },
+  brandLineLogo: { width: 78, height: 78 },
   tooth: { fontSize: 22, color: COLORS.blue },
   brand: { color: COLORS.blue, fontSize: 16, fontWeight: '800' },
   heroTitle: { color: '#0B2E4F', fontSize: 27, lineHeight: 31, fontWeight: '900' },
