@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import {
   CalendarDays,
   CheckCircle2,
@@ -430,14 +430,14 @@ export default function AssistantApp() {
   };
 
   if (booting) {
-    return <main className="assistant-shell"><div className="assistant-loading"><img src="/oralyn-logo-approved.webp" alt="Oralyn" /><p>Verifying your Clinic Assistant session…</p></div></main>;
+    return <main className="assistant-shell"><div className="assistant-loading"><img src="/oralyn-official-logo.png" alt="Oralyn" /><p>Verifying your Clinic Assistant session…</p></div></main>;
   }
 
   if (!token || !user) {
     return (
       <main className="assistant-shell assistant-auth-shell">
         <section className="assistant-auth-card">
-          <img className="assistant-logo" src="/oralyn-logo-approved.webp" alt="Oralyn official wordmark" />
+          <img className="assistant-logo" src="/oralyn-official-logo.png" alt="Oralyn official wordmark" />
           <div className="assistant-eyebrow">RECEPTION ACCESS</div>
           <h1>Clinic Assistant</h1>
           <p className="assistant-intro">Sign in to manage patient contact intake and appointment coordination. Clinical records and clinical intelligence remain restricted to Doctors.</p>
@@ -457,7 +457,7 @@ export default function AssistantApp() {
   return (
     <main className="assistant-shell">
       <header className="assistant-topbar">
-        <div className="assistant-brand"><img src="/oralyn-logo-approved.webp" alt="Oralyn" /><span>RECEPTION WORKSPACE</span></div>
+        <div className="assistant-brand"><img src="/oralyn-official-logo.png" alt="Oralyn" /><span>RECEPTION WORKSPACE</span></div>
         <div className="assistant-user"><div><b>{user.email}</b><small>Clinic Assistant · {user.clinic_id}</small></div><button className="assistant-icon-button" onClick={signOut} aria-label="Sign out"><LogOut size={18} /></button></div>
       </header>
       <div className="assistant-content">
