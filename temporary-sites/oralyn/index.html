@@ -1738,6 +1738,43 @@ html{scroll-padding-top:110px!important}
 @media(max-width:800px){.oralyn-reference-hero{padding-top:40px!important}.oralyn-reference-hero .hero-grid{grid-template-columns:1fr;min-height:0;gap:18px}.oralyn-reference-hero .hero-copy{max-width:680px;padding:26px 0 8px}.oralyn-reference-hero .hero-copy h1{font-size:clamp(44px,8vw,64px)}.hero-visual{height:440px}.hero-brand-lockup{left:4%;top:7%;width:135px;height:125px}.hero-capabilities{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:18px}.hero-capabilities>div:nth-child(2){border-right:0}.hero-capabilities>div:nth-child(-n+2){border-bottom:1px solid #d8eaf0}}
 @media(max-width:560px){.oralyn-reference-hero{padding:24px 0 25px!important}.oralyn-reference-hero .hero-copy{padding:18px 0 4px}.hero-chip{font-size:8px;padding:8px 11px}.oralyn-reference-hero .hero-copy h1{font-size:42px;margin:19px 0 15px}.oralyn-reference-hero .hero-copy .lead{font-size:14px;line-height:1.6}.oralyn-reference-hero .hero-buttons{gap:9px}.oralyn-reference-hero .hero-buttons .btn{min-height:49px;padding:0 15px;font-size:10px;border-radius:13px}.hero-proof{font-size:9px;gap:8px 12px}.hero-visual{height:310px;border-radius:20px}.hero-visual-image{border-radius:20px;object-position:61% center}.hero-visual:before{border-radius:20px}.hero-brand-lockup{width:95px;height:88px;padding:9px;border-radius:13px}.hero-live-note{right:3%;bottom:4%;padding:9px 11px;gap:8px}.hero-live-note b{font-size:8px}.hero-live-note small{font-size:6px}.hero-capabilities{padding:7px;border-radius:16px;gap:0}.hero-capabilities>div{padding:10px 6px;gap:7px}.cap-icon{width:34px;height:34px;flex-basis:34px;font-size:16px}.hero-capabilities b{font-size:9px}.hero-capabilities small{font-size:7px;white-space:normal;line-height:1.25}}
 
+
+/* Final photographic Oralyn hero: photo is the real background asset; all UI remains live HTML */
+.oralyn-photo-hero{position:relative;isolation:isolate;overflow:hidden;min-height:760px;padding:0 0 28px!important;background:#e9f9fa!important}
+.photo-hero-backdrop,.photo-hero-wash{position:absolute;inset:0;z-index:-2}
+.photo-hero-backdrop img{display:block;width:100%;height:100%;object-fit:cover;object-position:center center;max-width:none}
+.photo-hero-wash{z-index:-1;background:linear-gradient(90deg,rgba(255,255,255,.96) 0%,rgba(249,254,255,.92) 29%,rgba(239,251,252,.70) 43%,rgba(231,249,250,.08) 65%,rgba(231,249,250,0) 100%);pointer-events:none}
+.photo-hero-content{position:relative;display:flex;align-items:center;min-height:650px;padding-top:30px;padding-bottom:70px}
+.photo-hero-copy{width:min(47%,620px);padding:24px 0 15px}
+.photo-hero-brand{width:165px;height:72px;margin:0 0 25px;padding:5px 10px;border-radius:13px;background:#ffffffd9;box-shadow:0 10px 30px #0b466014;backdrop-filter:blur(8px)}
+.photo-hero-brand img{width:100%;height:100%;object-fit:contain}
+.photo-hero-copy .hero-chip{display:inline-flex;align-items:center;gap:10px;padding:9px 15px;border:1px solid #ccebf0;border-radius:99px;background:#ffffffd9;color:#4d647d;font-size:10px;font-weight:800;letter-spacing:.09em}
+.photo-hero-copy .hero-chip b{color:#102c50}.photo-hero-copy .hero-chip i{width:9px;height:9px;border-radius:50%;background:#00bfc2;box-shadow:0 0 0 5px #00bfc21c}
+.photo-hero-copy h1{max-width:620px;margin:26px 0 20px;font-size:clamp(48px,5.5vw,76px);line-height:1.04;letter-spacing:-.06em;color:#102c50}
+.photo-hero-copy h1 span{display:inline;color:#102c50}
+.photo-hero-copy .lead{max-width:570px;margin:0 0 27px;font-size:16px;line-height:1.7;color:#4e6680}
+.photo-hero-copy .hero-buttons{display:flex;flex-wrap:wrap;gap:13px;margin-bottom:25px}
+.photo-hero-copy .hero-buttons .btn{min-height:58px;padding:0 24px;border-radius:16px;font-size:13px}
+.photo-hero-copy .hero-buttons .primary{background:#00aaa9;color:white;box-shadow:0 12px 28px #00aaa933}
+.photo-hero-copy .hero-buttons .outline{background:#ffffffdc;border-color:#a9dce3;color:#102c50}
+.photo-hero-copy .play-mark{display:grid;place-items:center;width:24px;height:24px;border:2px solid currentColor;border-radius:50%;font-size:9px;padding-left:2px}
+.photo-hero-copy .hero-proof{display:flex;flex-wrap:wrap;gap:11px 17px;color:#4e6680;font-size:10px;font-weight:800}
+.photo-hero-copy .hero-proof span::first-letter{color:#00aaa9}
+.photo-hero-caption{position:absolute;right:3%;bottom:100px;display:flex;align-items:center;gap:12px;padding:14px 18px;border:1px solid #ffffff;border-radius:16px;background:#ffffffeb;box-shadow:0 14px 35px #0b466022;backdrop-filter:blur(10px)}
+.photo-hero-caption i{width:10px;height:10px;border-radius:50%;background:#00bfc2;box-shadow:0 0 0 5px #00bfc21b}
+.photo-hero-caption b,.photo-hero-caption small{display:block}.photo-hero-caption b{font-size:11px;color:#102c50}.photo-hero-caption small{font-size:9px;color:#647b90}
+.oralyn-photo-hero .hero-capabilities{position:relative;z-index:2;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));min-height:105px;padding:10px 15px;border:1px solid #ffffff;border-radius:24px;background:#ffffffed;box-shadow:0 18px 45px #0b466018}
+.oralyn-photo-hero .hero-capabilities>a{display:flex;align-items:center;gap:13px;padding:10px 17px;border-right:1px solid #d8eaf0;transition:background .2s}
+.oralyn-photo-hero .hero-capabilities>a:last-child{border-right:0}
+.oralyn-photo-hero .hero-capabilities>a:hover{background:#effafa}
+.oralyn-photo-hero .cap-icon{display:grid;place-items:center;flex:0 0 56px;width:56px;height:56px;border:1px solid #ccebf0;border-radius:50%;background:#f8ffff;color:#00a9a9;font-size:23px;font-weight:800}
+.oralyn-photo-hero .hero-capabilities b,.oralyn-photo-hero .hero-capabilities small{display:block}
+.oralyn-photo-hero .hero-capabilities b{font-size:12px;color:#102c50}
+.oralyn-photo-hero .hero-capabilities small{margin-top:3px;font-size:9px;color:#60758b;white-space:nowrap}
+@media(max-width:1050px){.oralyn-photo-hero{min-height:680px}.photo-hero-content{min-height:575px}.photo-hero-copy{width:53%}.photo-hero-copy h1{font-size:clamp(43px,5.5vw,62px)}.photo-hero-copy .lead{font-size:14px}.photo-hero-caption{right:2%;bottom:85px}.oralyn-photo-hero .hero-capabilities>a{padding:8px 9px;gap:8px}.oralyn-photo-hero .cap-icon{width:43px;height:43px;flex-basis:43px;font-size:18px}}
+@media(max-width:800px){.oralyn-photo-hero{min-height:0;padding-bottom:24px!important}.photo-hero-backdrop img{object-position:61% center}.photo-hero-wash{background:linear-gradient(90deg,rgba(255,255,255,.97) 0%,rgba(249,254,255,.9) 45%,rgba(239,251,252,.38) 75%,rgba(231,249,250,.08) 100%)}.photo-hero-content{min-height:570px;padding-top:30px;padding-bottom:90px}.photo-hero-copy{width:64%}.photo-hero-brand{width:135px;height:60px;margin-bottom:18px}.photo-hero-copy h1{font-size:clamp(42px,7vw,58px)}.photo-hero-caption{right:2%;bottom:30px}.oralyn-photo-hero .hero-capabilities{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:0}.oralyn-photo-hero .hero-capabilities>a:nth-child(2){border-right:0}.oralyn-photo-hero .hero-capabilities>a:nth-child(-n+2){border-bottom:1px solid #d8eaf0}}
+@media(max-width:560px){.photo-hero-backdrop img{object-position:62% center;opacity:.52}.photo-hero-wash{background:linear-gradient(90deg,rgba(255,255,255,.97),rgba(247,253,254,.88) 75%,rgba(239,251,252,.5))}.photo-hero-content{min-height:570px;padding-top:26px;padding-bottom:110px}.photo-hero-copy{width:100%;max-width:460px}.photo-hero-brand{width:116px;height:52px;margin-bottom:15px}.photo-hero-copy .hero-chip{font-size:8px;padding:7px 10px}.photo-hero-copy h1{font-size:42px;margin:19px 0 15px}.photo-hero-copy .lead{font-size:13px;line-height:1.6}.photo-hero-copy .hero-buttons{gap:8px}.photo-hero-copy .hero-buttons .btn{min-height:48px;padding:0 13px;font-size:10px;border-radius:12px}.photo-hero-copy .hero-proof{font-size:8px;gap:8px 11px}.photo-hero-caption{right:4%;bottom:17px;padding:9px 11px;gap:8px}.photo-hero-caption b{font-size:8px}.photo-hero-caption small{font-size:6px}.oralyn-photo-hero .hero-capabilities{padding:6px;border-radius:15px}.oralyn-photo-hero .hero-capabilities>a{padding:9px 5px;gap:7px}.oralyn-photo-hero .cap-icon{width:33px;height:33px;flex-basis:33px;font-size:15px}.oralyn-photo-hero .hero-capabilities b{font-size:8px}.oralyn-photo-hero .hero-capabilities small{font-size:7px;white-space:normal;line-height:1.25}}
+
 </style>
 
 </head>
@@ -1780,9 +1817,12 @@ html{scroll-padding-top:110px!important}
 
 <main>
 
-<section class="hero oralyn-reference-hero" id="home">
-<div class="wrap hero-grid">
-<div class="hero-copy">
+<section class="hero oralyn-photo-hero" id="home">
+<div class="photo-hero-backdrop"><img src="assets/oralyn-hero-final.jpg" alt="" fetchpriority="high"></div>
+<div class="photo-hero-wash"></div>
+<div class="wrap photo-hero-content">
+<div class="photo-hero-copy">
+<div class="photo-hero-brand"><img src="assets/oralyn-official-logo.png" alt="Oralyn — The Dental Practice OS for Modern Clinics"></div>
 <span class="hero-chip"><b>ORALYN</b><i></i>DENTAL PRACTICE PLATFORM</span>
 <h1>The Connected <span>Dental Practice.</span></h1>
 <p class="lead">A unified platform for patients, doctors and clinic teams to manage appointments, care, records and clinic operations — all in one place.</p>
@@ -1792,17 +1832,13 @@ html{scroll-padding-top:110px!important}
 </div>
 <div class="hero-proof"><span>✓ Connected workflows</span><span>✓ Role-based experiences</span><span>✓ Doctor-led clinical workflows</span></div>
 </div>
-<div class="hero-visual" aria-label="Oralyn clinic consultation">
-<img class="hero-visual-image" src="assets/oralyn-hero-scene.svg" alt="Dental professional consulting with a patient and recording notes in a modern clinic">
-<div class="hero-brand-lockup"><img src="assets/oralyn-official-logo.png" alt="Oralyn — The Dental Practice OS for Modern Clinics"></div>
-<div class="hero-live-note"><i></i><span><b>Every conversation, connected.</b><small>Patient access · Clinical workflows · Practice operations</small></span></div>
+<div class="photo-hero-caption"><i></i><span><b>Every conversation, connected.</b><small>Patient access · Clinical workflows · Practice operations</small></span></div>
 </div>
-</div>
-<div class="hero-capabilities wrap" aria-label="Oralyn platform capabilities">
-<div><span class="cap-icon">▦</span><span><b>Appointments</b><small>Simple &amp; efficient booking</small></span></div>
-<div><span class="cap-icon">▣</span><span><b>Clinical Records</b><small>Organised &amp; secure</small></span></div>
-<div><span class="cap-icon">♧</span><span><b>Team Collaboration</b><small>Patient · Doctor · Assistant</small></span></div>
-<div><span class="cap-icon">▥</span><span><b>Practice Operations</b><small>Billing, analytics &amp; more</small></span></div>
+<div class="hero-capabilities wrap" aria-label="Explore Oralyn capabilities">
+<a href="#platform"><span class="cap-icon">▦</span><span><b>Appointments</b><small>Simple &amp; efficient booking</small></span></a>
+<a href="#doctor"><span class="cap-icon">▣</span><span><b>Clinical Records</b><small>Organised &amp; secure</small></span></a>
+<a href="#assistant"><span class="cap-icon">♧</span><span><b>Team Collaboration</b><small>Patient · Doctor · Assistant</small></span></a>
+<a href="#pricing"><span class="cap-icon">▥</span><span><b>Practice Operations</b><small>Billing, analytics &amp; more</small></span></a>
 </div>
 </section>
 
