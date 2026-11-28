@@ -1704,6 +1704,40 @@ html{scroll-padding-top:110px!important}
  .hero-buttons{gap:8px}
 }
 
+
+/* Interactive reference-led Oralyn landing hero */
+.oralyn-reference-hero{position:relative;overflow:hidden;padding:48px 0 34px!important;min-height:0!important;background:radial-gradient(ellipse at 72% 34%,#b9f0f2 0%,#e5f8fa 30%,transparent 58%),linear-gradient(110deg,#fff 0%,#f5fcfd 46%,#dff5f7 100%)!important}
+.oralyn-reference-hero:before{content:"";position:absolute;right:27%;top:-180px;width:620px;height:620px;border:18px solid rgba(0,191,194,.65);border-right-color:transparent;border-bottom-color:transparent;border-radius:50%;transform:rotate(28deg);pointer-events:none}
+.oralyn-reference-hero:after{content:"";position:absolute;inset:auto -5% -180px -5%;height:260px;background:linear-gradient(170deg,transparent 20%,rgba(0,191,194,.14) 21%,rgba(0,191,194,.02) 65%,transparent);pointer-events:none}
+.oralyn-reference-hero .hero-grid{display:grid!important;grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr);gap:22px;align-items:center;min-height:590px;padding:0 0 26px}
+.oralyn-reference-hero .hero-copy{max-width:590px;padding:32px 0 22px;z-index:3}
+.hero-chip{display:inline-flex;align-items:center;gap:11px;padding:9px 16px;border:1px solid #ccebf0;border-radius:99px;background:#ffffffc9;color:#47617b;font-size:11px;font-weight:800;letter-spacing:.09em}
+.hero-chip b{color:#102c50}.hero-chip i,.hero-live-note i{width:9px;height:9px;border-radius:50%;background:#00bfc2;box-shadow:0 0 0 5px #00bfc21c}
+.oralyn-reference-hero .hero-copy h1{font-size:clamp(48px,5.3vw,76px);line-height:1.04;max-width:610px;margin:28px 0 22px;letter-spacing:-.055em}
+.oralyn-reference-hero .hero-copy h1 span{display:inline;color:#102c50}
+.oralyn-reference-hero .hero-copy .lead{max-width:560px;font-size:17px;line-height:1.65;margin:0 0 28px;color:#536a82}
+.oralyn-reference-hero .hero-buttons{gap:14px;margin-bottom:26px}
+.oralyn-reference-hero .hero-buttons .btn{min-height:60px;padding:0 26px;font-size:14px;border-radius:17px}
+.oralyn-reference-hero .hero-buttons .primary{background:#00aaa9;color:#fff;box-shadow:0 12px 25px #00aaa933}
+.oralyn-reference-hero .hero-buttons .outline{background:#ffffffd9;border-color:#a9dce3}
+.play-mark{display:grid;place-items:center;width:25px;height:25px;border:2px solid currentColor;border-radius:50%;font-size:10px;padding-left:2px}
+.hero-proof{display:flex;flex-wrap:wrap;gap:13px 20px;color:#506981;font-size:11px;font-weight:800}
+.hero-proof span: first-letter{color:#00aeb1}
+.hero-visual{position:relative;z-index:1;min-width:0;height:555px;overflow:visible;border-radius:32px;background:linear-gradient(140deg,#dff7f8,#b8e7ec)}
+.hero-visual:before{content:"";position:absolute;z-index:2;inset:0;border-radius:32px;background:linear-gradient(90deg,rgba(239,251,252,.5),transparent 42%,transparent);pointer-events:none}
+.hero-visual-image{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover;object-position:60% center;border-radius:32px}
+.hero-brand-lockup{position:absolute;z-index:3;left:5%;top:14%;display:grid;place-items:center;width:210px;height:190px;padding:18px;border-radius:24px;background:#ffffffdf;box-shadow:0 18px 45px #0b46601c;backdrop-filter:blur(12px)}
+.hero-brand-lockup img{width:100%;height:100%;object-fit:contain}
+.hero-live-note{position:absolute;z-index:4;right:4%;bottom:7%;display:flex;align-items:center;gap:12px;padding:14px 18px;border:1px solid #fff;border-radius:16px;background:#ffffffed;box-shadow:0 14px 35px #0b466022}
+.hero-live-note b,.hero-live-note small{display:block}.hero-live-note b{font-size:11px;color:#102c50}.hero-live-note small{font-size:9px;color:#647b90}
+.hero-capabilities{position:relative;z-index:5;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;min-height:105px;padding:12px 16px;border:1px solid #ffffff;border-radius:24px;background:#ffffffed;box-shadow:0 18px 45px #0b466018}
+.hero-capabilities>div{display:flex;align-items:center;gap:14px;padding:10px 18px;border-right:1px solid #d8eaf0}.hero-capabilities>div:last-child{border-right:0}
+.cap-icon{display:grid;place-items:center;flex:0 0 58px;width:58px;height:58px;border:1px solid #ccebf0;border-radius:50%;background:#f8ffff;color:#00a9a9;font-size:25px;font-weight:800;box-shadow:0 5px 14px #00aeb116}
+.hero-capabilities b,.hero-capabilities small{display:block}.hero-capabilities b{font-size:13px;color:#102c50}.hero-capabilities small{margin-top:3px;font-size:10px;color:#60758b;white-space:nowrap}
+@media(max-width:1050px){.oralyn-reference-hero .hero-grid{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);min-height:510px}.hero-visual{height:470px}.hero-brand-lockup{width:155px;height:145px}.hero-capabilities>div{padding:8px 10px;gap:9px}.cap-icon{width:45px;height:45px;flex-basis:45px}.hero-capabilities b{font-size:11px}.hero-capabilities small{font-size:8px}}
+@media(max-width:800px){.oralyn-reference-hero{padding-top:40px!important}.oralyn-reference-hero .hero-grid{grid-template-columns:1fr;min-height:0;gap:18px}.oralyn-reference-hero .hero-copy{max-width:680px;padding:26px 0 8px}.oralyn-reference-hero .hero-copy h1{font-size:clamp(44px,8vw,64px)}.hero-visual{height:440px}.hero-brand-lockup{left:4%;top:7%;width:135px;height:125px}.hero-capabilities{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:18px}.hero-capabilities>div:nth-child(2){border-right:0}.hero-capabilities>div:nth-child(-n+2){border-bottom:1px solid #d8eaf0}}
+@media(max-width:560px){.oralyn-reference-hero{padding:24px 0 25px!important}.oralyn-reference-hero .hero-copy{padding:18px 0 4px}.hero-chip{font-size:8px;padding:8px 11px}.oralyn-reference-hero .hero-copy h1{font-size:42px;margin:19px 0 15px}.oralyn-reference-hero .hero-copy .lead{font-size:14px;line-height:1.6}.oralyn-reference-hero .hero-buttons{gap:9px}.oralyn-reference-hero .hero-buttons .btn{min-height:49px;padding:0 15px;font-size:10px;border-radius:13px}.hero-proof{font-size:9px;gap:8px 12px}.hero-visual{height:310px;border-radius:20px}.hero-visual-image{border-radius:20px;object-position:61% center}.hero-visual:before{border-radius:20px}.hero-brand-lockup{width:95px;height:88px;padding:9px;border-radius:13px}.hero-live-note{right:3%;bottom:4%;padding:9px 11px;gap:8px}.hero-live-note b{font-size:8px}.hero-live-note small{font-size:6px}.hero-capabilities{padding:7px;border-radius:16px;gap:0}.hero-capabilities>div{padding:10px 6px;gap:7px}.cap-icon{width:34px;height:34px;flex-basis:34px;font-size:16px}.hero-capabilities b{font-size:9px}.hero-capabilities small{font-size:7px;white-space:normal;line-height:1.25}}
+
 </style>
 
 </head>
@@ -1746,15 +1780,31 @@ html{scroll-padding-top:110px!important}
 
 <main>
 
-<section class="hero" id="home"><div class="wrap hero-grid">
-
-<div class="hero-copy"><span class="eyebrow">One platform. A coordinated intelligence layer.</span><h1>The Connected <span>Dental Practice.</span></h1><p class="lead">Connect patient access, clinical workflows and practice operations through one coordinated dental technology platform.</p><div class="hero-buttons"><a class="btn primary" href="#demo">Request a Demo <span aria-hidden="true">&rarr;</span></a><a class="btn outline" href="#platform">Explore the Platform</a></div><div class="trust"><span><b>&#10003;</b>Connected workflows</span><span><b>&#10003;</b>Role-based experiences</span><span><b>&#10003;</b>Doctor-led clinical workflows</span></div></div>
-
-<div class="hero-scene" aria-label="Oralyn dental assistant speaking with a patient and recording notes">
-<img class="hero-scene-art" src="assets/oralyn-hero-scene.svg" alt="Dental assistant speaking with a patient while recording notes on a tablet in a modern clinic">
-<div class="hero-scene-brand"><img src="assets/oralyn-official-logo.png" alt="Official Oralyn logo"><span>THE DENTAL PRACTICE OS</span></div>
-<div class="hero-scene-caption"><span class="scene-dot"></span><span><b>Every conversation, connected.</b><small>Patient access · Clinical workflows · Practice operations</small></span></div>
-</div></div></div></section>
+<section class="hero oralyn-reference-hero" id="home">
+<div class="wrap hero-grid">
+<div class="hero-copy">
+<span class="hero-chip"><b>ORALYN</b><i></i>DENTAL PRACTICE PLATFORM</span>
+<h1>The Connected <span>Dental Practice.</span></h1>
+<p class="lead">A unified platform for patients, doctors and clinic teams to manage appointments, care, records and clinic operations — all in one place.</p>
+<div class="hero-buttons">
+<a class="btn primary" href="#demo">Request a Demo <span aria-hidden="true">→</span></a>
+<a class="btn outline" href="#portals"><span class="play-mark" aria-hidden="true">▶</span> Explore Oralyn in Action</a>
+</div>
+<div class="hero-proof"><span>✓ Connected workflows</span><span>✓ Role-based experiences</span><span>✓ Doctor-led clinical workflows</span></div>
+</div>
+<div class="hero-visual" aria-label="Oralyn clinic consultation">
+<img class="hero-visual-image" src="assets/oralyn-hero-scene.svg" alt="Dental professional consulting with a patient and recording notes in a modern clinic">
+<div class="hero-brand-lockup"><img src="assets/oralyn-official-logo.png" alt="Oralyn — The Dental Practice OS for Modern Clinics"></div>
+<div class="hero-live-note"><i></i><span><b>Every conversation, connected.</b><small>Patient access · Clinical workflows · Practice operations</small></span></div>
+</div>
+</div>
+<div class="hero-capabilities wrap" aria-label="Oralyn platform capabilities">
+<div><span class="cap-icon">▦</span><span><b>Appointments</b><small>Simple &amp; efficient booking</small></span></div>
+<div><span class="cap-icon">▣</span><span><b>Clinical Records</b><small>Organised &amp; secure</small></span></div>
+<div><span class="cap-icon">♧</span><span><b>Team Collaboration</b><small>Patient · Doctor · Assistant</small></span></div>
+<div><span class="cap-icon">▥</span><span><b>Practice Operations</b><small>Billing, analytics &amp; more</small></span></div>
+</div>
+</section>
 
 <section class="section" id="platform"><div class="wrap"><div class="center"><span class="eyebrow">One ecosystem. Three experiences.</span><h2>One platform. Three coordinated experiences.</h2><p class="lead">A connected platform with dedicated access for patients, doctors and clinic teams-each designed around the work they need to do.</p></div><div class="pillars">
 
