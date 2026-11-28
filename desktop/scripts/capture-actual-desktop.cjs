@@ -1,4 +1,4 @@
-const { spawn, execFileSync } = require("node:child_process");
+﻿const { spawn, execFileSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 const os = require("node:os");
@@ -97,13 +97,126 @@ async function verifyNoHorizontalOverflow(expectedWidth) {
   return layout;
 }
 
+async function verifyNoVerticalOverflow(expectedHeight) {
+  const layout = await evaluate(`(() => {
+    const root = document.documentElement;
+    const body = document.body;
+    const viewportHeight = root.clientHeight;
+    const rootScrollHeight = root.scrollHeight;
+    const bodyScrollHeight = body ? body.scrollHeight : rootScrollHeight;
+    return {
+      viewportHeight,
+      expectedViewportHeight: ${Number(expectedHeight)},
+      rootScrollHeight,
+      bodyScrollHeight,
+      verticalOverflow: Math.max(rootScrollHeight, bodyScrollHeight) > viewportHeight + 1,
+    };
+  })()`);
+  if (!layout || !Number.isFinite(layout.viewportHeight) || layout.viewportHeight <= 0 || layout.verticalOverflow) {
+    throw new Error("Vertical page overflow at " + expectedHeight + "px capture: " + JSON.stringify(layout));
+  }
+  return layout;
+}
+
+async function verifyScrollableBooking(expectedHeight) {
+  const layout = await evaluate(`(async () => {
+    const root = document.documentElement;
+    const body = document.body;
+    const form = document.querySelector("#booking");
+    const submit = document.querySelector("#submit");
+    const viewportHeight = root.clientHeight;
+    const rootScrollHeight = root.scrollHeight;
+    const bodyScrollHeight = body ? body.scrollHeight : rootScrollHeight;
+    const pageScrollHeight = Math.max(rootScrollHeight, bodyScrollHeight);
+    const rootOverflowY = getComputedStyle(root).overflowY;
+    const bodyOverflowY = body ? getComputedStyle(body).overflowY : "visible";
+    const scrollAllowed = !["hidden", "clip"].includes(rootOverflowY) &&
+      !["hidden", "clip"].includes(bodyOverflowY);
+    const pageScrollable = pageScrollHeight > viewportHeight + 1;
+    const startScrollY = window.scrollY;
+    if (submit) {
+      submit.scrollIntoView({ block: "end", behavior: "auto" });
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    }
+    const rect = submit ? submit.getBoundingClientRect() : null;
+    const submitReachable = Boolean(rect && rect.width > 0 && rect.height > 0 &&
+      rect.top >= -1 && rect.bottom <= root.clientHeight + 1);
+    const endScrollY = window.scrollY;
+    const reachedByScroll = !pageScrollable || endScrollY > startScrollY;
+    window.scrollTo(0, 0);
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    return {
+      viewportHeight,
+      expectedViewportHeight: ${Number(expectedHeight)},
+      rootScrollHeight,
+      bodyScrollHeight,
+      pageScrollable,
+      rootOverflowY,
+      bodyOverflowY,
+      scrollAllowed,
+      formPresent: Boolean(form),
+      submitPresent: Boolean(submit),
+      submitReachable,
+      reachedByScroll,
+      scrollYAtSubmit: endScrollY,
+    };
+  })()`);
+  if (!layout || !Number.isFinite(layout.viewportHeight) || layout.viewportHeight <= 0 ||
+      !layout.formPresent || !layout.submitPresent || !layout.scrollAllowed ||
+      !layout.submitReachable || !layout.reachedByScroll) {
+    throw new Error("Patient booking must remain vertically scrollable with a reachable submit action at " +
+      expectedHeight + "px capture: " + JSON.stringify(layout));
+  }
+  return layout;
+}
+
+async function verifyMobileDoctorLoginVisibility() {
+  const state = await evaluate(`(() => {
+    const root = document.documentElement;
+    const card = document.querySelector(".oralyn-reference-card");
+    const email = card?.querySelector('input[type="email"]');
+    const password = card?.querySelector('input[type="password"]');
+    const submit = card?.querySelector(".oralyn-signin");
+    const rect = (element) => {
+      if (!element) return null;
+      const box = element.getBoundingClientRect();
+      return { top: box.top, bottom: box.bottom, width: box.width, height: box.height };
+    };
+    const withinViewport = (box) => Boolean(box && box.width > 0 && box.height > 0 &&
+      box.top >= -1 && box.bottom <= root.clientHeight + 1);
+    const emailRect = rect(email);
+    const passwordRect = rect(password);
+    const submitRect = rect(submit);
+    return {
+      viewportWidth: root.clientWidth,
+      viewportHeight: root.clientHeight,
+      cardTop: rect(card)?.top ?? null,
+      emailVisible: withinViewport(emailRect),
+      passwordVisible: withinViewport(passwordRect),
+      submitVisible: withinViewport(submitRect),
+      emailRect,
+      passwordRect,
+      submitRect,
+    };
+  })()`);
+  if (!state || state.viewportWidth > 640 || !state.emailVisible || !state.passwordVisible || !state.submitVisible) {
+    throw new Error("Doctor sign-in email, password and submit must be visible in the first mobile viewport: " + JSON.stringify(state));
+  }
+  return state;
+}
+
 async function capture(name, width, height, mobile = false) {
   await send("Emulation.setDeviceMetricsOverride", {
     width, height, deviceScaleFactor: 1, mobile,
   });
   await sleep(450);
   const layout = await verifyNoHorizontalOverflow(width);
-  console.log("[Oralyn layout]", JSON.stringify({ screenshot: name, ...layout }));
+  const vertical = name.startsWith("patient-booking-")
+    ? await verifyScrollableBooking(height)
+    : name.startsWith("patient-home-")
+      ? await verifyNoVerticalOverflow(height)
+      : null;
+  console.log("[Oralyn layout]", JSON.stringify({ screenshot: name, ...layout, ...(vertical ? { vertical } : {}) }));
   const screenshot = await send("Page.captureScreenshot", {
     format: "png", captureBeyondViewport: false, fromSurface: true,
   });
@@ -203,6 +316,19 @@ async function captureCurrent(expectedText, screenshotName) {
   await capture(screenshotName + "-1440x1000.png", 1440, 1000);
   await capture(screenshotName + "-1280x800.png", 1280, 800);
   await capture(screenshotName + "-390x844.png", 390, 844, true);
+  if (screenshotName === "patient-home") {
+    await capture("patient-home-1366x768.png", 1366, 768);
+    await capture("patient-home-375x600.png", 375, 600, true);
+    await capture("patient-home-320x568.png", 320, 568, true);
+  }
+  if (screenshotName === "patient-booking") {
+    await capture("patient-booking-1366x768.png", 1366, 768);
+    await capture("patient-booking-768x1024.png", 768, 1024);
+    await capture("patient-booking-375x600.png", 375, 600, true);
+    await capture("patient-booking-320x568.png", 320, 568, true);
+    await capture("patient-booking-360x640.png", 360, 640, true);
+    await capture("patient-booking-375x667.png", 375, 667, true);
+  }
   return { ...fonts, pwa };
 }
 
@@ -281,7 +407,43 @@ async function verifyReducedMotion() {
   }
 }
 
+async function waitForApprovedBookingLogo() {
+  const ready = () => evaluate(`(() => {
+    const logo = document.querySelector('header img[src="/oralyn-official-logo.png"]');
+    return Boolean(logo && logo.complete && logo.naturalWidth > 0);
+  })()`);
+  try {
+    await waitFor(ready, 12000);
+  } catch {
+    const state = await evaluate(`(() => {
+      const logo = document.querySelector('header img[src="/oralyn-official-logo.png"]');
+      const rect = logo?.getBoundingClientRect();
+      return {
+        exists: Boolean(logo),
+        complete: Boolean(logo?.complete),
+        naturalWidth: logo?.naturalWidth || 0,
+        naturalHeight: logo?.naturalHeight || 0,
+        currentSrc: logo?.currentSrc || "",
+        width: rect?.width || 0,
+        height: rect?.height || 0,
+      };
+    })()`);
+    throw new Error("Approved Oralyn booking logo did not load before visibility verification: " + JSON.stringify(state));
+  }
+}
+
 async function verifyPublicBookingForm() {
+  const bookingUrl = await evaluate("location.origin + location.pathname");
+  const expectsCustomPicker = await evaluate('Boolean(document.querySelector("#service-trigger"))');
+  await send("Network.setBypassServiceWorker", { bypass: true });
+  try {
+    await send("Page.navigate", { url: bookingUrl });
+    await waitFor(() => evaluate('document.readyState === "complete" && Boolean(document.querySelector("#booking"))'));
+    await waitForApprovedBookingLogo();
+    await sleep(500);
+  } finally {
+    await send("Network.setBypassServiceWorker", { bypass: false });
+  }
   const state = await evaluate(`(() => {
     const form = document.querySelector("#booking");
     const service = document.querySelector("#treatment-type");
@@ -294,7 +456,9 @@ async function verifyPublicBookingForm() {
     const today = part("year") + "-" + part("month") + "-" + part("day");
     return {
       requiredFields: ["name", "phone", "treatment_type", "date", "time"]
-        .filter((name) => Boolean(form.elements.namedItem(name)?.required)),
+        .filter((name) => name === "treatment_type"
+          ? Boolean(service.required || document.querySelector("#service-options")?.getAttribute("aria-required") === "true")
+          : Boolean(form.elements.namedItem(name)?.required)),
       requiredLabelFields: ["name", "phone", "treatment_type", "date", "time"].map((name) => {
         const control = form.elements.namedItem(name);
         const labelText = control?.getAttribute("aria-label") ||
@@ -312,12 +476,27 @@ async function verifyPublicBookingForm() {
         option.value === "Other dental concern"
       ).length,
       minDate: date.min,
+      minDateAttribute: date.getAttribute("min"),
       expectedMinDate: today,
+      scriptReady: Boolean(date.min === today),
+      initStage: window.__oralynBookingScriptStage || "not-run",
       timezoneNotice: document.body.innerText.includes("Asia/Kolkata"),
-      accountFree: document.body.innerText.includes("No account or OTP is required."),
+      accountFree: document.body.innerText.includes("No account or OTP required."),
+      logoVisible: (() => {
+        const logo = document.querySelector('header img[src="/oralyn-official-logo.png"]');
+        const header = logo?.closest("header");
+        const logoRect = logo?.getBoundingClientRect();
+        const headerRect = header?.getBoundingClientRect();
+        return Boolean(logo && logo.complete && logo.naturalWidth > 0 && logoRect && headerRect &&
+          logoRect.width > 0 && logoRect.height > 0 &&
+          logoRect.top >= Math.max(0, headerRect.top) - 1 &&
+          logoRect.bottom <= headerRect.bottom + 1 &&
+          logoRect.bottom <= document.documentElement.clientHeight + 1);
+      })(),
       apiOrigin: document.querySelector('meta[name="oralyn-api-origin"]')?.content?.trim() || "",
     };
   })()`);
+  state.runtimeErrors = runtimeErrors.slice(-10);
   const expectedApiOrigin = new URL(apiBase).origin;
   if (state.apiOrigin !== expectedApiOrigin) {
     throw new Error("Public booking API origin does not match the configured portal API: " + JSON.stringify({
@@ -328,21 +507,38 @@ async function verifyPublicBookingForm() {
   if (state.requiredFields.length !== 5 || state.requiredLabelFields.length !== 5 ||
       state.requiredLabelFields.some((item) => !item.hasAssociatedLabel) ||
       state.catalogueCount !== 20 || state.otherCount !== 1 ||
-      state.minDate !== state.expectedMinDate || !state.timezoneNotice || !state.accountFree) {
+      state.minDate !== state.expectedMinDate || !state.timezoneNotice || !state.accountFree || !state.logoVisible) {
     throw new Error("Public booking contract verification failed: " + JSON.stringify(state));
   }
 
   const empty = await evaluate(`(() => {
+    const form = document.querySelector("#booking");
     let fetchCalls = 0;
+    let nativeValidity = true;
     const originalFetch = window.fetch;
+    const originalReportValidity = form.reportValidity.bind(form);
     window.fetch = (...args) => { fetchCalls += 1; return originalFetch(...args); };
-    document.querySelector("#submit").click();
+    form.reportValidity = () => {
+      nativeValidity = form.checkValidity();
+      return nativeValidity;
+    };
+    const submitEvent = new Event("submit", { bubbles: true, cancelable: true });
+    form.dispatchEvent(submitEvent);
+    form.reportValidity = originalReportValidity;
     window.fetch = originalFetch;
     const message = document.querySelector("#message");
-    return { fetchCalls, visibleError: message.classList.contains("error"), text: message.textContent };
+    return {
+      fetchCalls,
+      nativeValidity,
+      submitPrevented: submitEvent.defaultPrevented,
+      visibleError: message.classList.contains("error"),
+      text: message.textContent,
+    };
   })()`);
-  if (empty.fetchCalls !== 0 || !empty.visibleError || !empty.text.includes("required fields")) {
-    throw new Error("Empty guest booking did not show a safe validation message: " + JSON.stringify(empty));
+  if (empty.fetchCalls !== 0 || empty.nativeValidity || !empty.submitPrevented ||
+      !empty.visibleError ||
+      (!empty.text.includes("required fields") && !empty.text.includes("choose a dental service"))) {
+    throw new Error("Empty guest booking did not show a safe validation message without browser UI: " + JSON.stringify(empty));
   }
 
   const past = await evaluate(`(() => {
@@ -371,9 +567,68 @@ async function verifyPublicBookingForm() {
   if (past.fetchCalls !== 0 || !past.visibleError || !past.text.includes("future date and time")) {
     throw new Error("Past IST appointment was not blocked before network submission: " + JSON.stringify(past));
   }
-  return { ...state, emptySubmit: empty, pastTimeSubmit: past };
+
+  const restored = await evaluate(`(() => {
+    const form = document.querySelector("#booking");
+    const date = document.querySelector("#date");
+    const message = document.querySelector("#message");
+    form.reset();
+    date.min = ${JSON.stringify(state.minDate)};
+    date.value = ${JSON.stringify(state.minDate)};
+    for (const name of ["name", "phone", "treatment_type", "date", "time"]) {
+      form.elements[name]?.setCustomValidity("");
+    }
+    const phoneError = document.querySelector("#phone-error");
+    if (phoneError) phoneError.textContent = "";
+    const serviceSelect = document.querySelector("#treatment-type");
+    serviceSelect?.dispatchEvent(new Event("change", { bubbles: true }));
+    const serviceTrigger = document.querySelector("#service-trigger");
+    serviceTrigger?.removeAttribute("aria-invalid");
+    const serviceError = document.querySelector("#service-error");
+    if (serviceError) {
+      serviceError.textContent = "";
+      serviceError.classList.remove("visible");
+    }
+    message.className = "msg";
+    message.textContent = "";
+    document.activeElement?.blur();
+    return {
+      minDate: date.min,
+      value: date.value,
+      blank: !form.elements.name.value && !form.elements.phone.value &&
+        !form.elements.treatment_type.value && !form.elements.time.value,
+      messageCleared: !message.classList.contains("error") && !message.textContent,
+      focusCleared: !form.contains(document.activeElement),
+    };
+  })()`);
+  if (restored.minDate !== state.minDate || restored.value !== state.minDate ||
+      !restored.blank || !restored.messageCleared || !restored.focusCleared) {
+    throw new Error("Booking form was not restored to a clean state after negative validation checks: " + JSON.stringify(restored));
+  }
+  return { ...state, emptySubmit: empty, pastTimeSubmit: past, formReset: restored };
 }
 
+async function verifyServicePicker() {
+  const result = await evaluate(`(() => {
+    const select = document.querySelector("#treatment-type");
+    const options = [...(select?.options || [])].filter((option) => option.value);
+    const images = document.querySelectorAll("#booking img, #booking .service-image, #booking .service-menu");
+    return {
+      nativeSelect: Boolean(select && select.tagName === "SELECT" && !select.hidden),
+      required: Boolean(select?.required),
+      optionCount: options.length,
+      hasAllServices: options.some((option) => option.textContent.includes("Scaling & Cleaning")) && options.some((option) => option.textContent.includes("Dental Check-up")),
+      noPlaceholderArtwork: images.length === 0,
+      keyboardAccessible: Boolean(select && select.tabIndex >= 0),
+    };
+  })()`);
+  if (!result.nativeSelect || !result.required || result.optionCount !== 21 || !result.hasAllServices ||
+      !result.noPlaceholderArtwork || !result.keyboardAccessible) {
+    throw new Error("Native patient dental service dropdown failed its accessibility or catalogue checks: " + JSON.stringify(result));
+  }
+  await capture("patient-booking-native-service-dropdown-390x844.png", 390, 844, true);
+  return result;
+}
 async function submitSyntheticGuestBooking(seed) {
   const before = bookingNetworkRequests.length;
   const fillExpression = '(() => {'
@@ -489,7 +744,14 @@ async function captureAssistantAdminGate() {
     ws.addEventListener("message", (event) => {
       const message = JSON.parse(event.data);
       if (message.method === "Runtime.exceptionThrown") {
-        runtimeErrors.push(message.params.exceptionDetails?.text || "runtime exception");
+        const details = message.params.exceptionDetails || {};
+        runtimeErrors.push({
+          text: details.text || "runtime exception",
+          description: details.exception?.description || "",
+          url: details.url || "",
+          lineNumber: details.lineNumber ?? null,
+          columnNumber: details.columnNumber ?? null,
+        });
       }
       if (message.method === "Log.entryAdded" && message.params.entry?.level === "error") {
         runtimeErrors.push(message.params.entry.text);
@@ -535,6 +797,51 @@ async function captureAssistantAdminGate() {
       "Sign in with your clinic-issued email and password",
       "doctor-login"
     );
+
+    // Exercise the short-desktop breakpoint directly; the regular desktop captures are 800px+ tall.
+    await send("Emulation.setDeviceMetricsOverride", {
+      width: 1366, height: 600, deviceScaleFactor: 1, mobile: false,
+    });
+    await sleep(450);
+    await capture("doctor-login-short-desktop-top-1366x600.png", 1366, 600);
+    await evaluate(`(() => {
+      const submit = document.querySelector(".oralyn-reference-card .oralyn-signin");
+      if (!submit) throw new Error("Doctor sign-in submit control was not found at short desktop height.");
+      submit.scrollIntoView({ block: "center", inline: "nearest" });
+      return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    })()`);
+    const shortDesktopLogin = await evaluate(`(() => {
+      const root = document.documentElement;
+      const body = document.body;
+      const card = document.querySelector(".oralyn-reference-card");
+      const submit = card?.querySelector(".oralyn-signin");
+      const rect = submit?.getBoundingClientRect();
+      const scrolling = document.scrollingElement;
+      return {
+        viewportWidth: root.clientWidth,
+        viewportHeight: root.clientHeight,
+        submitVisible: Boolean(rect && rect.width > 0 && rect.height > 0 &&
+          rect.top >= -1 && rect.bottom <= root.clientHeight + 1),
+        scrollTop: scrolling?.scrollTop ?? 0,
+        pageScrollHeight: Math.max(root.scrollHeight, body?.scrollHeight || 0),
+        cardOverflow: card ? getComputedStyle(card).overflow : null,
+        cardMaxHeight: card ? getComputedStyle(card).maxHeight : null,
+      };
+    })()`);
+    if (shortDesktopLogin.viewportWidth !== 1366 || shortDesktopLogin.viewportHeight !== 600 ||
+        !shortDesktopLogin.submitVisible || shortDesktopLogin.cardOverflow !== "visible" ||
+        shortDesktopLogin.cardMaxHeight !== "none") {
+      throw new Error("Short desktop Doctor sign-in submit must remain reachable without card clipping: " +
+        JSON.stringify(shortDesktopLogin));
+    }
+    await capture("doctor-login-short-desktop-submit-1366x600.png", 1366, 600);
+    fontResults.doctorLogin.shortDesktopLogin = shortDesktopLogin;
+    await send("Emulation.setDeviceMetricsOverride", {
+      width: 390, height: 844, deviceScaleFactor: 1, mobile: true,
+    });
+    await evaluate("window.scrollTo(0, 0)");
+    await sleep(450);
+    fontResults.doctorLogin.mobileLoginVisibility = await verifyMobileDoctorLoginVisibility();
     const accessibilityResults = {};
     accessibilityResults.doctorKeyboardFocus = await verifyKeyboardFocus();
     accessibilityResults.reducedMotion = await verifyReducedMotion();
@@ -542,8 +849,8 @@ async function captureAssistantAdminGate() {
       const wordmark = document.querySelector(".oralyn-vector-brand img");
       const appIcon = document.querySelector(".oralyn-app-squircle img");
       return {
-        wordmark: Boolean(wordmark && wordmark.complete && wordmark.naturalWidth > 0 && wordmark.getAttribute("src") === "/oralyn-logo-approved.webp"),
-        appIcon: Boolean(appIcon && appIcon.complete && appIcon.naturalWidth > 0 && appIcon.getAttribute("src") === "/oralyn-app-icon-approved.webp")
+        wordmark: Boolean(wordmark && wordmark.complete && wordmark.naturalWidth > 0 && wordmark.getAttribute("src") === "/oralyn-official-logo.png"),
+        appIcon: Boolean(appIcon && appIcon.complete && appIcon.naturalWidth > 0 && appIcon.getAttribute("src") === "/oralyn-tooth-icon.png")
       };
     })()`);
     if (!approvedLogoAssets.wordmark || !approvedLogoAssets.appIcon) {
@@ -582,6 +889,27 @@ async function captureAssistantAdminGate() {
     ));
     fontResults.patientHome = await captureCurrent("Your smile, your care.", "patient-home");
 
+    fontResults.marketingHome = await navigate(
+      "/oralyn/",
+      "More clarity for your clinic.",
+      "oralyn-marketing-home"
+    );
+    await capture("oralyn-marketing-home-768x1024.png", 768, 1024);
+    await capture("oralyn-marketing-home-320x568.png", 320, 568, true);
+    const expectedPortalOrigin = new URL(process.env.ORALYN_PORTAL_ORIGIN || baseUrl).origin;
+    const marketingCanonical = await evaluate(`(() => ({
+      canonical: document.querySelector('link[rel="canonical"]')?.href || "",
+      openGraph: document.querySelector('meta[property="og:url"]')?.content || "",
+    }))()`);
+    const expectedMarketingCanonical = expectedPortalOrigin + "/oralyn/";
+    if (
+      marketingCanonical.canonical !== expectedMarketingCanonical ||
+      marketingCanonical.openGraph !== expectedMarketingCanonical
+    ) {
+      throw new Error("Marketing homepage canonical/Open Graph URLs do not match the configured portal origin: " + JSON.stringify(marketingCanonical));
+    }
+    fontResults.marketingHomeCanonical = true;
+
     await send("Page.navigate", { url: baseUrl + "/patient/login" });
     await waitFor(() => evaluate(
       'location.pathname === "/patient/home/" && document.body.innerText.includes("Your smile, your care.")'
@@ -610,6 +938,7 @@ async function captureAssistantAdminGate() {
     );
     accessibilityResults.guestBookingKeyboardFocus = await verifyKeyboardFocus();
     fontResults.patientBookingValidation = await verifyPublicBookingForm();
+    fontResults.patientServicePicker = await verifyServicePicker();
     accessibilityResults.guestBookingRequiredLabels = fontResults.patientBookingValidation.requiredLabelFields;
     const livePortalOrigin = new URL(process.env.ORALYN_PORTAL_ORIGIN || baseUrl).origin;
     await send("Page.navigate", { url: livePortalOrigin + "/patient/booking/" });
@@ -624,6 +953,14 @@ async function captureAssistantAdminGate() {
     await waitFor(() => evaluate(
       "location.origin === " + JSON.stringify(livePortalOrigin) + " && Boolean(document.querySelector('#booking'))"
     ));
+    fontResults.liveStagingBookingValidation = await verifyPublicBookingForm();
+    await capture("patient-booking-live-staging-375x600.png", 375, 600, true);
+    await capture("patient-booking-live-staging-320x568.png", 320, 568, true);
+    await capture("patient-booking-live-staging-360x640.png", 360, 640, true);
+    await capture("patient-booking-live-staging-375x667.png", 375, 667, true);
+    await capture("patient-booking-live-staging-390x844.png", 390, 844, true);
+    await capture("patient-booking-live-staging-768x1024.png", 768, 1024);
+    await capture("patient-booking-live-staging-1366x768.png", 1366, 768);
     fontResults.guestBookingBrowserE2E = await submitSyntheticGuestBooking(bookingSeed);
     fontResults.assistantAdmin = await captureAssistantAdminGate();
 
@@ -642,6 +979,7 @@ async function captureAssistantAdminGate() {
       "font_playfair_display_loaded=" + fontResults.doctorLogin.playfairDisplay,
       "approved_logo_wordmark_loaded=" + approvedLogoAssets.wordmark,
       "approved_app_icon_loaded=" + approvedLogoAssets.appIcon,
+      "doctor_mobile_login_primary_controls_visible=" + Boolean(fontResults.doctorLogin.mobileLoginVisibility?.emailVisible && fontResults.doctorLogin.mobileLoginVisibility?.passwordVisible && fontResults.doctorLogin.mobileLoginVisibility?.submitVisible),
       "pwa_service_worker_controlled=" + fontResults.doctorLogin.pwa.controlled,
       "pwa_cache_name_present=" + fontResults.doctorLogin.pwa.cachePresent,
       "pwa_api_cache_entries=" + fontResults.doctorLogin.pwa.forbidden.length,
@@ -650,13 +988,21 @@ async function captureAssistantAdminGate() {
       "patient_login_redirect=" + Boolean(fontResults.patientLegacyLoginRedirect),
       "authenticated_screens=false",
       "mobile_viewport=390x844",
+      "short_desktop_doctor_login=passed",
       "assistant_admin_redirect_gate=passed",
       "guest_booking_validation=passed",
       "guest_booking_browser_e2e=" + fontResults.guestBookingBrowserE2E.passed,
       "guest_booking_browser_http_status=" + fontResults.guestBookingBrowserE2E.httpStatus,
       "guest_booking_browser_duplicate_click_blocked=" + fontResults.guestBookingBrowserE2E.duplicateClickBlocked,
       "public_booking_api_origin=" + fontResults.patientBookingValidation.apiOrigin,
+      "live_staging_booking_layout=passed",
+      "live_staging_booking_service_count=" + fontResults.liveStagingBookingValidation.catalogueCount,
+      "live_staging_booking_api_origin=" + fontResults.liveStagingBookingValidation.apiOrigin,
+      "patient_service_dropdown=passed",
+      "patient_service_dropdown_option_count=" + fontResults.patientServicePicker.optionCount,
+      "patient_service_dropdown_keyboard=passed",
       "guest_booking_service_count=" + fontResults.patientBookingValidation.catalogueCount,
+      "marketing_home_canonical=" + Boolean(fontResults.marketingHomeCanonical),
       "assistant_admin_management_form_visible=" + fontResults.assistantAdmin.assistantManagementFormVisible,
       "assistant_admin_plus_jakarta_sans_loaded=" + fontResults.assistantAdmin.plusJakartaSans,
       "role_route_refresh_back_forward=passed",
@@ -683,3 +1029,5 @@ async function captureAssistantAdminGate() {
   console.error(error.stack || error);
   process.exit(1);
 });
+
+

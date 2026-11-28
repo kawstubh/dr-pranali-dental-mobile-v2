@@ -1,22 +1,12 @@
-# Oralyn brand asset provenance
+﻿# Oralyn brand asset provenance
 
-The official wordmark and app mark used by this desktop project were extracted from the approved user-provided investor presentation, not redrawn or replaced with a generic dental icon.
+## Official master artwork
 
-## Source
+The current approved Oralyn logo is the exact transparent master supplied by the user on 17 November 2026 (`oralyn-official-logo-transparent-clean.png`). It contains the blue/cyan tooth mark, Oralyn wordmark, and tagline “Smart Dental Care For Healthier Smiles”. Do not redraw, crop into a different logo, or substitute the tooth-only app icon where the full logo is required.
 
-- Original presentation: `Oralyn Investor Presentation_20261020_200633_0000.pptx`
-- Embedded media: `ppt/media/image1.png` (922 × 615 pixels)
-- Wordmark crop: source pixels `(60,55)–(565,555)`; resized without changing the artwork to 180 × 178 WebP.
-- App-mark crop: source pixels `(635,55)–(860,280)`; resized without changing the artwork to 128 × 128 WebP.
+- Full master: `public/oralyn-official-logo.png`
+- Original dimensions: 1231 × 1207 px (RGBA transparency)
+- SHA-256: `F0BFD671CA7CA8A0122F027A6E9B7F02B676CB7D98003B9ADF32227788CA6803`
 
-## Installed files
+`public/oralyn-app-icon-approved.webp` is for the compact app/favicon icon only. `public/oralyn-logo-approved.webp` is retired and must not be used in full-logo placements. The Dr Pranali Dental Clinic logo is separate and must never be substituted for Oralyn branding.
 
-- `public/oralyn-logo-approved.webp` — full approved Oralyn wordmark for Doctor and Patient sign-in.
-- `public/oralyn-app-icon-approved.webp` — approved Oralyn app mark for the sidebar, patient hero and favicon.
-
-SHA-256:
-
-- `oralyn-logo-approved.webp`: `21FB2E071B929D2E853C21DD234BE2A70FDFF546E88E2035CFDEDEEC836530C0`
-- `oralyn-app-icon-approved.webp`: `92D6672C1B90BA1EB322E892A4DBA67817E0247B12A3F87D37D1101975F07D51`
-
-The previous provisional `oralyn-app-icon.png` is archived outside `public/` and is no longer referenced by the application. The approved Dr. Pranali Dental Clinic logo remains a separate asset and was not modified.

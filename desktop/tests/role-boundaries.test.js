@@ -1,4 +1,4 @@
-import fs from "node:fs";
+﻿import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -39,8 +39,7 @@ test("Doctor workspace still requires a verified Doctor session", () => {
 });
 
 test("Doctor sign-in uses the exact clinic-approved Oralyn wordmark and app icon assets", () => {
-  assert.match(source, /src="\/oralyn-logo-approved\.webp"/);
-  assert.match(source, /src="\/oralyn-app-icon-approved\.webp"/);
+  assert.match(source, /src="\/oralyn-official-logo\.png"/);
   assert.doesNotMatch(source, /function OralynToothVector|<OralynToothVector/);
 });
 
@@ -62,7 +61,7 @@ test("CI records Doctor token storage hardening only after the regression suite"
 test("public patient journey is served only by account-free static pages", () => {
   assert.doesNotMatch(source, /function Patient\(|patientSession|patientLinks|patientInviteCode|oralyn_patient_record_id/);
   assert.match(patientHomeSource, /No patient account, password or OTP is needed/);
-  assert.match(bookingSource, /No account or OTP is required/);
+  assert.match(bookingSource, /No account or OTP required/);
   assert.match(source, /Patient services &amp; appointment requests/);
   assert.match(source, /window.location.assign\("\/patient\/home\/"\)/);
   assert.doesNotMatch(source, /Continue to patient portal/);
@@ -94,26 +93,57 @@ test("guest booking collects minimum contact details and uses public appointment
   assert.match(bookingSource, /\/v1\/dental\/public\/appointments/);
   assert.match(bookingSource, /Your appointment request has been received/);
 });
+test("public booking inline script parses before browser execution", () => {
+  const scriptStart = bookingSource.indexOf("<script>");
+  const scriptEnd = bookingSource.indexOf("</script>", scriptStart);
+  const inlineScript = scriptStart >= 0 && scriptEnd > scriptStart
+    ? bookingSource.slice(scriptStart + "<script>".length, scriptEnd)
+    : "";
+  assert.ok(inlineScript, "expected one inline booking script");
+  assert.doesNotThrow(() => new vm.Script(inlineScript, { filename: "patient-booking-inline.js" }));
+});
 
+test("public booking uses the native required dental service dropdown", () => {
+  assert.match(bookingSource, /<select name="treatment_type" id="treatment-type" required/);
+  assert.match(bookingSource, /<optgroup label="General">/);
+  assert.match(bookingSource, /<optgroup label="Preventive">/);
+  assert.match(bookingSource, /<option value="Other dental concern">/);
+  assert.doesNotMatch(bookingSource, /service-trigger|service-menu|role="listbox"|serviceSearchInput/);
+  assert.match(bookingSource, /event\.target === serviceSelect/);
+  assert.match(bookingSource, /serviceSelect\.focus\(\)/);
+});
 test("guest booking sends a stable idempotency key and validates future IST time", () => {
   assert.match(bookingSource, /idempotency_key:\s*idempotencyKey/);
   assert.match(bookingSource, /oralyn_public_booking_idempotency/);
   assert.match(bookingSource, /Asia\/Kolkata/);
-  assert.match(bookingSource, /India Standard Time/);
+  assert.match(bookingSource, /Times shown in IST \(Asia\/Kolkata\)/);
   assert.match(bookingSource, /startsAt <= new Date\(\)/);
   assert.match(bookingSource, /intelligence_request:\s*false/);
   assert.match(bookingSource, /dateInput\.setAttribute\("min", localToday\)/);
-  assert.match(bookingSource, /All appointment times are shown in India Standard Time/);
+  assert.match(bookingSource, /Times shown in IST \(Asia\/Kolkata\)/);
   assert.match(bookingSource, /validateIndianMobile/);
   assert.match(bookingSource, /10-digit Indian mobile number/);
   assert.match(bookingSource, /id="phone-error"/);
   assert.doesNotMatch(bookingSource, /name="note"/);
   assert.match(bookingSource, /name="date" id="date" type="date" required/);
+  assert.ok(bookingSource.includes("Request only."));
+  assert.match(bookingSource, /Contact details are used only to respond/);
   assert.match(bookingSource, /dateInput\.min = localToday/);
   assert.match(bookingSource, /form\.addEventListener\("invalid"/);
   assert.match(bookingSource, /name="phone" id="phone" type="tel"/);
 });
 
+test("public booking uses a native service dropdown and preserves the clinic service catalogue", () => {
+  assert.match(bookingSource, /id="treatment-type" required/);
+  assert.match(bookingSource, /id="service-error"/);
+  assert.match(bookingSource, /serviceSelect\.addEventListener\("change"/);
+  assert.match(bookingSource, /if \(!serviceSelect\.value\)/);
+  assert.match(bookingSource, /Please choose a dental service before sending your request/);
+  assert.match(bookingSource, /treatment_type:\s*String\(data.get\("treatment_type"\)\)/);
+  assert.match(bookingSource, /serviceSelect\.value/);
+  assert.match(bookingSource, /Dental Check-up &amp; Consultation/);
+  assert.doesNotMatch(bookingSource, /service-trigger|service-menu|service-options/);
+});
 test("patient private records are not rendered in the public account-free experience", () => {
   assert.match(patientHomeSource, /clinical records, prescriptions and invoices remain protected/);
   assert.doesNotMatch(bookingSource, /clinical notes|odontogram|prescription|invoice|patient_id|appointment_id/i);
@@ -241,6 +271,7 @@ test("Assistant staging contract verification is read-only and never creates a b
   assert.match(assistantContractSource, /method: "GET"/);
   assert.doesNotMatch(assistantContractSource, /method: "(?:POST|PATCH|DELETE)"/);
   assert.match(assistantWorkflowSource, /ORALYN_ASSISTANT_API_CONTRACT_READONLY_VERIFIED=true/);
+  assert.match(assistantWorkflowSource, /github\.event\.pull_request\.head\.repo\.full_name == github\.repository/);
   assert.doesNotMatch(assistantWorkflowSource, /ORALYN_ASSISTANT_UI_API_VERIFIED=true/);
   assert.match(assistantContractSource, /no credentials or writes used/);
 });
@@ -271,11 +302,9 @@ test("Clinic Assistant reschedules only to a future India Standard Time slot", (
 
 test("Clinic Assistant appointment queue shows scheduling details without clinical treatment type", () => {
   assert.match(assistantAppSource, /appointment\.starts_at/);
-  assert.match(assistantAppSource, /· Appointment/);
+  assert.ok(assistantAppSource.includes("  |  Appointment"));
   assert.doesNotMatch(assistantAppSource, /appointment\.treatment_type|treatment_type/);
 });
-
-
 test("release manifest blocks production until Doctor token storage is hardened", () => {
   const manifestPath = path.join(root, "scripts", "write-build-manifest.cjs");
   const manifestSource = fs.readFileSync(manifestPath, "utf8");
@@ -290,3 +319,9 @@ test("read-only Assistant API contract does not satisfy authenticated UI persist
   assert.ok(manifest.includes("assistant_ui_api_verified"));
   assert.ok(manifest.includes("assistant_data_minimization_live_verified"));
 });
+
+
+
+
+
+

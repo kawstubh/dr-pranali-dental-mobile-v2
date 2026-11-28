@@ -85,7 +85,7 @@ async function backendCommitMatchesPr(repo, deployedCommit, prHeadCommit) {
     return { ok: false, detail: "deployed API commit or PR #60 head is unavailable" };
   }
   if (deployedCommit === prHeadCommit) {
-    return { ok: true, detail: "live API deployment commit exactly matches Draft PR #60 head " + prHeadCommit };
+    return { ok: true, detail: "live API deployment commit exactly matches PR #60 head " + prHeadCommit };
   }
 
   const comparison = await request(
@@ -130,40 +130,45 @@ async function main() {
   const backendPr = await githubPullRequest("kawstubh/universal-intelligence-engine", 60);
   const expectedApiCommit = backendPr?.head?.sha || "";
 
-  const [dentalHealthWait, portalManifestWait] = await Promise.all([
+  // Render free-tier instances can cold-start after inactivity. Warm the
+  // lightweight endpoint first, then require healthy readiness and database
+  // identity within bounded retry windows. A 5xx is never accepted as success.
+  const healthResult = await waitForResponse(
+    apiOrigin + "/health",
+    (response, body) => response?.status === 200 && body?.status === "ok",
+    { headers: originHeaders },
+    20,
+    3000,
+  );
+  const [dentalHealthWait, readyResult, portalManifestWait] = await Promise.all([
     waitForResponse(
       apiOrigin + "/v1/dental/health",
       (response, body) => response?.status === 200 &&
         body?.database_identity_verified === true &&
         body?.database_branch_identity_verified === true,
       { headers: originHeaders },
+      20,
+      3000,
+    ),
+    waitForResponse(
+      apiOrigin + "/ready",
+      (response) => response?.status === 200,
+      { headers: originHeaders },
+      12,
+      2500,
     ),
     waitForResponse(
       portalOrigin + "/oralyn-build-manifest.json?expected_commit=" + encodeURIComponent(expectedPortalCommit),
       (response, body) => response?.status === 200 &&
         body?.commit_sha === expectedPortalCommit,
       { headers: { "Cache-Control": "no-store, no-cache", Pragma: "no-cache" } },
-      24,
-      4000,
+      45,
+      2000,
     ),
   ]);
 
   const dentalHealthResult = dentalHealthWait;
   const health = dentalHealthWait.body;
-  const healthResult = await waitForResponse(
-    apiOrigin + "/health",
-    (response) => response?.status === 200,
-    { headers: originHeaders },
-    4,
-    2500,
-  );
-  const readyResult = await waitForResponse(
-    apiOrigin + "/ready",
-    (response) => response?.status === 200,
-    { headers: originHeaders },
-    4,
-    2500,
-  );
   const apiStackOk = healthResult.response?.status === 200 &&
     readyResult.response?.status === 200 &&
     dentalHealthResult.response?.status === 200 &&
@@ -350,7 +355,7 @@ async function main() {
     "ORALYN_STAGING_PORTAL_COMMIT_VERIFIED",
     portalCommitOk,
     "live portal manifest commit " + (livePortalManifest?.commit_sha || "unavailable") +
-      " compared with expected Draft PR #18 head " + (expectedPortalCommit || "unavailable"),
+      " compared with expected workflow commit " + (expectedPortalCommit || "unavailable"),
   );
   record("ORALYN_STAGING_API_COMMIT_VERIFIED", apiCommitOk, apiCommitCheck.detail);
 

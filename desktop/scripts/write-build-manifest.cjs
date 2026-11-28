@@ -85,7 +85,10 @@ function walk(directory, prefix = "") {
 const environment = process.env.ORALYN_ENVIRONMENT || (process.env.RENDER_GIT_COMMIT ? "staging" : "local");
 const environmentName = environment.toLowerCase();
 const requireHttpsOrigins = ["staging", "production"].includes(environmentName);
-const portalOrigin = originOf(process.env.ORALYN_PORTAL_ORIGIN || "", {
+const portalOriginInput =
+  process.env.ORALYN_PORTAL_ORIGIN ||
+  (environmentName === "local" ? "http://localhost:4173" : "");
+const portalOrigin = originOf(portalOriginInput, {
   requireHttps: requireHttpsOrigins,
   label: "Portal origin",
 });
@@ -101,6 +104,36 @@ if (environmentName === "staging" && apiOrigin !== stagingApiOrigin) {
 }
 if (environmentName === "production" && (!apiOrigin || apiOrigin === stagingApiOrigin)) {
   throw new Error("Production portal builds require an explicit non-staging HTTPS API origin.");
+}
+if (["staging", "production"].includes(environmentName) && !portalOrigin) {
+  throw new Error("Staging and production portal builds require an explicit canonical HTTPS portal origin.");
+}
+
+const canonicalOriginMarker = "__ORALYN_CANONICAL_ORIGIN__";
+function injectCanonicalOrigin(directory) {
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      injectCanonicalOrigin(absolute);
+      continue;
+    }
+    if (!entry.isFile() || !entry.name.toLowerCase().endsWith(".html")) continue;
+    const html = fs.readFileSync(absolute, "utf8");
+    if (!html.includes(canonicalOriginMarker)) continue;
+    if (!portalOrigin) throw new Error("Canonical marketing URLs require ORALYN_PORTAL_ORIGIN.");
+    const configuredHtml = html.split(canonicalOriginMarker).join(portalOrigin);
+    if (configuredHtml.includes(canonicalOriginMarker)) throw new Error("Unresolved Oralyn canonical-origin placeholder in " + absolute);
+    fs.writeFileSync(absolute, configuredHtml, "utf8");
+  }
+}
+injectCanonicalOrigin(outputDir);
+
+const applicationBundles = walk(outputDir).filter((file) => /\.(?:js|mjs)$/i.test(file.path));
+if (apiOrigin && !applicationBundles.some((file) => {
+  const absolute = path.join(outputDir, file.path);
+  return fs.readFileSync(absolute, "utf8").includes(apiOrigin);
+})) {
+  throw new Error("Configured Oralyn API origin is not present in the Vite-built application bundle.");
 }
 
 const bookingPagePath = path.join(outputDir, "patient", "booking", "index.html");
@@ -148,6 +181,8 @@ const checks = {
   cross_tenant_e2e_verified: flag(process.env.ORALYN_CROSS_TENANT_E2E_VERIFIED),
   authenticated_screenshots_verified: flag(process.env.ORALYN_AUTHENTICATED_SCREENSHOTS_VERIFIED),
   mobile_browser_e2e_verified: flag(process.env.ORALYN_MOBILE_BROWSER_E2E_VERIFIED),
+  // Responsive Chromium emulation is not physical iPhone Safari acceptance.
+  physical_iphone_safari_verified: flag(process.env.ORALYN_PHYSICAL_IPHONE_SAFARI_VERIFIED),
   public_service_catalog_ui_verified: flag(process.env.ORALYN_SERVICE_CATALOG_UI_VERIFIED),
   public_service_catalog_api_verified: flag(process.env.ORALYN_SERVICE_CATALOG_API_VERIFIED),
   staging_api_commit_verified: flag(process.env.ORALYN_STAGING_API_COMMIT_VERIFIED),
@@ -157,6 +192,10 @@ const checks = {
   production_data_residency_privacy_review_verified: flag(process.env.ORALYN_PRODUCTION_DATA_RESIDENCY_PRIVACY_REVIEW_VERIFIED),
   production_custom_domain_verified: flag(process.env.ORALYN_PRODUCTION_DOMAIN_VERIFIED),
   production_deployment_approval_verified: flag(process.env.ORALYN_PRODUCTION_DEPLOYMENT_APPROVED),
+  // Repository branch protections are a release prerequisite; remain false until an administrator verifies required checks.
+  repository_branch_protection_verified: flag(process.env.ORALYN_REPOSITORY_BRANCH_PROTECTION_VERIFIED),
+  // Legacy public Doctor/Patient and pre-combined portal deployments need a verified disposition before release.
+  legacy_portal_surfaces_disposition_verified: flag(process.env.ORALYN_LEGACY_PORTAL_SURFACES_DISPOSITION_VERIFIED),
 };
 const blockers = Object.entries(checks)
   .filter(([, passed]) => !passed)
