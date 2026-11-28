@@ -1643,7 +1643,19 @@ html{scroll-padding-top:110px!important}
   .access-phone { width: 104px; height: 188px; }
   .browser-device { width: 96%; }
 }
-\r\n</style>
+\r\n
+/* Oralyn brand-forward hero: canonical logo and patient-intake note cue */
+.hero .dash-wrap{padding:52px 17px 48px}
+.hero-logo-plaque{position:absolute;z-index:3;top:-5px;left:34px;width:176px;padding:12px 15px 9px;border:1px solid #ffffffd9;border-radius:14px;background:#ffffffed;box-shadow:0 14px 38px #07182b18;text-align:center;transform:rotate(-3deg)}
+.hero-logo-plaque img{display:block;width:100%;height:58px;object-fit:contain}
+.hero-logo-plaque span{display:block;margin-top:1px;color:#54718a;font-size:6px;font-weight:800;letter-spacing:.17em}
+.hero-note-card{position:absolute;z-index:4;left:-12px;bottom:6px;display:flex;align-items:center;gap:10px;max-width:245px;padding:12px 14px;border:1px solid #ffffff;border-radius:12px;background:#ffffffed;box-shadow:0 16px 40px #07182b20}
+.hero-note-avatar{display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;border-radius:10px;background:linear-gradient(145deg,#00c5c4,#0c84b8);color:white;font-size:15px}
+.hero-note-card b,.hero-note-card small,.hero-note-card em{display:block}
+.hero-note-card b{color:#102c50;font-size:8px}.hero-note-card small{color:#647b90;font-size:7px}.hero-note-card em{margin-top:3px;color:#078d8c;font-size:7px;font-style:normal;font-weight:700}
+@media(max-width:900px){.hero-logo-plaque{left:20px;width:145px}.hero-logo-plaque img{height:48px}.hero-note-card{left:0;bottom:0}}
+@media(max-width:650px){.hero .dash-wrap{padding:55px 5px 48px}.hero-logo-plaque{top:0;left:12px;width:126px;padding:8px}.hero-logo-plaque img{height:40px}.hero-note-card{left:5px;bottom:-5px;max-width:210px;padding:9px 10px}}
+\n</style>
 
 </head>
 
@@ -1689,7 +1701,7 @@ html{scroll-padding-top:110px!important}
 
 <div class="hero-copy"><span class="eyebrow">One platform. A coordinated intelligence layer.</span><h1>The Connected <span>Dental Practice.</span></h1><p class="lead">Connect patient access, clinical workflows and practice operations through one coordinated dental technology platform.</p><div class="hero-buttons"><a class="btn primary" href="#demo">Request a Demo <span aria-hidden="true">&rarr;</span></a><a class="btn outline" href="#platform">Explore the Platform</a></div><div class="trust"><span><b>&#10003;</b>Connected workflows</span><span><b>&#10003;</b>Role-based experiences</span><span><b>&#10003;</b>Doctor-led clinical workflows</span></div></div>
 
-<div class="dash-wrap"><div class="glow"></div><div class="dashboard">
+<div class="dash-wrap"><div class="glow"></div><div class="hero-logo-plaque"><img src="assets/oralyn-official-logo.png" alt="Oralyn ? The Dental Practice OS for Modern Clinics"><span>THE DENTAL PRACTICE OS</span></div><div class="hero-note-card"><span class="hero-note-avatar">?</span><span><b>Patient conversation</b><small>Reception notes ? Appointment context</small><em>Notes captured for the care team</em></span></div><div class="dashboard">
 
 <div class="dash-top"><span class="dash-brand">ORALYN <i class="dash-dot"></i> PRACTICE</span><span class="dash-user"><span class="online-dot"></span> Dr. Pranali <i class="avatar">DP</i></span></div>
 
