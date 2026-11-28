@@ -1776,11 +1776,32 @@ html{scroll-padding-top:110px!important}
 @media(max-width:560px){.photo-hero-backdrop img{object-position:62% center;opacity:.52}.photo-hero-wash{background:linear-gradient(90deg,rgba(255,255,255,.97),rgba(247,253,254,.88) 75%,rgba(239,251,252,.5))}.photo-hero-content{min-height:570px;padding-top:26px;padding-bottom:110px}.photo-hero-copy{width:100%;max-width:460px}.photo-hero-brand{width:116px;height:52px;margin-bottom:15px}.photo-hero-copy .hero-chip{font-size:8px;padding:7px 10px}.photo-hero-copy h1{font-size:42px;margin:19px 0 15px}.photo-hero-copy .lead{font-size:13px;line-height:1.6}.photo-hero-copy .hero-buttons{gap:8px}.photo-hero-copy .hero-buttons .btn{min-height:48px;padding:0 13px;font-size:10px;border-radius:12px}.photo-hero-copy .hero-proof{font-size:8px;gap:8px 11px}.photo-hero-caption{right:4%;bottom:17px;padding:9px 11px;gap:8px}.photo-hero-caption b{font-size:8px}.photo-hero-caption small{font-size:6px}.oralyn-photo-hero .hero-capabilities{padding:6px;border-radius:15px}.oralyn-photo-hero .hero-capabilities>a{padding:9px 5px;gap:7px}.oralyn-photo-hero .cap-icon{width:33px;height:33px;flex-basis:33px;font-size:15px}.oralyn-photo-hero .hero-capabilities b{font-size:8px}.oralyn-photo-hero .hero-capabilities small{font-size:7px;white-space:normal;line-height:1.25}}
 
 
-/* Final hero refinement: keep the official wordmark in the site header and use only its tooth mark on the clinic wall. */
-.photo-hero-content:after{content:"";position:absolute;z-index:2;top:5.5%;right:8.5%;width:clamp(82px,8vw,116px);height:clamp(50px,5.2vw,72px);background-image:url("assets/oralyn-official-logo.png");background-repeat:no-repeat;background-position:center top;background-size:100% auto;filter:drop-shadow(0 5px 12px rgba(7,24,43,.10));pointer-events:none}
+/* Brand placement: full official Oralyn logo replaces the small tooth-only mark on the clinic wall. */
+.photo-hero-content:after{
+  content:"";
+  position:absolute;
+  z-index:2;
+  top:13%;
+  right:19%;
+  width:clamp(142px,15vw,218px);
+  height:clamp(142px,15vw,218px);
+  background-image:url("assets/oralyn-official-logo.png");
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:contain;
+  filter:drop-shadow(0 5px 12px rgba(7,24,43,.12));
+  pointer-events:none;
+}
 .photo-hero-content{isolation:isolate}
-@media(max-width:800px){.photo-hero-content:after{top:4%;right:7%;width:76px;height:46px}}
-@media(max-width:560px){.photo-hero-content:after{top:3%;right:6%;width:64px;height:39px}}
+@media(max-width:1100px){
+  .photo-hero-content:after{top:12%;right:16%;width:clamp(118px,16vw,170px);height:clamp(118px,16vw,170px)}
+}
+@media(max-width:800px){
+  .photo-hero-content:after{top:8%;right:12%;width:112px;height:112px}
+}
+@media(max-width:560px){
+  .photo-hero-content:after{top:6%;right:7%;width:82px;height:82px}
+}
 </style>
 
 </head>
