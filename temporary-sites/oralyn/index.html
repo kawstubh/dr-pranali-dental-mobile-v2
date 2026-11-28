@@ -1775,6 +1775,12 @@ html{scroll-padding-top:110px!important}
 @media(max-width:800px){.oralyn-photo-hero{min-height:0;padding-bottom:24px!important}.photo-hero-backdrop img{object-position:61% center}.photo-hero-wash{background:linear-gradient(90deg,rgba(255,255,255,.97) 0%,rgba(249,254,255,.9) 45%,rgba(239,251,252,.38) 75%,rgba(231,249,250,.08) 100%)}.photo-hero-content{min-height:570px;padding-top:30px;padding-bottom:90px}.photo-hero-copy{width:64%}.photo-hero-brand{width:135px;height:60px;margin-bottom:18px}.photo-hero-copy h1{font-size:clamp(42px,7vw,58px)}.photo-hero-caption{right:2%;bottom:30px}.oralyn-photo-hero .hero-capabilities{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:0}.oralyn-photo-hero .hero-capabilities>a:nth-child(2){border-right:0}.oralyn-photo-hero .hero-capabilities>a:nth-child(-n+2){border-bottom:1px solid #d8eaf0}}
 @media(max-width:560px){.photo-hero-backdrop img{object-position:62% center;opacity:.52}.photo-hero-wash{background:linear-gradient(90deg,rgba(255,255,255,.97),rgba(247,253,254,.88) 75%,rgba(239,251,252,.5))}.photo-hero-content{min-height:570px;padding-top:26px;padding-bottom:110px}.photo-hero-copy{width:100%;max-width:460px}.photo-hero-brand{width:116px;height:52px;margin-bottom:15px}.photo-hero-copy .hero-chip{font-size:8px;padding:7px 10px}.photo-hero-copy h1{font-size:42px;margin:19px 0 15px}.photo-hero-copy .lead{font-size:13px;line-height:1.6}.photo-hero-copy .hero-buttons{gap:8px}.photo-hero-copy .hero-buttons .btn{min-height:48px;padding:0 13px;font-size:10px;border-radius:12px}.photo-hero-copy .hero-proof{font-size:8px;gap:8px 11px}.photo-hero-caption{right:4%;bottom:17px;padding:9px 11px;gap:8px}.photo-hero-caption b{font-size:8px}.photo-hero-caption small{font-size:6px}.oralyn-photo-hero .hero-capabilities{padding:6px;border-radius:15px}.oralyn-photo-hero .hero-capabilities>a{padding:9px 5px;gap:7px}.oralyn-photo-hero .cap-icon{width:33px;height:33px;flex-basis:33px;font-size:15px}.oralyn-photo-hero .hero-capabilities b{font-size:8px}.oralyn-photo-hero .hero-capabilities small{font-size:7px;white-space:normal;line-height:1.25}}
 
+
+/* Final hero refinement: keep the official wordmark in the site header and use only its tooth mark on the clinic wall. */
+.photo-hero-content:after{content:"";position:absolute;z-index:2;top:5.5%;right:8.5%;width:clamp(82px,8vw,116px);height:clamp(50px,5.2vw,72px);background-image:url("assets/oralyn-official-logo.png");background-repeat:no-repeat;background-position:center top;background-size:100% auto;filter:drop-shadow(0 5px 12px rgba(7,24,43,.10));pointer-events:none}
+.photo-hero-content{isolation:isolate}
+@media(max-width:800px){.photo-hero-content:after{top:4%;right:7%;width:76px;height:46px}}
+@media(max-width:560px){.photo-hero-content:after{top:3%;right:6%;width:64px;height:39px}}
 </style>
 
 </head>
@@ -1822,7 +1828,7 @@ html{scroll-padding-top:110px!important}
 <div class="photo-hero-wash"></div>
 <div class="wrap photo-hero-content">
 <div class="photo-hero-copy">
-<div class="photo-hero-brand"><img src="assets/oralyn-official-logo.png" alt="Oralyn — The Dental Practice OS for Modern Clinics"></div>
+
 <span class="hero-chip"><b>ORALYN</b><i></i>DENTAL PRACTICE PLATFORM</span>
 <h1>The Connected <span>Dental Practice.</span></h1>
 <p class="lead">A unified platform for patients, doctors and clinic teams to manage appointments, care, records and clinic operations — all in one place.</p>
