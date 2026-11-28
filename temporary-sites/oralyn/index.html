@@ -1662,7 +1662,49 @@ html{scroll-padding-top:110px!important}
 .hero-logo-plaque span{color:#54718a!important;}
 @media(max-width:900px){.hero-logo-plaque{top:-34px!important;right:14px!important;left:auto!important;width:126px!important}.hero-logo-plaque img{height:42px!important}}
 @media(max-width:650px){.hero-logo-plaque{top:-31px!important;right:9px!important;left:auto!important;width:112px!important;padding:6px!important}.hero-logo-plaque img{height:36px!important}}
-\n</style>
+\n
+/* ORALYN REAL HERO — full-width branded clinic scene */
+.hero{position:relative;isolation:isolate;overflow:hidden;padding:0!important;background:#effafb!important;min-height:620px}
+.hero:after{z-index:0;right:-260px;bottom:-390px}
+.hero .wrap.hero-grid{display:block!important;position:relative;min-height:620px;padding-top:0;padding-bottom:0}
+.hero-copy{position:relative;z-index:3;max-width:540px;padding:92px 0 82px}
+.hero-copy .eyebrow{color:#0c7882}
+.hero-copy h1{max-width:520px}
+.hero-copy .lead{max-width:510px;color:#52677b}
+.hero-scene{position:absolute;z-index:1;inset:0 0 0 0;overflow:hidden;pointer-events:none}
+.hero-scene-art{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover;object-position:center 48%}
+.hero-scene:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#f7fcfc 0%,rgba(247,252,252,.98) 28%,rgba(247,252,252,.76) 43%,rgba(247,252,252,.08) 65%,transparent 100%)}
+.hero-scene-brand{position:absolute;z-index:2;right:4.5%;bottom:34px;display:flex;align-items:center;gap:12px;padding:10px 15px;background:rgba(255,255,255,.94);border:1px solid rgba(255,255,255,.9);border-radius:13px;box-shadow:0 12px 32px rgba(7,24,43,.16)}
+.hero-scene-brand img{display:block;width:108px;height:48px;object-fit:contain}
+.hero-scene-brand span{padding-left:12px;border-left:1px solid #dce8eb;color:#456276;font-size:8px;font-weight:800;letter-spacing:.13em;white-space:nowrap}
+.hero-scene-caption{position:absolute;z-index:2;right:4.5%;bottom:116px;display:flex;align-items:center;gap:10px;padding:12px 15px;border:1px solid rgba(255,255,255,.9);border-radius:12px;background:rgba(255,255,255,.9);box-shadow:0 12px 28px rgba(7,24,43,.1)}
+.hero-scene-caption b,.hero-scene-caption small{display:block}
+.hero-scene-caption b{color:#102c50;font-size:10px}
+.hero-scene-caption small{color:#60768a;font-size:8px}
+.scene-dot{width:9px;height:9px;flex:0 0 9px;border-radius:50%;background:#00bfc2;box-shadow:0 0 0 5px #00bfc21c}
+@media(max-width:900px){
+ .hero{min-height:0}
+ .hero .wrap.hero-grid{min-height:0;padding-top:0;padding-bottom:0}
+ .hero-copy{max-width:510px;padding:68px 0 44px}
+ .hero-scene{position:relative;height:390px;margin-top:-15px}
+ .hero-scene-art{object-position:65% center}
+ .hero-scene:after{background:linear-gradient(180deg,#f7fcfc 0%,rgba(247,252,252,0) 27%,transparent 100%)}
+}
+@media(max-width:650px){
+ .hero-copy{padding:48px 0 24px}
+ .hero-copy h1{font-size:40px!important}
+ .hero-scene{height:290px;margin-top:0}
+ .hero-scene-art{object-position:67% center}
+ .hero-scene-brand{right:12px;bottom:12px;gap:7px;padding:6px 9px}
+ .hero-scene-brand img{width:75px;height:34px}
+ .hero-scene-brand span{font-size:6px;padding-left:7px}
+ .hero-scene-caption{right:12px;bottom:65px;padding:8px 10px}
+ .hero-scene-caption b{font-size:8px}
+ .hero-scene-caption small{font-size:6px}
+ .hero-buttons{gap:8px}
+}
+
+</style>
 
 </head>
 
@@ -1708,29 +1750,11 @@ html{scroll-padding-top:110px!important}
 
 <div class="hero-copy"><span class="eyebrow">One platform. A coordinated intelligence layer.</span><h1>The Connected <span>Dental Practice.</span></h1><p class="lead">Connect patient access, clinical workflows and practice operations through one coordinated dental technology platform.</p><div class="hero-buttons"><a class="btn primary" href="#demo">Request a Demo <span aria-hidden="true">&rarr;</span></a><a class="btn outline" href="#platform">Explore the Platform</a></div><div class="trust"><span><b>&#10003;</b>Connected workflows</span><span><b>&#10003;</b>Role-based experiences</span><span><b>&#10003;</b>Doctor-led clinical workflows</span></div></div>
 
-<div class="dash-wrap"><div class="glow"></div><div class="hero-logo-plaque"><img src="assets/oralyn-official-logo.png" alt="Oralyn ? The Dental Practice OS for Modern Clinics"><span>THE DENTAL PRACTICE OS</span></div><div class="hero-note-card"><span class="hero-note-avatar">?</span><span><b>Patient conversation</b><small>Reception notes ? Appointment context</small><em>Notes captured for the care team</em></span></div><div class="dashboard">
-
-<div class="dash-top"><span class="dash-brand">ORALYN <i class="dash-dot"></i> PRACTICE</span><span class="dash-user"><span class="online-dot"></span> Dr. Pranali <i class="avatar">DP</i></span></div>
-
-<div class="dash-body"><aside class="dash-side"><p class="side-label">WORKSPACE</p><div class="side-item selected">Overview</div><div class="side-item">Appointments</div><div class="side-item">Patient records</div><div class="side-item">Treatments</div><div class="side-item">Billing</div><div class="side-item">Analytics</div><div class="side-profile"><span class="avatar">DP</span><span><b>Dr. Pranali</b><small>Lead clinician</small></span></div></aside>
-
-<div class="dash-main"><div class="dash-heading"><div><small class="dash-kicker">MONDAY, 23 NOVEMBER</small><strong>Good morning, Dr. Pranali</strong></div><span class="date">Today</span></div>
-
-<div class="metrics"><div class="metric metric-a"><small>Today's appointments</small><strong>18</strong><em>4 upcoming</em><span class="metric-spark"></span></div><div class="metric metric-b"><small>Chair utilisation</small><strong>86<small>%</small></strong><em>Across 3 operatories</em><span class="metric-spark spark-b"></span></div><div class="metric metric-c"><small>Pending confirmations</small><strong>05</strong><em>Awaiting response</em><span class="metric-spark spark-c"></span></div></div>
-
-<div class="schedule"><div class="schedule-head"><div><b>Operatory schedule</b><small>Daily clinical timeline</small></div><div class="schedule-legend"><span><i class="legend-dot teal-dot"></i>Confirmed</span><span><i class="legend-dot gold-dot"></i>In progress</span></div></div>
-
-<div class="timeline"><div class="timeline-hours"><span>09:00</span><span>10:00</span><span>11:00</span><span>12:00</span><span>13:00</span></div>
-
-<div class="operator-row"><div class="operator-name"><b>OP 01</b><small>Dr. Pranali</small></div><div class="operator-track"><div class="appointment appt-teal" style="left:1%;width:29%"><b>Restorative</b><small>09:00 &middot; A. Shah</small></div><div class="appointment appt-blue" style="left:34%;width:26%"><b>Scan &amp; Screening</b><small>10:30 &middot; R. Mehta</small></div><div class="appointment appt-gold" style="left:64%;width:30%"><b>Hygiene</b><small>12:00 &middot; S. Patel</small></div></div></div>
-
-<div class="operator-row"><div class="operator-name"><b>OP 02</b><small>Dr. N. Joshi</small></div><div class="operator-track"><div class="appointment appt-blue" style="left:5%;width:25%"><b>Scan &amp; Screening</b><small>09:15 &middot; K. Rao</small></div><div class="appointment appt-teal" style="left:36%;width:34%"><b>Restorative</b><small>10:45 &middot; M. Shah</small></div></div></div>
-
-<div class="operator-row"><div class="operator-name"><b>OP 03</b><small>Hygiene suite</small></div><div class="operator-track"><div class="appointment appt-gold" style="left:1%;width:27%"><b>Hygiene</b><small>09:00 &middot; P. Desai</small></div><div class="appointment appt-blue" style="left:34%;width:29%"><b>Scan &amp; Screening</b><small>10:30 &middot; N. Kulkarni</small></div></div></div>
-
-</div><div class="dash-bottom"><span><i class="online-dot"></i> Practice schedule</span><span>Illustrative interface &middot; no patient data</span></div></div></div></div><div class="float-note"><span class="float-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></span><span><b>One connected workspace</b><small>Care and operations, in sync</small></span></div></div>
-
-</div></section>
+<div class="hero-scene" aria-label="Oralyn dental assistant speaking with a patient and recording notes">
+<img class="hero-scene-art" src="assets/oralyn-hero-scene.svg" alt="Dental assistant speaking with a patient while recording notes on a tablet in a modern clinic">
+<div class="hero-scene-brand"><img src="assets/oralyn-official-logo.png" alt="Official Oralyn logo"><span>THE DENTAL PRACTICE OS</span></div>
+<div class="hero-scene-caption"><span class="scene-dot"></span><span><b>Every conversation, connected.</b><small>Patient access · Clinical workflows · Practice operations</small></span></div>
+</div></div></div></section>
 
 <section class="section" id="platform"><div class="wrap"><div class="center"><span class="eyebrow">One ecosystem. Three experiences.</span><h2>One platform. Three coordinated experiences.</h2><p class="lead">A connected platform with dedicated access for patients, doctors and clinic teams-each designed around the work they need to do.</p></div><div class="pillars">
 

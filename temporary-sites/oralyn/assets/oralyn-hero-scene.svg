@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="t d">
+<title id="t">Oralyn dental assistant speaking with a patient and recording notes</title>
+<desc id="d">A warm, modern dental clinic reception scene in teal and navy with a dental assistant holding a tablet and speaking with a patient.</desc>
+<defs>
+ <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#effbfc"/><stop offset="1" stop-color="#d8f0f1"/></linearGradient>
+ <linearGradient id="glass" x2="1" y2="1"><stop stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#fff" stop-opacity=".45"/></linearGradient>
+ <linearGradient id="teal" x2="1" y2="1"><stop stop-color="#27d1ce"/><stop offset="1" stop-color="#078c9a"/></linearGradient>
+ <linearGradient id="navy" x2="0" y2="1"><stop stop-color="#23496a"/><stop offset="1" stop-color="#0d2743"/></linearGradient>
+ <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feGaussianBlur stdDeviation="18"/></filter>
+ </defs>
+ <rect width="1200" height="760" rx="34" fill="url(#bg)"/>
+ <circle cx="1010" cy="90" r="210" fill="#fff" opacity=".5"/><circle cx="890" cy="150" r="290" fill="none" stroke="#69d1d0" stroke-opacity=".22" stroke-width="2"/>
+ <path d="M0 580 Q260 490 490 600 T1200 540 V760 H0Z" fill="#d0e9e9"/>
+ <rect x="600" y="68" width="510" height="330" rx="24" fill="url(#glass)" stroke="#fff" stroke-width="5"/>
+ <path d="M770 68v330M940 68v330M600 230h510" stroke="#b8d9dc" stroke-width="5" opacity=".6"/>
+ <rect x="655" y="115" width="130" height="86" rx="12" fill="#eaf7f8"/><path d="M715 133c-14 0-20 13-20 24 0 15 12 28 20 42 8-14 20-27 20-42 0-11-6-24-20-24z" fill="#35c6c4"/>
+ <rect x="822" y="115" width="242" height="132" rx="14" fill="#edf7f8"/><path d="M850 218l44-45 38 25 45-62 55 82" fill="none" stroke="#1aaeb2" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+ <rect x="875" y="275" width="170" height="12" rx="6" fill="#b9d8dd"/><rect x="875" y="300" width="120" height="9" rx="4" fill="#d0e4e7"/>
+ <rect x="670" y="370" width="450" height="18" rx="9" fill="#b7d5d9"/>
+ <!-- plant -->
+ <path d="M630 570q-60-100-20-150 50 34 20 150M642 560q5-115 65-130 20 65-65 130M620 555q-85-45-75-100 75 0 75 100" fill="#62b8a9"/>
+ <path d="M600 550l-18 82h76l-18-82z" fill="#e9f4f1" stroke="#bddbd8" stroke-width="5"/>
+ <!-- desk -->
+ <ellipse cx="840" cy="676" rx="320" ry="35" fill="#5c9ca3" opacity=".18" filter="url(#shadow)"/>
+ <path d="M380 600Q680 550 1150 600L1200 760H340Z" fill="#fff" stroke="#c5e2e4" stroke-width="5"/>
+ <path d="M380 600Q700 565 1150 600" fill="none" stroke="#e4f5f5" stroke-width="12"/>
+ <!-- assistant torso -->
+ <path d="M665 600q-8-155 78-205 74-42 150 10 62 48 66 195z" fill="url(#teal)"/>
+ <path d="M760 410q50 30 104 0l35 190H720z" fill="#fff"/>
+ <path d="M760 410q50 30 104 0l-25 60h-58z" fill="#d9f0ef"/>
+ <!-- assistant neck/head -->
+ <path d="M785 345l-5 72q43 35 86 0l-8-75" fill="#b97858"/>
+ <ellipse cx="825" cy="285" rx="91" ry="111" fill="#b97858"/>
+ <path d="M735 291q-25-120 82-139 102-17 113 103-38-46-78-67-33 56-117 68z" fill="#172b3a"/>
+ <path d="M741 250q-10 90 12 140-36-25-42-90-8-95 48-132 72-49 143 3 35 28 35 91-25-46-65-63-45 59-131 51z" fill="#172b3a"/>
+ <path d="M790 297q14 10 27 0M844 297q14 10 27 0" stroke="#3d2b28" stroke-width="6" stroke-linecap="round" fill="none"/>
+ <path d="M805 337q22 17 45-2" stroke="#fff" stroke-width="6" stroke-linecap="round" fill="none"/>
+ <circle cx="782" cy="316" r="7" fill="#a9654f"/><circle cx="873" cy="316" r="7" fill="#a9654f"/>
+ <!-- assistant arms and tablet -->
+ <path d="M712 480q-40 54 8 100l85 39 26-38-74-58 18-35z" fill="#b97858"/>
+ <path d="M885 465q40 16 58 74l-47 70-45-26 28-55-34-34z" fill="#b97858"/>
+ <rect x="750" y="553" width="220" height="118" rx="16" transform="rotate(-8 750 553)" fill="#152d46" stroke="#597a91" stroke-width="6"/>
+ <rect x="768" y="567" width="183" height="88" rx="8" transform="rotate(-8 768 567)" fill="#e9f7f8"/>
+ <path d="M792 593l108-15M796 616l80-12M801 637l55-8" stroke="#65b9bc" stroke-width="7" stroke-linecap="round"/>
+ <!-- patient torso and head -->
+ <path d="M1000 600q-12-165 95-185 80-10 105 82v103z" fill="url(#navy)"/>
+ <path d="M1050 412q-2-50 7-75h72q4 49 10 75-38 36-89 0" fill="#b97858"/>
+ <ellipse cx="1090" cy="300" rx="77" ry="95" fill="#b97858"/>
+ <path d="M1015 294q-10-102 79-121 90-12 100 104-34-42-81-46-35 39-98 63z" fill="#182d40"/>
+ <path d="M1021 264q-6 93 23 127-39-21-47-79-10-102 63-138 78-34 130 29 22 26 18 76-36-47-77-59-47 37-110 44z" fill="#182d40"/>
+ <path d="M1062 305q13 8 24 0M1104 305q13 8 24 0" stroke="#3b2b27" stroke-width="5" stroke-linecap="round"/>
+ <path d="M1080 343q21 12 39-3" stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none"/>
+ <path d="M1000 486q-42 38-20 87l56 43 27-30-45-52 29-34z" fill="#b97858"/>
+ <!-- accent note card -->
+ <rect x="505" y="488" width="156" height="96" rx="16" fill="#fff" stroke="#d3e8e9" stroke-width="3"/>
+ <circle cx="535" cy="519" r="12" fill="#dff7f4"/><path d="M529 519l5 5 9-11" fill="none" stroke="#0d9da0" stroke-width="3" stroke-linecap="round"/>
+ <path d="M556 516h78M526 546h104M526 564h70" stroke="#9bb9c0" stroke-width="6" stroke-linecap="round"/>
+ <rect x="54" y="70" width="390" height="6" rx="3" fill="#fff" opacity=".45"/>
+</svg>
