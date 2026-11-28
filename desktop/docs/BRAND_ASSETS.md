@@ -1,22 +1,22 @@
-# Oralyn brand asset provenance
+# Oralyn — Final approved brand assets
 
-The official wordmark and app mark used by this desktop project were extracted from the approved user-provided investor presentation, not redrawn or replaced with a generic dental icon.
+## Canonical display logo
 
-## Source
+- Canonical file: public/oralyn-official-logo.png.
+- Resolution: 1920 × 1883 RGBA, transparent background.
+- SHA-256: 8D2E4342146AD1F02AAA040DE2D372822B2E368DF3519C35DBADF99BE1DB2376.
+- This is the full original website logo with tooth mark, Oralyn wordmark and official tagline.
+- The original 1231 × 1207 master source is preserved unchanged in public/oralyn-original-source-1231x1207.png.
 
-- Original presentation: `Oralyn Investor Presentation_20261020_200633_0000.pptx`
-- Embedded media: `ppt/media/image1.png` (922 × 615 pixels)
-- Wordmark crop: source pixels `(60,55)–(565,555)`; resized without changing the artwork to 180 × 178 WebP.
-- App-mark crop: source pixels `(635,55)–(860,280)`; resized without changing the artwork to 128 × 128 WebP.
+## Launcher and PWA artwork
 
-## Installed files
+- public/oralyn-app-icon-approved.webp
+- public/oralyn-pwa-192.png
+- public/oralyn-pwa-512.png
+- All square icons are proportional, padded derivatives of the complete official logo.
+- The 1920 × 1080 wide logo file is reserved for landscape hero/presentation placements.
 
-- `public/oralyn-logo-approved.webp` — full approved Oralyn wordmark for Doctor and Patient sign-in.
-- `public/oralyn-app-icon-approved.webp` — approved Oralyn app mark for the sidebar, patient hero and favicon.
+## Mandatory use
 
-SHA-256:
-
-- `oralyn-logo-approved.webp`: `21FB2E071B929D2E853C21DD234BE2A70FDFF546E88E2035CFDEDEEC836530C0`
-- `oralyn-app-icon-approved.webp`: `92D6672C1B90BA1EB322E892A4DBA67817E0247B12A3F87D37D1101975F07D51`
-
-The previous provisional `oralyn-app-icon.png` is archived outside `public/` and is no longer referenced by the application. The approved Dr. Pranali Dental Clinic logo remains a separate asset and was not modified.
+Use the canonical full logo on the marketing site, Doctor portal, Clinic Assistant portal, public patient home and booking pages, and all Oralyn product surfaces. Never use the old investor-presentation crop or the retired tooth-only mark as an alternate logo. The original artwork and the exact tagline Smart Dental Care For Healthier Smiles must remain intact.
+A one-colour notification status glyph may remain only where the Android notification API requires a monochrome small mark.

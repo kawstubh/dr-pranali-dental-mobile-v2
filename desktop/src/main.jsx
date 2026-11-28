@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+﻿import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   LayoutDashboard,
@@ -359,7 +359,7 @@ function App() {
         </div>
       )}
       <aside className={mobile ? "sidebar open" : "sidebar"}>
-        <div className="brand"><img src="/oralyn-logo-approved.webp" alt="Oralyn official wordmark" /><button className="close" onClick={() => B(false)}>
+        <div className="brand"><img src="/oralyn-official-logo.png" alt="Oralyn official wordmark" /><button className="close" onClick={() => B(false)}>
             <X />
           </button>
         </div>
@@ -494,7 +494,7 @@ function App() {
 }
 function OralynVectorBrand() {
   return <div className="oralyn-vector-brand" aria-label="Oralyn — Smart Dental Care for Healthier Smiles">
-    <img className="oralyn-approved-wordmark" src="/oralyn-logo-approved.webp" alt="Oralyn — Smart Dental Care for Healthier Smiles" />
+    <img className="oralyn-approved-wordmark" src="/oralyn-official-logo.png" alt="Oralyn — Smart Dental Care for Healthier Smiles" />
   </div>;
 }
 function OralynClinicIllustration() {

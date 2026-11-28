@@ -1,4 +1,4 @@
-import fs from "node:fs";
+﻿import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -41,7 +41,7 @@ test("Doctor workspace still requires a verified Doctor session", () => {
 });
 
 test("Doctor sign-in uses the exact clinic-approved Oralyn wordmark and app icon assets", () => {
-  assert.match(source, /src="\/oralyn-logo-approved\.webp"/);
+  assert.match(source, /src="\/oralyn-official-logo\.png"/);
   assert.match(source, /src="\/oralyn-app-icon-approved\.webp"/);
   assert.doesNotMatch(source, /function OralynToothVector|<OralynToothVector/);
 });

@@ -1,10 +1,10 @@
-const CACHE_NAME = "oralyn-portal-shell-__ORALYN_BUILD_ID__";
+﻿const CACHE_NAME = "oralyn-portal-shell-__ORALYN_BUILD_ID__";
 const SHELL = [
   "/",
   "/manifest.webmanifest",
   "/oralyn-pwa-192.png",
   "/oralyn-pwa-512.png",
-  "/oralyn-logo-approved.webp",
+  "/oralyn-official-logo.png",
   "/oralyn-app-icon-approved.webp"
 ];
 
